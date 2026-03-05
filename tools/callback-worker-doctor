@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""
+Callback Worker Doctor - 健康检查诊断工具
+
+执行全面健康检查并给出"能不能上线"结论。
+"""
+
+import json
+import sys
+import os
+import subprocess
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+STOP_FILE = WORKSPACE / "STOP_AUTO_ADVANCE"
+WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+EVENTS_DIR = WORKSPACE / "events"
+METRICS_FILE = WORKSPACE / "metrics" / "callback_metrics.json"
+
+
+def check_service():
+    """检查服务是否运行"""
+    result = subprocess.run(
+        ["systemctl", "--user", "is-active", "callback-worker"],
+        capture_output=True,
+        text=True
+    )
+    return result.returncode == 0
+
+
+def check_kill_switch():
+    """检查 kill-switch 状态"""
+    if STOP_FILE.exists():
+        return False, "STOP_AUTO_ADVANCE file exists"
+    
+    if os.environ.get('AUTO_ADVANCE_ENABLED') == '0':
+        return False, "AUTO_ADVANCE_ENABLED=0"
+    
+    return True, "Disabled (normal)"
+
+
+def check_queue():
+    """检查队列"""
+    if not EVENTS_DIR.exists():
+        return False, "events/ directory does not exist"
+    
+    # 检查权限
+    import stat
+    mode = EVENTS_DIR.stat().st_mode
+    perm = stat.S_IMODE(mode)
+    
+    if perm != 0o700:
+        return False, f"events/ permissions incorrect: {oct(perm)} (should be 0o700)"
+    
+    # 检查队列大小
+    queue_files = list(EVENTS_DIR.glob("*.json"))
+    
+    return True, f"OK ({len(queue_files)} events)"
+
+
+def check_state():
+    """检查状态文件"""
+    if not WORKFLOW_FILE.exists():
+        return True, "No active workflow (OK)"
+    
+    try:
+        with open(WORKFLOW_FILE, 'r') as f:
+            state = json.load(f)
+        
+        # 检查是否可写
+        test_file = WORKFLOW_FILE.with_suffix('.test')
+        try:
+            test_file.write_text("{}")
+            test_file.unlink()
+        except:
+            return False, "Cannot write to WORKFLOW_STATE.json"
+        
+        # 检查锁
+        lock_file = WORKSPACE / ".workflow.lock"
+        if lock_file.exists():
+            # 尝试获取锁
+            import fcntl
+            try:
+                with open(lock_file, 'w') as f:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            except:
+                return False, "Lock file is held by another process"
+        
+        return True, "OK"
+    
+    except Exception as e:
+        return False, f"Cannot read WORKFLOW_STATE.json: {e}"
+
+
+def check_spawn_backend():
+    """检查 spawn backend（检查工具是否存在且可执行）"""
+    handler_auto = WORKSPACE / "tools" / "callback-handler-auto"
+    
+    if not handler_auto.exists():
+        return False, "callback-handler-auto does not exist"
+    
+    if not os.access(handler_auto, os.X_OK):
+        return False, "callback-handler-auto not executable"
+    
+    # 检查 --health 命令
+    result = subprocess.run(
+        [sys.executable, str(handler_auto), "--health"],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode == 0:
+        try:
+            health = json.loads(result.stdout)
+            if health.get('status') == 'healthy':
+                return True, "OK (health check passed)"
+            else:
+                return False, f"Health check failed: {health}"
+        except:
+            return False, f"Invalid health output: {result.stdout}"
+    else:
+        return False, f"Health check failed: {result.stderr}"
+
+
+def check_metrics():
+    """检查指标"""
+    if not METRICS_FILE.exists():
+        return True, "No metrics yet (first run)"
+    
+    try:
+        with open(METRICS_FILE, 'r') as f:
+            metrics = json.load(f)
+        
+        advances = metrics.get('advances', [])
+        inflight = metrics.get('global_inflight', 0)
+        
+        # 计算成功率
+        if advances:
+            success_count = sum(1 for a in advances if a.get('success'))
+            success_rate = success_count / len(advances)
+            
+            return True, f"OK ({len(advances)} advances, {success_rate:.1%} success, {inflight} inflight)"
+        else:
+            return True, "OK (no advances yet)"
+    
+    except Exception as e:
+        return False, f"Cannot read metrics: {e}"
+
+
+def main():
+    print("=" * 60)
+    print("Callback Worker Doctor")
+    print("=" * 60)
+    
+    checks = [
+        ("Service running", check_service),
+        ("Kill-switch", check_kill_switch),
+        ("Queue writable", check_queue),
+        ("State read/write + lock", check_state),
+        ("Spawn backend", check_spawn_backend),
+        ("Metrics", check_metrics),
+    ]
+    
+    all_passed = True
+    critical_issues = []
+    
+    for name, check_fn in checks:
+        try:
+            result = check_fn()
+            
+            if isinstance(result, tuple):
+                passed, message = result
+            else:
+                passed = result
+                message = "OK"
+            
+            status = "✅" if passed else "❌"
+            print(f"{status} {name}: {message}")
+            
+            if not passed:
+                all_passed = False
+                critical_issues.append(name)
+        
+        except Exception as e:
+            print(f"❌ {name}: Exception - {e}")
+            all_passed = False
+            critical_issues.append(name)
+    
+    print("\n" + "=" * 60)
+    
+    if all_passed:
+        print("✅ 结论: 可以上线")
+        return 0
+    else:
+        print(f"❌ 结论: 不能上线 ({len(critical_issues)} 个问题)")
+        print(f"   问题项: {', '.join(critical_issues)}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

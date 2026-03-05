@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""
+Workflow Init - 初始化新工作流
+
+Usage:
+  workflow-init <spec_path> [--output <state_dir>]
+
+功能:
+  1. 校验 spec schema
+  2. 生成 bootstrap state
+  3. 输出 systemd 启动提示
+"""
+
+import json
+import sys
+import os
+import subprocess
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any, Optional
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+SCHEMA_DIR = WORKSPACE / "POLICIES"
+SPEC_SCHEMA = SCHEMA_DIR / "WORKFLOW_SPEC.schema.json"
+STATE_SCHEMA = SCHEMA_DIR / "WORKFLOW_STATE.schema.json"
+
+
+def load_json(path: Path) -> Optional[Dict[str, Any]]:
+    """加载 JSON 文件"""
+    if not path.exists():
+        return None
+    
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading {path}: {e}", file=sys.stderr)
+        return None
+
+
+def validate_spec(spec: Dict[str, Any]) -> tuple[bool, list]:
+    """校验 spec schema"""
+    errors = []
+    
+    # 必需字段
+    if 'workflow_id' not in spec:
+        errors.append("Missing required field: workflow_id")
+    elif not isinstance(spec['workflow_id'], str):
+        errors.append("workflow_id must be a string")
+    
+    if 'steps' not in spec:
+        errors.append("Missing required field: steps")
+    elif not isinstance(spec['steps'], list):
+        errors.append("steps must be an array")
+    elif len(spec['steps']) == 0:
+        errors.append("steps must have at least one element")
+    else:
+        # 校验每个 step
+        step_ids = set()
+        for i, step in enumerate(spec['steps']):
+            if 'id' not in step:
+                errors.append(f"Step {i}: Missing required field: id")
+            elif step['id'] in step_ids:
+                errors.append(f"Step {i}: Duplicate id: {step['id']}")
+            else:
+                step_ids.add(step['id'])
+            
+            if 'payload' not in step:
+                errors.append(f"Step {i}: Missing required field: payload")
+    
+    # 校验 limits
+    if 'limits' in spec:
+        limits = spec['limits']
+        
+        if 'max_advances_per_hour' in limits:
+            val = limits['max_advances_per_hour']
+            if not isinstance(val, int) or val < 1:
+                errors.append("limits.max_advances_per_hour must be a positive integer")
+        
+        if 'max_advances_per_workflow' in limits:
+            val = limits['max_advances_per_workflow']
+            if not isinstance(val, int) or val < 1:
+                errors.append("limits.max_advances_per_workflow must be a positive integer")
+    
+    return len(errors) == 0, errors
+
+
+def generate_bootstrap_state(spec: Dict[str, Any]) -> Dict[str, Any]:
+    """生成 bootstrap state"""
+    timestamp = datetime.now().isoformat()
+    
+    steps = []
+    for step_spec in spec.get('steps', []):
+        step = {
+            "id": step_spec['id'],
+            "task": step_spec.get('payload', {}).get('task', ''),
+            "model": step_spec.get('payload', {}).get('model', 'default'),
+            "run_id": None,
+            "status": "pending",
+            "advance_processed": False,
+            "advance_inflight": None,
+            "attempts": 0,
+            "last_error": None
+        }
+        steps.append(step)
+    
+    state = {
+        "active": True,
+        "workflow_type": spec.get('workflow_type', 'serial'),
+        "workflow_id": spec['workflow_id'],
+        "rev": 0,
+        "steps": steps,
+        "notify_on_done": spec.get('hooks', {}).get('on_done', {}).get('notify', {}).get('message', '流程完成'),
+        "created_at": timestamp,
+        "updated_at": timestamp
+    }
+    
+    return state
+
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Workflow Init")
+    parser.add_argument("spec_path", help="Path to workflow spec JSON")
+    parser.add_argument("--output", "-o", default=str(WORKSPACE), help="Output directory for state file")
+    parser.add_argument("--validate-only", action="store_true", help="Only validate spec, do not generate state")
+    
+    args = parser.parse_args()
+    
+    spec_path = Path(args.spec_path)
+    
+    # 加载 spec
+    spec = load_json(spec_path)
+    if not spec:
+        print(f"❌ Failed to load spec: {spec_path}", file=sys.stderr)
+        return 1
+    
+    print(f"✅ Loaded spec: {spec_path}")
+    
+    # 校验 spec
+    valid, errors = validate_spec(spec)
+    
+    if not valid:
+        print("❌ Spec validation failed:", file=sys.stderr)
+        for error in errors:
+            print(f"  - {error}", file=sys.stderr)
+        return 1
+    
+    print("✅ Spec validation passed")
+    
+    if args.validate_only:
+        return 0
+    
+    # 生成 bootstrap state
+    state = generate_bootstrap_state(spec)
+    
+    # 写入 state 文件
+    output_dir = Path(args.output)
+    state_path = output_dir / "WORKFLOW_STATE.json"
+    
+    with open(state_path, 'w') as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
+    
+    print(f"✅ Generated bootstrap state: {state_path}")
+    
+    # 输出启动提示
+    print("\n" + "=" * 60)
+    print("Next Steps:")
+    print("=" * 60)
+    print("\n1. Start callback-worker:")
+    print("   systemctl --user start callback-worker")
+    print("\n2. Enqueue completion events as steps complete:")
+    print(f"   event-queue enqueue <run_id> --workflow-id {spec['workflow_id']}")
+    print("\n3. Monitor progress:")
+    print("   callback-handler-auto --metrics")
+    print("   journalctl --user -u callback-worker -f")
+    print("")
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,11 @@
+[2026-03-05T11:23:51.725223] [WARN] Inflight timeout for step step_a, retrying
+[2026-03-05T11:42:25.923446] [INFO] Spawning step smoke_step_b via CLI
+[2026-03-05T11:42:25.926309] [INFO] ✅ Step smoke_step_b spawned: run_id=auto_5212e680
+[2026-03-05T11:43:23.286845] [INFO] Spawning step fallback_step_b via CLI
+[2026-03-05T11:43:23.289583] [INFO] ✅ Step fallback_step_b spawned: run_id=auto_5a441ade
+[2026-03-05T11:57:14.507183] [INFO] Spawning step step_b via CLI
+[2026-03-05T11:57:14.510207] [INFO] ✅ Step step_b spawned: run_id=auto_1963100a
+[2026-03-05T11:57:25.085616] [INFO] Spawning step step_b via CLI
+[2026-03-05T11:57:25.088489] [INFO] ✅ Step step_b spawned: run_id=auto_c02a65a8
+[2026-03-05T11:58:00.148948] [INFO] Spawning step step_b via CLI
+[2026-03-05T11:58:00.151679] [INFO] ✅ Step step_b spawned: run_id=auto_6dba9adc

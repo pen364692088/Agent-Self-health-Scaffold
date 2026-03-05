@@ -1,0 +1,293 @@
+#!/usr/bin/env python3
+"""
+Event Queue - 事件入队（Path B 实时触发）
+
+事件队列机制：
+- 入队：在 events/ 目录写入小文件（文件名含 run_id）
+- 消费：callback-worker 用 inotify 监听目录变化
+- 特点：简单、无网络依赖、天然可追溯
+
+使用方式：
+  # 入队事件
+  event-queue enqueue <run_id> [--workflow-id <id>]
+  
+  # 消费事件（阻塞）
+  event-queue consume
+  
+  # 查看队列
+  event-queue list
+  
+  # 清理
+  event-queue clean
+"""
+
+import json
+import sys
+import os
+import time
+import re
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any, List
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+EVENTS_DIR = WORKSPACE / "events"
+PROCESSED_DIR = EVENTS_DIR / "processed"
+LOG_DIR = WORKSPACE / "logs"
+
+# 配置
+DEDUP_WINDOW_SEC = 1  # 入队去重窗口
+RATE_LIMIT_PER_SEC = 5  # 每秒最多处理数
+MAX_EVENTS = 1000  # 队列最大事件数
+
+# 文件名格式：{timestamp}_{run_id}_{workflow_id}.json
+# 只允许 [a-zA-Z0-9-_] 防止注入
+FILENAME_PATTERN = re.compile(r'^(\d{8}_\d{6})_([a-zA-Z0-9_-]+)(?:_([a-zA-Z0-9_-]+))?\.json$')
+
+
+def log(message: str, level: str = "INFO"):
+    """写入日志"""
+    LOG_DIR.mkdir(exist_ok=True)
+    ts = datetime.now().isoformat()
+    log_file = LOG_DIR / f"event-queue-{datetime.now().strftime('%Y%m%d')}.log"
+    
+    line = f"[{ts}] [{level}] {message}\n"
+    with open(log_file, 'a') as f:
+        f.write(line)
+
+
+def validate_run_id(run_id: str) -> bool:
+    """验证 run_id 格式"""
+    if not run_id or len(run_id) > 100:
+        return False
+    return bool(re.match(r'^[a-zA-Z0-9_-]+$', run_id))
+
+
+def validate_workflow_id(workflow_id: str) -> bool:
+    """验证 workflow_id 格式"""
+    if not workflow_id:
+        return True  # 可选
+    if len(workflow_id) > 100:
+        return False
+    return bool(re.match(r'^[a-zA-Z0-9_-]+$', workflow_id))
+
+
+def enqueue(run_id: str, workflow_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    入队事件
+    
+    Args:
+        run_id: 子代理运行 ID
+        workflow_id: 工作流 ID（可选）
+    
+    Returns:
+        {"success": bool, "event_file": str, "dedup": bool}
+    """
+    # 校验参数
+    if not validate_run_id(run_id):
+        return {"success": False, "error": "Invalid run_id format"}
+    
+    if workflow_id and not validate_workflow_id(workflow_id):
+        return {"success": False, "error": "Invalid workflow_id format"}
+    
+    EVENTS_DIR.mkdir(exist_ok=True)
+    PROCESSED_DIR.mkdir(exist_ok=True)
+    
+    # 入队去重检查
+    now = datetime.now()
+    dedup_window = timedelta(seconds=DEDUP_WINDOW_SEC)
+    
+    for event_file in EVENTS_DIR.glob("*.json"):
+        if event_file.parent == PROCESSED_DIR:
+            continue
+        
+        try:
+            with open(event_file, 'r') as f:
+                event = json.load(f)
+            
+            # 检查 run_id 和时间窗口
+            if event.get('run_id') == run_id:
+                event_time = datetime.fromisoformat(event['timestamp'])
+                if now - event_time < dedup_window:
+                    log(f"Dedup: {run_id} already in queue", "INFO")
+                    return {
+                        "success": True,
+                        "dedup": True,
+                        "event_file": str(event_file),
+                        "message": "Event already in queue (dedup)"
+                    }
+        except:
+            pass
+    
+    # 检查队列大小
+    queue_size = len(list(EVENTS_DIR.glob("*.json")))
+    if queue_size >= MAX_EVENTS:
+        log(f"Queue full: {queue_size} events", "WARN")
+        return {"success": False, "error": f"Queue full ({MAX_EVENTS} max)"}
+    
+    # 写入事件文件
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{timestamp}_{run_id}"
+    if workflow_id:
+        filename += f"_{workflow_id}"
+    filename += ".json"
+    
+    event = {
+        "run_id": run_id,
+        "workflow_id": workflow_id,
+        "timestamp": datetime.now().isoformat(),
+        "enqueued_at": datetime.now().isoformat()
+    }
+    
+    event_file = EVENTS_DIR / filename
+    with open(event_file, 'w') as f:
+        json.dump(event, f, indent=2)
+    
+    log(f"Enqueued: {run_id} -> {filename}")
+    
+    return {
+        "success": True,
+        "dedup": False,
+        "event_file": str(event_file)
+    }
+
+
+def consume_one() -> Optional[Dict[str, Any]]:
+    """
+    消费一个事件（FIFO）
+    
+    Returns:
+        Event dict or None if queue empty
+    """
+    EVENTS_DIR.mkdir(exist_ok=True)
+    PROCESSED_DIR.mkdir(exist_ok=True)
+    
+    # 按时间戳排序，取最早的
+    event_files = sorted(EVENTS_DIR.glob("*.json"))
+    
+    if not event_files:
+        return None
+    
+    event_file = event_files[0]
+    
+    try:
+        with open(event_file, 'r') as f:
+            event = json.load(f)
+        
+        # 移动到已处理目录
+        processed_file = PROCESSED_DIR / event_file.name
+        event_file.rename(processed_file)
+        
+        log(f"Consumed: {event['run_id']}")
+        
+        return event
+    
+    except Exception as e:
+        log(f"Error consuming {event_file}: {e}", "ERROR")
+        # 移动到错误目录
+        error_file = EVENTS_DIR / "error" / event_file.name
+        error_file.parent.mkdir(exist_ok=True)
+        try:
+            event_file.rename(error_file)
+        except:
+            pass
+        return None
+
+
+def list_events() -> List[Dict[str, Any]]:
+    """列出队列中的事件"""
+    EVENTS_DIR.mkdir(exist_ok=True)
+    
+    events = []
+    for event_file in sorted(EVENTS_DIR.glob("*.json")):
+        try:
+            with open(event_file, 'r') as f:
+                event = json.load(f)
+            event['file'] = str(event_file)
+            events.append(event)
+        except:
+            pass
+    
+    return events
+
+
+def clean_events(max_age_hours: int = 24) -> int:
+    """清理过期事件"""
+    EVENTS_DIR.mkdir(exist_ok=True)
+    PROCESSED_DIR.mkdir(exist_ok=True)
+    
+    cleaned = 0
+    cutoff = datetime.now() - timedelta(hours=max_age_hours)
+    
+    # 清理已处理的事件
+    for event_file in PROCESSED_DIR.glob("*.json"):
+        try:
+            stat = event_file.stat()
+            if datetime.fromtimestamp(stat.st_mtime) < cutoff:
+                event_file.unlink()
+                cleaned += 1
+        except:
+            pass
+    
+    log(f"Cleaned {cleaned} old events")
+    return cleaned
+
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Event Queue")
+    parser.add_argument("action", choices=["enqueue", "consume", "list", "clean"])
+    parser.add_argument("run_id", nargs="?", help="Run ID (for enqueue)")
+    parser.add_argument("--workflow-id", help="Workflow ID (optional)")
+    parser.add_argument("--max-age-hours", type=int, default=24, help="Max age for clean")
+    parser.add_argument("--health", "-H", action="store_true", help="Health check")
+    
+    args = parser.parse_args()
+    
+    if args.health:
+        EVENTS_DIR.mkdir(exist_ok=True)
+        queue_size = len(list(EVENTS_DIR.glob("*.json")))
+        print(json.dumps({
+            "status": "healthy",
+            "queue_size": queue_size,
+            "max_events": MAX_EVENTS,
+            "dedup_window_sec": DEDUP_WINDOW_SEC
+        }))
+        return 0
+    
+    if args.action == "enqueue":
+        if not args.run_id:
+            print("Error: run_id required for enqueue", file=sys.stderr)
+            return 1
+        
+        result = enqueue(args.run_id, args.workflow_id)
+        print(json.dumps(result, indent=2))
+        return 0 if result['success'] else 1
+    
+    elif args.action == "consume":
+        event = consume_one()
+        if event:
+            print(json.dumps(event, indent=2))
+        else:
+            print(json.dumps({"empty": True}))
+        return 0
+    
+    elif args.action == "list":
+        events = list_events()
+        print(json.dumps({
+            "count": len(events),
+            "events": events
+        }, indent=2))
+        return 0
+    
+    elif args.action == "clean":
+        cleaned = clean_events(args.max_age_hours)
+        print(json.dumps({"cleaned": cleaned}))
+        return 0
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

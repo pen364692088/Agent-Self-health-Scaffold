@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "6380",
+  "message_id": "6449",
   "from": "telegram:8420019401",
-  "timestamp": 1772725535000,
+  "timestamp": 1772734742000,
   "decision": {
-    "action": "attack",
-    "decision_id": 394,
+    "action": "boundary",
+    "decision_id": 419,
     "explanation": {
       "emotion": {
         "top2": [
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "attack",
+      "selected": "boundary",
       "selection_reasons": [
-        "Selected via stochastic process (score: 0.070)",
+        "Selected via stochastic process (score: 0.030)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,13 +124,13 @@
     }
   },
   "guidance": {
-    "tone": "defensive, sharp",
-    "intent": "push back",
+    "tone": "clear, firm",
+    "intent": "establish limits",
     "phrases": [
-      "I have to push back",
-      "not acceptable"
+      "I need to be clear",
+      "not comfortable"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-05T15:45:36.505Z"
+  "generated_at": "2026-03-05T18:19:03.357Z"
 }

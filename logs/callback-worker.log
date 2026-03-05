@@ -1,0 +1,15 @@
+[2026-03-05T11:42:22.984100] [INFO] Callback worker started (listen mode, pid=3726221)
+[2026-03-05T11:42:25.876847] [INFO] Processing event: smoke_run_001
+[2026-03-05T11:42:25.932319] [INFO] ✅ Event smoke_run_001 processed successfully
+[2026-03-05T11:43:23.088432] [INFO] 兜底发现未推进: fallback_step_a (fallback_run_001)
+[2026-03-05T11:43:23.252193] [INFO] Processing event: fallback_run_001
+[2026-03-05T11:43:23.295042] [INFO] ✅ Event fallback_run_001 processed successfully
+[2026-03-05T11:57:14.464180] [INFO] Processing event: e2e_run_001
+[2026-03-05T11:57:14.515477] [INFO] ✅ Event e2e_run_001 processed successfully
+[2026-03-05T11:57:16.593099] [INFO] Processing event: kill_run_001
+[2026-03-05T11:57:16.627934] [ERROR] ❌ Event kill_run_001 failed: Exit code 1
+[2026-03-05T11:57:24.894163] [INFO] 兜底发现未推进: step_a (kill_run_001)
+[2026-03-05T11:57:25.053307] [INFO] Processing event: kill_run_001
+[2026-03-05T11:57:25.093371] [INFO] ✅ Event kill_run_001 processed successfully
+[2026-03-05T11:58:00.111383] [INFO] Processing event: e2e_v2_run
+[2026-03-05T11:58:00.157151] [INFO] ✅ Event e2e_v2_run processed successfully

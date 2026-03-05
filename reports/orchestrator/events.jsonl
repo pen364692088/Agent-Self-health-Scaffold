@@ -96,3 +96,5 @@
 {"ts": "2026-03-05T07:52:59.167342", "task_id": "task_b6dac10a", "state_from": "pending", "state_to": "timeout", "run_id": "run_bbafcf7f", "attempt": 0, "elapsed_ms": 0, "reason": "zombie_cleanup"}
 {"ts": "2026-03-05T07:52:59.167402", "task_id": "task_0957a6ce", "state_from": "pending", "state_to": "timeout", "run_id": "run_2c0656aa", "attempt": 0, "elapsed_ms": 0, "reason": "zombie_cleanup"}
 {"ts": "2026-03-05T08:01:42.542323", "task_id": "task_8db0f53f", "state_from": "none", "state_to": "pending", "run_id": "run_3f053c73", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
+{"ts": "2026-03-05T09:56:32.913536", "task_id": "task_5a809a51", "state_from": "none", "state_to": "pending", "run_id": "run_fd8fb577", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
+{"ts": "2026-03-05T09:57:28.876443", "task_id": "task_8db0f53f", "state_from": "pending", "state_to": "timeout", "run_id": "run_3f053c73", "attempt": 0, "elapsed_ms": 0, "reason": "zombie_cleanup"}

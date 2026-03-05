@@ -770,3 +770,78 @@ Added: 2026-03-05 01:18 CST
 
 ---
 Added: 2026-03-05 09:45 CST
+
+---
+
+## 2026-03-05: Workflow Auto-Advance v1.0 Release
+
+### 核心成果
+
+**工作流推进从"用户驱动/回合制"升级为"事件驱动/常驻编排"。**
+
+### 真实 E2E 延迟校准
+
+| 指标 | 记录值 | 真实值 |
+|------|--------|--------|
+| queue_wait_ms | - | ~10-50ms |
+| advance_exec_ms | - | ~50-100ms |
+| e2e_ms | 0.2ms (错误) | **142ms** |
+| spawn_ms | 0.2ms | ~0.2ms (内部) |
+
+**教训**: 指标必须在真实端点打点，不能只记录内部耗时。
+
+### 两阶段提交模式
+
+```
+inflight → spawn → processed
+```
+
+**关键点**:
+- 必须先写 inflight（防崩溃无法恢复）
+- spawn 成功才能写 processed（保证一致性）
+- 原子写入：temp → fsync → rename
+
+### 兜底扫描归因
+
+| fallback_reason | 说明 |
+|-----------------|------|
+| event_missing | 事件未入队 |
+| state_lag | 事件先到但 state 未落盘 |
+| backoff_expired | 退避到期 |
+| startup_sweep | 启动扫描 |
+| opportunistic | 机会性扫描 |
+
+### 6 个关键护栏
+
+1. **状态文件原子写入** - temp → fsync → rename
+2. **队列注入与权限** - 白名单 + 700 权限
+3. **全局并发上限** - MAX_GLOBAL_INFLIGHT=10
+4. **紧急刹车开关** - 文件/环境变量/CLI
+5. **可观测指标** - 延迟/成功率/重试/去重
+6. **死循环护栏** - 100/hour, 50/workflow
+
+### 标准化套件 v1.0
+
+**目标**: 新工作流接入从"天"变成"分钟"
+
+**交付**:
+- 2 schemas (spec/state)
+- Policies 主文档
+- Runbook
+- Templates
+- Doctor/Validate 工具
+
+### 关键路径
+
+```
+~/.openclaw/workspace/
+├── POLICIES/WORKFLOW_AUTO_ADVANCE.md
+├── tools/
+│   ├── workflow-init
+│   ├── workflow-validate
+│   ├── callback-handler-auto
+│   ├── callback-worker
+│   └── event-queue
+└── templates/
+```
+

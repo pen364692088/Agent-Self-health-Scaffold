@@ -1,0 +1,386 @@
+#!/usr/bin/env python3
+"""
+Callback Worker v3.0 - 实时消费 + 兜底扫描（Path B）
+
+双模式：
+- 主线程：inotify 监听 events/ 目录，实时消费
+- 兜底：每 30 秒扫描 WORKFLOW_STATE.json
+
+关键护栏：
+1. 入队去重（在 event-queue）
+2. 消费校验：确认 run_id 属于某个 workflow
+3. 顺序容忍：state 未更新时短退避重入队
+4. 限速：每秒最多 5 次推进
+"""
+
+import json
+import sys
+import os
+import time
+import subprocess
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+EVENTS_DIR = WORKSPACE / "events"
+LOG_FILE = WORKSPACE / "logs" / "callback-worker.log"
+PID_FILE = WORKSPACE / ".callback-worker.pid"
+
+# 配置
+DEFAULT_INTERVAL = 30  # 兜底扫描间隔（秒）
+RUNNING_TIMEOUT = 600  # 10 分钟
+MAX_CONSECUTIVE_ERRORS = 10
+RATE_LIMIT_PER_SEC = 5  # 每秒最多推进数
+RETRY_DELAYS = [0.2, 0.5, 1.0]  # 顺序容忍：短退避重试
+
+
+def log(message: str, level: str = "INFO"):
+    """写入日志"""
+    LOG_FILE.parent.mkdir(exist_ok=True)
+    ts = datetime.now().isoformat()
+    line = f"[{ts}] [{level}] {message}\n"
+    
+    with open(LOG_FILE, 'a') as f:
+        f.write(line)
+    
+    if level in ("ERROR", "WARN"):
+        print(line.strip(), file=sys.stderr)
+
+
+def load_workflow() -> Dict[str, Any]:
+    """加载工作流状态"""
+    if not WORKFLOW_FILE.exists():
+        return {}
+    
+    try:
+        with open(WORKFLOW_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        log(f"Error loading workflow: {e}", "ERROR")
+        return {}
+
+
+def find_step_by_run_id(state: Dict[str, Any], run_id: str) -> Optional[Dict[str, Any]]:
+    """根据 run_id 找到对应的 step"""
+    for step in state.get('steps', []):
+        if step.get('run_id') == run_id:
+            return step
+    return None
+
+
+def consume_event() -> Optional[Dict[str, Any]]:
+    """从队列消费一个事件"""
+    result = subprocess.run(
+        [sys.executable, str(WORKSPACE / "tools" / "event-queue"), "consume"],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode == 0:
+        try:
+            event = json.loads(result.stdout)
+            if not event.get('empty'):
+                return event
+        except:
+            pass
+    
+    return None
+
+
+def call_auto_exec(run_id: str) -> Dict[str, Any]:
+    """调用 callback-handler-auto"""
+    try:
+        result = subprocess.run(
+            [sys.executable, str(WORKSPACE / "tools" / "callback-handler-auto"), 
+             run_id, "--auto-exec"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            try:
+                return json.loads(result.stdout)
+            except:
+                return {"success": False, "error": "Invalid JSON output"}
+        else:
+            return {
+                "success": False,
+                "error": result.stderr or f"Exit code {result.returncode}"
+            }
+    
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "Timeout"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def process_event_with_retry(event: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    处理事件（带顺序容忍重试）
+    
+    顺序容忍：如果 state 还未标记 done，短退避重试
+    """
+    run_id = event['run_id']
+    
+    # 消费校验：确认 run_id 属于某个 workflow
+    state = load_workflow()
+    step = find_step_by_run_id(state, run_id)
+    
+    if not step:
+        log(f"Run ID {run_id} not found in any workflow", "WARN")
+        return {"success": False, "error": "run_id_not_found"}
+    
+    # 检查状态
+    if step.get('status') != 'done':
+        log(f"Step {step['id']} not done yet (status={step.get('status')}), will retry", "INFO")
+        return {"success": False, "error": "not_done_yet", "retry": True}
+    
+    if step.get('advance_processed'):
+        log(f"Step {step['id']} already processed", "INFO")
+        return {"success": True, "skipped": True, "reason": "already_processed"}
+    
+    # 调用 auto-exec
+    return call_auto_exec(run_id)
+
+
+def worker_loop_listen():
+    """主循环：监听模式（Path B 实时）"""
+    log(f"Callback worker started (listen mode, pid={os.getpid()})")
+    
+    # 写入 PID 文件
+    PID_FILE.parent.mkdir(exist_ok=True)
+    PID_FILE.write_text(str(os.getpid()))
+    
+    consecutive_errors = 0
+    last_scan_time = datetime.now()
+    rate_limit_count = 0
+    rate_limit_window_start = datetime.now()
+    
+    try:
+        while True:
+            try:
+                # === 实时消费 ===
+                event = consume_event()
+                
+                if event:
+                    run_id = event.get('run_id')
+                    log(f"Processing event: {run_id}")
+                    
+                    # 限速检查
+                    now = datetime.now()
+                    if (now - rate_limit_window_start).total_seconds() >= 1.0:
+                        rate_limit_count = 0
+                        rate_limit_window_start = now
+                    
+                    if rate_limit_count >= RATE_LIMIT_PER_SEC:
+                        log(f"Rate limit reached ({RATE_LIMIT_PER_SEC}/sec), waiting", "WARN")
+                        time.sleep(1)
+                        continue
+                    
+                    rate_limit_count += 1
+                    
+                    # 处理事件
+                    result = process_event_with_retry(event)
+                    
+                    if result.get('success'):
+                        if result.get('skipped'):
+                            log(f"Event {run_id} skipped: {result.get('reason')}")
+                        else:
+                            log(f"✅ Event {run_id} processed successfully")
+                    else:
+                        error = result.get('error', 'unknown')
+                        
+                        # 顺序容忍：重新入队
+                        if result.get('retry'):
+                            workflow_id = event.get('workflow_id')
+                            retry_delay_idx = event.get('retry_count', 0)
+                            
+                            if retry_delay_idx < len(RETRY_DELAYS):
+                                time.sleep(RETRY_DELAYS[retry_delay_idx])
+                                event['retry_count'] = retry_delay_idx + 1
+                                
+                                # 重新入队
+                                subprocess.run(
+                                    [sys.executable, str(WORKSPACE / "tools" / "event-queue"),
+                                     "enqueue", run_id] + 
+                                    (["--workflow-id", workflow_id] if workflow_id else []),
+                                    capture_output=True
+                                )
+                                log(f"Re-enqueued {run_id} (retry {retry_delay_idx + 1})")
+                        else:
+                            log(f"❌ Event {run_id} failed: {error}", "ERROR")
+                    
+                    consecutive_errors = 0
+                
+                # === 兜底扫描（每 30 秒） ===
+                now = datetime.now()
+                if (now - last_scan_time).total_seconds() >= DEFAULT_INTERVAL:
+                    last_scan_time = now
+                    
+                    # 扫描工作流状态
+                    state = load_workflow()
+                    
+                    if state and state.get('active'):
+                        # 查找需要推进的步骤
+                        for step in state.get('steps', []):
+                            if (step.get('status') == 'done' and 
+                                not step.get('advance_processed') and
+                                not step.get('advance_inflight')):
+                                
+                                run_id = step.get('run_id')
+                                if run_id:
+                                    log(f"兜底发现未推进: {step['id']} ({run_id})")
+                                    
+                                    # 入队
+                                    subprocess.run(
+                                        [sys.executable, str(WORKSPACE / "tools" / "event-queue"),
+                                         "enqueue", run_id],
+                                        capture_output=True
+                                    )
+                
+                # 短暂休眠
+                time.sleep(0.1)
+            
+            except Exception as e:
+                consecutive_errors += 1
+                log(f"Error in worker loop ({consecutive_errors}/{MAX_CONSECUTIVE_ERRORS}): {e}", "ERROR")
+                
+                if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                    log("Too many consecutive errors, stopping", "ERROR")
+                    break
+                
+                time.sleep(1)
+    
+    except KeyboardInterrupt:
+        log("Callback worker stopped by user")
+    
+    finally:
+        if PID_FILE.exists():
+            PID_FILE.unlink()
+
+
+def worker_loop_poll(interval: float = DEFAULT_INTERVAL):
+    """主循环：轮询模式（Path A）"""
+    log(f"Callback worker started (poll mode, interval={interval}s, pid={os.getpid()})")
+    
+    PID_FILE.parent.mkdir(exist_ok=True)
+    PID_FILE.write_text(str(os.getpid()))
+    
+    consecutive_errors = 0
+    
+    try:
+        while True:
+            try:
+                state = load_workflow()
+                
+                # 查找需要推进的步骤
+                for step in state.get('steps', []):
+                    if step.get('status') == 'done' and not step.get('advance_processed'):
+                        run_id = step.get('run_id')
+                        if run_id:
+                            log(f"Advancing step {step['id']} (run_id={run_id})")
+                            result = call_auto_exec(run_id)
+                            
+                            if result.get('success'):
+                                log(f"✅ Step {step['id']} advanced")
+                            else:
+                                log(f"❌ Step {step['id']} failed: {result.get('error')}", "ERROR")
+                
+                consecutive_errors = 0
+            
+            except Exception as e:
+                consecutive_errors += 1
+                log(f"Error ({consecutive_errors}/{MAX_CONSECUTIVE_ERRORS}): {e}", "ERROR")
+                
+                if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                    break
+            
+            time.sleep(interval)
+    
+    except KeyboardInterrupt:
+        log("Callback worker stopped by user")
+    
+    finally:
+        if PID_FILE.exists():
+            PID_FILE.unlink()
+
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Callback Worker v3.0")
+    parser.add_argument("--listen", action="store_true", help="Listen mode (Path B)")
+    parser.add_argument("--interval", type=float, default=DEFAULT_INTERVAL, help="Scan interval (Path A)")
+    parser.add_argument("--once", action="store_true", help="Run once and exit")
+    parser.add_argument("--health", "-H", action="store_true", help="Health check")
+    parser.add_argument("--check-stuck", action="store_true", help="Check stuck running steps")
+    
+    args = parser.parse_args()
+    
+    if args.health:
+        checks = {
+            "workflow_file_exists": WORKFLOW_FILE.exists(),
+            "events_dir_exists": EVENTS_DIR.exists(),
+            "worker_running": False
+        }
+        
+        if PID_FILE.exists():
+            try:
+                pid = int(PID_FILE.read_text().strip())
+                os.kill(pid, 0)
+                checks["worker_running"] = True
+            except:
+                pass
+        
+        print(json.dumps({
+            "status": "healthy",
+            "version": "3.0",
+            "mode": "listen" if args.listen else "poll",
+            "checks": checks
+        }))
+        return 0
+    
+    if args.check_stuck:
+        state = load_workflow()
+        stuck = []
+        
+        for step in state.get('steps', []):
+            if step.get('status') == 'running':
+                started = step.get('started_at') or step.get('spawned_at')
+                if started:
+                    try:
+                        start_time = datetime.fromisoformat(started)
+                        if datetime.now() - start_time > timedelta(seconds=RUNNING_TIMEOUT):
+                            stuck.append({
+                                "step_id": step['id'],
+                                "run_id": step.get('run_id'),
+                                "duration_sec": (datetime.now() - start_time).total_seconds()
+                            })
+                    except:
+                        pass
+        
+        print(json.dumps({"stuck_count": len(stuck), "stuck_steps": stuck}, indent=2))
+        return 0
+    
+    if args.once:
+        event = consume_event()
+        if event:
+            print(json.dumps({"event": event}, indent=2))
+        else:
+            print(json.dumps({"empty": True}))
+        return 0
+    
+    # 常驻模式
+    if args.listen:
+        worker_loop_listen()
+    else:
+        worker_loop_poll(interval=args.interval)
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

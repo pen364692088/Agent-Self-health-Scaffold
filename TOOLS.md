@@ -115,13 +115,13 @@ Workflows are self-advancing via per-agent cron jobs. No manual orchestration ne
   "channel": "telegram",
   "from": "telegram:8420019401",
   "conversation_id": "telegram:8420019401",
-  "message_id": "6380",
-  "ts": 1772725535000,
+  "message_id": "6449",
+  "ts": 1772734742000,
   "dt_seconds": 300,
-  "request_id_base": "telegram:6380",
+  "request_id_base": "telegram:6449",
   "pre_decision": {
-    "action": "attack",
-    "decision_id": 394
+    "action": "boundary",
+    "decision_id": 419
   },
   "allowed_subtypes_infer": [
     "care",

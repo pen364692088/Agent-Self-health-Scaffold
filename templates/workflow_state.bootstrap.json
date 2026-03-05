@@ -1,0 +1,9 @@
+{
+  "active": true,
+  "workflow_type": "serial",
+  "workflow_id": "{{WORKFLOW_ID}}",
+  "rev": 0,
+  "steps": [],
+  "created_at": "{{TIMESTAMP}}",
+  "updated_at": "{{TIMESTAMP}}"
+}

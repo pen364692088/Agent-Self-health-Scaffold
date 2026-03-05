@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""
+Callback Worker 每日摘要
+
+输出关键指标摘要，用于快速确认系统状态。
+"""
+
+import json
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, Any, List
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+METRICS_FILE = WORKSPACE / "metrics" / "callback_metrics.json"
+EVENTS_DIR = WORKSPACE / "events"
+PROCESSED_DIR = EVENTS_DIR / "processed"
+
+
+def load_metrics() -> Dict[str, Any]:
+    """加载指标"""
+    if not METRICS_FILE.exists():
+        return {"advances": [], "global_inflight": 0}
+    
+    try:
+        with open(METRICS_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        return {"advances": [], "global_inflight": 0}
+
+
+def calculate_stats(metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """计算统计指标"""
+    advances = metrics.get('advances', [])
+    
+    if not advances:
+        return {
+            "total": 0,
+            "success_rate": 0,
+            "avg_latency_ms": 0,
+            "p95_latency_ms": 0,
+            "retries": 0,
+            "rollbacks": 0,
+            "dedup_ratio": 0
+        }
+    
+    # 过滤最近 24 小时
+    cutoff = datetime.now() - timedelta(hours=24)
+    recent = [
+        a for a in advances
+        if datetime.fromisoformat(a['timestamp']) > cutoff
+    ]
+    
+    if not recent:
+        return {
+            "total": 0,
+            "success_rate": 0,
+            "avg_latency_ms": 0,
+            "p95_latency_ms": 0,
+            "retries": 0,
+            "rollbacks": 0,
+            "dedup_ratio": 0
+        }
+    
+    # 计算统计
+    total = len(recent)
+    success_count = sum(1 for a in recent if a.get('success'))
+    success_rate = success_count / total if total > 0 else 0
+    
+    latencies = [a.get('latency_ms', 0) for a in recent]
+    avg_latency = sum(latencies) / len(latencies) if latencies else 0
+    
+    # p95
+    sorted_latencies = sorted(latencies)
+    p95_idx = int(len(sorted_latencies) * 0.95)
+    p95_latency = sorted_latencies[p95_idx] if sorted_latencies else 0
+    
+    return {
+        "total": total,
+        "success_rate": success_rate,
+        "avg_latency_ms": avg_latency,
+        "p95_latency_ms": p95_latency,
+        "retries": sum(1 for a in recent if a.get('attempts', 0) > 1),
+        "rollbacks": 0,  # 需要从日志中提取
+        "dedup_ratio": 0  # 需要从 event-queue 指标中提取
+    }
+
+
+def get_queue_stats() -> Dict[str, int]:
+    """获取队列统计"""
+    if not EVENTS_DIR.exists():
+        return {"pending": 0, "processed": 0}
+    
+    pending = len(list(EVENTS_DIR.glob("*.json")))
+    processed = len(list(PROCESSED_DIR.glob("*.json"))) if PROCESSED_DIR.exists() else 0
+    
+    return {"pending": pending, "processed": processed}
+
+
+def main():
+    metrics = load_metrics()
+    stats = calculate_stats(metrics)
+    queue_stats = get_queue_stats()
+    
+    # 输出一行摘要
+    print("=" * 60)
+    print("Callback Worker 每日摘要")
+    print("=" * 60)
+    print(f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("")
+    
+    print(f"推进总数:        {stats['total']}")
+    print(f"成功率:          {stats['success_rate']:.1%}")
+    print(f"平均延迟:        {stats['avg_latency_ms']:.1f}ms")
+    print(f"P95 延迟:        {stats['p95_latency_ms']:.1f}ms")
+    print(f"重试次数:        {stats['retries']}")
+    print(f"队列深度:        {queue_stats['pending']}")
+    print(f"已处理事件:      {queue_stats['processed']}")
+    
+    # 健康状态
+    issues = []
+    
+    if stats['success_rate'] < 0.95:
+        issues.append("成功率 < 95%")
+    
+    if stats['p95_latency_ms'] > 5000:
+        issues.append("P95 延迟 > 5s")
+    
+    if queue_stats['pending'] > 10:
+        issues.append("队列积压 > 10")
+    
+    print("")
+    if issues:
+        print(f"⚠️  问题: {', '.join(issues)}")
+    else:
+        print("✅ 状态: 健康")
+    
+    print("=" * 60)
+    
+    # JSON 输出（可选）
+    if "--json" in sys.argv:
+        print(json.dumps({
+            "timestamp": datetime.now().isoformat(),
+            "stats": stats,
+            "queue": queue_stats,
+            "issues": issues
+        }, indent=2))
+    
+    return 0 if not issues else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

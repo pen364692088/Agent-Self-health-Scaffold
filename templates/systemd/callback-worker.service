@@ -1,0 +1,23 @@
+[Unit]
+Description=OpenClaw Callback Worker (Auto-Advance)
+After=default.target
+Documentation=https://docs.openclaw.ai/callback-worker
+
+[Service]
+Type=simple
+ExecStart=%h/.openclaw/workspace/tools/callback-worker --listen
+Restart=always
+RestartSec=1
+WorkingDirectory=%h/.openclaw/workspace
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=callback-worker
+
+# Limits
+LimitNOFILE=1024
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

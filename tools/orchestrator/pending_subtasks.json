@@ -1,17 +1,17 @@
 {
   "pending": {
-    "task_8db0f53f": {
-      "task_id": "task_8db0f53f",
-      "run_id": "run_3f053c73",
-      "child_session_key": "agent:main:subagent:005b73fc521f41d2adf75d769e0bd937",
-      "description": "MVP11.4.6 P1: Threshold Calibration Script - see TASK_MVP1146_P1.md",
+    "task_5a809a51": {
+      "task_id": "task_5a809a51",
+      "run_id": "run_fd8fb577",
+      "child_session_key": "agent:main:subagent:30301c945f6a4c239cc88c14f4398ffc",
+      "description": "Phase 1: Bot Harness - see TASK_TESTBOT_HARNESS.md",
       "status": "pending",
-      "deadline": "2026-03-05T09:01:42.540909",
+      "deadline": "2026-03-05T10:56:32.912184",
       "max_retries": 2,
       "retries": 0,
       "attempt": 0,
-      "created_at": "2026-03-05T08:01:42.540913",
-      "started_at": "2026-03-05T08:01:42.540915",
+      "created_at": "2026-03-05T09:56:32.912186",
+      "started_at": "2026-03-05T09:56:32.912188",
       "completed_at": null,
       "output_paths": [],
       "artifacts": [],
@@ -148,7 +148,32 @@
       "metadata": {
         "model": "baiduqianfancodingplan/qianfan-code-latest"
       }
+    },
+    "task_8db0f53f": {
+      "task_id": "task_8db0f53f",
+      "run_id": "run_3f053c73",
+      "child_session_key": "agent:main:subagent:005b73fc521f41d2adf75d769e0bd937",
+      "description": "MVP11.4.6 P1: Threshold Calibration Script - see TASK_MVP1146_P1.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T09:01:42.540909",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T08:01:42.540913",
+      "started_at": "2026-03-05T08:01:42.540915",
+      "completed_at": "2026-03-05T09:57:28.876401",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Task exceeded deadline without completion"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
     }
   },
-  "timestamp": "2026-03-05T08:01:42.540976"
+  "timestamp": "2026-03-05T09:57:28.876560"
 }

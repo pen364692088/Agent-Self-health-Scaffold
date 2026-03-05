@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""
+Workflow Validate - 校验工作流状态
+
+Usage:
+  workflow-validate <state_path>
+
+功能:
+  1. 校验 state schema
+  2. 检查 inflight 超时是否可恢复
+  3. 检查 limits 是否合理
+"""
+
+import json
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+
+
+def load_json(path: Path) -> Optional[Dict[str, Any]]:
+    """加载 JSON 文件"""
+    if not path.exists():
+        return None
+    
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading {path}: {e}", file=sys.stderr)
+        return None
+
+
+def validate_state_schema(state: Dict[str, Any]) -> tuple[bool, list]:
+    """校验 state schema"""
+    errors = []
+    
+    # 必需字段
+    required_fields = ['active', 'workflow_type', 'workflow_id', 'steps', 'created_at', 'updated_at']
+    for field in required_fields:
+        if field not in state:
+            errors.append(f"Missing required field: {field}")
+    
+    # 校验 workflow_type
+    if 'workflow_type' in state:
+        if state['workflow_type'] not in ['serial', 'parallel']:
+            errors.append(f"Invalid workflow_type: {state['workflow_type']}")
+    
+    # 校验 steps
+    if 'steps' in state:
+        if not isinstance(state['steps'], list):
+            errors.append("steps must be an array")
+        else:
+            for i, step in enumerate(state['steps']):
+                # 必需字段
+                step_required = ['id', 'status']
+                for field in step_required:
+                    if field not in step:
+                        errors.append(f"Step {i}: Missing required field: {field}")
+                
+                # 校验 status
+                if 'status' in step:
+                    valid_statuses = ['pending', 'running', 'done', 'failed', 'timeout']
+                    if step['status'] not in valid_statuses:
+                        errors.append(f"Step {i}: Invalid status: {step['status']}")
+                
+                # 校验 advance_inflight 结构
+                if 'advance_inflight' in step and step['advance_inflight'] is not None:
+                    inflight = step['advance_inflight']
+                    inflight_required = ['nonce', 'at', 'by']
+                    for field in inflight_required:
+                        if field not in inflight:
+                            errors.append(f"Step {i}: inflight missing field: {field}")
+    
+    return len(errors) == 0, errors
+
+
+def check_inflight_timeout(state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """检查 inflight 超时"""
+    stuck = []
+    
+    for step in state.get('steps', []):
+        inflight = step.get('advance_inflight')
+        if inflight:
+            at_str = inflight.get('at')
+            if at_str:
+                try:
+                    at = datetime.fromisoformat(at_str)
+                    if datetime.now() - at > timedelta(seconds=60):
+                        stuck.append({
+                            "step_id": step['id'],
+                            "inflight_at": at_str,
+                            "duration_sec": (datetime.now() - at).total_seconds()
+                        })
+                except:
+                    pass
+    
+    return stuck
+
+
+def check_limits_reasonable(state: Dict[str, Any]) -> List[str]:
+    """检查 limits 是否合理"""
+    warnings = []
+    
+    # 检查 attempts
+    for step in state.get('steps', []):
+        attempts = step.get('attempts', 0)
+        if attempts > 3:
+            warnings.append(f"Step {step['id']} has high attempts: {attempts}")
+    
+    return warnings
+
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Workflow Validate")
+    parser.add_argument("state_path", nargs="?", default=str(WORKSPACE / "WORKFLOW_STATE.json"),
+                        help="Path to workflow state JSON")
+    
+    args = parser.parse_args()
+    
+    state_path = Path(args.state_path)
+    
+    print("=" * 60)
+    print("Workflow Validate")
+    print("=" * 60)
+    print(f"State path: {state_path}")
+    print("")
+    
+    # 加载 state
+    state = load_json(state_path)
+    if not state:
+        print(f"❌ Failed to load state", file=sys.stderr)
+        return 1
+    
+    # 校验 schema
+    valid, errors = validate_state_schema(state)
+    
+    if not valid:
+        print("❌ State validation failed:")
+        for error in errors:
+            print(f"  - {error}")
+        return 1
+    
+    print("✅ State schema validation passed")
+    
+    # 检查 inflight 超时
+    stuck = check_inflight_timeout(state)
+    
+    if stuck:
+        print("")
+        print("⚠️  Inflight timeout detected:")
+        for s in stuck:
+            print(f"  - Step {s['step_id']}: {s['duration_sec']:.0f}s")
+    else:
+        print("✅ No inflight timeout")
+    
+    # 检查 limits
+    warnings = check_limits_reasonable(state)
+    
+    if warnings:
+        print("")
+        print("⚠️  Warnings:")
+        for warning in warnings:
+            print(f"  - {warning}")
+    
+    # 状态摘要
+    print("")
+    print("State Summary:")
+    print(f"  Workflow ID: {state.get('workflow_id', 'unknown')}")
+    print(f"  Active: {state.get('active', False)}")
+    print(f"  Steps: {len(state.get('steps', []))}")
+    
+    steps = state.get('steps', [])
+    done_count = sum(1 for s in steps if s.get('status') == 'done')
+    running_count = sum(1 for s in steps if s.get('status') == 'running')
+    pending_count = sum(1 for s in steps if s.get('status') == 'pending')
+    
+    print(f"    Done: {done_count}")
+    print(f"    Running: {running_count}")
+    print(f"    Pending: {pending_count}")
+    
+    print("")
+    print("=" * 60)
+    
+    if stuck:
+        print("❌ Validation failed: inflight timeout")
+        return 1
+    else:
+        print("✅ Validation passed")
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

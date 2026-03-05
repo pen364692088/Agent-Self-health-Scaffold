@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""
+测试 callback-handler-auto 功能
+"""
+
+import json
+import sys
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+
+def test_workflow_structure():
+    """测试工作流结构是否正确"""
+    with open(WORKFLOW_FILE, 'r') as f:
+        state = json.load(f)
+    
+    print("✅ Workflow structure:")
+    print(f"  - workflow_id: {state.get('workflow_id')}")
+    print(f"  - active: {state.get('active')}")
+    print(f"  - rev: {state.get('rev')}")
+    print(f"  - steps: {len(state.get('steps', []))}")
+    
+    for step in state.get('steps', []):
+        print(f"    - {step['id']}: {step['status']}, advance_processed={step.get('advance_processed')}")
+    
+    return True
+
+
+def test_auto_exec_dry_run():
+    """测试 auto-exec dry-run"""
+    import subprocess
+    
+    # 使用第一个已完成的 run_id
+    with open(WORKFLOW_FILE, 'r') as f:
+        state = json.load(f)
+    
+    run_id = state['steps'][0]['run_id']
+    
+    print(f"\n🧪 Testing auto-exec dry-run with run_id={run_id}")
+    
+    result = subprocess.run(
+        [sys.executable, str(WORKSPACE / "tools" / "callback-handler-auto"), run_id, "--auto-exec", "--dry-run"],
+        capture_output=True,
+        text=True
+    )
+    
+    print(f"  Exit code: {result.returncode}")
+    print(f"  Output: {result.stdout}")
+    
+    if result.returncode == 0:
+        print("  ✅ Auto-exec dry-run works")
+        return True
+    else:
+        print(f"  ❌ Auto-exec dry-run failed: {result.stderr}")
+        return False
+
+
+def test_worker_scan():
+    """测试 worker scan"""
+    import subprocess
+    
+    print(f"\n🧪 Testing worker scan")
+    
+    result = subprocess.run(
+        [sys.executable, str(WORKSPACE / "tools" / "callback-worker"), "--once"],
+        capture_output=True,
+        text=True
+    )
+    
+    print(f"  Exit code: {result.returncode}")
+    print(f"  Output: {result.stdout}")
+    
+    if result.returncode == 0:
+        print("  ✅ Worker scan works")
+        return True
+    else:
+        print(f"  ❌ Worker scan failed: {result.stderr}")
+        return False
+
+
+def test_health_checks():
+    """测试健康检查"""
+    import subprocess
+    
+    print(f"\n🧪 Testing health checks")
+    
+    for tool in ["callback-handler-auto", "callback-worker"]:
+        result = subprocess.run(
+            [sys.executable, str(WORKSPACE / "tools" / tool), "--health"],
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            print(f"  ✅ {tool}: healthy")
+        else:
+            print(f"  ❌ {tool}: unhealthy - {result.stderr}")
+
+
+def main():
+    print("=" * 60)
+    print("Callback Auto-Exec Test Suite")
+    print("=" * 60)
+    
+    tests = [
+        ("Workflow Structure", test_workflow_structure),
+        ("Auto-Exec Dry-Run", test_auto_exec_dry_run),
+        ("Worker Scan", test_worker_scan),
+        ("Health Checks", test_health_checks),
+    ]
+    
+    passed = 0
+    failed = 0
+    
+    for name, test_fn in tests:
+        try:
+            if test_fn():
+                passed += 1
+            else:
+                failed += 1
+        except Exception as e:
+            print(f"❌ {name}: Exception - {e}")
+            failed += 1
+    
+    print("\n" + "=" * 60)
+    print(f"Results: {passed} passed, {failed} failed")
+    print("=" * 60)
+    
+    return 0 if failed == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

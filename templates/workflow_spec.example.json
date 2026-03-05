@@ -1,0 +1,48 @@
+{
+  "workflow_id": "testbot_ci_integration",
+  "workflow_type": "serial",
+  "steps": [
+    {
+      "id": "update_runner",
+      "kind": "spawn",
+      "payload": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest",
+        "task": "Update run_testbot_scenarios.py to support --subset parameter",
+        "cwd": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion",
+        "timeout": 600
+      }
+    },
+    {
+      "id": "create_workflow",
+      "kind": "spawn",
+      "payload": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest",
+        "task": "Create .github/workflows/testbot-e2e.yml CI workflow",
+        "cwd": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion",
+        "timeout": 600
+      }
+    },
+    {
+      "id": "integrate_hard_gate",
+      "kind": "spawn",
+      "payload": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest",
+        "task": "Integrate testbot metrics into hard_gate_eval",
+        "cwd": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion",
+        "timeout": 600
+      }
+    }
+  ],
+  "limits": {
+    "max_advances_per_hour": 50,
+    "max_advances_per_workflow": 20
+  },
+  "hooks": {
+    "on_done": {
+      "notify": {
+        "channel": "telegram",
+        "message": "✅ Testbot CI 集成完成：PR Shadow + Nightly + Hard Gate"
+      }
+    }
+  }
+}
