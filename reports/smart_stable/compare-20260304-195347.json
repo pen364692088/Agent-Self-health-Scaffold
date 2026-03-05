@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-03-05T01:53:47.633701+00:00",
+  "baseline_path": "/home/moonlight/.openclaw/workspace/reports/smart_stable/baseline.json",
+  "baseline_generated_at": "2026-03-05T01:50:47.941727+00:00",
+  "current": {
+    "generated_at": "2026-03-05T01:53:47.449164+00:00",
+    "window_hours": 24,
+    "scope": {
+      "session_dir": "/home/moonlight/.openclaw/agents/main/sessions",
+      "include_cron": false,
+      "total_files_scanned": 1458,
+      "included_files": 16,
+      "excluded_cron_files": 998
+    },
+    "totals": {
+      "assistant_turns": 557,
+      "tool_call_turns": 476,
+      "tool_calls": 662,
+      "tool_calls_resolved": 661,
+      "tool_calls_success": 618,
+      "tool_calls_failed": 43,
+      "tool_results": 661,
+      "tool_results_success": 618,
+      "tool_results_failed": 43,
+      "avoidable_failure_count": 20
+    },
+    "metrics": {
+      "first_pass_success_rate": 93.49,
+      "retry_recovery_rate": 100.0,
+      "avg_turn_latency_ms": 424.29,
+      "avoidable_failure_count": 20,
+      "tool_error_rate": 6.51
+    },
+    "avoidable_breakdown": {
+      "command_not_found": 5,
+      "enoent": 8,
+      "unknown_session": 0,
+      "timeout": 7
+    }
+  },
+  "diff": {
+    "first_pass_success_rate": {
+      "baseline": 93.39,
+      "current": 93.49,
+      "delta": 0.1
+    },
+    "retry_recovery_rate": {
+      "baseline": 100.0,
+      "current": 100.0,
+      "delta": 0.0
+    },
+    "avg_turn_latency_ms": {
+      "baseline": 414.59,
+      "current": 424.29,
+      "delta": 9.7
+    },
+    "avoidable_failure_count": {
+      "baseline": 20.0,
+      "current": 20.0,
+      "delta": 0.0
+    },
+    "tool_error_rate": {
+      "baseline": 6.61,
+      "current": 6.51,
+      "delta": -0.1
+    }
+  }
+}

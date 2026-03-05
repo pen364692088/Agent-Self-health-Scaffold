@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""
+子代理回调处理器 v2.1 - 独立工作流状态管理 + 自动僵尸清理
+
+问题背景：
+- 旧版依赖 SESSION-STATE.md 的 YAML 块
+- SESSION-STATE.md 经常被覆写（任务报告）
+- 导致工作流状态丢失，后续步骤无法触发
+
+解决方案：
+- 使用独立文件 WORKFLOW_STATE.json
+- 不受 SESSION-STATE.md 覆写影响
+- 支持串行/并行工作流
+
+v2.1 新增：
+- --auto-cleanup: 自动清理僵尸任务（过期但未完成的任务）
+"""
+
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+PENDING_FILE = WORKSPACE / "tools" / "orchestrator" / "pending_subtasks.json"
+
+
+def cleanup_zombie_orchestrator_tasks():
+    """
+    Clean up zombie tasks in the orchestrator's pending_subtasks.json
+    This is a lightweight version that doesn't require importing the full orchestrator.
+    """
+    if not PENDING_FILE.exists():
+        return {"cleaned": 0}
+    
+    try:
+        with open(PENDING_FILE, 'r') as f:
+            data = json.load(f)
+        
+        now = datetime.now()
+        cleaned = []
+        
+        pending = data.get('pending', {})
+        to_remove = []
+        
+        for task_id, task in pending.items():
+            deadline_str = task.get('deadline')
+            if deadline_str:
+                try:
+                    deadline = datetime.fromisoformat(deadline_str)
+                    # If deadline passed more than 5 minutes ago, it's a zombie
+                    if (now - deadline).total_seconds() > 300:
+                        to_remove.append(task_id)
+                        cleaned.append({
+                            "task_id": task_id,
+                            "run_id": task.get('run_id'),
+                            "description": task.get('description', '')[:50]
+                        })
+                except:
+                    pass
+        
+        # Remove zombies
+        for task_id in to_remove:
+            task = pending[task_id]
+            task['status'] = 'timeout'
+            task['error'] = {"type": "zombie_cleanup", "message": "Task exceeded deadline"}
+            # Move to completed
+            if 'completed' not in data:
+                data['completed'] = {}
+            data['completed'][task_id] = task
+            del pending[task_id]
+        
+        if cleaned:
+            data['timestamp'] = datetime.now().isoformat()
+            with open(PENDING_FILE, 'w') as f:
+                json.dump(data, f, indent=2)
+        
+        return {"cleaned": len(cleaned), "tasks": cleaned}
+    
+    except Exception as e:
+        return {"error": str(e), "cleaned": 0}
+
+def load_workflow():
+    """加载工作流状态"""
+    if not WORKFLOW_FILE.exists():
+        return None
+    
+    try:
+        with open(WORKFLOW_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading workflow: {e}", file=sys.stderr)
+        return None
+
+def save_workflow(state: dict):
+    """保存工作流状态"""
+    state['updated_at'] = datetime.now().isoformat()
+    with open(WORKFLOW_FILE, 'w') as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
+
+def find_step_by_run_id(state: dict, run_id: str) -> dict:
+    """根据 run_id 找到对应步骤"""
+    for step in state.get('steps', []):
+        if step.get('run_id') == run_id:
+            return step
+    return None
+
+def check_callback_action(run_id: str) -> dict:
+    """
+    检查收到子代理回调后应该做什么
+    
+    Returns:
+        dict with keys:
+        - action: "spawn_next" | "notify_user" | "ignore"
+        - next_step: dict (if action == spawn_next)
+        - message: str (if action == notify_user)
+        - should_silence: bool
+    """
+    state = load_workflow()
+    
+    if not state:
+        return {"action": "ignore", "should_silence": False, "reason": "no_workflow_file"}
+    
+    if not state.get("active"):
+        return {"action": "ignore", "should_silence": False, "reason": "workflow_inactive"}
+    
+    # 找到刚完成的步骤
+    completed_step = find_step_by_run_id(state, run_id)
+    if not completed_step:
+        return {"action": "ignore", "should_silence": False, "reason": "run_id_not_found"}
+    
+    # 标记为完成
+    completed_step['status'] = 'done'
+    completed_step['completed_at'] = datetime.now().isoformat()
+    
+    # 检查是否还有未完成的步骤
+    steps = state.get('steps', [])
+    pending_steps = [s for s in steps if s.get('status') in ('pending', 'running')]
+    
+    if pending_steps:
+        # 还有未完成的步骤
+        # 但这可能是并行任务，需要检查依赖关系
+        next_step = pending_steps[0]
+        
+        # 如果下一个步骤依赖当前步骤，需要等待
+        # 简单版本：假设串行，直接返回下一个
+        save_workflow(state)
+        
+        return {
+            "action": "spawn_next",
+            "next_step": next_step,
+            "workflow": state,
+            "should_silence": True
+        }
+    else:
+        # 全部完成
+        state['active'] = False
+        state['completed_at'] = datetime.now().isoformat()
+        save_workflow(state)
+        
+        return {
+            "action": "notify_user",
+            "message": state.get("notify_on_done", "流程完成"),
+            "should_silence": False
+        }
+
+def create_workflow(
+    steps: list,
+    notify_on_done: str = "流程完成",
+    workflow_type: str = "serial"
+) -> dict:
+    """
+    创建新工作流
+    
+    Args:
+        steps: 步骤列表 [{"id": "A", "task": "...", "model": "..."}, ...]
+        notify_on_done: 完成时通知消息
+        workflow_type: "serial" | "parallel"
+    
+    Returns:
+        工作流状态
+    """
+    state = {
+        "active": True,
+        "workflow_type": workflow_type,
+        "steps": [
+            {
+                "id": s.get("id"),
+                "task": s.get("task"),
+                "model": s.get("model"),
+                "run_id": None,
+                "status": "pending",
+                "created_at": datetime.now().isoformat()
+            }
+            for s in steps
+        ],
+        "notify_on_done": notify_on_done,
+        "created_at": datetime.now().isoformat()
+    }
+    save_workflow(state)
+    return state
+
+def activate_step(step_id: str, run_id: str):
+    """激活步骤（spawn 后调用）"""
+    state = load_workflow()
+    if not state:
+        return False
+    
+    for step in state.get('steps', []):
+        if step.get('id') == step_id:
+            step['run_id'] = run_id
+            step['status'] = 'running'
+            step['started_at'] = datetime.now().isoformat()
+            save_workflow(state)
+            return True
+    
+    return False
+
+if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] in ("--health", "-H"):
+        print(json.dumps({
+            "status": "healthy",
+            "version": "2.1",
+            "checks": {
+                "workflow_file_parent_exists": WORKFLOW_FILE.parent.exists(),
+                "pending_file_parent_exists": PENDING_FILE.parent.exists()
+            }
+        }))
+        sys.exit(0)
+
+    if len(sys.argv) >= 2 and sys.argv[1] == "--sample":
+        print(json.dumps({"ok": True, "sample": "callback-handler --status"}))
+        sys.exit(0)
+
+    if len(sys.argv) < 2:
+        print("Usage: callback-handler <run_id> [--create '<json>' | --activate <step_id> <run_id> | --auto-cleanup]")
+        sys.exit(1)
+    
+    if sys.argv[1] == "--create":
+        # 创建工作流
+        if len(sys.argv) < 3:
+            print("Usage: callback-handler --create '<json>'")
+            sys.exit(1)
+        workflow_data = json.loads(sys.argv[2])
+        state = create_workflow(
+            steps=workflow_data.get('steps', []),
+            notify_on_done=workflow_data.get('notify_on_done', '流程完成'),
+            workflow_type=workflow_data.get('workflow_type', 'serial')
+        )
+        print(json.dumps(state, indent=2, ensure_ascii=False))
+    
+    elif sys.argv[1] == "--activate":
+        # 激活步骤
+        if len(sys.argv) < 4:
+            print("Usage: callback-handler --activate <step_id> <run_id>")
+            sys.exit(1)
+        success = activate_step(sys.argv[2], sys.argv[3])
+        print(json.dumps({"success": success}))
+    
+    elif sys.argv[1] == "--status":
+        # 查看状态
+        state = load_workflow()
+        if state:
+            print(json.dumps(state, indent=2, ensure_ascii=False))
+        else:
+            print("No active workflow")
+    
+    elif sys.argv[1] == "--clear":
+        # 清除工作流
+        if WORKFLOW_FILE.exists():
+            WORKFLOW_FILE.unlink()
+        print("Workflow cleared")
+    
+    elif sys.argv[1] == "--auto-cleanup":
+        # 自动清理僵尸任务
+        result = cleanup_zombie_orchestrator_tasks()
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    
+    elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
+        print("callback-handler v2.1 - Subagent Callback Handler")
+        print()
+        print("Commands:")
+        print("  <run_id>              Check callback action for a run")
+        print("  --create '<json>'     Create a new workflow")
+        print("  --activate <id> <run> Activate a step after spawn")
+        print("  --status              Show current workflow status")
+        print("  --clear               Clear workflow state")
+        print("  --auto-cleanup        Clean up zombie tasks in orchestrator")
+        print()
+        print("Example:")
+        print("  callback-handler --create '{\"steps\":[{\"id\":\"A\",\"task\":\"...\"}]}'")
+        print("  callback-handler --activate A run_abc123")
+        print("  callback-handler run_abc123")
+
+    elif sys.argv[1].startswith("-"):
+        print(f"Unknown option: {sys.argv[1]}", file=sys.stderr)
+        sys.exit(2)
+
+    else:
+        # 检查回调动作
+        run_id = sys.argv[1]
+        result = check_callback_action(run_id)
+        print(json.dumps(result, indent=2, ensure_ascii=False))

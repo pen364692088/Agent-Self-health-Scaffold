@@ -1,0 +1,598 @@
+#!/usr/bin/env python3
+"""
+Memory Retrieval Helper - v1.2
+- Two-stage retrieval (pinned first, semantic fallback)
+- Stage 2: OpenViking CLI integration for semantic search
+- Tombstone double-filter
+- Retrieval audit logging with sampling
+- Superseded redirect handling
+- Deterministic sorting and budget limits
+- Separates recall events from use events
+"""
+
+import json
+import hashlib
+import time
+import random
+import subprocess
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional, Set, Tuple
+
+MEMORY_ROOT = Path.home() / ".openclaw/workspace/memory"
+EVENTS_LOG = MEMORY_ROOT / "events.log"
+INDEX_FILE = MEMORY_ROOT / "INDEX.yaml"
+TOMBSTONES_FILE = MEMORY_ROOT / "TOMBSTONES.jsonl"
+METADATA_FILE = MEMORY_ROOT / "DOC_METADATA.jsonl"
+DAILY_SUMMARY_FILE = MEMORY_ROOT / "daily_summaries.jsonl"
+
+# ============== CONSTANTS ==============
+STAGE2_MAX_DOCS = 5
+STAGE2_MIN_SCORE = 0.4  # 降低阈值以适应实际向量相似度分布
+SAMPLING_RATE = 0.1  # 10% sampling for normal queries
+LATENCY_THRESHOLD_MS = 1000  # ms, for anomaly detection
+
+# Match type weights for sorting
+MATCH_TYPE_PRIORITY = {
+    "exact": 3,
+    "phrase": 2,
+    "keyword": 1
+}
+
+# ============== Helper Functions ==============
+
+def load_tombstones() -> Set[str]:
+    tombstones = set()
+    if TOMBSTONES_FILE.exists():
+        for line in TOMBSTONES_FILE.read_text().strip().split("\n"):
+            if not line.strip() or line.startswith("#"):
+                continue
+            try:
+                entry = json.loads(line)
+                if "doc_id" in entry:
+                    tombstones.add(entry["doc_id"])
+                if "sha256" in entry:
+                    tombstones.add(entry["sha256"])
+            except:
+                pass
+    return tombstones
+
+
+def load_doc_metadata() -> Dict[str, Dict]:
+    metadata = {}
+    if METADATA_FILE.exists():
+        for line in METADATA_FILE.read_text().strip().split("\n"):
+            if not line.strip() or line.startswith("#"):
+                continue
+            try:
+                entry = json.loads(line)
+                if "doc_id" in entry:
+                    metadata[entry["doc_id"]] = entry
+            except:
+                pass
+    return metadata
+
+
+def load_pinned_pointers() -> List[Dict]:
+    return [
+        {"doc_id": "mem:domains/infra:runbook:20260303:canary", 
+         "triggers": ["canary", "rollback", "hysteresis", "CANARY_STATUS", "tier_changes"],
+         "priority": 10},
+        {"doc_id": "mem:global:rule:20260303:rollback",
+         "triggers": ["rollback", "switch", "safety", "kill-switch"],
+         "priority": 9},
+        {"doc_id": "mem:global:rule:20260303:score-formula",
+         "triggers": ["score", "threshold", "tier", "HOT", "WARM", "COLD"],
+         "priority": 8},
+        {"doc_id": "mem:global:rule:20260303:privacy",
+         "triggers": ["privacy", "password", "token", "credential"],
+         "priority": 9},
+        {"doc_id": "mem:global:protocol:20260303:subagent",
+         "triggers": ["subagent", "orchestrator", "callback", "spawn", "join"],
+         "priority": 7},
+        {"doc_id": "mem:global:protocol:20260303:wal",
+         "triggers": ["WAL", "write-ahead", "compaction", "recovery"],
+         "priority": 7},
+        {"doc_id": "mem:global:rule:20260303:memory-governance",
+         "triggers": ["bootstrap", "archive", "INDEX", "TOMBSTONES"],
+         "priority": 6},
+        {"doc_id": "mem:projects/openemotion:fact:20260303:mvp8",
+         "triggers": ["MVP-8", "deterministic", "hash", "cross-process"],
+         "priority": 5},
+        {"doc_id": "mem:domains/infra:rule:20260303:diagnostics",
+         "triggers": ["revisit_rate", "boundary_distance", "score_p50", "delta_24h"],
+         "priority": 6},
+        {"doc_id": "mem:global:schema:20260303:events",
+         "triggers": ["events.log", "schema", "event_id", "source", "scope"],
+         "priority": 5},
+    ]
+
+
+def compute_query_hash(query: str) -> str:
+    return hashlib.sha256(query.lower().strip().encode()).hexdigest()[:16]
+
+
+def compute_index_snapshot_hash() -> str:
+    return hashlib.sha256(b"memory-index-v1").hexdigest()[:16]
+
+
+# ============== Event Emitters ==============
+
+def emit_recall_event(
+    query: str,
+    candidates: List[str],
+    used: List[str],
+    session_id: str = None,
+    task_id: str = None
+):
+    """
+    发射 recall 事件（检索阶段）
+    不计入 use_term，用于覆盖率对账
+    """
+    recall_id = datetime.now().isoformat()[:19]
+    
+    event = {
+        "event": "recall",
+        "ts": datetime.now().isoformat() + "Z",
+        "recall_id": recall_id,
+        "query": query,
+        "query_hash": compute_query_hash(query),
+        "candidates": candidates[:5],  # 最多 5 个候选
+        "used": used,
+        "candidates_count": len(candidates),
+        "used_count": len(used),
+        "event_version": "v2"  # v2=adoption语义
+    }
+    
+    if session_id:
+        event["session_id"] = session_id
+    if task_id:
+        event["task_id"] = task_id
+    
+    EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(EVENTS_LOG, "a") as f:
+        f.write(json.dumps(event) + "\n")
+    
+    return recall_id
+
+
+def emit_use_event(
+    memory_id: str,
+    recall_id: str = None,
+    session_id: str = None,
+    task_id: str = None,
+    citation_context: str = None
+):
+    """
+    发射 use 事件（adoption 阶段）
+    只有当记忆被实际引用时调用
+    计入 use_term，用于评分
+    """
+    event = {
+        "event": "use",
+        "ts": datetime.now().isoformat() + "Z",
+        "memory_id": memory_id,
+        "source": "adoption",
+        "event_version": "v2"  # v2=adoption语义
+    }
+    
+    if recall_id:
+        event["recall_id"] = recall_id
+    if session_id:
+        event["session_id"] = session_id
+    if task_id:
+        event["task_id"] = task_id
+    if citation_context:
+        event["citation_context"] = citation_context[:200]
+    
+    EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(EVENTS_LOG, "a") as f:
+        f.write(json.dumps(event) + "\n")
+
+
+# ============== Stage 1: Pinned Search ==============
+
+def stage1_pinned_search(query: str, pointers: List[Dict]) -> Tuple[List[str], int, Optional[str]]:
+    """
+    Stage 1: 关键词匹配 pinned pointers
+    限制最多 3 条，排序优先级: match_type > priority > doc_id
+    """
+    query_lower = query.lower()
+    matches = []
+    
+    for p in pointers:
+        doc_id = p["doc_id"]
+        priority = p.get("priority", 5)
+        best_match_type = None
+        
+        for trigger in p.get("triggers", []):
+            trigger_lower = trigger.lower()
+            if trigger_lower == query_lower:
+                best_match_type = "exact"
+                break
+            elif trigger_lower in query_lower:
+                if best_match_type is None or MATCH_TYPE_PRIORITY.get(trigger_lower, 1) > MATCH_TYPE_PRIORITY.get(best_match_type, 1):
+                    best_match_type = "phrase"
+            elif query_lower in trigger_lower:
+                if best_match_type is None:
+                    best_match_type = "keyword"
+        
+        if best_match_type:
+            matches.append({
+                "doc_id": doc_id,
+                "match_type": best_match_type,
+                "priority": priority
+            })
+    
+    # Sort: match_type (exact > phrase > keyword) > priority > doc_id
+    matches.sort(key=lambda x: (
+        -MATCH_TYPE_PRIORITY.get(x["match_type"], 0),
+        -x["priority"],
+        x["doc_id"]
+    ))
+    
+    # Limit to 3
+    limited = matches[:3]
+    doc_ids = [m["doc_id"] for m in limited]
+    hits_count = len(matches)
+    warn_reason = "pinned_too_broad" if hits_count > 3 else None
+    
+    return doc_ids, hits_count, warn_reason
+
+
+def filter_tombstones(doc_ids: List[str], tombstones: Set[str]) -> List[str]:
+    return [doc_id for doc_id in doc_ids if doc_id not in tombstones]
+
+
+# ============== Stage 2: Semantic Search ==============
+
+OPENVIKING_URI = "viking://resources/user/memory/"
+OPENVIKING_CLI = "/home/moonlight/.local/bin/openviking"
+STAGE2_FETCH_MULTIPLIER = 3  # 多取一些用于 tombstone 过滤
+
+
+def stage2_semantic_search(query: str, tombstones: Set[str], metadata: Dict[str, Dict]) -> Tuple[List[str], List[Dict], int]:
+    """
+    Stage 2: 语义搜索 via OpenViking
+    调用 openviking find 命令，过滤 tombstone 和低分结果
+    """
+    semantic_results = []
+    
+    # 调用 openviking find (默认输出 JSON)
+    try:
+        cmd = [
+            OPENVIKING_CLI, "find", query,
+            "-u", OPENVIKING_URI,
+            "-n", str(STAGE2_MAX_DOCS * STAGE2_FETCH_MULTIPLIER),  # 多取一些用于 tombstone 过滤
+            # 不使用 -t 选项，因为 OpenViking 可能没有建立足够好的向量索引
+            # 我们在 Python 侧过滤 score
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if data.get("ok") and data.get("result"):
+                resources = data["result"].get("resources", [])
+                for r in resources:
+                    uri = r.get("uri", "")
+                    score = r.get("score", 0)
+                    is_leaf = r.get("is_leaf", True)
+                    # 只取叶子节点，跳过目录
+                    if uri and is_leaf and score >= STAGE2_MIN_SCORE:
+                        # 将 URI 转换为 doc_id 格式
+                        # viking://resources/user/memory/memory/xxx.md -> mem:memory/xxx.md
+                        doc_id = uri.replace("viking://resources/user/memory/", "mem:")
+                        semantic_results.append({
+                            "doc_id": doc_id,
+                            "score": score,
+                            "uri": uri
+                        })
+    except subprocess.TimeoutExpired:
+        pass
+    except json.JSONDecodeError:
+        pass
+    except FileNotFoundError:
+        pass
+    except Exception:
+        pass
+    
+    # 过滤 tombstones
+    filtered = [r for r in semantic_results if r.get("doc_id") not in tombstones]
+    tombstone_hits = len(semantic_results) - len(filtered)
+    
+    # 排序和限制
+    scored_filtered = [r for r in filtered if r.get("score", 0) >= STAGE2_MIN_SCORE]
+    scored_filtered.sort(key=lambda x: (-x.get("score", 0), x.get("doc_id", "")))
+    limited = scored_filtered[:STAGE2_MAX_DOCS]
+    doc_ids = [r["doc_id"] for r in limited]
+    
+    # 处理 superseded
+    superseded_redirects = []
+    final_doc_ids = []
+    
+    for doc_id in doc_ids:
+        doc_meta = metadata.get(doc_id, {})
+        status = doc_meta.get("status", "")
+        
+        if status in ("deprecated", "superseded"):
+            redirect_info = {
+                "from_doc_id": doc_id,
+                "redirect_to_doc_id": doc_meta.get("superseded_by"),
+                "reason": f"Document status: {status}"
+            }
+            superseded_redirects.append(redirect_info)
+        else:
+            final_doc_ids.append(doc_id)
+    
+    return final_doc_ids, superseded_redirects, tombstone_hits
+
+
+# ============== Audit Logging ==============
+
+def should_always_log(tombstone_hits: int, latency_ms: float, is_regression: bool) -> bool:
+    if is_regression:
+        return True
+    if tombstone_hits > 0:
+        return True
+    if latency_ms > LATENCY_THRESHOLD_MS:
+        return True
+    return False
+
+
+def log_retrieval_event(
+    query: str,
+    stage: str,
+    returned: List[str],
+    used: List[str],
+    tombstone_hits: int,
+    latency_ms: float,
+    pinned_hits_count: int = 0,
+    warn_reason: Optional[str] = None,
+    superseded_redirects: List[Dict] = None,
+    is_regression: bool = False,
+    force_log: bool = False
+):
+    """记录检索审计事件 (with sampling)"""
+    
+    should_log = force_log or should_always_log(tombstone_hits, latency_ms, is_regression)
+    
+    if not should_log:
+        should_log = random.random() < SAMPLING_RATE
+    
+    if not should_log:
+        return
+    
+    event = {
+        "event": "retrieval",
+        "ts": datetime.now().isoformat() + "Z",
+        "query": query,
+        "query_norm_hash": compute_query_hash(query),
+        "stage": stage,
+        "returned_doc_ids": returned,
+        "used_doc_ids": used,
+        "tombstone_hits": tombstone_hits,
+        "pinned_hits_count": pinned_hits_count,
+        "warn_reason": warn_reason,
+        "superseded_redirects_count": len(superseded_redirects) if superseded_redirects else 0,
+        "latency_ms": round(latency_ms, 2),
+        "index_version": "1.0",
+        "snapshot_hash": compute_index_snapshot_hash(),
+        "sampled": True
+    }
+    
+    EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(EVENTS_LOG, "a") as f:
+        f.write(json.dumps(event) + "\n")
+
+
+# ============== Main Retrieval Function ==============
+
+def retrieve(query: str, is_regression: bool = False, session_id: str = None, task_id: str = None) -> Dict:
+    """
+    Two-stage retrieval with tombstone filtering and hardening
+    
+    Returns:
+        {
+            "stage": "pinned" | "semantic",
+            "doc_ids": [...],
+            "recall_id": str,  # 用于后续 emit_use_event
+            ...
+        }
+    """
+    start_time = time.time()
+    
+    tombstones = load_tombstones()
+    pointers = load_pinned_pointers()
+    metadata = load_doc_metadata()
+    
+    # Stage 1: Pinned search
+    pinned_results, pinned_hits_count, warn_reason = stage1_pinned_search(query, pointers)
+    pinned_filtered = filter_tombstones(pinned_results, tombstones)
+    tombstone_hits = len(pinned_results) - len(pinned_filtered)
+    
+    # Check for superseded in pinned results
+    superseded_redirects = []
+    final_pinned = []
+    for doc_id in pinned_filtered:
+        doc_meta = metadata.get(doc_id, {})
+        status = doc_meta.get("status", "")
+        if status in ("deprecated", "superseded"):
+            redirect_info = {
+                "from_doc_id": doc_id,
+                "redirect_to_doc_id": doc_meta.get("superseded_by"),
+                "reason": f"Document status: {status}"
+            }
+            superseded_redirects.append(redirect_info)
+        else:
+            final_pinned.append(doc_id)
+    
+    latency_ms = (time.time() - start_time) * 1000
+    
+    if final_pinned:
+        # 发射 recall 事件（不是 use）
+        recall_id = emit_recall_event(
+            query=query,
+            candidates=pinned_results,
+            used=final_pinned,
+            session_id=session_id,
+            task_id=task_id
+        )
+        
+        log_retrieval_event(
+            query=query,
+            stage="pinned",
+            returned=pinned_results,
+            used=final_pinned,
+            tombstone_hits=tombstone_hits,
+            latency_ms=latency_ms,
+            pinned_hits_count=pinned_hits_count,
+            warn_reason=warn_reason,
+            superseded_redirects=superseded_redirects,
+            is_regression=is_regression
+        )
+        
+        result = {
+            "stage": "pinned",
+            "doc_ids": final_pinned,
+            "recall_id": recall_id,  # 用于后续 emit_use_event
+            "tombstone_filtered": tombstone_hits,
+            "pinned_hits_count": pinned_hits_count,
+            "warn_reason": warn_reason,
+            "superseded_redirects": superseded_redirects,
+            "latency_ms": round(latency_ms, 2),
+            "hint": "Use openviking read <doc_id> for content. Call emit_use_event() when citing."
+        }
+        return result
+    
+    # Stage 2: Semantic search
+    semantic_results, stage2_redirects, stage2_tombstone_hits = stage2_semantic_search(
+        query, tombstones, metadata
+    )
+    
+    latency_ms = (time.time() - start_time) * 1000
+    
+    if semantic_results:
+        recall_id = emit_recall_event(
+            query=query,
+            candidates=semantic_results,
+            used=semantic_results,
+            session_id=session_id,
+            task_id=task_id
+        )
+    else:
+        recall_id = None
+    
+    log_retrieval_event(
+        query=query,
+        stage="semantic",
+        returned=semantic_results,
+        used=semantic_results,
+        tombstone_hits=stage2_tombstone_hits,
+        latency_ms=latency_ms,
+        pinned_hits_count=0,
+        warn_reason=None,
+        superseded_redirects=stage2_redirects,
+        is_regression=is_regression
+    )
+    
+    result = {
+        "stage": "semantic",
+        "doc_ids": semantic_results,
+        "recall_id": recall_id,
+        "tombstone_filtered": stage2_tombstone_hits,
+        "pinned_hits_count": 0,
+        "warn_reason": None,
+        "superseded_redirects": stage2_redirects,
+        "latency_ms": round(latency_ms, 2),
+        "hint": "Run: openviking find '" + query + "' -u viking://resources/user/memory/"
+    }
+    return result
+
+
+# ============== Health Check ==============
+
+def health_check() -> Dict:
+    """Standard health check for tool_doctor"""
+    checks = {
+        "events_log_writable": False,
+        "openviking_available": False
+    }
+    
+    # Check events log writable
+    try:
+        EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+        test_file = EVENTS_LOG.parent / ".health_test"
+        test_file.write_text("test")
+        test_file.unlink()
+        checks["events_log_writable"] = True
+    except Exception:
+        pass
+    
+    # Check OpenViking CLI available
+    try:
+        result = subprocess.run(
+            [OPENVIKING_CLI, "--version"],
+            capture_output=True,
+            timeout=5
+        )
+        checks["openviking_available"] = result.returncode == 0
+    except Exception:
+        pass
+    
+    all_healthy = all(checks.values())
+    
+    return {
+        "status": "healthy" if all_healthy else "unhealthy",
+        "version": "1.2",
+        "checks": checks
+    }
+
+
+def sample_call() -> Dict:
+    """Sample call for tool_doctor"""
+    try:
+        result = retrieve("canary", is_regression=True)
+        return {
+            "status": "ok",
+            "sample_result": result
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": {
+                "type": "sample_call_error",
+                "message": str(e)
+            }
+        }
+
+
+# ============== CLI Entry Point ==============
+
+if __name__ == "__main__":
+    import sys
+    
+    # Standard interface for tool_doctor (must check BEFORE treating args as query)
+    if "--health" in sys.argv:
+        result = health_check()
+        print(json.dumps(result))
+        sys.exit(0 if result["status"] == "healthy" else 1)
+    
+    if "--sample" in sys.argv:
+        result = sample_call()
+        print(json.dumps(result))
+        sys.exit(0 if result["status"] == "ok" else 1)
+    
+    if len(sys.argv) < 2:
+        print("Usage: memory-retrieve '<query>' [--regression]")
+        print("\nOptions:")
+        print("  --health        Health check for tool_doctor")
+        print("  --sample        Sample call for tool_doctor")
+        print("  --regression    Mark as regression test query")
+        print("\nNote: emit_use_event() should be called when memory is actually cited.")
+        sys.exit(1)
+    
+    query = sys.argv[1]
+    is_regression = "--regression" in sys.argv
+    
+    result = retrieve(query, is_regression=is_regression)
+    print(json.dumps(result, indent=2))

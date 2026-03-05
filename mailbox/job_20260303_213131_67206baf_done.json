@@ -1,0 +1,5 @@
+{
+  "target": "agent:main",
+  "message": "{\n  \"type\": \"job_done\",\n  \"job_id\": \"20260303_213131_67206baf\",\n  \"state\": \"DONE\",\n  \"title\": \"Notification Test\",\n  \"result_path\": \"/home/moonlight/Project/Github/MyProject/LongRunKit/jobs/20260303_213131_67206baf/result.md\",\n  \"attempt\": 1,\n  \"error\": null\n}",
+  "ts": "2026-03-04T03:31:31.298150+00:00"
+}

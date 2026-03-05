@@ -1,0 +1,66 @@
+{
+  "version": "openviking_backfill_embeddings.v1",
+  "generated_at": "2026-03-05T04:38:16.371561+00:00",
+  "dry_run": true,
+  "upsert": false,
+  "inputs": {
+    "doc_ids_count": 1,
+    "from_audit": null,
+    "since_days": null,
+    "only_non_ok": false,
+    "root_uri": "viking://resources/user/memory/"
+  },
+  "params": {
+    "max_tokens": 800,
+    "overlap_tokens": 100,
+    "embedding_version": "openviking.default",
+    "policy": "/home/moonlight/.openclaw/workspace/config/openviking_embedding_policy.yaml"
+  },
+  "summary": {
+    "processed": 1,
+    "failed": 0,
+    "coverage_before_avg": 0.0,
+    "coverage_after_avg": 1.0,
+    "skipped_after_total": 0
+  },
+  "artifacts": {
+    "embedding_audit": "/home/moonlight/.openclaw/workspace/artifacts/openviking/run-1772685495/embedding_audit.json",
+    "offenders": "/home/moonlight/.openclaw/workspace/artifacts/openviking/run-1772685495/embedding_offenders_topN.json"
+  },
+  "results": [
+    {
+      "doc_id": "viking://resources/user/memory/2026-03-03-orchestrator-v2.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/2026-03-03-orchestrator-v2.md",
+        "doc_hash": "41d11244d8263ed2a289b8bc67a405610104e659f5f8646e82e7d0f5dfda2a56",
+        "chunk_count_total": 3,
+        "chunk_count_embedded": 3,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 299,
+        "status_counts": {
+          "ok": 3,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v1",
+        "embedding_version": "openviking.default",
+        "indexed_at": "2026-03-05T04:38:16.371208+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 3,
+      "max_chunk_tokens": 299,
+      "upsert": null
+    }
+  ],
+  "failures": []
+}

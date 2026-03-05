@@ -728,3 +728,45 @@ Added: 2026-03-05 01:18 CST
 - phi_top1_share (单环塌缩检测)
 - phi_hhi (Herfindahl 指数)
 - novelty_delta (探索枯竭)
+
+---
+
+## 2026-03-05: Hard Gate + Shadow Mode + 自动推进修复
+
+### MVP11.4.5-11.4.8 完成
+
+**E2E Harness** → **阈值校准** → **版本化** → **Shadow Mode**
+
+**Phase 0 → Phase 1 Shadow Ready**
+
+### 关键学习
+
+1. **WORKFLOW_STATE.json 必须扁平**
+   - `steps: [{id, run_id, status}]`
+   - 禁止 `batches: [{steps: []}]`
+   - callback-handler 依赖扁平结构
+
+2. **子代理完成后必须调用工具**
+   ```bash
+   subagent-completion-handler <run_id>
+   ```
+   - 不可手动更新状态
+   - 必须检查 `should_silence`
+
+3. **Shadow Mode 配置**
+   - 使用冻结阈值（不漂移）
+   - `HARD_GATE_ENFORCE=1` + `continue-on-error: true`
+   - `--shadow-soft-fail` 允许 soft fail
+
+4. **Phase 切换条件**
+   - Phase 0: confidence=high
+   - Phase 1: FAIL=0, WARN≤2
+   - Phase 2: 移除 continue-on-error
+
+### 文件位置
+- 阈值: `artifacts/mvp11/gates/thresholds.20260305T145736Z.json`
+- 工作流: `.github/workflows/mvp114-nightly.yml`
+- 处理器: `tools/subagent-completion-handler`
+
+---
+Added: 2026-03-05 09:45 CST

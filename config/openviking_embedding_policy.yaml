@@ -1,0 +1,17 @@
+# Default policy: keep ingest non-blocking but observable.
+mode: warn_soft
+
+thresholds:
+  min_coverage_pct: 0.90
+  max_skipped_chunks: 0
+
+severity:
+  warn_soft: WARN_SOFT
+  warn: WARN
+  error: ERROR
+
+runtime:
+  max_tokens: 800
+  max_chars: 4000
+  max_bytes: 12000
+  tokenizer_mode: auto

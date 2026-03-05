@@ -1,0 +1,23 @@
+root_uri: viking://resources/user/memory/
+
+thresholds:
+  min_coverage: 0.90
+  max_skipped: 0
+  fallback_rate_warn: 0.05
+
+alerting:
+  enabled: true
+  webhook_url: ""
+  cooldown_warn_sec: 3600
+  cooldown_error_sec: 600
+  push_warn: true
+  push_warn_soft: false
+
+retention:
+  ops_runs_days: 14
+  daily_days: 30
+  alerts_days: 30
+
+schedules:
+  cron_healthcheck: "*/30 * * * *"
+  cron_daily_rollup: "10 0 * * *"

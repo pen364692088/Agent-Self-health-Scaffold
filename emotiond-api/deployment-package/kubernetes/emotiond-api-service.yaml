@@ -1,0 +1,21 @@
+# Auto-generated from production-deployment.yaml
+# Document 2: Service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: emotiond-api-service
+  namespace: emotiond
+  labels:
+    app: emotiond-api
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: emotiond-api
+    environment: production

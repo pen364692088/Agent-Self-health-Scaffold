@@ -1,0 +1,11 @@
+name: memory-risk-alerts_happy
+tool: tools/memory-risk-alerts
+input:
+  json: true
+expect:
+  status: success
+  output_contains:
+    - "ts"
+    - "alerts"
+    - "metrics"
+  schema_valid: true

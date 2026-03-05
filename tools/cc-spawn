@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""
+CC-Godmode Sub-agent Spawner with File Conflict Detection
+
+Usage:
+  cc-spawn <agent_id> "<task>" "<files_json>" [--model <model>] [--timeout <seconds>]
+
+This script:
+1. Checks for file conflicts
+2. Claims files if available
+3. Spawns the sub-agent
+4. Monitors for completion
+5. Releases the claim
+
+Files should be a JSON array: '["/path/to/file1", "/path/to/file2"]'
+"""
+
+import sys
+import json
+import subprocess
+import os
+from pathlib import Path
+
+CONFLICT_TOOL = Path.home() / ".openclaw" / "workspace" / "tools" / "subagent-conflict"
+
+
+def run_conflict_cmd(args: list) -> tuple:
+    """Run conflict detection command, return (exit_code, stdout, stderr)."""
+    result = subprocess.run(
+        [str(CONFLICT_TOOL)] + args,
+        capture_output=True,
+        text=True
+    )
+    return result.returncode, result.stdout.strip(), result.stderr.strip()
+
+
+def spawn_agent(agent_id: str, task: str, model: str = None, timeout: int = 600) -> dict:
+    """Spawn a sub-agent using openclaw CLI."""
+    # Build the spawn command
+    # Note: This would need to integrate with OpenClaw's actual spawn mechanism
+    # For now, this is a placeholder that shows the intended flow
+    
+    print(f"[cc-spawn] Spawning agent: {agent_id}")
+    print(f"[cc-spawn] Task: {task[:100]}..." if len(task) > 100 else f"[cc-spawn] Task: {task}")
+    
+    # In practice, this would call the OpenClaw API or CLI
+    # For demonstration, we return a mock result
+    return {
+        "status": "accepted",
+        "agent_id": agent_id,
+        "run_id": f"run-{agent_id}-{os.urandom(4).hex()}"
+    }
+
+
+def main():
+    if len(sys.argv) < 4:
+        print(__doc__)
+        print("\nExample:")
+        print('  cc-spawn agent-a "Implement security" \'["/path/to/file1.js", "/path/to/file2.py"]\'')
+        return 2
+    
+    agent_id = sys.argv[1]
+    task = sys.argv[2]
+    files_json = sys.argv[3]
+    
+    # Parse files
+    try:
+        files = json.loads(files_json)
+        if not isinstance(files, list):
+            raise ValueError("Files must be a JSON array")
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON for files: {e}", file=sys.stderr)
+        return 2
+    
+    if not files:
+        print("WARNING: No files specified, spawning without conflict detection")
+    else:
+        # Step 1: Check for conflicts
+        print(f"[cc-spawn] Checking {len(files)} files for conflicts...")
+        code, stdout, stderr = run_conflict_cmd(["check"] + files)
+        
+        if code != 0:
+            print(f"[cc-spawn] CONFLICT DETECTED:", file=sys.stderr)
+            print(stderr, file=sys.stderr)
+            print(f"\n[cc-spawn] Options:", file=sys.stderr)
+            print(f"  1. Wait for conflicting agent to complete", file=sys.stderr)
+            print(f"  2. Reassign files to different agents", file=sys.stderr)
+            print(f"  3. Run this agent serially after others", file=sys.stderr)
+            return 1
+        
+        # Step 2: Claim files
+        print(f"[cc-spawn] Claiming files for {agent_id}...")
+        code, stdout, stderr = run_conflict_cmd(["claim", agent_id] + files)
+        
+        if code != 0:
+            print(f"ERROR: Failed to claim files: {stderr}", file=sys.stderr)
+            return 2
+        
+        print(f"[cc-spawn] {stdout}")
+    
+    # Step 3: Spawn the agent
+    try:
+        result = spawn_agent(agent_id, task)
+        print(f"[cc-spawn] Agent spawned: {result.get('run_id', 'unknown')}")
+        print(f"[cc-spawn] Agent will auto-release files on completion")
+        
+        # Output the run_id for downstream processing
+        print(f"RUN_ID={result.get('run_id', '')}")
+        
+        return 0
+    
+    except Exception as e:
+        # Release claim on error
+        print(f"ERROR: Failed to spawn agent: {e}", file=sys.stderr)
+        if files:
+            run_conflict_cmd(["release", agent_id])
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

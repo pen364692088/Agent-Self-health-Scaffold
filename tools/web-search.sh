@@ -1,0 +1,1 @@
+/home/moonlight/.openclaw/workspace/tools/web-search

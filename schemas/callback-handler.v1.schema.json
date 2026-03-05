@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "callback-handler.v1.schema.json",
+  "title": "Callback Handler Output Schema",
+  "description": "Schema for callback-handler tool output",
+  "type": "object",
+  "required": ["action", "should_silence"],
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": ["spawn_next", "notify_user", "ignore"],
+      "description": "Action to take after callback"
+    },
+    "should_silence": {
+      "type": "boolean",
+      "description": "Whether to suppress user notification"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason for ignore action"
+    },
+    "next_step": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "task": { "type": "string" },
+        "model": { "type": "string" },
+        "run_id": { "type": ["string", "null"] },
+        "status": { "type": "string" }
+      }
+    },
+    "message": {
+      "type": "string",
+      "description": "Message for notify_user action"
+    },
+    "workflow": {
+      "type": "object",
+      "description": "Full workflow state"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": { "action": { "const": "spawn_next" } },
+      "required": ["next_step", "workflow"]
+    },
+    {
+      "properties": { "action": { "const": "notify_user" } },
+      "required": ["message"]
+    },
+    {
+      "properties": { "action": { "const": "ignore" } },
+      "required": ["reason"]
+    }
+  ]
+}

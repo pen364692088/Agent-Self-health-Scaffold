@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""
+Orchestrator CLI v2.0 - Command-line interface for managing subtasks
+
+Commands:
+  list    - List pending/completed/failed tasks
+  join    - Join and wait for pending subtasks
+  resume  - Resume from pending_subtasks.json
+  gc      - Garbage collect old tasks
+"""
+
+import argparse
+import json
+import sys
+import time
+import uuid
+from datetime import datetime, timedelta
+from pathlib import Path
+
+# Add parent to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from orchestrator import Orchestrator, SubtaskStatus
+
+
+def cmd_list(args):
+    """List all tasks with status"""
+    orch = Orchestrator()
+    
+    pending = len(orch.pending_subtasks)
+    completed = len(orch.completed_subtasks)
+    timeouts = len([t for t in orch.completed_subtasks.values() 
+                   if t.status == SubtaskStatus.TIMEOUT])
+    
+    print("Subagent Orchestrator Status")
+    print("=" * 50)
+    print(f"  Pending:   {pending}")
+    print(f"  Completed: {completed}")
+    print(f"  Timeouts:  {timeouts}")
+    print()
+    
+    if args.all or args.pending:
+        if orch.pending_subtasks:
+            print("Pending Tasks:")
+            for task_id, task in orch.pending_subtasks.items():
+                elapsed = datetime.now() - task.created_at
+                status = task.status
+                print(f"  - {task_id}")
+                print(f"    Status: {status}")
+                print(f"    Desc:   {task.description[:50]}...")
+                print(f"    Age:    {elapsed.total_seconds():.0f}s")
+                print(f"    Run ID: {task.run_id}")
+                print()
+    
+    if args.all or args.completed:
+        if orch.completed_subtasks:
+            print("Completed Tasks:")
+            for task_id, task in list(orch.completed_subtasks.items())[-10:]:
+                status_icon = "✅" if task.status == SubtaskStatus.COMPLETED else "⏱️"
+                print(f"  {status_icon} {task_id}: {task.status}")
+                if task.summary:
+                    print(f"      {task.summary[:60]}...")
+
+
+def cmd_join(args):
+    """Join and wait for all pending subtasks"""
+    orch = Orchestrator()
+    
+    if not orch.pending_subtasks:
+        print("No pending subtasks to join")
+        return True
+    
+    print(f"Joining {len(orch.pending_subtasks)} pending subtasks...")
+    print(f"Timeout: {args.timeout}s (global), {args.per_task}s (per-task)")
+    print()
+    
+    start_time = time.time()
+    success = orch.join_all(timeout=args.timeout, per_task_timeout=args.per_task)
+    
+    elapsed = time.time() - start_time
+    print()
+    print(f"Completed in {elapsed:.1f}s")
+    
+    # Show results
+    timeouts = len([t for t in orch.completed_subtasks.values() 
+                   if t.status == SubtaskStatus.TIMEOUT])
+    completed = len([t for t in orch.completed_subtasks.values() 
+                    if t.status == SubtaskStatus.COMPLETED])
+    
+    print(f"Results: {completed} completed, {timeouts} timeouts")
+    
+    if args.report:
+        report = orch.generate_run_report()
+        with open(args.report, 'w') as f:
+            json.dump(report, f, indent=2)
+        print(f"Report: {args.report}")
+    
+    return success and timeouts == 0
+
+
+def cmd_resume(args):
+    """Resume from pending_subtasks.json and continue join"""
+    orch = Orchestrator()
+    
+    print("Resuming from stored state...")
+    print(f"Pending:   {len(orch.pending_subtasks)}")
+    print(f"Completed: {len(orch.completed_subtasks)}")
+    print()
+    
+    if not orch.pending_subtasks:
+        print("No pending tasks to resume")
+        return True
+    
+    # Run join
+    return cmd_join(args)
+
+
+def cmd_gc(args):
+    """Garbage collect old completed tasks"""
+    orch = Orchestrator()
+    
+    print(f"Cleaning up tasks older than {args.days} days...")
+    
+    removed = orch.gc(keep_days=args.days)
+    
+    print(f"Removed {removed} old tasks")
+    
+    # Also show current state
+    print()
+    cmd_list(argparse.Namespace(all=False, pending=False, completed=False))
+    
+    return True
+
+
+def cmd_spawn(args):
+    """Spawn a new subtask with orchestrator registration"""
+    orch = Orchestrator()
+    
+    task_id, run_id, session_key = orch.spawn_task(
+        description=args.task,
+        model=args.model,
+        max_retries=args.retries
+    )
+    
+    print(f"TASK_ID={task_id}")
+    print(f"RUN_ID={run_id}")
+    print(f"SESSION_KEY={session_key}")
+    print()
+    
+    if args.json:
+        print(json.dumps({
+            "task_id": task_id,
+            "run_id": run_id,
+            "session_key": session_key
+        }))
+    else:
+        print("# Next step: spawn the subagent")
+        print(f"# sessions_spawn runtime=subagent model={args.model} task='{args.task[:50]}...'")
+        print()
+        print("# Then join:")
+        print(f"# subtask-orchestrate join -t {args.timeout}")
+    
+    return True
+
+
+def cmd_receipt(args):
+    """Send completion receipt (for subagents)"""
+    from subagent_receipt import SubagentReceiptHandler
+    
+    handler = SubagentReceiptHandler()
+    
+    receipt = {
+        "task_id": args.task_id,
+        "run_id": args.run_id,
+        "session_key": args.session_key or "",
+        "status": "fail" if args.fail else "ok",
+        "summary": args.summary,
+        "artifacts": args.artifacts or [],
+        "ts": datetime.now().isoformat()
+    }
+    
+    if args.error:
+        receipt["error"] = {
+            "type": "error",
+            "message": args.error
+        }
+    
+    # Write receipt
+    receipt_file = handler.subtasks_dir / f"{args.task_id}.done.json"
+    receipt_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(receipt_file, 'w') as f:
+        json.dump(receipt, f, indent=2)
+    
+    print(f"✅ Receipt written: {receipt_file}")
+    return True
+
+
+def cmd_report(args):
+    """Generate run report"""
+    orch = Orchestrator()
+    
+    report = orch.generate_run_report()
+    
+    if args.output:
+        with open(args.output, 'w') as f:
+            json.dump(report, f, indent=2)
+        print(f"Report written to: {args.output}")
+    else:
+        print(json.dumps(report, indent=2))
+    
+    return True
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Orchestrator CLI v2.0 - Manage subtasks with reliable callbacks"
+    )
+    subparsers = parser.add_subparsers(dest='command', help='Command')
+    
+    # list
+    p_list = subparsers.add_parser('list', help='List all tasks')
+    p_list.add_argument('-a', '--all', action='store_true', help='Show all details')
+    p_list.add_argument('-p', '--pending', action='store_true', help='Show pending only')
+    p_list.add_argument('-c', '--completed', action='store_true', help='Show completed only')
+    p_list.set_defaults(func=cmd_list)
+    
+    # join
+    p_join = subparsers.add_parser('join', help='Join and wait for pending subtasks')
+    p_join.add_argument('-t', '--timeout', type=float, default=300, help='Global timeout (s)')
+    p_join.add_argument('--per-task', type=float, default=600, help='Per-task timeout (s)')
+    p_join.add_argument('-r', '--report', type=str, help='Write run report to file')
+    p_join.set_defaults(func=cmd_join)
+    
+    # resume
+    p_resume = subparsers.add_parser('resume', help='Resume from stored state')
+    p_resume.add_argument('-t', '--timeout', type=float, default=300, help='Global timeout (s)')
+    p_resume.add_argument('--per-task', type=float, default=600, help='Per-task timeout (s)')
+    p_resume.add_argument('-r', '--report', type=str, help='Write run report to file')
+    p_resume.set_defaults(func=cmd_resume)
+    
+    # gc
+    p_gc = subparsers.add_parser('gc', help='Garbage collect old tasks')
+    p_gc.add_argument('-d', '--days', type=int, default=7, help='Keep tasks from last N days')
+    p_gc.set_defaults(func=cmd_gc)
+    
+    # spawn
+    p_spawn = subparsers.add_parser('spawn', help='Spawn a new subtask')
+    p_spawn.add_argument('task', help='Task description')
+    p_spawn.add_argument('-m', '--model', default='iflow/qwen3-coder-plus', help='Model to use')
+    p_spawn.add_argument('-r', '--retries', type=int, default=3, help='Max retries')
+    p_spawn.add_argument('-t', '--timeout', type=int, default=3600, help='Default timeout hint')
+    p_spawn.add_argument('--json', action='store_true', help='Output as JSON')
+    p_spawn.set_defaults(func=cmd_spawn)
+    
+    # receipt
+    p_receipt = subparsers.add_parser('receipt', help='Send completion receipt (subagent)')
+    p_receipt.add_argument('task_id', help='Task ID')
+    p_receipt.add_argument('run_id', help='Run ID')
+    p_receipt.add_argument('-s', '--summary', required=True, help='Completion summary')
+    p_receipt.add_argument('-k', '--session-key', help='Session key')
+    p_receipt.add_argument('-a', '--artifacts', nargs='*', help='Artifact paths')
+    p_receipt.add_argument('-e', '--error', help='Error message (if failed)')
+    p_receipt.add_argument('--fail', action='store_true', help='Mark as failed')
+    p_receipt.set_defaults(func=cmd_receipt)
+    
+    # report
+    p_report = subparsers.add_parser('report', help='Generate run report')
+    p_report.add_argument('-o', '--output', type=str, help='Output file')
+    p_report.set_defaults(func=cmd_report)
+    
+    args = parser.parse_args()
+    
+    if args.command is None:
+        parser.print_help()
+        return
+    
+    success = args.func(args)
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()

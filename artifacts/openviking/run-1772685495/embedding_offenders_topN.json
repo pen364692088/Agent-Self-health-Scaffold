@@ -1,0 +1,16 @@
+{
+  "audit_version": "openviking_embedding_audit.v1",
+  "generated_at": "2026-03-05T04:38:16.371303+00:00",
+  "top_n": 10,
+  "offenders": [
+    {
+      "doc_id": "viking://resources/user/memory/2026-03-03-orchestrator-v2.md",
+      "doc_hash": "41d11244d8263ed2a289b8bc67a405610104e659f5f8646e82e7d0f5dfda2a56",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 299,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "tool": "/home/moonlight/.openclaw/workspace/scripts/openviking_embedding_healthcheck.py",
+  "timestamp": "2026-03-04T23:09:03.901614",
+  "mode": "local",
+  "transport": "local",
+  "status": "healthy",
+  "checks": [
+    {
+      "name": "config",
+      "status": "pass",
+      "message": "Configuration check"
+    },
+    {
+      "name": "port",
+      "status": "pass",
+      "message": "Auto-assigned port: 41019",
+      "details": {
+        "chosen_port": 41019,
+        "mode": "auto"
+      }
+    },
+    {
+      "name": "health",
+      "status": "pass",
+      "message": "Health check passed (local --health)",
+      "details": {
+        "output": "{\"status\": \"healthy\", \"tool\": \"openviking_embedding_healthcheck.v1\"}\n"
+      }
+    },
+    {
+      "name": "sample_call",
+      "status": "pass",
+      "message": "Sample call passed (local --sample)",
+      "details": {
+        "payload": {
+          "action": "ping"
+        },
+        "output": "{\"sample\": \"python scripts/openviking_embedding_healthcheck.py --metrics artifacts/.../metrics.json --policy artifacts/.../policy_decision.json\"}\n"
+      }
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "warnings": 0
+  },
+  "chosen_port": 41019,
+  "health_ok": true,
+  "sample_call_ok": true
+}

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-03-04T21:49:12.678473",
+  "report_path": "reports/tool_doctor/doctor_report_openemotion_e2e_smoke.json",
+  "report_hash": "c98a871983b98121",
+  "schema_id": "doctor.v1",
+  "schema_hash": "f874d5a5633af155",
+  "validated": true,
+  "errors_count": 0,
+  "errors": []
+}

@@ -1,0 +1,5 @@
+{
+  "target": "agent:main",
+  "message": "{\n  \"type\": \"job_done\",\n  \"job_id\": \"20260303_222542_f699c1cd\",\n  \"state\": \"FAILED\",\n  \"title\": \"E2E Test\",\n  \"result_path\": \"/home/moonlight/Project/Github/MyProject/LongRunKit/jobs/20260303_222542_f699c1cd/result.md\",\n  \"attempt\": 1,\n  \"error\": \"Rev mismatch: expected 1, got 4\",\n  \"error_class\": \"PERMANENT\"\n}",
+  "ts": "2026-03-04T04:26:24.964781+00:00"
+}

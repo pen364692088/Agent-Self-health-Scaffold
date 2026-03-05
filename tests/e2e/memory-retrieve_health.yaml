@@ -1,0 +1,9 @@
+name: memory-retrieve_health
+tool: tools/memory-retrieve
+input:
+  health: true
+expect:
+  status: success
+  output_contains:
+    - "status"
+  schema_valid: true

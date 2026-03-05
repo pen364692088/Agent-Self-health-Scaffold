@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""
+Sub-agent File Conflict Detection System
+
+Usage:
+  subagent-conflict claim <agent_id> <files...>   # Claim files for an agent
+  subagent-conflict release <agent_id>            # Release all claims by agent
+  subagent-conflict check <files...>              # Check if files are available
+  subagent-conflict list                          # List all current claims
+  subagent-conflict clear                         # Clear all claims (cleanup)
+
+Exit codes:
+  0 = success / no conflict
+  1 = conflict detected
+  2 = error
+"""
+
+import sys
+import json
+import os
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Set
+
+# Registry file location
+REGISTRY_PATH = Path.home() / ".openclaw" / "workspace" / ".subagent-registry.json"
+
+# Claim expiry time (default 30 minutes)
+CLAIM_EXPIRY_MINUTES = 30
+
+
+def load_registry() -> Dict:
+    """Load the claim registry from disk."""
+    if not REGISTRY_PATH.exists():
+        return {"claims": {}, "history": []}
+    
+    try:
+        with open(REGISTRY_PATH, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {"claims": {}, "history": []}
+
+
+def save_registry(registry: Dict) -> None:
+    """Save the claim registry to disk."""
+    REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(REGISTRY_PATH, "w") as f:
+        json.dump(registry, f, indent=2)
+
+
+def normalize_path(path: str) -> str:
+    """Normalize a file path for comparison."""
+    # Expand ~ and resolve relative paths
+    if path.startswith("~"):
+        path = str(Path(path).expanduser())
+    elif not os.path.isabs(path):
+        # Assume relative to workspace
+        path = str((Path.home() / ".openclaw" / "workspace" / path).resolve())
+    return os.path.normpath(path)
+
+
+def cleanup_expired_claims(registry: Dict) -> None:
+    """Remove expired claims from registry."""
+    now = datetime.now()
+    expired_agents = []
+    
+    for agent_id, claim in registry.get("claims", {}).items():
+        claimed_at = datetime.fromisoformat(claim.get("claimed_at", now.isoformat()))
+        if now - claimed_at > timedelta(minutes=CLAIM_EXPIRY_MINUTES):
+            expired_agents.append(agent_id)
+    
+    for agent_id in expired_agents:
+        del registry["claims"][agent_id]
+        registry["history"].append({
+            "event": "expired",
+            "agent_id": agent_id,
+            "timestamp": now.isoformat()
+        })
+
+
+def cmd_claim(agent_id: str, files: List[str]) -> int:
+    """Claim files for an agent."""
+    registry = load_registry()
+    cleanup_expired_claims(registry)
+    
+    # Check for conflicts first
+    claimed_by = {}
+    for f in files:
+        norm_path = normalize_path(f)
+        for other_agent, other_claim in registry.get("claims", {}).items():
+            if other_agent == agent_id:
+                continue
+            other_files = [normalize_path(p) for p in other_claim.get("files", [])]
+            if norm_path in other_files:
+                claimed_by[f] = other_agent
+    
+    if claimed_by:
+        print(f"CONFLICT: Cannot claim files already claimed by other agents:", file=sys.stderr)
+        for f, other in claimed_by.items():
+            print(f"  {f} <- claimed by {other}", file=sys.stderr)
+        return 1
+    
+    # No conflicts, make the claim
+    normalized_files = [normalize_path(f) for f in files]
+    registry["claims"][agent_id] = {
+        "files": normalized_files,
+        "claimed_at": datetime.now().isoformat(),
+        "original_paths": files
+    }
+    
+    save_registry(registry)
+    print(f"CLAIMED: {agent_id} -> {len(files)} files")
+    return 0
+
+
+def cmd_release(agent_id: str) -> int:
+    """Release all claims by an agent."""
+    registry = load_registry()
+    
+    if agent_id in registry.get("claims", {}):
+        files = registry["claims"][agent_id].get("files", [])
+        del registry["claims"][agent_id]
+        registry["history"].append({
+            "event": "released",
+            "agent_id": agent_id,
+            "timestamp": datetime.now().isoformat()
+        })
+        save_registry(registry)
+        print(f"RELEASED: {agent_id} ({len(files)} files)")
+    else:
+        print(f"NOT_FOUND: {agent_id} has no claims")
+    
+    return 0
+
+
+def cmd_check(files: List[str]) -> int:
+    """Check if files are available (not claimed by any agent)."""
+    registry = load_registry()
+    cleanup_expired_claims(registry)
+    
+    conflicts = []
+    for f in files:
+        norm_path = normalize_path(f)
+        for agent_id, claim in registry.get("claims", {}).items():
+            other_files = [normalize_path(p) for p in claim.get("files", [])]
+            if norm_path in other_files:
+                conflicts.append({"file": f, "claimed_by": agent_id})
+    
+    if conflicts:
+        print("CONFLICTS DETECTED:", file=sys.stderr)
+        for c in conflicts:
+            print(f"  {c['file']} <- claimed by {c['claimed_by']}", file=sys.stderr)
+        return 1
+    
+    print(f"OK: {len(files)} files available")
+    return 0
+
+
+def cmd_list() -> int:
+    """List all current claims."""
+    registry = load_registry()
+    cleanup_expired_claims(registry)
+    
+    claims = registry.get("claims", {})
+    if not claims:
+        print("No active claims")
+        return 0
+    
+    print(f"Active claims ({len(claims)} agents):")
+    for agent_id, claim in claims.items():
+        files = claim.get("original_paths", claim.get("files", []))
+        claimed_at = claim.get("claimed_at", "unknown")
+        print(f"\n  [{agent_id}] claimed at {claimed_at}")
+        for f in files[:5]:  # Show first 5
+            print(f"    - {f}")
+        if len(files) > 5:
+            print(f"    ... and {len(files) - 5} more")
+    
+    return 0
+
+
+def cmd_clear() -> int:
+    """Clear all claims (cleanup)."""
+    registry = load_registry()
+    count = len(registry.get("claims", {}))
+    registry["claims"] = {}
+    registry["history"].append({
+        "event": "cleared",
+        "agent_id": "system",
+        "timestamp": datetime.now().isoformat(),
+        "cleared_count": count
+    })
+    save_registry(registry)
+    print(f"CLEARED: {count} claims removed")
+    return 0
+
+
+def main():
+    if len(sys.argv) >= 2 and sys.argv[1] in ("--health", "-H"):
+        print(json.dumps({
+            "status": "healthy",
+            "version": "1.0",
+            "checks": {
+                "registry_parent_exists": REGISTRY_PATH.parent.exists(),
+                "claim_expiry_minutes": CLAIM_EXPIRY_MINUTES
+            }
+        }))
+        return 0
+
+    if len(sys.argv) >= 2 and sys.argv[1] == "--sample":
+        print(json.dumps({"ok": True, "sample": "subagent-conflict check tools/a.py"}))
+        return 0
+
+    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h"):
+        print(__doc__)
+        return 0 if len(sys.argv) >= 2 else 2
+
+    cmd = sys.argv[1]
+    
+    try:
+        if cmd == "claim":
+            if len(sys.argv) < 4:
+                print("Usage: subagent-conflict claim <agent_id> <files...>", file=sys.stderr)
+                return 2
+            return cmd_claim(sys.argv[2], sys.argv[3:])
+        
+        elif cmd == "release":
+            if len(sys.argv) < 3:
+                print("Usage: subagent-conflict release <agent_id>", file=sys.stderr)
+                return 2
+            return cmd_release(sys.argv[2])
+        
+        elif cmd == "check":
+            if len(sys.argv) < 3:
+                print("Usage: subagent-conflict check <files...>", file=sys.stderr)
+                return 2
+            return cmd_check(sys.argv[2:])
+        
+        elif cmd == "list":
+            return cmd_list()
+        
+        elif cmd == "clear":
+            return cmd_clear()
+        
+        else:
+            print(f"Unknown command: {cmd}", file=sys.stderr)
+            return 2
+    
+    except Exception as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

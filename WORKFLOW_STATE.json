@@ -1,0 +1,10 @@
+{
+  "active": false,
+  "workflow_type": "serial",
+  "steps": [
+    {"id": "p1-shadow-enhance", "run_id": "8b892fc1-a0a8-449e-a4e2-ceff83951fb8", "status": "done", "completed_at": "2026-03-05T09:30:00"},
+    {"id": "p2-workflow-update", "run_id": "e487281f-e979-4bef-bb65-b8877165bd9d", "status": "done", "completed_at": "2026-03-05T09:34:00"}
+  ],
+  "notify_on_done": "✅ MVP11.4.8 完成：Shadow Mode 增强 + CI 集成",
+  "completed_at": "2026-03-05T09:43:00"
+}

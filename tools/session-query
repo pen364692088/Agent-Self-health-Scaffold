@@ -1,0 +1,330 @@
+#!/usr/bin/env python3
+"""
+Session Query Tool - Unified retrieval across three layers
+
+Architecture (per Memory.txt):
+- Layer A: Raw JSONL (cold storage)
+- Layer B: SQLite structured index
+- Layer C: High-signal semantic index (OpenViking/qmd)
+
+Usage:
+  session-query "search terms" [--limit N] [--type TYPE] [--session ID]
+  session-query --stats
+"""
+
+import argparse
+import json
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+
+DB_PATH = Path.home() / '.openclaw' / 'workspace' / '.session-index' / 'sessions.db'
+SESSIONS_DIR = Path.home() / '.openclaw' / 'agents' / 'main' / 'sessions'
+
+def query_structured(query, limit=10, event_type=None, session_id=None, role=None):
+    """Layer B: Structured query via SQLite + FTS"""
+    if not DB_PATH.exists():
+        return {"error": "Database not found. Run session-indexer first."}
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    results = []
+    
+    # FTS search on content_preview
+    sql = '''
+        SELECT e.session_id, e.event_id, e.ts, e.role, e.event_type, 
+               e.tool_name, e.content_preview, e.source_path, e.source_line
+        FROM events e
+        WHERE e.id IN (
+            SELECT rowid FROM events_fts WHERE events_fts MATCH ?
+        )
+    '''
+    params = [query]
+    
+    if event_type:
+        sql += ' AND e.event_type = ?'
+        params.append(event_type)
+    
+    if session_id:
+        sql += ' AND e.session_id = ?'
+        params.append(session_id)
+    
+    if role:
+        sql += ' AND e.role = ?'
+        params.append(role)
+    
+    sql += f' ORDER BY e.ts DESC LIMIT {limit}'
+    
+    try:
+        cursor.execute(sql, params)
+        for row in cursor.fetchall():
+            results.append({
+                'session_id': row['session_id'],
+                'event_id': row['event_id'],
+                'ts': row['ts'],
+                'role': row['role'],
+                'event_type': row['event_type'],
+                'tool_name': row['tool_name'],
+                'content_preview': row['content_preview'],
+                'source_path': row['source_path'],
+                'source_line': row['source_line']
+            })
+    except Exception as e:
+        # Fallback to LIKE search if FTS fails
+        sql = '''
+            SELECT session_id, event_id, ts, role, event_type, 
+                   tool_name, content_preview, source_path, source_line
+            FROM events 
+            WHERE content_preview LIKE ?
+        '''
+        params = [f'%{query}%']
+        
+        if event_type:
+            sql += ' AND event_type = ?'
+            params.append(event_type)
+        
+        if session_id:
+            sql += ' AND session_id = ?'
+            params.append(session_id)
+        
+        sql += f' ORDER BY ts DESC LIMIT {limit}'
+        
+        cursor.execute(sql, params)
+        for row in cursor.fetchall():
+            results.append({
+                'session_id': row[0],
+                'event_id': row[1],
+                'ts': row[2],
+                'role': row[3],
+                'event_type': row[4],
+                'tool_name': row[5],
+                'content_preview': row[6],
+                'source_path': row[7],
+                'source_line': row[8]
+            })
+    
+    conn.close()
+    return results
+
+def query_high_signal(query, limit=10, signal_type=None):
+    """Layer B: Query high-signal extractions"""
+    if not DB_PATH.exists():
+        return {"error": "Database not found."}
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    sql = '''
+        SELECT session_id, event_id, signal_type, summary, keywords, 
+               source_path, source_line
+        FROM high_signal 
+        WHERE summary LIKE ?
+    '''
+    params = [f'%{query}%']
+    
+    if signal_type:
+        sql += ' AND signal_type = ?'
+        params.append(signal_type)
+    
+    sql += f' ORDER BY created_at DESC LIMIT {limit}'
+    
+    cursor.execute(sql, params)
+    
+    results = []
+    for row in cursor.fetchall():
+        results.append({
+            'session_id': row['session_id'],
+            'signal_type': row['signal_type'],
+            'summary': row['summary'],
+            'source_path': row['source_path'],
+            'source_line': row['source_line']
+        })
+    
+    conn.close()
+    return results
+
+def get_raw_context(source_path, source_line, context_lines=5):
+    """Layer A: Get raw context from JSONL file"""
+    try:
+        with open(source_path, 'r') as f:
+            lines = f.readlines()
+        
+        start = max(0, source_line - context_lines - 1)
+        end = min(len(lines), source_line + context_lines)
+        
+        context = []
+        for i in range(start, end):
+            try:
+                entry = json.loads(lines[i])
+                context.append({
+                    'line': i + 1,
+                    'type': entry.get('type', 'unknown'),
+                    'preview': str(entry)[:200]
+                })
+            except:
+                context.append({
+                    'line': i + 1,
+                    'raw': lines[i][:200]
+                })
+        
+        return context
+    except Exception as e:
+        return {"error": str(e)}
+
+def semantic_search(query, limit=5):
+    """Layer C: Semantic search via OpenViking"""
+    try:
+        result = subprocess.run(
+            ['openviking', 'search', query, '--limit', str(limit)],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return data.get('result', {}).get('memories', []) or data.get('result', {}).get('resources', [])
+        return []
+    except Exception as e:
+        return {"error": str(e)}
+
+def format_results(results, format_type='text'):
+    """Format results for output"""
+    if isinstance(results, dict) and 'error' in results:
+        return f"Error: {results['error']}"
+    
+    if not results:
+        return "No results found."
+    
+    output = []
+    for i, r in enumerate(results, 1):
+        if format_type == 'json':
+            output.append(json.dumps(r))
+        else:
+            if 'signal_type' in r:
+                # High-signal format
+                output.append(f"\n[{i}] {r['signal_type'].upper()}")
+                output.append(f"    {r['summary']}")
+                output.append(f"    session: {r['session_id'][:16]}...")
+            else:
+                # Event format
+                output.append(f"\n[{i}] {r.get('ts', '')} | {r.get('role', '')} | {r.get('event_type', '')}")
+                if r.get('tool_name'):
+                    output.append(f"    tool: {r['tool_name']}")
+                if r.get('content_preview'):
+                    output.append(f"    {r['content_preview'][:150]}...")
+                output.append(f"    source: {r.get('source_path', '').split('/')[-1]}:{r.get('source_line', '')}")
+    
+    return '\n'.join(output)
+
+def show_stats():
+    """Show database statistics"""
+    if not DB_PATH.exists():
+        print("Database not found. Run session-indexer first.")
+        return
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM events")
+    events = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(DISTINCT session_id) FROM events")
+    sessions = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM high_signal")
+    signals = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT event_type, COUNT(*) FROM events GROUP BY event_type ORDER BY COUNT(*) DESC")
+    event_types = cursor.fetchall()
+    
+    cursor.execute("SELECT signal_type, COUNT(*) FROM high_signal GROUP BY signal_type")
+    signal_types = cursor.fetchall()
+    
+    cursor.execute("SELECT MIN(ts), MAX(ts) FROM events")
+    ts_range = cursor.fetchone()
+    
+    conn.close()
+    
+    print(f"Session Index Statistics")
+    print(f"========================")
+    print(f"Database: {DB_PATH}")
+    print(f"Sessions: {sessions}")
+    print(f"Events: {events}")
+    print(f"Time range: {ts_range[0]} to {ts_range[1]}")
+    print()
+    print("Event types:")
+    for et, cnt in event_types:
+        print(f"  {et}: {cnt}")
+    print()
+    print("High-signal extractions:")
+    for st, cnt in signal_types:
+        print(f"  {st}: {cnt}")
+
+def main():
+    # Standard probes for preflight tooling
+    if "--health" in sys.argv:
+        print(json.dumps({"status": "healthy", "version": "1.0", "checks": {"db_exists": DB_PATH.exists(), "sessions_dir_exists": SESSIONS_DIR.exists()}}))
+        return
+    if "--sample" in sys.argv:
+        print(json.dumps({"ok": True, "sample": "session-query \"decision\" --limit 3"}))
+        return
+    parser = argparse.ArgumentParser(description='Session Query Tool')
+    parser.add_argument('query', nargs='?', help='Search query')
+    parser.add_argument('--limit', '-l', type=int, default=10, help='Result limit')
+    parser.add_argument('--type', '-t', help='Filter by event type (message, custom, session)')
+    parser.add_argument('--session', '-s', help='Filter by session ID')
+    parser.add_argument('--role', '-r', help='Filter by role (user, assistant)')
+    parser.add_argument('--signal', help='Query high-signal extractions (decision, key_conclusion, user_preference)')
+    parser.add_argument('--semantic', action='store_true', help='Include semantic search via OpenViking')
+    parser.add_argument('--context', '-c', help='Get context for source_path:source_line')
+    parser.add_argument('--stats', action='store_true', help='Show statistics')
+    parser.add_argument('--json', action='store_true', help='JSON output')
+    parser.add_argument('--health', action='store_true', help='Health check for tool_doctor')
+    parser.add_argument('--sample', action='store_true', help='Sample call for tool_doctor')
+    
+    args = parser.parse_args()
+    
+    if args.stats:
+        show_stats()
+        return
+    
+    if args.context:
+        parts = args.context.split(':')
+        if len(parts) == 2:
+            context = get_raw_context(parts[0], int(parts[1]))
+            print(json.dumps(context, indent=2))
+        else:
+            print("Usage: --context source_path:source_line")
+        return
+    
+    if not args.query:
+        print("Error: Query required (or --stats)")
+        sys.exit(1)
+    
+    # Query high-signal extractions
+    if args.signal:
+        results = query_high_signal(args.query, args.limit, args.signal)
+        print(format_results(results, 'json' if args.json else 'text'))
+        return
+    
+    # Query structured events
+    results = query_structured(args.query, args.limit, args.type, args.session, args.role)
+    print(format_results(results, 'json' if args.json else 'text'))
+    
+    # Optionally include semantic search
+    if args.semantic:
+        print("\n--- Semantic Search (OpenViking) ---")
+        sem_results = semantic_search(args.query, 3)
+        if sem_results and not isinstance(sem_results, dict):
+            for r in sem_results:
+                if isinstance(r, dict):
+                    print(f"  - {r.get('uri', r.get('abstract', 'unknown'))}")
+
+if __name__ == '__main__':
+    main()

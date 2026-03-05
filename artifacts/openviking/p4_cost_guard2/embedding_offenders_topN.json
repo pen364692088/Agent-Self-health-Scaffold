@@ -1,0 +1,21 @@
+{
+  "audit_version": "openviking_embedding_audit.v1",
+  "generated_at": "2026-03-05T05:08:25.887348+00:00",
+  "top_n": 10,
+  "offenders": [
+    {
+      "doc_id": "viking://resources/user/memory/warning-candidates/ov_huge_warning_candidate/Huge/Huge_1.md",
+      "doc_hash": "e6cbe052cc2b5a8c39ae210e8a400af4ae45718ee26bc058cbd23c7bb337efa1",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 6,
+      "max_chunk_chars_seen": 6,
+      "max_chunk_bytes_seen": 6,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 1,
+      "dual_guard_trim_count": 0
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "openviking_ops_run.v1",
+  "type": "object",
+  "required": ["version", "script_version", "run_id", "status", "inputs", "artifacts", "health"],
+  "properties": {
+    "version": {"type": "string"},
+    "script_version": {"type": "string"},
+    "run_id": {"type": "string"},
+    "status": {"type": "string"},
+    "errors": {"type": "array", "items": {"type": "string"}},
+    "inputs": {"type": "object"},
+    "artifacts": {"type": "object"},
+    "health": {"type": "object"}
+  },
+  "additionalProperties": true
+}

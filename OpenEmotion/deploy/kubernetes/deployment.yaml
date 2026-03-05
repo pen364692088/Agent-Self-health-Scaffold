@@ -1,0 +1,286 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openemotion-api
+  namespace: openemotion
+  labels:
+    app: openemotion
+    component: api
+    version: v7.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: openemotion
+      component: api
+  template:
+    metadata:
+      labels:
+        app: openemotion
+        component: api
+        version: v7.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: openemotion-api
+        image: ghcr.io/openclaw/openemotion-mcp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: API_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: API_HOST
+        - name: API_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: API_PORT
+        - name: API_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: API_DEBUG
+        - name: MODEL_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: MODEL_NAME
+        - name: MODEL_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: MODEL_BASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openemotion-secrets
+              key: JWT_SECRET_KEY
+        - name: JWT_ALGORITHM
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: JWT_ALGORITHM
+        - name: JWT_EXPIRATION_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: JWT_EXPIRATION_HOURS
+        - name: MAX_CONCURRENT_REQUESTS
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: MAX_CONCURRENT_REQUESTS
+        - name: REQUEST_TIMEOUT_SECONDS
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: REQUEST_TIMEOUT_SECONDS
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: LOG_LEVEL
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: LOG_FORMAT
+        - name: RATE_LIMIT_REQUESTS_PER_MINUTE
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        - name: RATE_LIMIT_BURST
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: RATE_LIMIT_BURST
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openemotion-api
+  namespace: openemotion-staging
+  labels:
+    app: openemotion
+    component: api
+    version: v7.0
+    environment: staging
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: openemotion
+      component: api
+  template:
+    metadata:
+      labels:
+        app: openemotion
+        component: api
+        version: v7.0
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: openemotion-api
+        image: ghcr.io/openclaw/openemotion-mcp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: API_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: API_HOST
+        - name: API_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: API_PORT
+        - name: API_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: API_DEBUG
+        - name: MODEL_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: MODEL_NAME
+        - name: MODEL_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: MODEL_BASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openemotion-secrets
+              key: JWT_SECRET_KEY
+        - name: JWT_ALGORITHM
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: JWT_ALGORITHM
+        - name: JWT_EXPIRATION_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: JWT_EXPIRATION_HOURS
+        - name: MAX_CONCURRENT_REQUESTS
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: MAX_CONCURRENT_REQUESTS
+        - name: REQUEST_TIMEOUT_SECONDS
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: REQUEST_TIMEOUT_SECONDS
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: LOG_LEVEL
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: LOG_FORMAT
+        - name: RATE_LIMIT_REQUESTS_PER_MINUTE
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        - name: RATE_LIMIT_BURST
+          valueFrom:
+            configMapKeyRef:
+              name: openemotion-config
+              key: RATE_LIMIT_BURST
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL

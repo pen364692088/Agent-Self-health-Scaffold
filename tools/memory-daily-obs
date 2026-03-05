@@ -1,0 +1,152 @@
+#!/bin/bash
+# Memory Retrieval Hardening - 每日观测脚本 v1.2.4
+# 用法: memory-daily-obs
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE="$HOME/.openclaw/workspace"
+MEMORY_ROOT="$WORKSPACE/memory"
+REPORTS_DIR="$MEMORY_ROOT/reports/daily"
+DATE=$(date +%Y-%m-%d)
+REPORT_FILE="$REPORTS_DIR/obs_$DATE.json"
+SUMMARY_FILE="$REPORTS_DIR/obs_$DATE.md"
+
+# 版本信息
+REPORT_VERSION="1.2.4"
+TOOL_VERSIONS="dashboard=1.2.3 alerts=1.2.3 audit=1.2.1"
+GIT_COMMIT=$(cd "$WORKSPACE" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# config_hash: 只包含有效配置（版本+阈值+部署日期），确保可复现
+# 不包含：时间戳、路径、随机种子
+CONFIG_PAYLOAD=$(cat <<'EOF'
+{"tool_versions":"dashboard=1.2.3 alerts=1.2.3 audit=1.2.1","thresholds":{"min_events":200,"min_sessions":20,"use_attribution":0.99,"unique_to_raw_grace":0.25,"unique_to_raw_strict":0.50},"deploy_date":"2026-03-03"}
+EOF
+)
+CONFIG_HASH=$(echo -n "$CONFIG_PAYLOAD" | md5sum | cut -c1-8)
+
+echo "=============================================="
+echo "📊 Memory Daily Observation - $DATE"
+echo "=============================================="
+
+mkdir -p "$REPORTS_DIR"
+
+# 1. Dashboard
+echo ""
+echo "1️⃣ Running Dashboard..."
+DASHBOARD_OUTPUT=$("$SCRIPT_DIR/memory-dashboard" --json 2>/dev/null)
+
+# 2. Risk Alerts
+echo "2️⃣ Running Risk Alerts..."
+ALERTS_OUTPUT=$("$SCRIPT_DIR/memory-risk-alerts" --json 2>/dev/null)
+
+# 3. Regression Tests
+echo "3️⃣ Running Regression Tests..."
+cd "$WORKSPACE"
+TEST_OUTPUT=$(python3 tests/test_memory_retrieval_hardening.py 2>&1)
+TEST_PASSED=$?
+TEST_RESULT="PASSED"
+if [ $TEST_PASSED -ne 0 ]; then
+    TEST_RESULT="FAILED"
+fi
+
+# 合并报告（带版本化）
+REPORT=$(cat <<EOF
+{
+  "report_version": "$REPORT_VERSION",
+  "report_metadata": {
+    "tool_versions": "$TOOL_VERSIONS",
+    "git_commit": "$GIT_COMMIT",
+    "config_hash": "$CONFIG_HASH"
+  },
+  "date": "$DATE",
+  "ts": "$(date -Iseconds)",
+  "dashboard": $DASHBOARD_OUTPUT,
+  "alerts": $ALERTS_OUTPUT,
+  "regression": {
+    "result": "$TEST_RESULT",
+    "exit_code": $TEST_PASSED
+  }
+}
+EOF
+)
+
+echo "$REPORT" | python3 -m json.tool > "$REPORT_FILE"
+echo ""
+echo "✅ Report saved: $REPORT_FILE"
+
+# 提取关键指标
+HAS_ERROR=$(echo "$ALERTS_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print('true' if any(a['level']=='ERROR' for a in d.get('alerts',[])) else 'false')")
+ALERT_COUNT=$(echo "$ALERTS_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('alerts',[])))")
+IS_LOW_SAMPLE=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print('true' if d.get('is_low_sample',False) else 'false')")
+
+# 提取详细指标用于摘要
+SAMPLE_EVENTS=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sample_size',{}).get('events',0))")
+SAMPLE_SESSIONS=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sample_size',{}).get('sessions',0))")
+V2_EVENTS=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('v2_events',0))")
+V1_EVENTS=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('v1_events',0))")
+USE_ATTRIBUTION=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('use_attribution',0):.1%}\")")
+ADOPTION_RATE=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('adoption_rate_any',0):.1%}\")")
+USES_PER_RECALL=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('uses_per_recall',0):.2f}\")")
+USE_TERM_P50=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('use_term_p50',0):.2f}\")")
+UNIQUE_RAW_RATIO=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('unique_to_raw_ratio',0):.1%}\")")
+ORPHAN_USE_RATE=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('orphan_use_rate',0):.1%}\")")
+ORPHAN_RECALL_RATE=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('orphan_recall_rate',0):.1%}\")")
+DAYS_SINCE_DEPLOY=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('days_since_deploy',1))")
+THRESHOLD_PHASE=$(echo "$DASHBOARD_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('threshold_phase','strict'))")
+
+# 生成可消费摘要
+cat > "$SUMMARY_FILE" << EOF
+# Memory Daily Observation - $DATE
+
+## Meta
+- Report Version: $REPORT_VERSION
+- Git Commit: $GIT_COMMIT
+- Deploy Day: $DAYS_SINCE_DEPLOY ($THRESHOLD_PHASE phase)
+
+## Sample Size
+- Events: $SAMPLE_EVENTS (min 200)
+- Sessions: $SAMPLE_SESSIONS (min 20)
+- Low Sample: $IS_LOW_SAMPLE
+
+## Version Split
+- v1 Events: $V1_EVENTS
+- v2 Events: $V2_EVENTS
+
+## Core Metrics (四件套)
+1. use_attribution: $USE_ATTRIBUTION (≥99%)
+2. adoption_rate_any: $ADOPTION_RATE
+3. uses_per_recall: $USES_PER_RECALL
+4. use_term_p50: $USE_TERM_P50
+
+## Calibration
+- unique/raw ratio: $UNIQUE_RAW_RATIO
+- orphan_use_rate: $ORPHAN_USE_RATE
+- orphan_recall_rate: $ORPHAN_RECALL_RATE
+
+## Alerts
+- Count: $ALERT_COUNT
+- Has ERROR: $HAS_ERROR
+
+## Regression
+- Test Result: $TEST_RESULT
+EOF
+
+echo "📝 Summary saved: $SUMMARY_FILE"
+
+echo ""
+echo "📋 Summary:"
+echo "   Test Result:   $TEST_RESULT"
+echo "   Alert Count:   $ALERT_COUNT"
+echo "   Has ERROR:     $HAS_ERROR"
+echo "   Low Sample:    $IS_LOW_SAMPLE"
+
+# 如果有 ERROR 级别告警，输出提醒
+if [ "$HAS_ERROR" = "true" ]; then
+    echo ""
+    echo "⚠️  ATTENTION: ERROR level alerts detected!"
+    echo "   Check $REPORT_FILE for details"
+fi
+
+echo ""
+echo "=============================================="

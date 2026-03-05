@@ -1,0 +1,5 @@
+{
+  "target": "agent:main",
+  "message": "{\n  \"type\": \"job_done\",\n  \"job_id\": \"20260303_222749_8356471e\",\n  \"state\": \"DONE\",\n  \"title\": \"E2E v2\",\n  \"result_path\": \"/home/moonlight/Project/Github/MyProject/LongRunKit/jobs/20260303_222749_8356471e/result.md\",\n  \"attempt\": 1,\n  \"error\": null,\n  \"error_class\": null\n}",
+  "ts": "2026-03-04T04:28:04.093805+00:00"
+}

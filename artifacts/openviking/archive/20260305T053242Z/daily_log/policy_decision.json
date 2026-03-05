@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-03-05T05:32:58.945486+00:00",
+  "policy_mode": "warn_soft",
+  "doc_count": 11,
+  "decisions": [
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Main_Agent_Reliability_Quality_Hardening__ef32334c.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_Archive_-_Tool-Gat_2more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_MVP-11_E2E_CI_Hardeningcc-godmode_执行归档.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_MVP-9_Hardening_Co_2more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_Wrap-Up_2026-03-04_2219_CST_MVP11_94fb5997.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_Wrap-Up_2026-03-04_2324_CST_OpenV_506c7153.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_Wrap-Up_2026-03_6916232d.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_Wrap-Up_2026-03_73bd91ec.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_Wrap-Up_2026-03_9c1d682c.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_Wrap-Up_2026-03_c5bcf64c.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-04_9/Memory_-_2026-03-04/Session_僵尸任务清理修复_1200_CST_2more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    }
+  ]
+}

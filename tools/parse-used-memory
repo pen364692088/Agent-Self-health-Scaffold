@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+"""
+Parse Used Memory IDs from Agent Output
+解析 Agent 输出中的 used_memory_ids 块，emit use 事件
+
+用法:
+  echo "agent output" | parse-used-memory --session-id s1 --task-id t1
+  parse-used-memory output.txt --session-id s1
+
+输出格式:
+  解析成功: 发射 use 事件到 events.log
+  返回 JSON: {"used_count": N, "memory_ids": [...]}
+"""
+
+import sys
+import json
+import re
+import argparse
+from pathlib import Path
+from datetime import datetime
+from typing import List, Optional, Tuple
+
+MEMORY_ROOT = Path.home() / ".openclaw/workspace/memory"
+EVENTS_LOG = MEMORY_ROOT / "events.log"
+
+# 支持多种格式
+PATTERNS = [
+    # JSON 块格式
+    r'used_memory_ids\s*:\s*\[([^\]]*)\]',
+    # 独立 JSON 行
+    r'^\s*\{\s*"used_memory_ids"\s*:\s*\[([^\]]*)\]\s*\}\s*$',
+    # Markdown 代码块
+    r'```json\s*\n\s*\{\s*"used_memory_ids"\s*:\s*\[([^\]]*)\]',
+]
+
+def parse_memory_ids(text: str) -> List[str]:
+    """
+    从文本中提取 used_memory_ids
+    支持多种格式，返回去重后的 ID 列表
+    """
+    memory_ids = set()
+    
+    for pattern in PATTERNS:
+        matches = re.findall(pattern, text, re.MULTILINE | re.IGNORECASE)
+        for match in matches:
+            # 解析 JSON 数组内容
+            try:
+                # 尝试解析为 JSON 数组
+                array_str = f"[{match}]"
+                ids = json.loads(array_str)
+                if isinstance(ids, list):
+                    for id in ids:
+                        if isinstance(id, str) and id.strip():
+                            memory_ids.add(id.strip())
+            except json.JSONDecodeError:
+                # 回退：正则提取引号内的字符串
+                quoted = re.findall(r'"([^"]+)"', match)
+                for id in quoted:
+                    if id.strip():
+                        memory_ids.add(id.strip())
+    
+    return sorted(list(memory_ids))
+
+
+def emit_use_events(
+    memory_ids: List[str],
+    recall_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    task_id: Optional[str] = None,
+    event_version: str = "v2"
+) -> int:
+    """
+    发射 use 事件到 events.log
+    返回成功发射的事件数
+    """
+    if not memory_ids:
+        return 0
+    
+    EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    
+    emitted = 0
+    ts = datetime.now().isoformat() + "Z"
+    
+    with open(EVENTS_LOG, "a") as f:
+        for memory_id in memory_ids:
+            event = {
+                "event": "use",
+                "ts": ts,
+                "memory_id": memory_id,
+                "source": "adoption",
+                "event_version": event_version
+            }
+            
+            if recall_id:
+                event["recall_id"] = recall_id
+            if session_id:
+                event["session_id"] = session_id
+            if task_id:
+                event["task_id"] = task_id
+            
+            f.write(json.dumps(event) + "\n")
+            emitted += 1
+    
+    return emitted
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Parse used_memory_ids from agent output")
+    parser.add_argument("input", nargs="?", help="Input file or '-' for stdin")
+    parser.add_argument("--session-id", help="Session ID for use events")
+    parser.add_argument("--task-id", help="Task ID for use events")
+    parser.add_argument("--recall-id", help="Recall ID to link use events")
+    parser.add_argument("--dry-run", action="store_true", help="Parse only, don't emit events")
+    parser.add_argument("--event-version", default="v2", help="Event version (v1/v2)")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    args = parser.parse_args()
+    
+    # 读取输入
+    if args.input and args.input != "-":
+        text = Path(args.input).read_text()
+    else:
+        text = sys.stdin.read()
+    
+    # 解析 memory IDs
+    memory_ids = parse_memory_ids(text)
+    
+    # 输出结果
+    result = {
+        "used_count": len(memory_ids),
+        "memory_ids": memory_ids,
+        "dry_run": args.dry_run
+    }
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        if memory_ids:
+            print(f"Parsed {len(memory_ids)} memory IDs:")
+            for mid in memory_ids:
+                print(f"  - {mid}")
+        else:
+            print("No used_memory_ids found in input")
+    
+    # 发射事件
+    if not args.dry_run and memory_ids:
+        emitted = emit_use_events(
+            memory_ids,
+            recall_id=args.recall_id,
+            session_id=args.session_id,
+            task_id=args.task_id,
+            event_version=args.event_version
+        )
+        if not args.json:
+            print(f"\nEmitted {emitted} use events to {EVENTS_LOG}")
+        result["emitted"] = emitted
+    
+    return 0 if memory_ids else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,6 @@
+name: memory-retrieve_badargs
+tool: tools/memory-retrieve
+input: {}
+expect:
+  status: error
+  error_contains: "Usage"

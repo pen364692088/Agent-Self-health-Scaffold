@@ -1,0 +1,32 @@
+{
+  "version": "openviking_backfill_embeddings.v1",
+  "generated_at": "2026-03-05T04:39:40.033507+00:00",
+  "dry_run": true,
+  "upsert": false,
+  "inputs": {
+    "doc_ids_count": 0,
+    "from_audit": "/tmp/mock_audit.json",
+    "since_days": null,
+    "only_non_ok": true,
+    "root_uri": "viking://resources/user/memory/"
+  },
+  "params": {
+    "max_tokens": 800,
+    "overlap_tokens": 100,
+    "embedding_version": "openviking.default",
+    "policy": "/home/moonlight/.openclaw/workspace/config/openviking_embedding_policy.yaml"
+  },
+  "summary": {
+    "processed": 0,
+    "failed": 0,
+    "coverage_before_avg": 0.0,
+    "coverage_after_avg": 0.0,
+    "skipped_after_total": 0
+  },
+  "artifacts": {
+    "embedding_audit": "/home/moonlight/.openclaw/workspace/artifacts/openviking/backfill-sample/embedding_audit.json",
+    "offenders": "/home/moonlight/.openclaw/workspace/artifacts/openviking/backfill-sample/embedding_offenders_topN.json"
+  },
+  "results": [],
+  "failures": []
+}

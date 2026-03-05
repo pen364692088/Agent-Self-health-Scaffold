@@ -1,0 +1,59 @@
+{
+  "pending": [
+    {
+      "entry_id": "mem_openemotion_001",
+      "scope": "projects/openemotion",
+      "corrections": [
+        {
+          "session_id": "session_1",
+          "scope": "projects/openemotion",
+          "ts": "2026-03-03T11:20:01Z",
+          "text": "Use sorted(set) for determinism"
+        },
+        {
+          "session_id": "session_2",
+          "scope": "projects/openemotion",
+          "ts": "2026-03-03T11:20:02Z",
+          "text": "Use sorted(set) for determinism"
+        },
+        {
+          "session_id": "session_3",
+          "scope": "projects/openemotion",
+          "ts": "2026-03-03T11:20:03Z",
+          "text": "Use sorted(set) for determinism"
+        }
+      ],
+      "added_at": "2026-03-03T11:15:28.698148",
+      "status": "pending",
+      "source": "scored"
+    },
+    {
+      "entry_id": "mem_openemotion_001",
+      "scope": "projects/openemotion",
+      "corrections": [
+        {
+          "session_id": "session_1",
+          "scope": "projects/openemotion",
+          "ts": "2026-03-03T11:20:01Z",
+          "text": "Use sorted(set) for determinism"
+        },
+        {
+          "session_id": "session_2",
+          "scope": "projects/openemotion",
+          "ts": "2026-03-03T11:20:02Z",
+          "text": "Use sorted(set) for determinism"
+        },
+        {
+          "session_id": "session_3",
+          "scope": "projects/openemotion",
+          "ts": "2026-03-03T11:20:03Z",
+          "text": "Use sorted(set) for determinism"
+        }
+      ],
+      "added_at": "2026-03-03T11:22:13.142940",
+      "status": "pending",
+      "source": "scored"
+    }
+  ],
+  "resolved": []
+}

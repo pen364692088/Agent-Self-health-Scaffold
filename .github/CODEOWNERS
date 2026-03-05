@@ -1,0 +1,29 @@
+# CODEOWNERS - Tool Delivery Gates Protection
+
+# ============================================================
+# Skip Gates Label Protection
+# ============================================================
+# Only the following users/teams can add the "skip-gates" or "hotfix" labels:
+# - Repository owners
+# - Maintainers team
+#
+# This is enforced through:
+# 1. Branch protection rules (require PR reviews from code owners)
+# 2. GitHub Actions workflow (check-label-author)
+#
+# To request skip-gates label:
+# 1. Create PR
+# 2. Add comment: "@maintainers please add skip-gates label with reason: <reason>"
+# 3. Wait for maintainer approval
+# ============================================================
+
+# These paths require maintainer review for skip-gates label
+/tools/ @moonlight
+/integrations/ @moonlight
+/handlers/ @moonlight
+/schemas/ @moonlight
+/POLICIES/ @moonlight
+/.github/workflows/tool-gates.yml @moonlight
+
+# Default owners for everything
+* @moonlight

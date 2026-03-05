@@ -1,0 +1,27 @@
+{
+  "audit_version": "openviking_embedding_audit.v1",
+  "generated_at": "2026-03-05T04:38:16.371299+00:00",
+  "doc_count": 1,
+  "docs": [
+    {
+      "audit_version": "openviking_embedding_audit.v1",
+      "doc_id": "viking://resources/user/memory/2026-03-03-orchestrator-v2.md",
+      "doc_hash": "41d11244d8263ed2a289b8bc67a405610104e659f5f8646e82e7d0f5dfda2a56",
+      "chunk_count_total": 3,
+      "chunk_count_embedded": 3,
+      "embedding_status": "ok",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 299,
+      "status_counts": {
+        "ok": 3,
+        "truncated": 0,
+        "skipped": 0,
+        "error": 0
+      },
+      "chunker_version": "deterministic_chunker.v1",
+      "embedding_version": "openviking.default",
+      "indexed_at": "2026-03-05T04:38:16.371208+00:00",
+      "source": "backfill"
+    }
+  ]
+}

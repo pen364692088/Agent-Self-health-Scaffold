@@ -1,0 +1,136 @@
+{
+  "target_id": "telegram:8420019401",
+  "channel_id": "telegram",
+  "conversation_id": "telegram:8420019401",
+  "message_id": "6380",
+  "from": "telegram:8420019401",
+  "timestamp": 1772725535000,
+  "decision": {
+    "action": "attack",
+    "decision_id": 394,
+    "explanation": {
+      "emotion": {
+        "top2": [
+          [
+            "loneliness",
+            0.29999999999999993
+          ]
+        ],
+        "all": {
+          "anger": 0,
+          "sadness": 0,
+          "anxiety": 0,
+          "joy": 0,
+          "loneliness": 0.29999999999999993
+        }
+      },
+      "interoception": {
+        "social_safety": 0.95,
+        "energy": 1
+      },
+      "relationships": {
+        "bond": 0,
+        "grudge": 0,
+        "trust": 0.5000000000000003,
+        "repair_bank": 0
+      },
+      "target_id": "telegram:8420019401",
+      "candidates": [
+        {
+          "action": "repair_offer",
+          "score": 0.07750000000000007,
+          "alpha": 0,
+          "predicted_global": {
+            "safety": 0.05,
+            "energy": -0.04
+          },
+          "predicted_residual": {
+            "safety": 0,
+            "energy": 0
+          },
+          "predicted_total": {
+            "safety": 0.05,
+            "energy": -0.04
+          },
+          "reasons": [
+            "Predicted to improve safety (+0.05)"
+          ]
+        },
+        {
+          "action": "attack",
+          "score": 0.07000000000000008,
+          "alpha": 0,
+          "predicted_global": {
+            "safety": -0.05,
+            "energy": -0.05
+          },
+          "predicted_residual": {
+            "safety": 0,
+            "energy": 0
+          },
+          "predicted_total": {
+            "safety": -0.05,
+            "energy": -0.05
+          },
+          "reasons": [
+            "Risk of safety reduction"
+          ]
+        },
+        {
+          "action": "approach",
+          "score": 0.03550000000000009,
+          "alpha": 0,
+          "predicted_global": {
+            "safety": 0.03,
+            "energy": -0.02
+          },
+          "predicted_residual": {
+            "safety": 0,
+            "energy": 0
+          },
+          "predicted_total": {
+            "safety": 0.03,
+            "energy": -0.02
+          },
+          "reasons": [
+            "Predicted to improve safety (+0.03)",
+            "Safe to approach"
+          ]
+        }
+      ],
+      "selected": "attack",
+      "selection_reasons": [
+        "Selected via stochastic process (score: 0.070)",
+        "Relying primarily on general experience"
+      ],
+      "persistence": {
+        "strategy": "normal",
+        "reason": "normal_operation",
+        "trace": {
+          "strategy": "normal",
+          "reason": "normal_operation",
+          "persistence_pressure": 0.202,
+          "risk": 0.15,
+          "ambiguity": 0,
+          "expected_info_gain": 1,
+          "tradeoff_score": 0.1486,
+          "dominant_drivers": [],
+          "conservative_trigger": null,
+          "repair_trigger": null,
+          "retreat_trigger": null
+        },
+        "policy_override": null
+      }
+    }
+  },
+  "guidance": {
+    "tone": "defensive, sharp",
+    "intent": "push back",
+    "phrases": [
+      "I have to push back",
+      "not acceptable"
+    ]
+  },
+  "emotiond_available": true,
+  "generated_at": "2026-03-05T15:45:36.505Z"
+}

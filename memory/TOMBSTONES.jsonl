@@ -1,0 +1,5 @@
+# Tombstones - Deprecated Documents
+# Format: {"doc_id": "...", "sha256": "...", "reason": "...", "deprecated_at": "ISO8601"}
+
+# Example:
+# {"doc_id": "mem:global:rule:20260220:old-config", "sha256": "abc123", "reason": "Replaced by new config schema", "deprecated_at": "2026-03-01T00:00:00Z"}

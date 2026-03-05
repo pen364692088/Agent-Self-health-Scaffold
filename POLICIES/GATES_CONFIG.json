@@ -1,0 +1,93 @@
+{
+  "version": "v2.0",
+  "last_updated": "2026-03-04",
+  
+  "tool_detection": {
+    "path_triggers": {
+      "whitelist": [
+        "tools/",
+        "integrations/",
+        "handlers/",
+        "schemas/",
+        "skills/",
+        "hooks/",
+        "scripts/tool_",
+        "wrapper/",
+        "client/"
+      ],
+      "blacklist": [
+        "docs/",
+        "README",
+        "CHANGELOG",
+        "test_fixtures/",
+        "__pycache__/",
+        "node_modules/"
+      ],
+      "description": "Whitelist: paths that force tool task detection. Blacklist: paths that never trigger."
+    },
+    
+    "keyword_triggers": [
+      "tool", "wrapper", "integration", "handler", "cli", "command",
+      "api", "endpoint", "client", "sdk", "plugin", "extension",
+      "server", "service", "preflight", "doctor", "health", "port", "schema"
+    ],
+    
+    "priority": "path_first",
+    "description": "Path triggers have priority over keywords. If path matches whitelist, it's a tool task regardless of task description."
+  },
+  
+  "gates_bypass": {
+    "allowed": false,
+    "require_reason": true,
+    "audit_log": "reports/gates_audit.log",
+    "environments": {
+      "GATES_DISABLE": "0 or 1",
+      "GATES_DISABLE_REASON": "Required when GATES_DISABLE=1"
+    }
+  },
+  
+  "ci_skip": {
+    "allowed": false,
+    "allowlist_branches": ["staging", "dev"],
+    "allowlist_labels": ["skip-gates", "hotfix"],
+    "require_artifact": true,
+    "artifact_name": "gates_skip_justification.md"
+  },
+  
+  "transport_modes": {
+    "http": {
+      "description": "Real HTTP requests to running service",
+      "requires_running_service": true,
+      "sample_payload": {
+        "action": "ping",
+        "test": true
+      }
+    },
+    "local": {
+      "description": "Direct tool invocation without HTTP",
+      "requires_running_service": false,
+      "fallback_for_ci": true
+    }
+  },
+  
+  "doctor_report_schema": {
+    "version": "doctor.v1",
+    "required_fields": {
+      "tool": "string",
+      "timestamp": "string (ISO8601)",
+      "mode": "string (ci|local)",
+      "transport": "string (http|local)",
+      "status": "string (healthy|unhealthy)",
+      "checks": "array",
+      "summary": "object {passed, failed, warnings}",
+      "chosen_port": "number or null",
+      "health_ok": "boolean",
+      "sample_call_ok": "boolean"
+    },
+    "optional_fields": {
+      "error_code": "string",
+      "message": "string",
+      "details": "object"
+    }
+  }
+}

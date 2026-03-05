@@ -1,0 +1,7 @@
+Page 1 Header
+Invoice No: 12345
+Total: $678.90
+
+Page 2 Footer
+Terms and conditions apply.
+This text simulates PDF extraction with line breaks and uneven spacing.

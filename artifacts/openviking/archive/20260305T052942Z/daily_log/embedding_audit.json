@@ -1,0 +1,32 @@
+{
+  "audit_version": "openviking_embedding_audit.v1",
+  "generated_at": "2026-03-05T05:29:44.847620+00:00",
+  "doc_count": 1,
+  "docs": [
+    {
+      "audit_version": "openviking_embedding_audit.v1",
+      "doc_id": "viking://resources/user/memory/archive-entry-test/archive_entry_test/archive_entry_test.md",
+      "doc_hash": "3f9a15708fd6add3a978d478070b45bdec04e4a0a00be25ced19ccb86fec20c7",
+      "chunk_count_total": 1,
+      "chunk_count_embedded": 1,
+      "embedding_status": "ok",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 54,
+      "max_chunk_chars_seen": 54,
+      "max_chunk_bytes_seen": 54,
+      "status_counts": {
+        "ok": 1,
+        "truncated": 0,
+        "skipped": 0,
+        "error": 0
+      },
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 1,
+      "dual_guard_trim_count": 0,
+      "indexed_at": "2026-03-05T05:29:44.846890+00:00",
+      "source": "backfill"
+    }
+  ]
+}

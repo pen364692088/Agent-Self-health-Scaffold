@@ -1,0 +1,11 @@
+name: memory-retrieve_happy
+tool: tools/memory-retrieve
+input:
+  query: "canary"
+expect:
+  status: success
+  output_contains:
+    - "stage"
+    - "doc_ids"
+    - "latency_ms"
+  schema_valid: true

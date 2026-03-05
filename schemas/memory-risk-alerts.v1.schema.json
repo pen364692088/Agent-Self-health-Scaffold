@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "memory-risk-alerts.v1.schema.json",
+  "title": "Memory Risk Alerts Tool Schema v1",
+  "description": "Schema for memory-risk-alerts tool input/output",
+  "type": "object",
+  "definitions": {
+    "Input": {
+      "type": "object",
+      "properties": {
+        "json": {
+          "type": "boolean",
+          "description": "Output as JSON",
+          "default": false
+        }
+      }
+    },
+    "Alert": {
+      "type": "object",
+      "required": ["level", "metric", "message"],
+      "properties": {
+        "level": {"type": "string", "enum": ["ERROR", "WARN", "WARN_SOFT", "INFO"]},
+        "metric": {"type": "string"},
+        "value": {"type": ["number", "string", "null"]},
+        "threshold": {"type": "number"},
+        "message": {"type": "string"},
+        "details": {"type": "array"}
+      }
+    },
+    "Metrics": {
+      "type": "object",
+      "required": ["use_attribution", "unique_to_raw_ratio", "uses_per_recall"],
+      "properties": {
+        "use_attribution": {"type": "number"},
+        "unique_to_raw_ratio": {"type": "number"},
+        "uses_per_recall": {"type": "number"},
+        "orphan_use_rate": {"type": "number"},
+        "orphan_recall_rate": {"type": "number"},
+        "unadopted_recall_rate": {"type": "number"},
+        "broken_link_recall_rate": {"type": "number"},
+        "v2_adoption_rate": {"type": "number"},
+        "duplicate_id_rate": {"type": "number"},
+        "days_since_deploy": {"type": "integer"},
+        "threshold_phase": {"type": "string"},
+        "unique_to_raw_threshold": {"type": "number"},
+        "bucket_a_ratio": {"type": "number"},
+        "expected_ratio": {"type": "number"}
+      }
+    },
+    "Output": {
+      "type": "object",
+      "required": ["ts", "alerts", "metrics"],
+      "properties": {
+        "ts": {"type": "string", "format": "date-time"},
+        "alerts": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/Alert"}
+        },
+        "metrics": {"$ref": "#/definitions/Metrics"},
+        "sample_size": {
+          "type": "object",
+          "properties": {
+            "events": {"type": "integer"},
+            "sessions": {"type": "integer"}
+          }
+        },
+        "is_low_sample": {"type": "boolean"},
+        "history_count": {"type": "integer"},
+        "baseline_warmup": {"type": "boolean"},
+        "baseline_info": {"type": "object"}
+      }
+    },
+    "HealthOutput": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {"type": "string", "enum": ["healthy", "unhealthy"]},
+        "version": {"type": "string"},
+        "checks": {
+          "type": "object",
+          "properties": {
+            "events_log_readable": {"type": "boolean"},
+            "metrics_history_readable": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "SampleOutput": {
+      "type": "object",
+      "required": ["status", "sample_result"],
+      "properties": {
+        "status": {"type": "string", "enum": ["ok", "error"]},
+        "sample_result": {"$ref": "#/definitions/Output"},
+        "error": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": ["type", "message"],
+          "properties": {
+            "type": {"type": "string"},
+            "message": {"type": "string"},
+            "code": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

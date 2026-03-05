@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "memory-retrieve.v1.schema.json",
+  "title": "Memory Retrieve Tool Schema v1",
+  "description": "Schema for memory-retrieve tool input/output",
+  "type": "object",
+  "definitions": {
+    "Input": {
+      "type": "object",
+      "required": ["query"],
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query for memory retrieval",
+          "minLength": 1
+        },
+        "regression": {
+          "type": "boolean",
+          "description": "Mark as regression test query",
+          "default": false
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session ID for event tracking"
+        },
+        "task_id": {
+          "type": "string",
+          "description": "Task ID for event tracking"
+        }
+      }
+    },
+    "Output": {
+      "type": "object",
+      "required": ["stage", "doc_ids", "latency_ms"],
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": ["pinned", "semantic"],
+          "description": "Which stage produced the results"
+        },
+        "doc_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "List of memory document IDs"
+        },
+        "recall_id": {
+          "type": ["string", "null"],
+          "description": "Recall event ID for use event tracking"
+        },
+        "tombstone_filtered": {
+          "type": "integer",
+          "description": "Number of tombstone-filtered results"
+        },
+        "pinned_hits_count": {
+          "type": "integer",
+          "description": "Number of pinned pointer hits"
+        },
+        "warn_reason": {
+          "type": ["string", "null"],
+          "description": "Warning reason if any"
+        },
+        "superseded_redirects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from_doc_id": {"type": "string"},
+              "redirect_to_doc_id": {"type": "string"},
+              "reason": {"type": "string"}
+            }
+          }
+        },
+        "latency_ms": {
+          "type": "number",
+          "description": "Retrieval latency in milliseconds"
+        },
+        "hint": {
+          "type": "string",
+          "description": "Usage hint"
+        }
+      }
+    },
+    "HealthOutput": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["healthy", "unhealthy"]
+        },
+        "version": {"type": "string"},
+        "checks": {
+          "type": "object",
+          "properties": {
+            "events_log_writable": {"type": "boolean"},
+            "openviking_available": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "SampleOutput": {
+      "type": "object",
+      "required": ["status", "sample_result"],
+      "properties": {
+        "status": {"type": "string", "enum": ["ok", "error"]},
+        "sample_result": {"$ref": "#/definitions/Output"},
+        "error": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": ["type", "message"],
+          "properties": {
+            "type": {"type": "string"},
+            "message": {"type": "string"},
+            "code": {"type": "string"},
+            "details": {"type": "object"}
+          }
+        }
+      }
+    }
+  }
+}

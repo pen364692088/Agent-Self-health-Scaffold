@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+"""
+Memory Event Emitter v1.3
+新增:
+- quarantine_reason (原因码)
+- missing_scope 二级推断 (从 memory_id / task 推断)
+- 测试噪声隔离 (source=test 不参与评分)
+"""
+
+import sys
+import json
+import hashlib
+import re
+import os
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any, Tuple, Optional
+
+MEMORY_ROOT = Path.home() / ".openclaw/workspace/memory"
+EVENTS_LOG = MEMORY_ROOT / "events.log"
+DEDUP_CACHE = MEMORY_ROOT / ".dedup_cache.json"
+
+PRIVACY_PATTERNS = ["password", "passwd", "pwd", "api_key", "apikey", "token", "secret", "credential"]
+KNOWN_PREFIXES = ["projects/", "domains/", "global/"]
+QUARANTINE_SCOPES = ["test", "testing", "unknown", "default", "null", "none", "undefined"]
+
+# 演练/模拟模式识别 (自动标记 source=sim)
+SIM_PATTERNS = ["batch_", "final_", "sim_", "dryrun", "test_", "_test"]
+
+def is_sim_context(event: Dict[str, Any], source: str) -> bool:
+    """
+    检测是否为演练/模拟场景，自动标记 source=sim
+    """
+    # 1. 显式 dryrun 环境
+    if os.environ.get("CANARY_DRYRUN") == "1" and source == "user":
+        return True
+    
+    # 2. memory_id 或 task_id 包含模拟关键词
+    memory_id = event.get("memory_id", "")
+    task_id = event.get("task_id", "")
+    
+    for pattern in SIM_PATTERNS:
+        if pattern in memory_id.lower() or pattern in task_id.lower():
+            return True
+    
+    return False
+
+# Scope 推断规则 (从 memory_id 或其他字段推断)
+SCOPE_INFERENCE_RULES = {
+    # memory_id 前缀 → scope
+    "mem_openemotion": "projects/openemotion",
+    "mem_emotiond": "projects/openemotion",
+    "mem_infra": "domains/infra",
+    # 关键词
+    "openemotion": "projects/openemotion",
+    "emotiond": "projects/openemotion",
+    "mvp": "projects/openemotion",  # MVP 相关
+}
+
+DYNAMIC_PATTERNS = [r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', r'\d{13,}']
+
+def infer_scope_from_context(event: Dict[str, Any]) -> Optional[str]:
+    """
+    二级推断: 从 memory_id / task_id / 元信息推断 scope
+    """
+    # 1. 从 memory_id 推断
+    memory_id = event.get("memory_id", "")
+    if memory_id:
+        for prefix, scope in SCOPE_INFERENCE_RULES.items():
+            if memory_id.lower().startswith(prefix):
+                return scope
+        # 检查 memory_id 中的关键词
+        for keyword, scope in SCOPE_INFERENCE_RULES.items():
+            if keyword in memory_id.lower():
+                return scope
+    
+    # 2. 从 task_id 推断
+    task_id = event.get("task_id", "")
+    if task_id:
+        for keyword, scope in SCOPE_INFERENCE_RULES.items():
+            if keyword in task_id.lower():
+                return scope
+    
+    # 3. 从 evidence/text 推断 (如果有项目关键词)
+    text = event.get("evidence", event.get("text", ""))
+    if text:
+        text_lower = text.lower()
+        for keyword, scope in SCOPE_INFERENCE_RULES.items():
+            if keyword in text_lower:
+                return scope
+    
+    return None
+
+def normalize_scope(scope: str, event: Dict[str, Any]) -> Tuple[str, str, bool, bool, Optional[str]]:
+    """
+    返回: (normalized_scope, original, autofixed, eligible, quarantine_reason)
+    """
+    original = scope
+    scope_lower = scope.lower().strip() if scope else ""
+    
+    # C. 先检查不可修复
+    if not scope or scope_lower in QUARANTINE_SCOPES:
+        reason = "missing_scope" if not scope else f"test_scope" if scope_lower == "test" else "invalid_scope"
+        # 尝试二级推断
+        inferred = infer_scope_from_context(event)
+        if inferred:
+            return inferred, original, True, True, None  # 推断成功, 标记 autofixed
+        return "global/quarantine", original, False, False, reason
+    
+    # A. 合法 scope
+    if any(scope.startswith(p) for p in KNOWN_PREFIXES):
+        parts = scope.split("/")
+        if len(parts) >= 2 and parts[1]:
+            return scope, original, False, True, None
+    
+    # B. 可修复 scope
+    # 别名映射
+    aliases = {"openemotion": "projects/openemotion", "emotiond": "projects/openemotion", "infra": "domains/infra"}
+    if scope_lower in aliases:
+        return aliases[scope_lower], original, True, True, None
+    
+    # 格式修正
+    if ":" in scope:
+        fixed = scope.replace(":", "/")
+        if fixed.startswith("project/"):
+            fixed = "projects/" + fixed[8:]
+        return fixed, original, True, True, None
+    
+    # 裸字符串 → projects/<name>
+    if "/" not in scope and scope.replace("_", "").replace("-", "").isalnum():
+        return f"projects/{scope_lower}", original, True, True, None
+    
+    # 其他 quarantine
+    return "global/quarantine", original, False, False, "unknown_prefix"
+
+def normalize_text(text: str) -> Tuple[str, int]:
+    if not text: return "", 0
+    dynamic = sum(len(re.findall(p, text)) for p in DYNAMIC_PATTERNS)
+    norm = re.sub(r'[^\w\s]', '', text)
+    return ' '.join(norm.split()).lower(), dynamic
+
+def schema_validate(event): 
+    if "event" not in event or "ts" not in event: return False, "Missing required"
+    if event["event"] not in ["use", "recall", "correction", "conflict", "pin", "forget", "reflection"]: return False, "Invalid type"
+    return True, ""
+
+def privacy_filter(event):
+    for f in ["evidence", "text", "reason"]:
+        v = event.get(f, "")
+        if isinstance(v, str):
+            for p in PRIVACY_PATTERNS:
+                if p in v.lower(): return False, f"Privacy: {p}"
+    return True, ""
+
+def gen_id(event):
+    n = {"event": event.get("event"), "scope": event.get("scope"), "sid": event.get("session_id"), "tid": event.get("task_id"), "mid": event.get("memory_id")}
+    for f in ["evidence", "text"]:
+        if f in event: n[f"n_{f}"] = normalize_text(event[f])[0]
+    return hashlib.sha256(json.dumps(n, sort_keys=True).encode()).hexdigest()[:16]
+
+def emit(event: Dict[str, Any], source: str = "user") -> Dict[str, Any]:
+    # 模拟/演练检测: 自动标记 source=sim
+    if is_sim_context(event, source) and source not in {"test", "sim"}:
+        source = "sim"
+    
+    # 测试噪声隔离: source=test/sim 不参与评分
+    is_test = source == "test"
+    is_sim = source == "sim"
+    
+    valid, err = schema_validate(event)
+    if not valid: return {"ok": False, "error": err}
+    valid, err = privacy_filter(event)
+    if not valid: return {"ok": False, "error": err}
+    
+    # Scope normalization + 二级推断
+    raw_scope = event.get("scope", "")
+    norm_scope, original, autofixed, eligible, quarantine_reason = normalize_scope(raw_scope, event)
+    event["scope"] = norm_scope
+    
+    if autofixed:
+        event["scope_autofixed"] = True
+        event["original_scope"] = original
+    if quarantine_reason:
+        event["quarantine_reason"] = quarantine_reason
+        event["quarantined"] = True
+    elif not eligible:
+        event["quarantine_reason"] = "invalid_scope"
+        event["quarantined"] = True
+    if is_test:
+        event["test_event"] = True
+        event["eligible_for_scoring"] = False
+    if is_sim:
+        event["sim_event"] = True
+        event["eligible_for_scoring"] = False
+    
+    # Text normalization
+    for f in ["evidence", "text"]:
+        if f in event:
+            _, dyn = normalize_text(event[f])
+            if dyn > 0: event["dynamic_markers"] = dyn
+    
+    eid = gen_id(event)
+    cache = json.loads(DEDUP_CACHE.read_text()) if DEDUP_CACHE.exists() else {}
+    if eid in cache: return {"ok": False, "event_id": eid, "duplicate": True}
+    
+    event.setdefault("schema_version", "1.3")
+    event.setdefault("event_version", "v2")  # v1=旧语义, v2=adoption语义
+    event["source"] = source
+    event["event_id"] = eid
+    
+    EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(EVENTS_LOG, "a") as f: f.write(json.dumps(event) + "\n")
+    
+    cache[eid] = datetime.now().isoformat()
+    DEDUP_CACHE.write_text(json.dumps(dict(list(cache.items())[-1000:])))
+    
+    r = {"ok": True, "event_id": eid, "scope": norm_scope}
+    if autofixed: r["autofixed"] = f"{original} → {norm_scope}"
+    if quarantine_reason: r["quarantined"] = True; r["reason"] = quarantine_reason
+    if is_test: r["test"] = True
+    if is_sim: r["sim"] = True
+    return r
+
+if __name__ == "__main__":
+    if "--health" in sys.argv:
+        print(json.dumps({
+            "status": "healthy",
+            "version": "1.3",
+            "checks": {
+                "events_log_parent_writable": EVENTS_LOG.parent.exists() or EVENTS_LOG.parent.parent.exists(),
+                "privacy_patterns_loaded": len(PRIVACY_PATTERNS) > 0
+            }
+        }))
+        sys.exit(0)
+
+    if "--sample" in sys.argv:
+        sample_event = {
+            "event": "recall",
+            "ts": datetime.now().isoformat(),
+            "scope": "domains/memory",
+            "session_id": "sample-session",
+            "task_id": "sample-task",
+            "memory_id": "sample-memory-id",
+            "text": "sample memory emit"
+        }
+        print(json.dumps({"ok": True, "sample_event": sample_event}, ensure_ascii=False))
+        sys.exit(0)
+    if len(sys.argv) < 2:
+        print("Usage: memory-emit '<json>' [--source <source>]")
+        sys.exit(1)
+    
+    event_json, source = sys.argv[1], "user"
+    if "--source" in sys.argv:
+        i = sys.argv.index("--source")
+        if i + 1 < len(sys.argv): source = sys.argv[i + 1]
+    
+    try: event = json.loads(event_json)
+    except json.JSONDecodeError as e: print(f"ERROR: {e}"); sys.exit(1)
+    
+    r = emit(event, source)
+    if r["ok"]:
+        msg = f"✓ {r['event_id']}"
+        if r.get("autofixed"): msg += f" ({r['autofixed']})"
+        if r.get("quarantined"): msg += f" [QUARANTINED: {r.get('reason')}]"
+        if r.get("test"): msg += " [TEST]"
+        if r.get("sim"): msg += " [SIM]"
+        print(msg)
+    elif r.get("duplicate"): print(f"⊘ Dup: {r['event_id']}")
+    else: print(f"✗ {r.get('error')}"); sys.exit(1)

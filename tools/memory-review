@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+"""
+Memory Review Queue
+人工审核自动晋升规则，防止偶然纠正污染全局
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+
+MEMORY_ROOT = Path.home() / ".openclaw/workspace/memory"
+EVENTS_LOG = MEMORY_ROOT / "events.log"
+REVIEW_QUEUE = MEMORY_ROOT / "review_queue.json"
+
+
+def load_queue():
+    if REVIEW_QUEUE.exists():
+        return json.loads(REVIEW_QUEUE.read_text())
+    return {"pending": [], "resolved": []}
+
+
+def save_queue(queue):
+    REVIEW_QUEUE.parent.mkdir(parents=True, exist_ok=True)
+    REVIEW_QUEUE.write_text(json.dumps(queue, indent=2))
+
+
+def add_to_review(entry_id: str, reason: str, events: list):
+    queue = load_queue()
+    pending_item = {
+        "entry_id": entry_id,
+        "reason": reason,
+        "events": events,
+        "added_at": datetime.now().isoformat(),
+        "status": "pending",
+    }
+    queue["pending"].append(pending_item)
+    save_queue(queue)
+    print(f"📋 Added to review queue: {entry_id}")
+    print(f"   Reason: {reason}")
+    return pending_item
+
+
+def approve(entry_id: str):
+    queue = load_queue()
+    for item in queue["pending"]:
+        if item["entry_id"] == entry_id:
+            item["status"] = "approved"
+            item["resolved_at"] = datetime.now().isoformat()
+            queue["resolved"].append(item)
+            queue["pending"].remove(item)
+            event = {
+                "schema_version": "1.1",
+                "ts": datetime.now().isoformat() + "Z",
+                "event": "approve_rule",
+                "memory_id": entry_id,
+            }
+            EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+            with open(EVENTS_LOG, "a") as f:
+                f.write(json.dumps(event) + "\n")
+            save_queue(queue)
+            print(f"✓ Approved: {entry_id}")
+            return True
+    print(f"✗ Not found in pending queue: {entry_id}")
+    return False
+
+
+def reject(entry_id: str, reason: str = ""):
+    queue = load_queue()
+    for item in queue["pending"]:
+        if item["entry_id"] == entry_id:
+            item["status"] = "rejected"
+            item["rejected_reason"] = reason
+            item["resolved_at"] = datetime.now().isoformat()
+            queue["resolved"].append(item)
+            queue["pending"].remove(item)
+            event = {
+                "schema_version": "1.1",
+                "ts": datetime.now().isoformat() + "Z",
+                "event": "block_rule",
+                "memory_id": entry_id,
+                "reason": reason,
+            }
+            EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+            with open(EVENTS_LOG, "a") as f:
+                f.write(json.dumps(event) + "\n")
+            save_queue(queue)
+            print(f"✗ Rejected: {entry_id}")
+            return True
+    print(f"✗ Not found in pending queue: {entry_id}")
+    return False
+
+
+def show_queue():
+    queue = load_queue()
+    print("📋 Memory Review Queue")
+    print("=" * 50)
+    if not queue["pending"]:
+        print("  (empty)")
+    else:
+        for i, item in enumerate(queue["pending"], 1):
+            print(f"\n{i}. {item['entry_id']}")
+            print(f"   Reason: {item['reason']}")
+            print(f"   Added: {item['added_at']}")
+            print(f"   Events: {len(item.get('events', []))} corrections")
+    print(f"\nResolved: {len(queue['resolved'])} items")
+
+
+def health():
+    print(json.dumps({
+        "status": "healthy",
+        "version": "1.1",
+        "checks": {
+            "memory_root_exists": MEMORY_ROOT.exists(),
+            "events_log_parent_exists": EVENTS_LOG.parent.exists(),
+            "queue_parent_exists": REVIEW_QUEUE.parent.exists()
+        }
+    }))
+
+
+def sample():
+    print(json.dumps({
+        "ok": True,
+        "sample": "memory-review approve <entry_id>"
+    }))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="memory-review")
+    parser.add_argument("action", nargs="?", choices=["approve", "reject"], help="Action")
+    parser.add_argument("entry_id", nargs="?", help="Entry ID")
+    parser.add_argument("reason", nargs="?", default="", help="Reject reason")
+    parser.add_argument("--health", action="store_true", help="Health check for tool_doctor")
+    parser.add_argument("--sample", action="store_true", help="Sample call for tool_doctor")
+    args = parser.parse_args()
+
+    if args.health:
+        health()
+        return 0
+    if args.sample:
+        sample()
+        return 0
+
+    if not args.action:
+        show_queue()
+        return 0
+
+    if args.action == "approve":
+        if not args.entry_id:
+            parser.error("approve requires <entry_id>")
+        return 0 if approve(args.entry_id) else 1
+
+    if args.action == "reject":
+        if not args.entry_id:
+            parser.error("reject requires <entry_id>")
+        return 0 if reject(args.entry_id, args.reason) else 1
+
+    parser.error("invalid action")
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

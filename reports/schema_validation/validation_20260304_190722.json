@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-03-04T19:07:22.267590",
+  "report_path": "/home/moonlight/.openclaw/workspace/reports/tool_doctor/doctor_report_project-gate-sweep.json",
+  "report_hash": "b2317b60f7a04f1e",
+  "schema_id": "doctor.v1",
+  "schema_hash": "f874d5a5633af155",
+  "validated": true,
+  "errors_count": 0,
+  "errors": []
+}

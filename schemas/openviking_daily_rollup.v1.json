@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "openviking_daily_rollup.v1",
+  "type": "object",
+  "required": ["version", "date", "run_count", "coverage_pct", "skipped_chunks_count", "fallback_trigger_count", "dual_guard_trim_count", "offenders_topN", "policy_level_distribution"],
+  "properties": {
+    "version": {"type": "string"},
+    "date": {"type": "string"},
+    "run_count": {"type": "integer", "minimum": 0},
+    "coverage_pct": {"type": "object"},
+    "skipped_chunks_count": {"type": "object"},
+    "fallback_trigger_count": {"type": "object"},
+    "dual_guard_trim_count": {"type": "object"},
+    "offenders_topN": {"type": "array"},
+    "policy_level_distribution": {"type": "object"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,4 @@
+{"event": "recall", "ts": "2026-03-03T10:00:00Z", "recall_id": "drift_r1", "used": ["mem_drift_001"], "candidates_count": 1, "event_version": "v2"}
+{"event": "use", "ts": "2026-03-03T10:00:01Z", "memory_id": "mem_drift_001", "recall_id": "drift_r1", "event_version": "v2"}
+{"event": "recall", "ts": "2026-03-03T10:01:00Z", "recall_id": "drift_r2", "used": ["mem_drift_002"], "candidates_count": 0, "event_version": "v2", "filtered": true}
+{"event": "recall", "ts": "2026-03-03T10:02:00Z", "used": ["mem_drift_003"], "candidates_count": 1, "event_version": "v2", "linkability": "not_applicable"}

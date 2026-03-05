@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-03-05T05:19:10.831704+00:00",
+  "policy_mode": "warn_soft",
+  "doc_count": 1,
+  "decisions": [
+    {
+      "doc_id": "viking://resources/user/memory/2026-03-03-orchestrator-v2.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    }
+  ]
+}

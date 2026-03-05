@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "memory-sweeper.v1.schema.json",
+  "title": "Memory Sweeper Tool Schema v1",
+  "description": "Schema for memory-sweeper (Scoring-Canary) tool",
+  "type": "object",
+  "definitions": {
+    "Input": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string",
+          "enum": ["stats", "config", "--health"],
+          "description": "Command to execute"
+        }
+      }
+    },
+    "HealthOutput": {
+      "type": "object",
+      "required": ["status", "version", "checks"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["healthy", "unhealthy"]
+        },
+        "version": { "type": "string" },
+        "checks": {
+          "type": "object",
+          "properties": {
+            "events_log_exists": { "type": "boolean" },
+            "events_log_readable": { "type": "boolean" },
+            "config_valid": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "StatsOutput": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "integer" },
+        "quarantined": { "type": "integer" },
+        "duplicates": { "type": "integer" },
+        "tier_changes_24h": { "type": "integer" }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": ["type", "message"],
+          "properties": {
+            "type": { "type": "string" },
+            "message": { "type": "string" },
+            "code": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

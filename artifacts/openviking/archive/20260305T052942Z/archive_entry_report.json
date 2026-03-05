@@ -1,0 +1,39 @@
+{
+  "version": "openviking_archive_entry.v1",
+  "generated_at": "2026-03-05T05:29:44.856690+00:00",
+  "dry_run": true,
+  "results": [
+    {
+      "name": "daily_log",
+      "source_file": "/tmp/archive_entry_test.md",
+      "target_uri": "viking://resources/user/memory/archive-entry-test/",
+      "root_uri": "viking://resources/user/memory/archive-entry-test/archive_entry_test",
+      "leaf_count": 1,
+      "backfill_out_dir": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260305T052942Z/daily_log",
+      "summary": {
+        "processed": 1,
+        "failed": 0,
+        "coverage_before_avg": 0.0,
+        "coverage_after_avg": 1.0,
+        "skipped_after_total": 0,
+        "idempotent_skipped": 0
+      },
+      "cost_estimate": {
+        "embed_calls_est": 1,
+        "chunk_total_est": 1,
+        "bytes_total_est": 54,
+        "time_est_sec": 0.25,
+        "write_ops_est": 0
+      },
+      "artifacts": {
+        "embedding_audit": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260305T052942Z/daily_log/embedding_audit.json",
+        "offenders": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260305T052942Z/daily_log/embedding_offenders_topN.json",
+        "policy_decision": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260305T052942Z/daily_log/policy_decision.json",
+        "metrics": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260305T052942Z/daily_log/metrics.json",
+        "manifest": "/home/moonlight/.openclaw/workspace/artifacts/openviking/index_manifest.json"
+      }
+    }
+  ],
+  "failures": [],
+  "out_root": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260305T052942Z"
+}

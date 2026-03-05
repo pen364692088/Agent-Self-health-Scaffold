@@ -1,0 +1,471 @@
+#!/usr/bin/env python3
+"""
+Subagent Orchestration Wrapper v2.3
+v2.3 补丁: 审计事件包含 config_hash/schema_version/tool_versions
+"""
+
+import argparse
+import os
+import json
+import sys
+import hashlib
+import time
+import uuid
+import random
+from datetime import datetime, timedelta
+from pathlib import Path
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ORCHESTRATOR_DIR = WORKSPACE / "tools" / "orchestrator"
+PENDING_FILE = ORCHESTRATOR_DIR / "pending_subtasks.json"
+MAILBOX_DIR = WORKSPACE / "reports" / "subtasks"
+EVENTS_DIR = WORKSPACE / "reports" / "orchestrator"
+AUDIT_LOG = WORKSPACE / "reports" / "gates_audit.log"
+GATES_CONFIG = WORKSPACE / "POLICIES" / "GATES_CONFIG.json"
+DOCTOR_SCHEMA = WORKSPACE / "schemas" / "doctor_report.v1.schema.json"
+
+# Add orchestrator to path
+sys.path.insert(0, str(ORCHESTRATOR_DIR))
+
+TOOL_DELIVERY_POLICY = WORKSPACE / "POLICIES" / "TOOL_DELIVERY.md"
+
+TOOL_TASK_KEYWORDS = [
+    "tool", "wrapper", "integration", "handler", "cli", "command",
+    "api", "endpoint", "client", "sdk", "plugin", "extension",
+    "工具", "封装", "集成", "处理器", "接口", "server", "service",
+    "preflight", "doctor", "health", "port", "schema"
+]
+
+TOOL_PATHS_FORCE = [
+    "tools/", "integrations/", "handlers/", "schemas/",
+    "skills/", "hooks/", "scripts/tool_", "wrapper/", "client/"
+]
+
+
+def compute_file_hash(file_path: str) -> str:
+    """Compute SHA256 hash of a file."""
+    if not Path(file_path).exists():
+        return "file_not_found"
+    
+    with open(file_path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()[:16]
+
+
+def get_tool_versions() -> dict:
+    """Get versions of key tools."""
+    versions = {}
+    
+    for tool in ["subtask-orchestrate", "done-guard", "tool_doctor"]:
+        tool_path = WORKSPACE / "tools" / tool
+        if tool_path.exists():
+            content = tool_path.read_text()
+            # 提取版本号
+            import re
+            match = re.search(r'v(\d+\.\d+(?:\.\d+)?)', content)
+            versions[tool] = match.group(0) if match else "unknown"
+        else:
+            versions[tool] = "not_found"
+    
+    return versions
+
+
+def log_gates_bypass(reason: str, task_id: str = None, user: str = None):
+    """
+    Log GATES_DISABLE usage for audit with config hash.
+    
+    v2.3 补丁: 包含 gates_config_hash, schema_version, tool_versions
+    """
+    import getpass
+    timestamp = datetime.now().isoformat()
+    user = user or os.environ.get("USER") or getpass.getuser()
+    
+    # 计算配置文件 hash
+    gates_config_hash = compute_file_hash(GATES_CONFIG)
+    schema_hash = compute_file_hash(DOCTOR_SCHEMA)
+    
+    # 获取 schema version
+    schema_version = "unknown"
+    if DOCTOR_SCHEMA.exists():
+        try:
+            schema_data = json.loads(DOCTOR_SCHEMA.read_text())
+            schema_version = schema_data.get("$id", "unknown")
+        except:
+            pass
+    
+    # 获取工具版本
+    tool_versions = get_tool_versions()
+    
+    audit_entry = {
+        "timestamp": timestamp,
+        "event": "GATES_BYPASS",
+        "reason": reason or os.environ.get("GATES_DISABLE_REASON", "No reason provided"),
+        "task_id": task_id,
+        "user": user,
+        "env_gates_disable": os.environ.get("GATES_DISABLE", "0"),
+        
+        # v2.3 补丁: 新增字段
+        "gates_config_hash": gates_config_hash,
+        "schema_version": schema_version,
+        "schema_hash": schema_hash,
+        "tool_versions": tool_versions
+    }
+    
+    # 追加审计日志
+    with open(AUDIT_LOG, "a") as f:
+        f.write(json.dumps(audit_entry) + "\n")
+    
+    return audit_entry
+
+
+def is_tool_task(task_description: str, changed_paths: list = None) -> tuple:
+    """Detect if task is tool-related."""
+    # 路径触发 (最优先)
+    if changed_paths:
+        for path in changed_paths:
+            for force_path in TOOL_PATHS_FORCE:
+                if force_path in path:
+                    return True, f"Path trigger: {path} matches {force_path}"
+    
+    # 关键词检测
+    task_lower = task_description.lower()
+    for kw in TOOL_TASK_KEYWORDS:
+        if kw in task_lower:
+            return True, f"Keyword match: {kw}"
+    
+    return False, "Not a tool task"
+
+
+def get_gates_injection() -> str:
+    """Get Tool Delivery Gates protocol injection for tool tasks."""
+    return """
+## ⚠️ TOOL DELIVERY GATES (MANDATORY)
+
+This task involves tools. You MUST pass these gates before completion:
+
+### Gate A: Contract Validation
+- Define input/output schemas
+- Run drift detection
+- Standardize error format
+
+### Gate B: E2E Testing
+- Happy path test passes
+- Bad args handling verified
+- Real transport used
+
+### Gate C: Preflight Check
+- Run `tools/tool_doctor <tool_path>`
+- Generate `doctor_report.json`
+
+### Required Output:
+```markdown
+## EVIDENCE_GATE_A
+- Schema validated: [files]
+- Drift detection: PASS
+- Error format: standard
+
+## EVIDENCE_GATE_B
+- E2E happy: [result]
+- E2E bad args: [result]
+
+## EVIDENCE_GATE_C
+- tool_doctor: [summary]
+- Health checks: [passed]
+```
+
+### Bypass (emergency only):
+```bash
+export GATES_DISABLE=1
+export GATES_DISABLE_REASON="Why you need to bypass"
+```
+
+See POLICIES/TOOL_DELIVERY.md for full protocol.
+"""
+
+
+def cmd_run(args):
+    """One-shot subagent execution."""
+    from orchestrator import Orchestrator
+    
+    # 先检查是否有 pending 任务
+    if PENDING_FILE.exists():
+        with open(PENDING_FILE) as f:
+            data = json.load(f)
+        pending_count = len(data.get('pending', {}))
+        if pending_count > 0 and args.auto_resume:
+            print(f"⚠️  Found {pending_count} pending tasks, auto-resuming...")
+            print()
+            args_resume = argparse.Namespace(
+                timeout=args.timeout,
+                per_task=args.per_task,
+                max_poll=args.max_poll,
+                report=None
+            )
+            cmd_resume(args_resume)
+            print()
+    
+    # Step 1: 注册任务
+    orch = Orchestrator()
+    task_id, run_id, session_key = orch.spawn_task(
+        description=args.task,
+        model=args.model,
+        max_retries=args.retries
+    )
+    
+    # Step 1.5: 检测是否为工具任务，注入 Gate 协议
+    is_tool, tool_reason = is_tool_task(args.task)
+    gates_disabled = os.environ.get('GATES_DISABLE', '0') == '1' or args.no_gates
+    
+    # 审计绕过 (v2.3 包含 config hash)
+    if gates_disabled and is_tool:
+        audit = log_gates_bypass(
+            reason=os.environ.get("GATES_DISABLE_REASON", "CLI flag"),
+            task_id=task_id
+        )
+        if not args.json:
+            print(f"📝 GATES_DISABLE audit logged: {audit['timestamp']}")
+            print(f"   config_hash: {audit['gates_config_hash']}")
+            print(f"   schema_version: {audit['schema_version']}")
+    
+    # Step 2: 输出 sessions_spawn 命令
+    if args.json:
+        result = {
+            "action": "spawn_and_join",
+            "task_id": task_id,
+            "run_id": run_id,
+            "session_key": session_key,
+            "model": args.model,
+            "is_tool_task": is_tool,
+            "tool_detection_reason": tool_reason,
+            "gates_enabled": not gates_disabled,
+            "spawn_command": f"sessions_spawn runtime=subagent model={args.model} task='{args.task[:60]}'",
+            "join_command": f"subtask-orchestrate join -t {args.timeout} --task-id {task_id}"
+        }
+        if is_tool and not gates_disabled:
+            result["gates_protocol"] = "See POLICIES/TOOL_DELIVERY.md"
+        if gates_disabled and is_tool:
+            result["gates_bypass_audit"] = audit
+        print(json.dumps(result, indent=2))
+    else:
+        print("=" * 60)
+        print("ONE-SHOT SUBAGENT EXECUTION")
+        print("=" * 60)
+        print()
+        print(f"Task ID:    {task_id}")
+        print(f"Run ID:     {run_id}")
+        print(f"Model:      {args.model}")
+        
+        if is_tool:
+            print(f"Tool Detection: {tool_reason}")
+            if gates_disabled:
+                print()
+                print("⚠️  TOOL TASK DETECTED (GATES DISABLED)")
+                print("   GATES_DISABLE=1 is set - gates bypassed")
+                print(f"   Audit logged: {AUDIT_LOG}")
+            else:
+                print()
+                print("🔧 TOOL TASK DETECTED - DELIVERY GATES REQUIRED")
+                print("-" * 60)
+                print(get_gates_injection())
+        
+        print()
+        print("Step 1: Execute this command to spawn the subagent:")
+        print("-" * 60)
+        print(f"sessions_spawn runtime=subagent model={args.model} task='{args.task[:60]}...'")
+        print("-" * 60)
+        print()
+        print("Step 2: After spawn completes, run this to join:")
+        print("-" * 60)
+        print(f"subtask-orchestrate join -t {args.timeout} --task-id {task_id}")
+        print("-" * 60)
+        print()
+        print("⚠️  CRITICAL: Both steps are mandatory!")
+        print("   Missing Step 2 = task stuck in pending forever.")
+    
+    return True
+
+
+def cmd_detect(args):
+    """Test tool task detection."""
+    is_tool, reason = is_tool_task(args.task)
+    
+    result = {
+        "task": args.task,
+        "is_tool_task": is_tool,
+        "reason": reason,
+        "gates_enabled": os.environ.get("GATES_DISABLE", "0") != "1"
+    }
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(f"Task: {args.task}")
+        print(f"Is Tool Task: {is_tool}")
+        print(f"Reason: {reason}")
+        print(f"Gates Enabled: {result['gates_enabled']}")
+    
+    return is_tool
+
+
+def cmd_join(args):
+    """Join pending subtasks."""
+    from orchestrator import Orchestrator
+    orch = Orchestrator()
+    return True
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Subagent Orchestration Wrapper v2.3")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    
+    run_parser = subparsers.add_parser("run", help="One-shot subagent execution")
+    run_parser.add_argument("task", help="Task description")
+    run_parser.add_argument("-m", "--model", required=True, help="Model to use")
+    run_parser.add_argument("--timeout", type=float, default=300)
+    run_parser.add_argument("--retries", type=int, default=2)
+    run_parser.add_argument("--auto-resume", action="store_true")
+    run_parser.add_argument("--per-task", type=float, default=600)
+    run_parser.add_argument("--max-poll", type=int, default=100)
+    run_parser.add_argument("--no-gates", action="store_true")
+    run_parser.add_argument("--json", action="store_true")
+    run_parser.set_defaults(func=cmd_run)
+    
+    detect_parser = subparsers.add_parser("detect", help="Test tool task detection")
+    detect_parser.add_argument("task", help="Task description to test")
+    detect_parser.add_argument("--json", action="store_true")
+    detect_parser.set_defaults(func=cmd_detect)
+    
+    join_parser = subparsers.add_parser("join", help="Join pending subtasks")
+    join_parser.add_argument("-t", "--timeout", type=float, default=300)
+    join_parser.add_argument("--task-id", help="Specific task to join")
+def cmd_gc(args):
+    """Garbage collect old tasks and clean up zombie tasks."""
+    from orchestrator import Orchestrator
+    orch = Orchestrator()
+    
+    results = {
+        "gc": None,
+        "zombie_cleanup": None
+    }
+    
+    # 1. Clean up zombie tasks
+    if args.zombie or args.all:
+        zombie_result = orch.cleanup_zombie_tasks()
+        results["zombie_cleanup"] = zombie_result
+        if not args.json:
+            print(f"🧹 Cleaned {zombie_result['cleaned_count']} zombie tasks")
+    
+    # 2. Regular GC of old completed tasks
+    if args.old or args.all:
+        old_count = orch.gc(keep_days=args.days)
+        results["gc"] = {"old_tasks_removed": old_count}
+        if not args.json:
+            print(f"🗑️  Removed {old_count} old completed tasks (older than {args.days} days)")
+    
+    # If no specific flag, do both
+    if not args.zombie and not args.old and not args.all:
+        zombie_result = orch.cleanup_zombie_tasks()
+        results["zombie_cleanup"] = zombie_result
+        if not args.json:
+            print(f"🧹 Cleaned {zombie_result['cleaned_count']} zombie tasks")
+    
+    if args.json:
+        print(json.dumps(results, indent=2))
+    
+    return True
+
+
+def cmd_stuck(args):
+    """List stuck/pending tasks for diagnostics."""
+    from orchestrator import Orchestrator
+    orch = Orchestrator()
+    
+    stuck_tasks = orch.get_stuck_tasks()
+    
+    if args.json:
+        print(json.dumps({"stuck_tasks": stuck_tasks}, indent=2))
+    else:
+        if stuck_tasks:
+            print(f"⚠️  Found {len(stuck_tasks)} stuck tasks:")
+            print("-" * 60)
+            for task in stuck_tasks:
+                overdue_min = task['overdue_seconds'] / 60
+                print(f"  {task['task_id']}: {task['description']}...")
+                print(f"    Deadline: {task['deadline']}")
+                print(f"    Overdue: {overdue_min:.1f} minutes")
+            print("-" * 60)
+            print("\nRun 'subtask-orchestrate gc --zombie' to clean these up.")
+        else:
+            print("✅ No stuck tasks found")
+    
+    return True
+
+
+def cmd_list(args):
+    """List all pending and recent completed tasks."""
+    from orchestrator import Orchestrator
+    orch = Orchestrator()
+    
+    # 获取 pending 任务
+    pending = {}
+    with orch.lock:
+        for task_id, task in orch.pending_subtasks.items():
+            pending[task_id] = task.to_dict()
+    
+    if args.json:
+        print(json.dumps({"pending": pending}, indent=2))
+    else:
+        if pending:
+            print(f"📋 {len(pending)} pending tasks:")
+            for task_id, task in pending.items():
+                print(f"  - {task_id}: {task.get('description', 'N/A')[:40]}...")
+        else:
+            print("✅ No pending tasks")
+    
+    return True
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Subagent Orchestration Wrapper v2.3")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    
+    run_parser = subparsers.add_parser("run", help="One-shot subagent execution")
+    run_parser.add_argument("task", help="Task description")
+    run_parser.add_argument("-m", "--model", required=True, help="Model to use")
+    run_parser.add_argument("--timeout", type=float, default=300)
+    run_parser.add_argument("--retries", type=int, default=2)
+    run_parser.add_argument("--auto-resume", action="store_true")
+    run_parser.add_argument("--per-task", type=float, default=600)
+    run_parser.add_argument("--max-poll", type=int, default=100)
+    run_parser.add_argument("--no-gates", action="store_true")
+    run_parser.add_argument("--json", action="store_true")
+    run_parser.set_defaults(func=cmd_run)
+    
+    detect_parser = subparsers.add_parser("detect", help="Test tool task detection")
+    detect_parser.add_argument("task", help="Task description to test")
+    detect_parser.add_argument("--json", action="store_true")
+    detect_parser.set_defaults(func=cmd_detect)
+    
+    join_parser = subparsers.add_parser("join", help="Join pending subtasks")
+    join_parser.add_argument("-t", "--timeout", type=float, default=300)
+    join_parser.add_argument("--task-id", help="Specific task to join")
+    join_parser.set_defaults(func=cmd_join)
+    
+    gc_parser = subparsers.add_parser("gc", help="Garbage collect old/zombie tasks")
+    gc_parser.add_argument("--zombie", action="store_true", help="Clean up zombie tasks (past deadline)")
+    gc_parser.add_argument("--old", action="store_true", help="Clean up old completed tasks")
+    gc_parser.add_argument("--all", action="store_true", help="Clean up both zombie and old tasks")
+    gc_parser.add_argument("--days", type=int, default=7, help="Days to keep old tasks (default: 7)")
+    gc_parser.add_argument("--json", action="store_true")
+    gc_parser.set_defaults(func=cmd_gc)
+    
+    stuck_parser = subparsers.add_parser("stuck", help="List stuck tasks for diagnostics")
+    stuck_parser.add_argument("--json", action="store_true")
+    stuck_parser.set_defaults(func=cmd_stuck)
+    
+    list_parser = subparsers.add_parser("list", help="List pending tasks")
+    list_parser.add_argument("-v", "--verbose", action="store_true")
+    list_parser.add_argument("--json", action="store_true")
+    list_parser.set_defaults(func=cmd_list)
+    
+    args = parser.parse_args()
+    sys.exit(0 if args.func(args) else 1)

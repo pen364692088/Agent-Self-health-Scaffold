@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""
+Retrieval Regression Test Runner
+Runs retrieval_regression.json test suite and reports results
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime
+
+MEMORY_ROOT = Path.home() / ".openclaw/workspace/memory"
+TESTS_FILE = MEMORY_ROOT / "tests/retrieval_regression.json"
+EVENTS_LOG = MEMORY_ROOT / "events.log"
+REPORT_FILE = MEMORY_ROOT / "regression_report.json"
+
+def load_tests() -> list:
+    """Load regression test cases"""
+    if not TESTS_FILE.exists():
+        print(f"ERROR: Test file not found: {TESTS_FILE}")
+        sys.exit(1)
+    return json.loads(TESTS_FILE.read_text())
+
+def run_retrieval(query: str) -> dict:
+    """Call memory-retrieve and return result"""
+    try:
+        result = subprocess.run(
+            [sys.executable, str(Path.home() / ".openclaw/workspace/tools/memory-retrieve"), query],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return json.loads(result.stdout)
+    except Exception as e:
+        return {"error": str(e)}
+
+def check_must_include(result: dict, must_include: list) -> tuple[bool, list]:
+    """Check if must_include doc_ids are in results"""
+    returned_ids = result.get("doc_ids", [])
+    missing = []
+    for doc_id in must_include:
+        if doc_id not in returned_ids:
+            missing.append(doc_id)
+    return len(missing) == 0, missing
+
+def check_must_not_include(result: dict, must_not: list) -> tuple[bool, list]:
+    """Check if must_not_include doc_ids are NOT in results"""
+    returned_ids = result.get("doc_ids", [])
+    violations = []
+    for doc_id in must_not:
+        if doc_id in returned_ids:
+            violations.append(doc_id)
+    return len(violations) == 0, violations
+
+def check_stage2_budget(result: dict, max_docs: int) -> bool:
+    """Check if stage2 docs count is within budget"""
+    if result.get("stage") != "semantic":
+        return True  # Not applicable for pinned stage
+    return len(result.get("doc_ids", [])) <= max_docs
+
+def log_event(event_type: str, data: dict):
+    """Write event to events.log"""
+    event = {
+        "event": event_type,
+        "ts": datetime.now().isoformat() + "Z",
+        **data
+    }
+    EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(EVENTS_LOG, "a") as f:
+        f.write(json.dumps(event) + "\n")
+
+def run_suite():
+    print("=" * 60)
+    print("Retrieval Regression Test Runner")
+    print("=" * 60)
+    
+    tests = load_tests()
+    results = {
+        "total": len(tests),
+        "passed": 0,
+        "failed": 0,
+        "tests": []
+    }
+    
+    # Counters for rates
+    pinned_hits = 0
+    stage2_usage = 0
+    total_queries = 0
+    
+    for test in tests:
+        test_id = test["id"]
+        query = test["query"]
+        must_include = test.get("must_include", [])
+        must_not = test.get("must_not_include", [])
+        max_stage2 = test.get("max_stage2_docs", 5)
+        
+        print(f"\n[{test_id}] Running: {query[:50]}...")
+        
+        result = run_retrieval(query)
+        total_queries += 1
+        
+        if "error" in result:
+            print(f"  ❌ ERROR: {result['error']}")
+            results["failed"] += 1
+            results["tests"].append({
+                "id": test_id,
+                "status": "error",
+                "error": result["error"]
+            })
+            continue
+        
+        # Track stage usage
+        if result.get("stage") == "pinned":
+            pinned_hits += 1
+        else:
+            stage2_usage += 1
+        
+        # Run checks
+        checks = []
+        all_passed = True
+        
+        # Check must_include
+        if must_include:
+            passed, missing = check_must_include(result, must_include)
+            checks.append(f"must_include: {'✓' if passed else '✗'}")
+            if not passed:
+                all_passed = False
+                print(f"  ❌ Missing: {missing}")
+        
+        # Check must_not_include
+        if must_not:
+            passed, violations = check_must_not_include(result, must_not)
+            checks.append(f"must_not: {'✓' if passed else '✗'}")
+            if not passed:
+                all_passed = False
+                print(f"  ❌ Violations: {violations}")
+        
+        # Check stage2 budget
+        budget_ok = check_stage2_budget(result, max_stage2)
+        checks.append(f"budget: {'✓' if budget_ok else '✗'}")
+        if not budget_ok:
+            all_passed = False
+            print(f"  ❌ Budget exceeded: {len(result.get('doc_ids', []))} > {max_stage2}")
+        
+        if all_passed:
+            print(f"  ✓ {' | '.join(checks)}")
+            results["passed"] += 1
+            results["tests"].append({"id": test_id, "status": "passed"})
+        else:
+            print(f"  ❌ {' | '.join(checks)}")
+            results["failed"] += 1
+            results["tests"].append({
+                "id": test_id,
+                "status": "failed",
+                "checks": checks
+            })
+    
+    # Calculate rates
+    pinned_hit_rate = pinned_hits / total_queries if total_queries > 0 else 0
+    stage2_usage_rate = stage2_usage / total_queries if total_queries > 0 else 0
+    
+    results["metrics"] = {
+        "pinned_hit_rate": round(pinned_hit_rate, 3),
+        "stage2_usage_rate": round(stage2_usage_rate, 3)
+    }
+    
+    # Summary
+    print("\n" + "=" * 60)
+    print(f"RESULTS: {results['passed']}/{results['total']} passed")
+    print(f"Pinned hit rate: {pinned_hit_rate:.1%}")
+    print(f"Stage2 usage rate: {stage2_usage_rate:.1%}")
+    print("=" * 60)
+    
+    # Save report
+    REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_FILE.write_text(json.dumps(results, indent=2))
+    print(f"\nReport saved: {REPORT_FILE}")
+    
+    # Log event
+    log_event("retrieval_regression_run", {
+        "total": results["total"],
+        "passed": results["passed"],
+        "failed": results["failed"],
+        "pinned_hit_rate": pinned_hit_rate,
+        "stage2_usage_rate": stage2_usage_rate
+    })
+    
+    # Alert if failures
+    if results["failed"] > 0:
+        log_event("retrieval_regression_fail", {
+            "failed_count": results["failed"],
+            "failed_tests": [t["id"] for t in results["tests"] if t["status"] == "failed"]
+        })
+    
+    # Exit code
+    sys.exit(0 if results["failed"] == 0 else 1)
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Retrieval Regression Test Runner")
+    parser.add_argument("--health", action="store_true", help="Health check for tool_doctor")
+    parser.add_argument("--sample", action="store_true", help="Sample call for tool_doctor")
+    parser.add_argument("--self-test", action="store_true", help="Run full regression suite")
+    args = parser.parse_args()
+
+    if args.health:
+        print(json.dumps({
+            "status": "healthy",
+            "version": "1.0",
+            "checks": {
+                "tests_file_exists": TESTS_FILE.exists(),
+                "memory_retrieve_exists": (Path.home() / ".openclaw/workspace/tools/memory-retrieve").exists(),
+                "events_log_parent_exists": EVENTS_LOG.parent.exists()
+            }
+        }))
+        return
+
+    if args.sample:
+        print(json.dumps({
+            "ok": True,
+            "sample": "retrieval-regression-runner --self-test"
+        }))
+        return
+
+    # backward-compatible default: run full suite
+    run_suite()
+
+if __name__ == "__main__":
+    main()

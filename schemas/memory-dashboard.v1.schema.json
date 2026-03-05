@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "memory-dashboard.v1.schema.json",
+  "title": "Memory Dashboard Tool Schema v1",
+  "description": "Schema for memory-dashboard tool input/output",
+  "type": "object",
+  "definitions": {
+    "Input": {
+      "type": "object",
+      "properties": {
+        "json": {
+          "type": "boolean",
+          "description": "Output as JSON",
+          "default": false
+        },
+        "history": {
+          "type": "boolean",
+          "description": "Show historical trends",
+          "default": false
+        },
+        "save": {
+          "type": "boolean",
+          "description": "Save to history",
+          "default": false
+        }
+      }
+    },
+    "Metrics": {
+      "type": "object",
+      "required": ["use_attribution", "adoption_rate_any", "uses_per_recall"],
+      "properties": {
+        "use_attribution": {"type": "number", "minimum": 0, "maximum": 1},
+        "adoption_rate_any": {"type": "number", "minimum": 0, "maximum": 1},
+        "uses_per_recall": {"type": "number", "minimum": 0},
+        "uses_per_recall_p50": {"type": "number"},
+        "uses_per_recall_p90": {"type": "number"},
+        "use_term_p50": {"type": "number"},
+        "unique_use_count": {"type": "integer"},
+        "raw_mentions": {"type": "integer"},
+        "unique_to_raw_ratio": {"type": "number"},
+        "duplicate_id_rate": {"type": "number"},
+        "orphan_use_count": {"type": "integer"},
+        "orphan_recall_count": {"type": "integer"},
+        "orphan_use_rate": {"type": "number"},
+        "orphan_recall_rate": {"type": "number"},
+        "unadopted_recall_rate": {"type": "number"},
+        "broken_link_recall_rate": {"type": "number"},
+        "sample_size": {
+          "type": "object",
+          "properties": {
+            "events": {"type": "integer"},
+            "sessions": {"type": "integer"},
+            "targets": {"type": "integer"}
+          }
+        },
+        "is_low_sample": {"type": "boolean"},
+        "config_hash": {"type": "string"}
+      }
+    },
+    "Output": {
+      "type": "object",
+      "required": ["ts", "config_hash"],
+      "properties": {
+        "ts": {"type": "string", "format": "date-time"},
+        "config_hash": {"type": "string"}
+      },
+      "allOf": [{"$ref": "#/definitions/Metrics"}]
+    },
+    "HealthOutput": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {"type": "string", "enum": ["healthy", "unhealthy"]},
+        "version": {"type": "string"},
+        "checks": {
+          "type": "object",
+          "properties": {
+            "events_log_readable": {"type": "boolean"},
+            "metrics_dir_writable": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "SampleOutput": {
+      "type": "object",
+      "required": ["status", "sample_result"],
+      "properties": {
+        "status": {"type": "string", "enum": ["ok", "error"]},
+        "sample_result": {"$ref": "#/definitions/Output"},
+        "error": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": ["type", "message"],
+          "properties": {
+            "type": {"type": "string"},
+            "message": {"type": "string"},
+            "code": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

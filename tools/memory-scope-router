@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+"""
+Memory Scope Router - v1.0
+轻量主题路由器：识别用户消息涉及的 scope
+
+输出格式:
+{
+  "scopes": ["projects/openemotion", "domains/infra"],
+  "matched_keywords": {"projects/openemotion": ["MVP-8", "emotiond"]},
+  "confidence": "high" | "medium" | "low"
+}
+"""
+
+import json
+import re
+from typing import Dict, List, Tuple
+
+# ============== Scope 关键词映射 ==============
+# 基于 INDEX.yaml 的 query_hints 和 pinned_pointers.triggers
+
+SCOPE_KEYWORDS = {
+    "projects/openemotion": {
+        "high": [
+            "openemotion", "emotiond", "mvp-8", "mvp8", "mvp-7",
+            "interoceptive", "grudge", "repair_bank", "trust",
+            "enforcer", "emotion_state"
+        ],
+        "medium": [
+            "emotion", "feeling", "relationship", "empathy",
+            "affect", "sentiment"
+        ]
+    },
+    
+    "domains/infra": {
+        "high": [
+            "canary", "rollback", "hysteresis", "canary_status",
+            "tier_changes", "scoring", "diagnostics",
+            "revisit_rate", "boundary_distance"
+        ],
+        "medium": [
+            "runbook", "ops", "infrastructure", "monitoring",
+            "alert", "metric"
+        ]
+    },
+    
+    "domains/subagent": {
+        "high": [
+            "subagent", "orchestrator", "callback", "spawn",
+            "join", "subtask-orchestrate", "pending_subtasks"
+        ],
+        "medium": [
+            "sub-task", "child agent", "worker"
+        ]
+    },
+    
+    "domains/memory": {
+        "high": [
+            "memory-sweeper", "memory-emit", "events.log",
+            "tombstones", "index.yaml", "memory-governance"
+        ],
+        "medium": [
+            "memory", "archive", "bootstrap", "recall", "use_term"
+        ]
+    },
+    
+    "global": {
+        "high": [
+            "wal", "write-ahead", "compaction", "recovery",
+            "privacy", "password", "token", "credential"
+        ],
+        "medium": [
+            "rule", "protocol", "schema", "safety"
+        ]
+    }
+}
+
+# 默认兜底 scope
+DEFAULT_SCOPES = ["global", "domains/memory"]
+
+
+def normalize_message(msg: str) -> str:
+    """标准化消息：小写、去标点"""
+    msg = msg.lower()
+    msg = re.sub(r'[^\w\s\-:]', ' ', msg)
+    return msg
+
+
+def match_scope(msg: str) -> Dict:
+    """
+    识别消息涉及的 scope
+    
+    Returns:
+        {
+            "scopes": [...],
+            "matched_keywords": {scope: [...]},
+            "confidence": "high" | "medium" | "low"
+        }
+    """
+    msg_norm = normalize_message(msg)
+    words = set(msg_norm.split())
+    
+    matched = {}
+    confidence_scores = {}
+    
+    for scope, levels in SCOPE_KEYWORDS.items():
+        scope_matches = []
+        scope_score = 0
+        
+        # High confidence keywords
+        for kw in levels.get("high", []):
+            kw_norm = kw.lower().replace("-", " ")
+            if kw_norm in msg_norm or kw.replace("-", "") in msg_norm.replace(" ", ""):
+                scope_matches.append(kw)
+                scope_score += 3
+        
+        # Medium confidence keywords
+        for kw in levels.get("medium", []):
+            kw_norm = kw.lower()
+            if kw_norm in msg_norm:
+                scope_matches.append(kw)
+                scope_score += 1
+        
+        if scope_matches:
+            matched[scope] = list(set(scope_matches))
+            confidence_scores[scope] = scope_score
+    
+    # 排序：按分数降序
+    sorted_scopes = sorted(
+        matched.keys(),
+        key=lambda s: confidence_scores.get(s, 0),
+        reverse=True
+    )
+    
+    # 确定整体置信度
+    max_score = max(confidence_scores.values()) if confidence_scores else 0
+    if max_score >= 6:
+        confidence = "high"
+    elif max_score >= 3:
+        confidence = "medium"
+    else:
+        confidence = "low"
+    
+    # 如果没有匹配，使用默认 scope
+    if not sorted_scopes:
+        sorted_scopes = DEFAULT_SCOPES
+        confidence = "low"
+    
+    return {
+        "scopes": sorted_scopes[:3],  # 最多返回 3 个 scope
+        "matched_keywords": matched,
+        "confidence": confidence
+    }
+
+
+def get_query_hints_for_scope(scope: str) -> List[str]:
+    """获取 scope 对应的查询提示词（用于 OpenViking 检索）"""
+    hints = []
+    if scope in SCOPE_KEYWORDS:
+        hints.extend(SCOPE_KEYWORDS[scope].get("high", [])[:5])
+    return hints
+
+
+# ============== CLI ==============
+
+if __name__ == "__main__":
+    import sys
+
+    if "--health" in sys.argv:
+        print(json.dumps({"status": "healthy", "version": "1.0", "checks": {"scope_count": len(SCOPE_KEYWORDS), "default_scopes": DEFAULT_SCOPES}}, ensure_ascii=False))
+        sys.exit(0)
+
+    if "--sample" in sys.argv:
+        print(json.dumps(match_scope("openemotion mvp8 canary rollback"), ensure_ascii=False, indent=2))
+        sys.exit(0)
+
+    if len(sys.argv) < 2:
+        print("Usage: memory-scope-router '<message>'")
+        print("\nOutput: JSON with scopes, matched_keywords, confidence")
+        sys.exit(1)
+    
+    msg = " ".join(sys.argv[1:])
+    result = match_scope(msg)
+    print(json.dumps(result, indent=2))

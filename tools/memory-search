@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Memory Search Tool for Agents (hybrid)
+# Usage:
+#   memory-search "query" [--global] [--agent <name>] [--limit N] [--collection C]
+#   memory-search --health
+#   memory-search --sample
+
+set -euo pipefail
+
+QUERY=""
+GLOBAL=false
+AGENT_NAME=""
+LIMIT=10
+COLLECTION="sessions"
+
+health() {
+  local qmd_ok=false
+  if command -v qmd >/dev/null 2>&1; then
+    qmd_ok=true
+  fi
+  printf '{"status":"healthy","version":"1.1","checks":{"qmd_available":%s}}\n' "$qmd_ok"
+}
+
+sample() {
+  cat <<JSON
+{"ok":true,"sample":"memory-search \"canary rollback\" --global --limit 5"}
+JSON
+}
+
+usage() {
+  cat >&2 <<USAGE
+Usage: memory-search <query> [--global] [--agent <name>] [--limit N] [--collection C]
+USAGE
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --health)
+      health
+      exit 0
+      ;;
+    --sample)
+      sample
+      exit 0
+      ;;
+    --global)
+      GLOBAL=true
+      shift
+      ;;
+    --agent)
+      [[ $# -ge 2 ]] || { echo "--agent requires a value" >&2; exit 2; }
+      AGENT_NAME="$2"
+      shift 2
+      ;;
+    --limit)
+      [[ $# -ge 2 ]] || { echo "--limit requires a value" >&2; exit 2; }
+      LIMIT="$2"
+      shift 2
+      ;;
+    --collection)
+      [[ $# -ge 2 ]] || { echo "--collection requires a value" >&2; exit 2; }
+      COLLECTION="$2"
+      shift 2
+      ;;
+    --*)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+    *)
+      QUERY="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$QUERY" ]]; then
+  usage
+  exit 1
+fi
+
+# Detect agent name from environment/context if not global
+if [[ -z "$AGENT_NAME" && "$GLOBAL" == false ]]; then
+  if [[ -n "${AGENT_ID:-}" ]]; then
+    AGENT_NAME="$AGENT_ID"
+  elif [[ -n "${ANTFARM_AGENT_ID:-}" ]]; then
+    AGENT_NAME="$ANTFARM_AGENT_ID"
+  elif [[ "$PWD" =~ antfarm/agents/([^/]+) ]]; then
+    AGENT_NAME="${BASH_REMATCH[1]}"
+  fi
+fi
+
+if ! command -v qmd >/dev/null 2>&1; then
+  echo "qmd not found in PATH" >&2
+  exit 1
+fi
+
+if [[ "$GLOBAL" == true ]]; then
+  qmd query "$QUERY" -c "$COLLECTION" --limit "$LIMIT" 2>/dev/null || \
+    qmd search "$QUERY" -c "$COLLECTION" 2>/dev/null | head -$((LIMIT * 5))
+else
+  if [[ -n "$AGENT_NAME" ]]; then
+    qmd query "$QUERY $AGENT_NAME" -c "$COLLECTION" --limit "$LIMIT" 2>/dev/null || \
+      qmd search "$QUERY" -c "$COLLECTION" 2>/dev/null | grep -i "$AGENT_NAME" | head -$((LIMIT * 3)) || \
+      qmd search "$QUERY" -c "$COLLECTION" 2>/dev/null | head -$((LIMIT * 3))
+  else
+    qmd query "$QUERY" -c "$COLLECTION" --limit "$LIMIT" 2>/dev/null || \
+      qmd search "$QUERY" -c "$COLLECTION" 2>/dev/null | head -$((LIMIT * 5))
+  fi
+fi

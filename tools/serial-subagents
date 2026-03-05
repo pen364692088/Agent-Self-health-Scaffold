@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""
+串行子代理执行器
+一次性执行多个子代理任务，最后统一通知
+
+用法:
+    serial-subagents '任务A' '任务B' --notify "完成消息"
+"""
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ORCH_TOOLS = WORKSPACE / "tools"
+MAILBOX_DIR = WORKSPACE / "reports" / "subtasks"
+
+def run_subagent(task: str, model: str = "iflow/glm-4.6", timeout: int = 60) -> dict:
+    """
+    执行单个子代理任务，返回结果
+    """
+    import uuid
+    task_id = f"task_{uuid.uuid4().hex[:12]}"
+    
+    # 使用 sessions_spawn
+    print(f"  Spawning: {task[:50]}...")
+    
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ORCH_TOOLS / "orchestrator" / "orchestrator.py"),
+            "spawn",
+            "--task-id", task_id,
+            "--description", task,
+            "--model", model
+        ],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode != 0:
+        return {"success": False, "error": result.stderr}
+    
+    # 执行 sessions_spawn (通过 OpenClaw 的方式)
+    # 这里我们直接用 subprocess 模拟
+    # 实际上需要通过 OpenClaw 的 tool 调用
+    
+    # 等待邮箱文件
+    mailbox_file = MAILBOX_DIR / f"{task_id}.done.json"
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        if mailbox_file.exists():
+            with open(mailbox_file) as f:
+                return {"success": True, "data": json.load(f)}
+        time.sleep(1)
+    
+    return {"success": False, "error": "timeout"}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="串行执行多个子代理任务")
+    parser.add_argument("tasks", nargs="+", help="任务列表")
+    parser.add_argument("--model", default="iflow/glm-4.6", help="模型")
+    parser.add_argument("--timeout", type=int, default=60, help="每个任务超时(秒)")
+    parser.add_argument("--notify", default="所有任务完成", help="最终通知消息")
+    parser.add_argument("--json", action="store_true", help="JSON输出")
+    
+    args = parser.parse_args()
+    
+    results = []
+    
+    if not args.json:
+        print(f"串行执行 {len(args.tasks)} 个任务...")
+        print()
+    
+    for i, task in enumerate(args.tasks, 1):
+        if not args.json:
+            print(f"[{i}/{len(args.tasks)}] {task}")
+        
+        # 简化：直接执行命令而不是spawn子代理
+        # 因为spawn子代理需要OpenClaw框架支持
+        result = subprocess.run(
+            task,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=args.timeout
+        )
+        
+        results.append({
+            "task": task,
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr
+        })
+        
+        if not args.json:
+            if result.returncode == 0:
+                print(f"  ✓ 完成")
+            else:
+                print(f"  ✗ 失败: {result.stderr}")
+    
+    if not args.json:
+        print()
+        print(args.notify)
+    else:
+        output = {
+            "completed": len([r for r in results if r["success"]]),
+            "failed": len([r for r in results if not r["success"]]),
+            "notify": args.notify,
+            "results": results
+        }
+        print(json.dumps(output, indent=2, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

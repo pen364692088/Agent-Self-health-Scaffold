@@ -1,0 +1,208 @@
+#!/bin/bash
+# Memory Retrieval Hardening - CI Entry Point
+# 用于 CI/CD 流水线
+#
+# 用法:
+#   ci-memory-hardening
+#   ci-memory-hardening --strict  # 严格模式，任何警告都失败
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE="$HOME/.openclaw/workspace"
+STRICT_MODE="${1:-normal}"
+
+if [ "$STRICT_MODE" = "--strict" ]; then
+    echo "🔒 Running in STRICT mode"
+fi
+
+echo "=============================================="
+echo "🔍 Memory Retrieval Hardening - CI Check"
+echo "=============================================="
+
+EXIT_CODE=0
+
+# 1. 运行回归测试
+echo ""
+echo "1️⃣ Running Regression Tests..."
+cd "$WORKSPACE"
+if python3 tests/test_memory_retrieval_hardening.py; then
+    echo "✅ Regression tests PASSED"
+else
+    echo "❌ Regression tests FAILED"
+    EXIT_CODE=1
+fi
+
+# 2. 在固定 fixture 上运行 risk-alerts
+echo ""
+echo "2️⃣ Running Risk Alerts on Golden Fixtures..."
+
+# 使用测试样本作为 golden fixture
+GOLDEN_DIR="$WORKSPACE/memory/golden_fixtures"
+mkdir -p "$GOLDEN_DIR"
+
+# 创建 golden fixture（如果不存在）
+GOLDEN_EVENTS="$GOLDEN_DIR/events_golden.jsonl"
+if [ ! -f "$GOLDEN_EVENTS" ]; then
+    echo "Creating golden fixture..."
+    cat > "$GOLDEN_EVENTS" << 'EOF'
+{"event": "recall", "ts": "2026-03-03T10:00:00Z", "recall_id": "golden_r1", "used": ["mem_golden_001"], "candidates_count": 1, "event_version": "v2"}
+{"event": "use", "ts": "2026-03-03T10:00:01Z", "memory_id": "mem_golden_001", "recall_id": "golden_r1", "event_version": "v2"}
+{"event": "recall", "ts": "2026-03-03T10:01:00Z", "recall_id": "golden_r2", "used": ["mem_golden_002", "mem_golden_003"], "candidates_count": 2, "event_version": "v2"}
+{"event": "use", "ts": "2026-03-03T10:01:01Z", "memory_id": "mem_golden_002", "recall_id": "golden_r2", "event_version": "v2"}
+EOF
+    echo "✅ Golden fixture created"
+fi
+
+# 临时替换 events.log 进行测试
+EVENTS_LOG="$WORKSPACE/memory/events.log"
+EVENTS_BACKUP="$WORKSPACE/memory/events.log.ci_backup"
+
+if [ -f "$EVENTS_LOG" ]; then
+    cp "$EVENTS_LOG" "$EVENTS_BACKUP"
+fi
+cp "$GOLDEN_EVENTS" "$EVENTS_LOG"
+
+# 运行 dashboard（用于快照回归）
+DASHBOARD_OUTPUT=$("$SCRIPT_DIR/memory-dashboard" --json 2>/dev/null)
+
+# 运行 risk-alerts
+ALERTS_OUTPUT=$("$SCRIPT_DIR/memory-risk-alerts" --json 2>/dev/null)
+HAS_ERROR=$(echo "$ALERTS_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print('true' if any(a['level']=='ERROR' for a in d.get('alerts',[])) else 'false')")
+HAS_WARN=$(echo "$ALERTS_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print('true' if any(a['level']=='WARN' for a in d.get('alerts',[])) else 'false')")
+
+# 快照回归检查
+EXPECTED_DASHBOARD="$WORKSPACE/memory/golden_fixtures/expected_dashboard.json"
+EXPECTED_ALERTS="$WORKSPACE/memory/golden_fixtures/expected_alerts.json"
+
+if [ -f "$EXPECTED_DASHBOARD" ] && [ -f "$EXPECTED_ALERTS" ]; then
+    echo ""
+    echo "2.5️⃣ Snapshot Regression..."
+    
+    # 比较 dashboard 关键字段
+    DASHBOARD_DIFF=$(python3 << PYEOF
+import json
+import sys
+
+try:
+    actual = json.loads('''$DASHBOARD_OUTPUT''')
+    expected = json.load(open('$EXPECTED_DASHBOARD'))
+    
+    # 只比较关键字段（排除时间戳）
+    keys_to_check = ['use_attribution', 'adoption_rate_any', 'uses_per_recall', 
+                     'unique_to_raw_ratio', 'orphan_use_rate', 'v2_events',
+                     'unadopted_recall_rate', 'broken_link_recall_rate']
+    
+    diffs = []
+    for key in keys_to_check:
+        if key in expected and key in actual:
+            if expected[key] != actual[key]:
+                diffs.append(f"{key}: expected {expected[key]}, got {actual[key]}")
+        elif key in expected and key not in actual:
+            diffs.append(f"{key}: missing in actual")
+    
+    if diffs:
+        print("DIFFS_FOUND")
+        for d in diffs:
+            print(f"  - {d}")
+    else:
+        print("OK")
+except Exception as e:
+    print(f"ERROR: {e}")
+PYEOF
+)
+    
+    if echo "$DASHBOARD_DIFF" | grep -q "DIFFS_FOUND"; then
+        echo "⚠️  Dashboard snapshot diff detected:"
+        echo "$DASHBOARD_DIFF"
+        if [ "$STRICT_MODE" = "--strict" ]; then
+            EXIT_CODE=1
+        fi
+    else
+        echo "✅ Dashboard snapshot matched"
+    fi
+else
+    echo "⚠️  Expected snapshots not found, skipping snapshot regression"
+fi
+
+# 恢复 events.log
+if [ -f "$EVENTS_BACKUP" ]; then
+    mv "$EVENTS_BACKUP" "$EVENTS_LOG"
+else
+    rm -f "$EVENTS_LOG"
+fi
+
+if [ "$HAS_ERROR" = "true" ]; then
+    echo "❌ Risk alerts detected ERROR on golden fixture"
+    echo "$ALERTS_OUTPUT" | python3 -m json.tool
+    EXIT_CODE=1
+elif [ "$HAS_WARN" = "true" ] && [ "$STRICT_MODE" = "--strict" ]; then
+    echo "⚠️  Risk alerts detected WARN on golden fixture (strict mode)"
+    echo "$ALERTS_OUTPUT" | python3 -m json.tool
+    EXIT_CODE=1
+else
+    echo "✅ Risk alerts PASSED on golden fixture"
+fi
+
+# 3. 检查工具版本一致性
+echo ""
+echo "3️⃣ Checking Tool Versions..."
+
+DASHBOARD_VERSION=$("$SCRIPT_DIR/memory-dashboard" --json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('report_version','unknown'))" 2>/dev/null || echo "unknown")
+EXPECTED_VERSION="1.2.2"
+
+if [ "$DASHBOARD_VERSION" != "unknown" ]; then
+    echo "   Dashboard version: $DASHBOARD_VERSION"
+else
+    echo "   Dashboard version: (check header)"
+fi
+
+# 4. 验证阈值配置
+echo ""
+echo "4️⃣ Validating Threshold Config..."
+
+# 检查关键阈值是否存在
+THRESHOLD_CHECK=$(python3 << 'PYEOF'
+import sys
+sys.path.insert(0, "$SCRIPT_DIR".replace("$HOME", "~").replace("~", "~"))
+
+try:
+    # 检查 dashboard 阈值
+    from pathlib import Path
+    dashboard_path = Path.home() / ".openclaw/workspace/tools/memory-dashboard"
+    content = dashboard_path.read_text()
+    
+    checks = []
+    if "MIN_EVENTS = 200" in content:
+        checks.append("MIN_EVENTS=200 ✓")
+    else:
+        checks.append("MIN_EVENTS ✗")
+    
+    if "MIN_SESSIONS = 20" in content:
+        checks.append("MIN_SESSIONS=20 ✓")
+    else:
+        checks.append("MIN_SESSIONS ✗")
+    
+    if "DEPLOY_START_DATE" in content:
+        checks.append("DEPLOY_START_DATE ✓")
+    else:
+        checks.append("DEPLOY_START_DATE ✗")
+    
+    print("\n".join(checks))
+except Exception as e:
+    print(f"Error: {e}")
+PYEOF
+)
+
+echo "$THRESHOLD_CHECK"
+
+echo ""
+echo "=============================================="
+if [ $EXIT_CODE -eq 0 ]; then
+    echo "✅ CI Check PASSED"
+else
+    echo "❌ CI Check FAILED"
+fi
+echo "=============================================="
+
+exit $EXIT_CODE

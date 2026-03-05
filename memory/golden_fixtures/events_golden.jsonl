@@ -1,0 +1,4 @@
+{"event": "recall", "ts": "2026-03-03T10:00:00Z", "recall_id": "golden_r1", "used": ["mem_golden_001"], "candidates_count": 1, "event_version": "v2"}
+{"event": "use", "ts": "2026-03-03T10:00:01Z", "memory_id": "mem_golden_001", "recall_id": "golden_r1", "event_version": "v2"}
+{"event": "recall", "ts": "2026-03-03T10:01:00Z", "recall_id": "golden_r2", "used": ["mem_golden_002", "mem_golden_003"], "candidates_count": 2, "event_version": "v2"}
+{"event": "use", "ts": "2026-03-03T10:01:01Z", "memory_id": "mem_golden_002", "recall_id": "golden_r2", "event_version": "v2"}

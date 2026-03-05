@@ -1,0 +1,108 @@
+{
+  "date": "2026-02-24",
+  "source": "browseract-google-news-api",
+  "categories": {
+    "economics": [
+      {
+        "title": "美联储政策预期仍主导全球风险资产波动",
+        "source": "Fallback",
+        "summary": "市场继续围绕降息路径交易，美元与美债收益率波动加大。"
+      },
+      {
+        "title": "主要经济体通胀回落但服务业粘性仍在",
+        "source": "Fallback",
+        "summary": "核心服务价格仍偏强，限制了央行快速宽松空间。"
+      },
+      {
+        "title": "中国稳增长政策持续发力，内需修复成为关键",
+        "source": "Fallback",
+        "summary": "投资与消费结构优化仍是后续观察重点。"
+      }
+    ],
+    "warfare": [
+      {
+        "title": "俄乌前线持续拉锯，局地攻防强度不减",
+        "source": "Fallback",
+        "summary": "战线总体僵持，远程打击与补给能力仍是决定因素。"
+      },
+      {
+        "title": "中东局势仍高敏感，停火谈判反复",
+        "source": "Fallback",
+        "summary": "人道与安全议题叠加，区域外溢风险仍在。"
+      },
+      {
+        "title": "红海航运安全压力延续，物流成本承压",
+        "source": "Fallback",
+        "summary": "航线绕行带来的时效与成本问题继续影响供应链。"
+      }
+    ],
+    "policy": [
+      {
+        "title": "多国推进AI与平台监管细则落地",
+        "source": "Fallback",
+        "summary": "重点从原则转向执行与合规细则。"
+      },
+      {
+        "title": "贸易与产业政策继续围绕关键技术重构",
+        "source": "Fallback",
+        "summary": "供应链韧性与本地化政策并行推进。"
+      },
+      {
+        "title": "财政与公共支出议题成为政策博弈焦点",
+        "source": "Fallback",
+        "summary": "预算与增长平衡成为短期核心变量。"
+      }
+    ],
+    "technology": [
+      {
+        "title": "AI PC与终端侧推理成为科技公司新品主线",
+        "source": "Fallback",
+        "summary": "芯片、系统和应用联动升级加速。"
+      },
+      {
+        "title": "先进制程与封装竞争继续升温",
+        "source": "Fallback",
+        "summary": "算力需求带动上游设备与材料景气。"
+      },
+      {
+        "title": "云厂商继续加码AI基础设施投资",
+        "source": "Fallback",
+        "summary": "资本开支高位运行，商业化回报受关注。"
+      }
+    ],
+    "ai": [
+      {
+        "title": "大模型竞争转向“能力+成本+安全”三维",
+        "source": "Fallback",
+        "summary": "企业更关注可落地性与总拥有成本。"
+      },
+      {
+        "title": "多模态与Agent能力成为新一轮产品焦点",
+        "source": "Fallback",
+        "summary": "从单轮问答向任务执行持续演进。"
+      },
+      {
+        "title": "AI监管与版权争议推动行业规范化",
+        "source": "Fallback",
+        "summary": "合规与审计能力正在成为平台标配。"
+      }
+    ],
+    "gaming": [
+      {
+        "title": "3A新品周期与主机迭代预期提振板块情绪",
+        "source": "Fallback",
+        "summary": "内容供给与硬件升级形成共振。"
+      },
+      {
+        "title": "电竞商业化继续深化，赛事IP价值提升",
+        "source": "Fallback",
+        "summary": "赞助与转播结构优化带来收入质量改善。"
+      },
+      {
+        "title": "跨平台与订阅制仍是发行端核心策略",
+        "source": "Fallback",
+        "summary": "用户增长与留存效率成为关键指标。"
+      }
+    ]
+  }
+}

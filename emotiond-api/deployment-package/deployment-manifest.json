@@ -1,0 +1,24 @@
+{
+  "deployment_package": {
+    "version": "1.0.0",
+    "created": "2026-03-02T18:19:08.610181",
+    "environment": "production",
+    "components": {
+      "kubernetes_manifests": 10,
+      "helm_values": 1,
+      "documentation": 2,
+      "reports": 1,
+      "api_source": 0
+    },
+    "validation_status": "PASSED",
+    "deployment_order": [
+      "1. Create namespace",
+      "2. Apply secrets",
+      "3. Apply PVCs",
+      "4. Apply deployment",
+      "5. Apply service",
+      "6. Apply ingress",
+      "7. Apply HPA and PDB"
+    ]
+  }
+}

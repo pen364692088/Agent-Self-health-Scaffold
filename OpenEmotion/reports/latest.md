@@ -1,0 +1,1 @@
+k8s-manifests-preparation-report.md

@@ -1,0 +1,5 @@
+{
+  "target": "agent:main",
+  "message": "{\n  \"type\": \"job_done\",\n  \"job_id\": \"20260303_213125_9df98930\",\n  \"state\": \"DONE\",\n  \"title\": \"Idempotency Test\",\n  \"result_path\": \"/home/moonlight/Project/Github/MyProject/LongRunKit/jobs/20260303_213125_9df98930/result.md\",\n  \"attempt\": 1,\n  \"error\": null\n}",
+  "ts": "2026-03-04T03:31:31.079229+00:00"
+}

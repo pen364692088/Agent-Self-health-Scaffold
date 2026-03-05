@@ -1,0 +1,23 @@
+{
+  "ts": "2026-03-03T18:23:28.349102Z",
+  "metrics": {
+    "recall_count_24h": 2,
+    "use_count_24h": 2,
+    "use_attributed_count_24h": 2,
+    "adoption_rate": 1.0,
+    "use_attribution": 1.0,
+    "recall_coverage": 0.2,
+    "recall_without_use_samples": [],
+    "unique_memory_ids_used": 2,
+    "adoption_rate_any": 1.0,
+    "uses_per_recall": 2.0,
+    "candidate_adoption_rate": 1.0,
+    "uses_per_recall_p50": 2,
+    "uses_per_recall_p90": 2,
+    "recalls_with_any_use": 1,
+    "total_recalls": 1,
+    "recalled_candidates_total": 2,
+    "event_version_filter": "v2"
+  },
+  "gates_pass": false
+}

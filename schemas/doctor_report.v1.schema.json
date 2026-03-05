@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "doctor_report.v1.schema.json",
+  "title": "Doctor Report Schema v1",
+  "description": "Schema for tool_doctor output reports",
+  "type": "object",
+  "required": [
+    "tool",
+    "timestamp",
+    "mode",
+    "transport",
+    "status",
+    "checks",
+    "summary",
+    "chosen_port",
+    "health_ok",
+    "sample_call_ok"
+  ],
+  "properties": {
+    "tool": {
+      "type": "string",
+      "description": "Path to the tool being checked"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp when check was performed"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["ci", "local"],
+      "description": "Execution mode"
+    },
+    "transport": {
+      "type": "string",
+      "enum": ["http", "local"],
+      "description": "Transport mode for health/sample checks"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["healthy", "unhealthy"],
+      "description": "Overall health status"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status", "message"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": ["config", "port", "health", "sample_call"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "warn"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          },
+          "latency_ms": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["passed", "failed", "warnings"],
+      "properties": {
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "warnings": {"type": "integer", "minimum": 0}
+      }
+    },
+    "chosen_port": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "health_ok": {"type": "boolean"},
+    "sample_call_ok": {"type": "boolean"},
+    "error_code": {"type": "string"},
+    "message": {"type": "string"}
+  }
+}

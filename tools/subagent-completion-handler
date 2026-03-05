@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""
+子代理完成自动处理脚本
+
+当收到 "✅ Subagent" 开头的消息时，必须调用此脚本。
+
+用途：
+1. 更新 WORKFLOW_STATE.json 中的步骤状态
+2. 决定下一步动作（spawn_next / notify_user / ignore）
+3. 返回 JSON 格式的指令
+"""
+
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+
+
+def load_workflow():
+    """加载工作流状态"""
+    if not WORKFLOW_FILE.exists():
+        return None
+    try:
+        with open(WORKFLOW_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading workflow: {e}", file=sys.stderr)
+        return None
+
+
+def save_workflow(state: dict):
+    """保存工作流状态"""
+    state['updated_at'] = datetime.now().isoformat()
+    with open(WORKFLOW_FILE, 'w') as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+def find_step_by_run_id(state: dict, run_id: str) -> tuple:
+    """根据 run_id 找到对应步骤及其索引"""
+    steps = state.get('steps', [])
+    for i, step in enumerate(steps):
+        if step.get('run_id') == run_id:
+            return step, i
+    return None, -1
+
+
+def handle_completion(run_id: str) -> dict:
+    """
+    处理子代理完成事件
+    
+    Returns:
+        dict with keys:
+        - action: "spawn_next" | "notify_user" | "ignore" | "error"
+        - should_silence: bool
+        - message: str (if action == notify_user)
+        - next_step: dict (if action == spawn_next)
+        - error: str (if action == error)
+    """
+    state = load_workflow()
+    
+    if not state:
+        return {
+            "action": "ignore",
+            "should_silence": False,
+            "reason": "no_workflow_file"
+        }
+    
+    if not state.get("active"):
+        return {
+            "action": "ignore",
+            "should_silence": False,
+            "reason": "workflow_inactive"
+        }
+    
+    # 找到完成的步骤
+    completed_step, idx = find_step_by_run_id(state, run_id)
+    if not completed_step:
+        return {
+            "action": "ignore",
+            "should_silence": False,
+            "reason": f"run_id_not_found: {run_id}"
+        }
+    
+    # 更新步骤状态
+    completed_step['status'] = 'done'
+    completed_step['completed_at'] = datetime.now().isoformat()
+    
+    # 检查是否还有未完成的步骤
+    steps = state.get('steps', [])
+    pending_steps = [
+        (i, s) for i, s in enumerate(steps)
+        if s.get('status') in ('pending', 'running')
+    ]
+    
+    if pending_steps:
+        # 检查依赖
+        next_idx, next_step = pending_steps[0]
+        depends_on = next_step.get('depends_on', [])
+        
+        # 检查依赖是否都完成
+        completed_ids = [s.get('id') for s in steps if s.get('status') == 'done']
+        dependencies_met = all(d in completed_ids for d in depends_on)
+        
+        if dependencies_met:
+            save_workflow(state)
+            return {
+                "action": "spawn_next",
+                "next_step": next_step,
+                "next_step_index": next_idx,
+                "workflow": state,
+                "should_silence": True
+            }
+        else:
+            # 等待依赖完成
+            save_workflow(state)
+            return {
+                "action": "wait_for_dependencies",
+                "waiting_for": [d for d in depends_on if d not in completed_ids],
+                "should_silence": True,
+                "reason": "Dependencies not yet complete"
+            }
+    else:
+        # 全部完成
+        state['active'] = False
+        state['completed_at'] = datetime.now().isoformat()
+        save_workflow(state)
+        
+        return {
+            "action": "notify_user",
+            "message": state.get("notify_on_done", "流程完成"),
+            "should_silence": False
+        }
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: subagent-completion-handler <run_id>", file=sys.stderr)
+        sys.exit(1)
+    
+    if sys.argv[1] in ("--health", "-H"):
+        print(json.dumps({"status": "healthy"}))
+        sys.exit(0)
+    
+    run_id = sys.argv[1]
+    result = handle_completion(run_id)
+    print(json.dumps(result, indent=2, ensure_ascii=False))

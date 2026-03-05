@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""
+串行子代理指导器
+输出需要执行的命令序列，而不是自动执行
+
+用法:
+    serial-guide "任务A描述" "任务B描述" --notify "完成消息"
+
+输出:
+    Step 1: sessions_spawn ...
+    Step 2: (等待回调后) sessions_spawn ...
+    Step 3: (全部完成后) 发送通知
+"""
+
+import argparse
+import json
+import uuid
+from pathlib import Path
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+STATE_FILE = WORKSPACE / "SESSION-STATE.md"
+
+def main():
+    parser = argparse.ArgumentParser(description="生成串行子代理执行指南")
+    parser.add_argument("tasks", nargs="+", help="任务列表")
+    parser.add_argument("--notify", default="所有任务完成", help="最终通知消息")
+    parser.add_argument("--json", action="store_true", help="JSON输出")
+    
+    args = parser.parse_args()
+    
+    # 生成步骤
+    steps = []
+    for i, task in enumerate(args.tasks):
+        step_id = chr(65 + i)  # A, B, C, ...
+        steps.append({
+            "id": step_id,
+            "task": task,
+            "runId": "pending",
+            "status": "pending"
+        })
+    
+    # 写入状态文件
+    state_content = f"""# SESSION-STATE.md
+
+## Status: ACTIVE
+## Session: 串行子代理测试
+
+---
+
+## Pending Workflow Tracking ⭐
+
+### 当前工作流
+
+```yaml
+active: true
+type: serial_subagents
+steps:
+"""
+    
+    for step in steps:
+        state_content += f"""  - id: {step['id']}
+    runId: pending
+    status: pending
+"""
+    
+    state_content += f'notify_on_done: "{args.notify}"\n'
+    
+    STATE_FILE.write_text(state_content)
+    
+    if args.json:
+        output = {
+            "action": "serial_workflow_initiated",
+            "steps": steps,
+            "notify_on_done": args.notify,
+            "next_action": f"spawn_subagent_A_with_task: '{args.tasks[0]}'",
+            "state_file": str(STATE_FILE)
+        }
+        print(json.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        print("=" * 60)
+        print("串行子代理流程已初始化")
+        print("=" * 60)
+        print()
+        print(f"任务数: {len(args.tasks)}")
+        print(f"最终通知: {args.notify}")
+        print()
+        print("状态文件已更新:", STATE_FILE)
+        print()
+        print("下一步:")
+        print(f"  1. spawn 子代理A，任务: {args.tasks[0][:50]}...")
+        print(f"  2. 等待A完成回调")
+        print(f"  3. spawn 子代理B")
+        print(f"  4. 等待B完成回调")
+        print(f"  5. 发送最终通知: {args.notify}")
+        print()
+        print("提示: 收到子代理回调时，运行:")
+        print("  ~/.openclaw/workspace/tools/callback-handler <run_id>")
+
+
+if __name__ == "__main__":
+    main()

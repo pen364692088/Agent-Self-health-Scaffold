@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""
+project-gate-sweep v1.0
+Run Tool Delivery Gate C sweep for changed tool-related files.
+
+Usage:
+  tools/project-gate-sweep
+  tools/project-gate-sweep --since-ref HEAD~1
+  tools/project-gate-sweep --json
+"""
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+TOOL_DOCTOR = WORKSPACE / 'tools' / 'tool_doctor'
+DONE_GUARD = WORKSPACE / 'tools' / 'done-guard'
+REPORT_DIR = WORKSPACE / 'reports' / 'tool_doctor'
+
+TRIGGERS = ('tools/', 'integrations/', 'handlers/', 'schemas/', 'skills/')
+SKIP_SUFFIX = ('.md', '.txt', '.png', '.jpg', '.jpeg', '.gif', '.webp')
+
+
+def sh(cmd):
+    return subprocess.run(cmd, cwd=WORKSPACE, capture_output=True, text=True)
+
+
+def get_changed_files(since_ref: str | None):
+    if since_ref:
+        p = sh(['git', 'diff', '--name-only', since_ref, 'HEAD'])
+    else:
+        p = sh(['git', 'status', '--porcelain'])
+
+    if p.returncode != 0:
+        return []
+
+    files = []
+    for line in p.stdout.splitlines():
+        if not line.strip():
+            continue
+        if since_ref:
+            rel = line.strip()
+        else:
+            rel = line[3:].strip()
+        if rel:
+            files.append(rel)
+    return files
+
+
+def is_trigger_file(rel: str) -> bool:
+    return rel.startswith(TRIGGERS) and not rel.endswith(SKIP_SUFFIX)
+
+
+def main():
+    ap = argparse.ArgumentParser(description='Run gate sweep for changed tool files')
+    ap.add_argument('--since-ref', help='Compare changes from git ref to HEAD')
+    ap.add_argument('--json', action='store_true')
+    args = ap.parse_args()
+
+    changed = get_changed_files(args.since_ref)
+    targets = [f for f in changed if is_trigger_file(f)]
+
+    results = {
+        'changed_files': changed,
+        'targets': targets,
+        'doctor': [],
+        'validation': [],
+        'ok': True,
+    }
+
+    if not targets:
+        if args.json:
+            print(json.dumps(results, indent=2, ensure_ascii=False))
+        else:
+            print('✅ No tool-gate trigger files changed. Nothing to sweep.')
+        return 0
+
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+    for rel in targets:
+        abs_path = WORKSPACE / rel
+
+        # Gate C is meaningful primarily for executable tool entrypoints
+        if not abs_path.exists() or not abs_path.is_file():
+            continue
+
+        if rel.startswith('tools/') and abs_path.suffix == '':
+            out = REPORT_DIR / f'doctor_report_{abs_path.name}.json'
+            p = sh(['python3', str(TOOL_DOCTOR), str(abs_path), '--transport', 'local', '--ci', '--output', str(out), '--json'])
+            doctor_ok = p.returncode == 0
+            results['doctor'].append({
+                'tool': rel,
+                'report': str(out),
+                'ok': doctor_ok,
+                'stderr': p.stderr[-500:] if p.stderr else ''
+            })
+            if not doctor_ok:
+                results['ok'] = False
+                continue
+
+            v = sh(['python3', str(DONE_GUARD), '--validate-doctor', str(out)])
+            val_ok = v.returncode == 0
+            results['validation'].append({
+                'report': str(out),
+                'ok': val_ok,
+                'stderr': v.stderr[-500:] if v.stderr else ''
+            })
+            if not val_ok:
+                results['ok'] = False
+
+    if args.json:
+        print(json.dumps(results, indent=2, ensure_ascii=False))
+    else:
+        print('=== project-gate-sweep ===')
+        print(f"targets: {len(targets)}")
+        print(f"doctor checks: {len(results['doctor'])}")
+        print(f"report validations: {len(results['validation'])}")
+        print('status:', '✅ PASS' if results['ok'] else '❌ FAIL')
+
+    return 0 if results['ok'] else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""
+Self-Improving Adapter v1.0
+将 self-improving 的触发转成标准 memory 事件
+
+用法:
+1. 安装 self-improving skill: clawhub install self-improving
+2. 替换它的写入为调用此 adapter
+3. 此 adapter 调用 memory-emit 写入 events.log
+"""
+
+import sys
+import json
+from datetime import datetime
+from pathlib import Path
+
+# memory-emit 路径
+MEMORY_EMIT = Path.home() / ".openclaw/workspace/tools/memory-emit"
+
+def emit_correction(
+    session_id: str,
+    task_id: str,
+    scope: str,
+    correction_text: str,
+    memory_id: str = None,
+    proposed_change: str = None,
+):
+    """
+    发射纠正事件
+    
+    self-improving 触发 "No, do X instead" 时调用
+    """
+    event = {
+        "event": "correction",
+        "ts": datetime.now().isoformat() + "Z",
+        "session_id": session_id,
+        "task_id": task_id,
+        "scope": scope,
+        "evidence": correction_text,
+    }
+    
+    if memory_id:
+        event["memory_id"] = memory_id
+    if proposed_change:
+        event["proposed_change"] = proposed_change
+    
+    import subprocess
+    result = subprocess.run(
+        ["python3", str(MEMORY_EMIT), json.dumps(event), "--source", "self_improving"],
+        capture_output=True,
+        text=True,
+    )
+    
+    return result.returncode == 0, result.stdout.strip()
+
+def emit_reflection(
+    session_id: str,
+    context: str,
+    reflection: str,
+    lesson: str = None,
+    improvement_suggestion: str = None,
+):
+    """
+    发射反思事件
+    
+    self-improving 自我反思时调用
+    """
+    event = {
+        "event": "reflection",
+        "ts": datetime.now().isoformat() + "Z",
+        "session_id": session_id,
+        "context": context,
+        "reflection": reflection,
+    }
+    
+    if lesson:
+        event["lesson"] = lesson
+    if improvement_suggestion:
+        event["improvement_suggestion"] = improvement_suggestion
+    
+    import subprocess
+    result = subprocess.run(
+        ["python3", str(MEMORY_EMIT), json.dumps(event), "--source", "self_improving"],
+        capture_output=True,
+        text=True,
+    )
+    
+    return result.returncode == 0, result.stdout.strip()
+
+def emit_conflict(
+    session_id: str,
+    memory_id: str,
+    conflict_reason: str,
+):
+    """
+    发射冲突事件
+    
+    规则导致错误输出时调用
+    """
+    event = {
+        "event": "conflict",
+        "ts": datetime.now().isoformat() + "Z",
+        "session_id": session_id,
+        "memory_id": memory_id,
+        "reason": conflict_reason,
+    }
+    
+    import subprocess
+    result = subprocess.run(
+        ["python3", str(MEMORY_EMIT), json.dumps(event), "--source", "self_improving"],
+        capture_output=True,
+        text=True,
+    )
+    
+    return result.returncode == 0, result.stdout.strip()
+
+def show_usage():
+    print("Self-Improving Adapter v1.0")
+    print()
+    print("用法:")
+    print("  self-improving-adapter correction <session> <task> <scope> <text>")
+    print("  self-improving-adapter reflection <session> <context> <reflection>")
+    print("  self-improving-adapter conflict <session> <memory_id> <reason>")
+    print()
+    print("注意: 此 adapter 将事件写入 memory/events.log (source=self_improving)")
+    print("      在 shadow 模式下, 这些事件只统计不参与评分")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        show_usage()
+        sys.exit(1)
+    
+    cmd = sys.argv[1]
+    
+    if cmd == "correction" and len(sys.argv) >= 6:
+        ok, msg = emit_correction(
+            session_id=sys.argv[2],
+            task_id=sys.argv[3],
+            scope=sys.argv[4],
+            correction_text=sys.argv[5],
+        )
+        print(msg)
+        sys.exit(0 if ok else 1)
+    
+    elif cmd == "reflection" and len(sys.argv) >= 5:
+        ok, msg = emit_reflection(
+            session_id=sys.argv[2],
+            context=sys.argv[3],
+            reflection=sys.argv[4],
+        )
+        print(msg)
+        sys.exit(0 if ok else 1)
+    
+    elif cmd == "conflict" and len(sys.argv) >= 5:
+        ok, msg = emit_conflict(
+            session_id=sys.argv[2],
+            memory_id=sys.argv[3],
+            conflict_reason=sys.argv[4],
+        )
+        print(msg)
+        sys.exit(0 if ok else 1)
+    
+    else:
+        show_usage()
+        sys.exit(1)

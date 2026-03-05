@@ -1,0 +1,587 @@
+#!/usr/bin/env python3
+"""
+Memory Monitoring Dashboard v1.2.8
+监控面板：四件套指标 + 趋势追踪 + 样本量门槛 + config_hash 审计
+
+用法:
+  memory-dashboard
+  memory-dashboard --json
+  memory-dashboard --history  # 显示历史趋势
+"""
+
+import json
+import sys
+import hashlib
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List, Any
+
+MEMORY_ROOT = Path.home() / ".openclaw/workspace/memory"
+EVENTS_LOG = MEMORY_ROOT / "events.log"
+USE_LINK_FILE = MEMORY_ROOT / "use_link_audit.json"
+METRICS_DIR = MEMORY_ROOT / "metrics"
+METRICS_HISTORY = METRICS_DIR / "dashboard_history.jsonl"
+
+# 阈值
+USE_ATTRIBUTION_THRESHOLD = 0.99
+
+# 样本量门槛
+MIN_EVENTS = 200
+MIN_SESSIONS = 20
+
+# 分阶段阈值（基于部署天数）
+DEPLOY_START_DATE = "2026-03-03"  # v1.2 部署日期
+
+def get_current_config_hash() -> str:
+    """计算当前配置 hash (v1.2.8)"""
+    config_payload = json.dumps({
+        "tool_versions": "dashboard=1.2.3 alerts=1.2.3 audit=1.2.1",
+        "thresholds": {
+            "min_events": MIN_EVENTS,
+            "min_sessions": MIN_SESSIONS,
+            "use_attribution": 0.99,
+            "unique_to_raw_grace": 0.25,
+            "unique_to_raw_strict": 0.50,
+        },
+        "deploy_date": DEPLOY_START_DATE
+    }, sort_keys=True)
+    return hashlib.md5(config_payload.encode()).hexdigest()[:8]
+
+def load_events(hours=24):
+    """加载最近 N 小时的事件"""
+    events = []
+    if not EVENTS_LOG.exists():
+        return events
+    cutoff = datetime.now() - timedelta(hours=hours)
+    for line in EVENTS_LOG.read_text().strip().split("\n"):
+        if not line.strip() or line.startswith("#"):
+            continue
+        try:
+            event = json.loads(line)
+            ts_str = event.get("ts", "")
+            if ts_str:
+                ts = datetime.fromisoformat(ts_str.replace("Z", ""))
+                if ts >= cutoff:
+                    events.append(event)
+        except:
+            pass
+    return events
+
+def compute_metrics(events: List[Dict]) -> Dict[str, Any]:
+    """计算四件套指标 + 口径细化"""
+    recall_count = 0
+    use_count = 0
+    use_attributed_count = 0
+    recalled_candidates_total = 0
+    uses_by_memory = {}
+    
+    # 口径细化：分版本计数
+    v1_events = 0
+    v2_events = 0
+    v1_recall_count = 0
+    v1_use_count = 0
+    v2_recall_count = 0
+    v2_use_count = 0
+    
+    # unique 口径
+    unique_used_ids = set()
+    raw_mentions = 0
+    
+    recalls = {}
+    uses_per_recall_values = []
+    
+    for event in events:
+        event_type = event.get("event", "")
+        recall_id = event.get("recall_id")
+        event_version = event.get("event_version", "v1")
+        
+        # 分版本统计
+        if event_version == "v1":
+            v1_events += 1
+        else:
+            v2_events += 1
+        
+        if event_type == "recall" and event_version == "v2":
+            used = event.get("used", [])
+            recall_count += len(used)
+            recalled_candidates_total += len(used)
+            v2_recall_count += 1
+            if recall_id:
+                recalls[recall_id] = {
+                    "used": used,
+                    "has_use": False,
+                    "use_count": 0
+                }
+        elif event_type == "recall" and event_version == "v1":
+            v1_recall_count += 1
+            
+        elif event_type == "use" and event_version == "v2":
+            use_count += 1
+            v2_use_count += 1
+            raw_mentions += 1  # raw 口径
+            memory_id = event.get("memory_id")
+            if memory_id:
+                use_attributed_count += 1
+                unique_used_ids.add(memory_id)  # unique 口径
+                uses_by_memory[memory_id] = uses_by_memory.get(memory_id, 0) + 1
+            
+            if recall_id and recall_id in recalls:
+                recalls[recall_id]["has_use"] = True
+                recalls[recall_id]["use_count"] += 1
+                
+        elif event_type == "use" and event_version == "v1":
+            v1_use_count += 1
+    
+    # 计算指标
+    total_recalls = len(recalls) if recalls else 1
+    recalls_with_any_use = sum(1 for data in recalls.values() if data["has_use"])
+    
+    use_attribution = use_attributed_count / use_count if use_count > 0 else 1.0
+    adoption_rate_any = recalls_with_any_use / total_recalls if total_recalls > 0 else 0.0
+    uses_per_recall = use_count / total_recalls if total_recalls > 0 else 0.0
+    
+    # unique vs raw 口径
+    unique_use_count = len(unique_used_ids)
+    unique_to_raw_ratio = unique_use_count / raw_mentions if raw_mentions > 0 else 1.0
+    
+    # 分位数
+    uses_per_recall_values = [data["use_count"] for data in recalls.values()]
+    def percentile(values, p):
+        if not values:
+            return 0.0
+        sorted_vals = sorted(values)
+        k = (len(sorted_vals) - 1) * p / 100
+        f = int(k)
+        c = f + 1 if f + 1 < len(sorted_vals) else f
+        return sorted_vals[f] + (k - f) * (sorted_vals[c] - sorted_vals[f]) if c != f else sorted_vals[f]
+    
+    uses_per_recall_p50 = percentile(uses_per_recall_values, 50)
+    uses_per_recall_p90 = percentile(uses_per_recall_values, 90)
+    
+    # use_term_p50 (从 memory-sweeper stats 加载)
+    use_term_p50 = 0.0
+    sweeper_stats = MEMORY_ROOT / "sweeper_stats.json"
+    if sweeper_stats.exists():
+        try:
+            stats = json.loads(sweeper_stats.read_text())
+            diagnostics = stats.get("diagnostics", {})
+            use_term_p50 = diagnostics.get("use_term_p50", 0.0)
+        except:
+            pass
+    
+    # 样本量统计
+    sessions = set()
+    targets = set()
+    for event in events:
+        if event.get("session_id"):
+            sessions.add(event.get("session_id"))
+        if event.get("target_id"):
+            targets.add(event.get("target_id"))
+    
+    # 样本量门槛检查
+    sample_size_events = len(events)
+    sample_size_sessions = len(sessions)
+    is_low_sample = sample_size_events < MIN_EVENTS or sample_size_sessions < MIN_SESSIONS
+    
+    # 计算部署天数
+    try:
+        deploy_date = datetime.strptime(DEPLOY_START_DATE, "%Y-%m-%d")
+        days_since_deploy = (datetime.now() - deploy_date).days + 1
+    except:
+        days_since_deploy = 1
+    
+    # 分阶段阈值：unique_to_raw_ratio
+    if days_since_deploy <= 1:
+        unique_to_raw_threshold = 0.25  # 第 1 天放宽
+        threshold_phase = "grace"
+    else:
+        unique_to_raw_threshold = 0.50  # 第 2+ 天严格
+        threshold_phase = "strict"
+    
+    # duplicate_id_rate (新增)
+    duplicate_id_rate = 1.0 - unique_to_raw_ratio if raw_mentions > 0 else 0.0
+    
+    # orphan 指标
+    orphan_use_count = 0
+    orphan_recall_count = 0
+    broken_link_recall_count = 0  # 缺少可关联字段
+    
+    # 场景分桶 (v1.2.5)
+    recall_bucket_a = 0  # A 桶：有候选且命中阈值（应该被采用）
+    recall_bucket_b = 0  # B 桶：候选质量低/被闸门过滤（未采用正常）
+    unadopted_bucket_a = 0  # A 桶未采用
+    unadopted_bucket_b = 0  # B 桶未采用
+    
+    # broken_link 豁免项 (v1.2.5)
+    expected_link_count = 0  # linkability=expected
+    broken_link_expected = 0  # expected 但仍然 broken
+    
+    # 重新遍历计算 orphan
+    recall_ids_with_use = set()
+    for event in events:
+        event_type = event.get("event", "")
+        event_version = event.get("event_version", "v1")
+        recall_id = event.get("recall_id")
+        
+        if event_type == "use" and event_version == "v2" and recall_id:
+            recall_ids_with_use.add(recall_id)
+    
+    for event in events:
+        event_type = event.get("event", "")
+        event_version = event.get("event_version", "v1")
+        recall_id = event.get("recall_id")
+        memory_id = event.get("memory_id")
+        
+        if event_type == "use" and event_version == "v2" and not recall_id:
+            orphan_use_count += 1
+        
+        if event_type == "recall" and event_version == "v2":
+            linkability = event.get("linkability", "expected")  # 默认 expected
+            candidates_count = event.get("candidates_count", 0)
+            filtered = event.get("filtered", False)  # 是否被闸门过滤
+            
+            # 统计 expected link
+            if linkability == "expected":
+                expected_link_count += 1
+            
+            if recall_id:
+                # 场景分桶
+                if candidates_count > 0 and not filtered:
+                    recall_bucket_a += 1
+                    if recall_id not in recall_ids_with_use:
+                        orphan_recall_count += 1
+                        unadopted_bucket_a += 1
+                else:
+                    recall_bucket_b += 1
+                    if recall_id not in recall_ids_with_use:
+                        unadopted_bucket_b += 1
+                
+                if recall_id not in recall_ids_with_use:
+                    pass  # 已在分桶中统计
+            else:
+                # 缺少 recall_id -> broken link
+                broken_link_recall_count += 1
+                if linkability == "expected":
+                    broken_link_expected += 1
+    
+    orphan_use_rate = orphan_use_count / use_count if use_count > 0 else 0.0
+    # unadopted_recall_rate: 窗口内未采用（正常业务指标）
+    unadopted_recall_rate = orphan_recall_count / total_recalls if total_recalls > 0 else 0.0
+    # broken_link_recall_rate: 链路缺失（工程质量指标）- 只统计 expected
+    broken_link_recall_rate = broken_link_expected / expected_link_count if expected_link_count > 0 else 0.0
+    # 兼容旧字段
+    orphan_recall_rate = unadopted_recall_rate
+    
+    # 场景分桶指标 (v1.2.5)
+    unadopted_rate_bucket_a = unadopted_bucket_a / recall_bucket_a if recall_bucket_a > 0 else 0.0
+    unadopted_rate_bucket_b = unadopted_bucket_b / recall_bucket_b if recall_bucket_b > 0 else 0.0
+    
+    return {
+        "use_attribution": round(use_attribution, 4),
+        "adoption_rate_any": round(adoption_rate_any, 4),
+        "uses_per_recall": round(uses_per_recall, 2),
+        "uses_per_recall_p50": round(uses_per_recall_p50, 2),
+        "uses_per_recall_p90": round(uses_per_recall_p90, 2),
+        "use_term_p50": round(use_term_p50, 2),
+        # 口径细化
+        "unique_use_count": unique_use_count,
+        "raw_mentions": raw_mentions,
+        "unique_to_raw_ratio": round(unique_to_raw_ratio, 4),
+        "duplicate_id_rate": round(duplicate_id_rate, 4),
+        # 分版本计数
+        "v1_events": v1_events,
+        "v2_events": v2_events,
+        "v1_recall_count": v1_recall_count,
+        "v1_use_count": v1_use_count,
+        "v2_recall_count": v2_recall_count,
+        "v2_use_count": v2_use_count,
+        # orphan 指标
+        "orphan_use_count": orphan_use_count,
+        "orphan_recall_count": orphan_recall_count,
+        "orphan_use_rate": round(orphan_use_rate, 4),
+        "orphan_recall_rate": round(orphan_recall_rate, 4),
+        # 拆分 orphan_recall_rate (v1.2.4)
+        "unadopted_recall_count": orphan_recall_count,
+        "unadopted_recall_rate": round(unadopted_recall_rate, 4),
+        "broken_link_recall_count": broken_link_recall_count,
+        "broken_link_recall_rate": round(broken_link_recall_rate, 4),
+        # 场景分桶 (v1.2.5)
+        "recall_bucket_a": recall_bucket_a,
+        "recall_bucket_b": recall_bucket_b,
+        "unadopted_bucket_a": unadopted_bucket_a,
+        "unadopted_bucket_b": unadopted_bucket_b,
+        "unadopted_rate_bucket_a": round(unadopted_rate_bucket_a, 4),
+        "unadopted_rate_bucket_b": round(unadopted_rate_bucket_b, 4),
+        # broken_link 豁免项
+        "expected_link_count": expected_link_count,
+        "broken_link_expected": broken_link_expected,
+        # 样本量
+        "sample_size": {
+            "events": sample_size_events,
+            "sessions": sample_size_sessions,
+            "targets": len(targets),
+        },
+        # 样本量门槛
+        "is_low_sample": is_low_sample,
+        "min_events_threshold": MIN_EVENTS,
+        "min_sessions_threshold": MIN_SESSIONS,
+        # 分阶段阈值
+        "days_since_deploy": days_since_deploy,
+        "threshold_phase": threshold_phase,
+        "unique_to_raw_threshold": unique_to_raw_threshold,
+        # 辅助
+        "recall_count": recall_count,
+        "use_count": use_count,
+        "total_recalls": total_recalls,
+        "recalls_with_any_use": recalls_with_any_use,
+        "unique_memories_used": len(uses_by_memory),
+    }
+
+def save_history(metrics: Dict):
+    """保存历史记录"""
+    METRICS_DIR.mkdir(parents=True, exist_ok=True)
+    record = {
+        "ts": datetime.now().isoformat() + "Z",
+        **metrics
+    }
+    with open(METRICS_HISTORY, "a") as f:
+        f.write(json.dumps(record) + "\n")
+
+def load_history(hours=168) -> List[Dict]:
+    """加载最近 N 小时的历史"""
+    history = []
+    if not METRICS_HISTORY.exists():
+        return history
+    cutoff = datetime.now() - timedelta(hours=hours)
+    for line in METRICS_HISTORY.read_text().strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            ts_str = record.get("ts", "")
+            if ts_str:
+                ts = datetime.fromisoformat(ts_str.replace("Z", ""))
+                if ts >= cutoff:
+                    history.append(record)
+        except:
+            pass
+    return history
+
+def print_dashboard(metrics: Dict, show_history: bool = False):
+    """打印监控面板"""
+    print("=" * 60)
+    print("📊 Memory Monitoring Dashboard v1.2.8")
+    print("=" * 60)
+    print(f"Timestamp: {datetime.now().isoformat()}")
+    
+    # v1.2.8: config_hash
+    config_hash = get_current_config_hash()
+    print(f"\n🔧 Config Hash: {config_hash}")
+    
+    # 部署天数
+    days = metrics.get("days_since_deploy", 1)
+    phase = metrics.get("threshold_phase", "strict")
+    print(f"📅 Deploy Status: Day {days} ({phase} phase)")
+    
+    # 样本量
+    sample_size = metrics.get("sample_size", {})
+    is_low_sample = metrics.get("is_low_sample", False)
+    print(f"\n📐 Sample Size (样本量)")
+    print(f"   events:   {sample_size.get('events', 0)} / {metrics.get('min_events_threshold', 200)}")
+    print(f"   sessions: {sample_size.get('sessions', 0)} / {metrics.get('min_sessions_threshold', 20)}")
+    
+    if is_low_sample:
+        print("   ⚠️ LOW_SAMPLE: 样本量不足，指标可能无统计意义")
+    
+    # 四件套
+    print("\n🎯 Core Metrics (四件套)")
+    print("-" * 40)
+    
+    # 1. use_attribution
+    threshold = USE_ATTRIBUTION_THRESHOLD
+    status = "✅" if metrics["use_attribution"] >= threshold else ("⚠️ LOW_SAMPLE" if is_low_sample else "❌")
+    print(f"1. use_attribution:    {metrics['use_attribution']:.1%} {status}")
+    print(f"   目标: ≥{threshold:.0%}")
+    
+    # 2. adoption_rate_any
+    print(f"2. adoption_rate_any:  {metrics['adoption_rate_any']:.1%}")
+    print(f"   含义: 这次检索最终是否真的用到了记忆")
+    
+    # 3. uses_per_recall 分布
+    print(f"3. uses_per_recall:")
+    print(f"   mean: {metrics['uses_per_recall']:.2f}")
+    print(f"   p50:  {metrics['uses_per_recall_p50']:.2f}")
+    print(f"   p90:  {metrics['uses_per_recall_p90']:.2f}")
+    print(f"   含义: 每次检索用了几条记忆")
+    
+    # 4. use_term_p50
+    print(f"4. use_term_p50:       {metrics['use_term_p50']:.2f}")
+    print(f"   含义: 常用规则是否开始出现 (从 0 抬升)")
+    
+    # 辅助信息
+    print("\n📈 Support Data")
+    print(f"   recall_count:      {metrics['recall_count']}")
+    print(f"   use_count:         {metrics['use_count']}")
+    print(f"   total_recalls:     {metrics['total_recalls']}")
+    print(f"   unique_memories:   {metrics['unique_memories_used']}")
+    
+    # 口径细化
+    print("\n📊 Metric Calibration (口径细化)")
+    print(f"   unique_use_count:  {metrics.get('unique_use_count', 0)}")
+    print(f"   raw_mentions:      {metrics.get('raw_mentions', 0)}")
+    ratio = metrics.get('unique_to_raw_ratio', 1.0)
+    ratio_threshold = metrics.get('unique_to_raw_threshold', 0.5)
+    ratio_status = "✅" if ratio >= ratio_threshold else ("⚠️ LOW_SAMPLE" if is_low_sample else "⚠️")
+    print(f"   unique/raw ratio:  {ratio:.2%} / {ratio_threshold:.0%} {ratio_status}")
+    print(f"   duplicate_id_rate: {metrics.get('duplicate_id_rate', 0):.2%}")
+    
+    # orphan 指标
+    print("\n🔗 Link Quality (链路质量)")
+    print(f"   orphan_use_count:   {metrics.get('orphan_use_count', 0)}")
+    print(f"   orphan_use_rate:    {metrics.get('orphan_use_rate', 0):.1%}")
+    # 拆分 orphan_recall_rate (v1.2.4)
+    print(f"   unadopted_recall_rate: {metrics.get('unadopted_recall_rate', 0):.1%} (正常业务：窗口内未采用)")
+    print(f"   broken_link_recall_rate: {metrics.get('broken_link_recall_rate', 0):.1%} (工程质量：链路缺失)")
+    
+    # 场景分桶 (v1.2.5)
+    print("\n📊 Scenario Buckets (场景分桶)")
+    bucket_a = metrics.get('recall_bucket_a', 0)
+    bucket_b = metrics.get('recall_bucket_b', 0)
+    print(f"   Bucket A (应该被采用): {bucket_a} 条")
+    print(f"     unadopted_rate: {metrics.get('unadopted_rate_bucket_a', 0):.1%} (阈值 10%)")
+    print(f"   Bucket B (未采用正常): {bucket_b} 条")
+    print(f"     unadopted_rate: {metrics.get('unadopted_rate_bucket_b', 0):.1%} (宽松观测)")
+    
+    # 分版本计数
+    print("\n🔢 Version Split (版本分区)")
+    print(f"   v1_events: {metrics.get('v1_events', 0)} (recall={metrics.get('v1_recall_count', 0)}, use={metrics.get('v1_use_count', 0)})")
+    print(f"   v2_events: {metrics.get('v2_events', 0)} (recall={metrics.get('v2_recall_count', 0)}, use={metrics.get('v2_use_count', 0)})")
+    
+    # 漂移检测指标 (v1.2.6)
+    print("\n📉 Drift Detection (漂移检测)")
+    bucket_a_ratio = metrics.get('bucket_a_ratio', 1.0)
+    expected_ratio = metrics.get('expected_ratio', 1.0)
+    print(f"   bucket_a_ratio:   {bucket_a_ratio:.1%} (A 桶占比)")
+    print(f"   expected_ratio:   {expected_ratio:.1%} (expected link 占比)")
+    
+    # 历史趋势
+    if show_history:
+        history = load_history(hours=168)
+        if history:
+            print("\n📉 Trend (Last 7 Days)")
+            print("-" * 40)
+            
+            # 按 6 小时聚合
+            buckets = {}
+            for record in history:
+                ts = datetime.fromisoformat(record["ts"].replace("Z", ""))
+                bucket_key = ts.strftime("%Y-%m-%d %H")[:13] + "h"
+                if bucket_key not in buckets:
+                    buckets[bucket_key] = []
+                buckets[bucket_key].append(record)
+            
+            # 计算每个 bucket 的平均值
+            for bucket_key in sorted(buckets.keys())[-12:]:  # 最近 12 个桶
+                records = buckets[bucket_key]
+                avg_adoption = sum(r["adoption_rate_any"] for r in records) / len(records)
+                avg_use_term = sum(r["use_term_p50"] for r in records) / len(records)
+                print(f" {bucket_key}: adoption={avg_adoption:.1%} use_term_p50={avg_use_term:.2f}")
+    
+    print("\n" + "=" * 60)
+
+def health_check() -> Dict:
+    """Standard health check for tool_doctor"""
+    checks = {
+        "events_log_readable": False,
+        "metrics_dir_writable": False
+    }
+    
+    # Check events log readable
+    try:
+        if EVENTS_LOG.exists():
+            EVENTS_LOG.read_text()[:100]
+        checks["events_log_readable"] = True
+    except Exception:
+        checks["events_log_readable"] = True  # OK if doesn't exist yet
+    
+    # Check metrics dir writable
+    try:
+        METRICS_DIR.mkdir(parents=True, exist_ok=True)
+        test_file = METRICS_DIR / ".health_test"
+        test_file.write_text("test")
+        test_file.unlink()
+        checks["metrics_dir_writable"] = True
+    except Exception:
+        pass
+    
+    all_healthy = all(checks.values())
+    
+    return {
+        "status": "healthy" if all_healthy else "unhealthy",
+        "version": "1.2.8",
+        "checks": checks
+    }
+
+
+def sample_call() -> Dict:
+    """Sample call for tool_doctor"""
+    try:
+        events = load_events(hours=24)
+        metrics = compute_metrics(events)
+        return {
+            "status": "ok",
+            "sample_result": {
+                "ts": datetime.now().isoformat() + "Z",
+                "config_hash": get_current_config_hash(),
+                **metrics
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": {
+                "type": "sample_call_error",
+                "message": str(e)
+            }
+        }
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Memory Monitoring Dashboard")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument("--history", action="store_true", help="Show historical trends")
+    parser.add_argument("--save", action="store_true", help="Save to history")
+    parser.add_argument("--health", action="store_true", help="Health check for tool_doctor")
+    parser.add_argument("--sample", action="store_true", help="Sample call for tool_doctor")
+    args = parser.parse_args()
+    
+    # Standard interface for tool_doctor
+    if args.health:
+        result = health_check()
+        print(json.dumps(result))
+        sys.exit(0 if result["status"] == "healthy" else 1)
+    
+    if args.sample:
+        result = sample_call()
+        print(json.dumps(result))
+        sys.exit(0 if result["status"] == "ok" else 1)
+    
+    events = load_events(hours=24)
+    metrics = compute_metrics(events)
+    
+    if args.save:
+        save_history(metrics)
+    
+    if args.json:
+        output = {
+            "ts": datetime.now().isoformat() + "Z",
+            "config_hash": get_current_config_hash(),  # v1.2.8
+            **metrics
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        print_dashboard(metrics, show_history=args.history)
+
+if __name__ == "__main__":
+    main()

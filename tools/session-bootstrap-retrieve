@@ -1,0 +1,328 @@
+#!/usr/bin/env python3
+"""
+Session Bootstrap Retrieve - v1.0
+新会话自动记忆检索钩子
+
+功能:
+1. 检查是否新会话（首次用户消息）
+2. 调用 memory-scope-router 识别 scope
+3. 按 scope 检索记忆（使用 memory-retrieve）
+4. 输出注入格式（短摘要 + 引用）
+
+冷却机制: 同一会话每 5 分钟最多自动检索一次
+
+输出格式:
+```markdown
+## Relevant Memory (Auto-Recovered)
+
+1. **[OpenEmotion MVP-8]** 确定性实现，跨进程一致性
+   `mem:projects/openemotion:fact:20260303:mvp8`
+   
+2. **[Canary Runbook]** 评分-Canary 运维手册
+   `mem:domains/infra:runbook:20260303:canary`
+```
+"""
+
+import json
+import os
+import subprocess
+import time
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Optional
+
+WORKSPACE = Path.home() / ".openclaw/workspace"
+SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
+MEMORY_RETRIEVE = WORKSPACE / "tools/memory-retrieve"
+SCOPE_ROUTER = WORKSPACE / "tools/memory-scope-router"
+BOOTSTRAP_STATE = WORKSPACE / "memory/.bootstrap_state.json"
+OPENVIKING_CLI = Path.home() / ".local/bin/openviking"
+
+# 配置
+MAX_DOCS_PER_SCOPE = 3
+MAX_TOTAL_DOCS = 5
+MAX_SUMMARY_TOKENS = 40
+MAX_INJECTION_TOKENS = 600
+COOLDOWN_SECONDS = 300  # 5 分钟冷却
+
+# OpenViking URIs 按 scope
+SCOPE_URIS = {
+    "projects/openemotion": "viking://resources/user/projects/OpenEmotion/",
+    "domains/infra": "viking://resources/user/memory/",
+    "domains/subagent": "viking://resources/user/memory/",
+    "domains/memory": "viking://resources/user/memory/",
+    "global": "viking://resources/user/memory/",
+}
+
+
+def load_bootstrap_state() -> Dict:
+    """加载 bootstrap 状态"""
+    if BOOTSTRAP_STATE.exists():
+        try:
+            return json.loads(BOOTSTRAP_STATE.read_text())
+        except:
+            pass
+    return {}
+
+
+def save_bootstrap_state(state: Dict):
+    """保存 bootstrap 状态"""
+    BOOTSTRAP_STATE.parent.mkdir(parents=True, exist_ok=True)
+    BOOTSTRAP_STATE.write_text(json.dumps(state, indent=2))
+
+
+def is_cooldown_active(session_id: str) -> bool:
+    """检查冷却期"""
+    state = load_bootstrap_state()
+    last_retrieve = state.get("sessions", {}).get(session_id, {}).get("last_retrieve_ts", 0)
+    return (time.time() - last_retrieve) < COOLDOWN_SECONDS
+
+
+def record_retrieve(session_id: str):
+    """记录检索时间"""
+    state = load_bootstrap_state()
+    if "sessions" not in state:
+        state["sessions"] = {}
+    if session_id not in state["sessions"]:
+        state["sessions"][session_id] = {}
+    state["sessions"][session_id]["last_retrieve_ts"] = time.time()
+    save_bootstrap_state(state)
+
+
+def get_session_id() -> str:
+    """获取当前 session ID（简化版：使用时间戳 + PID）"""
+    # 如果有环境变量，使用它
+    if "OPENCLAW_SESSION_ID" in os.environ:
+        return os.environ["OPENCLAW_SESSION_ID"]
+    # 否则生成一个基于时间的 ID
+    return f"session-{datetime.now().strftime('%Y%m%d%H%M')}"
+
+
+def call_scope_router(msg: str) -> Dict:
+    """调用 memory-scope-router"""
+    try:
+        result = subprocess.run(
+            [str(SCOPE_ROUTER), msg],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+    except:
+        pass
+    return {"scopes": ["global"], "confidence": "low"}
+
+
+def retrieve_by_scope(scope: str, hints: List[str]) -> List[Dict]:
+    """按 scope 检索记忆"""
+    results = []
+    uri = SCOPE_URIS.get(scope, SCOPE_URIS["global"])
+    
+    for hint in hints[:2]:  # 每个 scope 最多 2 个查询
+        try:
+            cmd = [
+                str(OPENVIKING_CLI), "find", hint,
+                "-u", uri,
+                "-n", str(MAX_DOCS_PER_SCOPE)
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                if data.get("ok") and data.get("result"):
+                    for r in data["result"].get("resources", []):
+                        if r.get("is_leaf", True) and r.get("score", 0) > 0.3:
+                            results.append({
+                                "uri": r.get("uri", ""),
+                                "score": r.get("score", 0),
+                                "scope": scope,
+                                "hint": hint
+                            })
+        except:
+            pass
+    
+    return results
+
+
+def get_doc_summary(uri: str) -> str:
+    """获取文档摘要（使用 openviking abstract，降级到文件读取）"""
+    try:
+        result = subprocess.run(
+            [str(OPENVIKING_CLI), "abstract", uri],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if data.get("ok"):
+                abstract = data.get("abstract", "")
+                # 截断到 MAX_SUMMARY_TOKENS
+                words = abstract.split()[:MAX_SUMMARY_TOKENS]
+                return " ".join(words) + ("..." if len(words) >= MAX_SUMMARY_TOKENS else "")
+    except:
+        pass
+    
+    # 降级：从 URI 提取文档标题
+    # viking://resources/user/projects/OpenEmotion/README.md -> README
+    parts = uri.split("/")
+    filename = parts[-1] if parts else "Unknown"
+    title = filename.replace(".md", "").replace("_", " ").replace("-", " ")
+    return f"[{title[:30]}]"
+
+
+def format_injection(docs: List[Dict]) -> str:
+    """格式化注入内容"""
+    if not docs:
+        return ""
+    
+    lines = ["## Relevant Memory (Auto-Recovered)", ""]
+    total_tokens = 0
+    
+    for i, doc in enumerate(docs[:MAX_TOTAL_DOCS], 1):
+        uri = doc.get("uri", "")
+        scope = doc.get("scope", "global")
+        summary = get_doc_summary(uri)
+        
+        # 转换 URI 为 doc_id 格式
+        doc_id = uri.replace("viking://resources/user/", "mem:")
+        
+        # 简单 token 估算
+        entry = f"{i}. **[{scope}]** {summary}\n   `{doc_id}`\n"
+        entry_tokens = len(entry.split())
+        
+        if total_tokens + entry_tokens > MAX_INJECTION_TOKENS:
+            break
+        
+        lines.append(entry)
+        total_tokens += entry_tokens
+    
+    lines.append("")
+    lines.append("> _Auto-retrieved at session start. Use `openviking read <uri>` for full content._")
+    
+    return "\n".join(lines)
+
+
+def bootstrap_retrieve(msg: str, session_id: str = None, force: bool = False) -> Dict:
+    """
+    主函数：新会话自动检索
+    
+    Args:
+        msg: 用户消息
+        session_id: 会话 ID（可选）
+        force: 强制执行（忽略冷却）
+    
+    Returns:
+        {
+            "should_inject": bool,
+            "injection": str,  # markdown 格式
+            "scopes": [...],
+            "docs_count": int,
+            "cooldown": bool
+        }
+    """
+    session_id = session_id or get_session_id()
+    
+    # 检查冷却
+    if not force and is_cooldown_active(session_id):
+        return {
+            "should_inject": False,
+            "injection": "",
+            "scopes": [],
+            "docs_count": 0,
+            "cooldown": True,
+            "reason": "Cooldown active (5 min)"
+        }
+    
+    # Step 1: 路由
+    route_result = call_scope_router(msg)
+    scopes = route_result.get("scopes", ["global"])
+    confidence = route_result.get("confidence", "low")
+    
+    # 低置信度时减少检索
+    if confidence == "low":
+        scopes = scopes[:1]
+    
+    # Step 2: 按 scope 检索
+    all_docs = []
+    seen_uris = set()
+    
+    for scope in scopes:
+        # 获取查询提示词
+        hints = []
+        matched = route_result.get("matched_keywords", {}).get(scope, [])
+        if matched:
+            hints = matched[:2]
+        else:
+            # 使用 scope 名称作为 hint
+            hints = [scope.split("/")[-1]]
+        
+        docs = retrieve_by_scope(scope, hints)
+        for doc in docs:
+            uri = doc.get("uri", "")
+            if uri and uri not in seen_uris:
+                all_docs.append(doc)
+                seen_uris.add(uri)
+    
+    # Step 3: 排序和限制
+    all_docs.sort(key=lambda x: -x.get("score", 0))
+    all_docs = all_docs[:MAX_TOTAL_DOCS]
+    
+    # Step 4: 格式化注入
+    injection = format_injection(all_docs) if all_docs else ""
+    
+    # 记录检索时间
+    if all_docs:
+        record_retrieve(session_id)
+    
+    return {
+        "should_inject": len(all_docs) > 0,
+        "injection": injection,
+        "scopes": scopes,
+        "docs_count": len(all_docs),
+        "cooldown": False,
+        "confidence": confidence,
+        "session_id": session_id
+    }
+
+
+# ============== CLI ==============
+
+if __name__ == "__main__":
+    import sys
+    import argparse
+
+    parser = argparse.ArgumentParser(description="session-bootstrap-retrieve")
+    parser.add_argument("message", nargs="?", help="User message to analyze")
+    parser.add_argument("--session-id", help="Specify session ID")
+    parser.add_argument("--force", action="store_true", help="Ignore cooldown")
+    parser.add_argument("--health", action="store_true", help="Health check for tool_doctor")
+    parser.add_argument("--sample", action="store_true", help="Sample call for tool_doctor")
+    args = parser.parse_args()
+
+    if args.health:
+        print(json.dumps({
+            "status": "healthy",
+            "version": "1.0",
+            "checks": {
+                "scope_router_exists": SCOPE_ROUTER.exists(),
+                "memory_retrieve_exists": MEMORY_RETRIEVE.exists(),
+                "openviking_cli_exists": OPENVIKING_CLI.exists(),
+                "bootstrap_state_parent_exists": BOOTSTRAP_STATE.parent.exists()
+            }
+        }))
+        sys.exit(0)
+
+    if args.sample:
+        sample = bootstrap_retrieve("OpenEmotion canary rollback", force=True)
+        print(json.dumps({
+            "ok": True,
+            "sample": {
+                "should_inject": sample.get("should_inject", False),
+                "scopes": sample.get("scopes", []),
+                "docs_count": sample.get("docs_count", 0)
+            }
+        }, ensure_ascii=False, indent=2))
+        sys.exit(0)
+
+    if not args.message:
+        parser.error("message is required unless --health/--sample is used")
+
+    result = bootstrap_retrieve(args.message, args.session_id, args.force)
+    print(json.dumps(result, indent=2))

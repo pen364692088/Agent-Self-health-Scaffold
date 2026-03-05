@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Unified web search wrapper for local SearXNG
+# Usage:
+#   web-search "query" [limit]
+#   web-search --json "query"
+
+if [ $# -lt 1 ]; then
+  echo "Usage: web-search [--json] <query> [limit]"
+  exit 1
+fi
+
+MODE="text"
+if [ "${1:-}" = "--json" ]; then
+  MODE="json"
+  shift
+fi
+
+if [ $# -lt 1 ]; then
+  echo "Usage: web-search [--json] <query> [limit]"
+  exit 1
+fi
+
+QUERY="$1"
+LIMIT="${2:-5}"
+BASE_URL="http://localhost/search"
+
+if [ "$MODE" = "json" ]; then
+  curl -sS --get "$BASE_URL" \
+    --data-urlencode "q=${QUERY}" \
+    --data-urlencode 'format=json'
+  exit 0
+fi
+
+curl -sS --get "$BASE_URL" \
+  --data-urlencode "q=${QUERY}" \
+  --data-urlencode 'format=json' \
+| python3 -c 'import json,sys
+limit=int(sys.argv[1])
+data=json.load(sys.stdin)
+results=data.get("results",[])[:limit]
+if not results:
+    print("(no results)")
+    sys.exit(0)
+for i,r in enumerate(results,1):
+    t=(r.get("title") or "").strip().replace("\n"," ")
+    u=r.get("url") or ""
+    c=(r.get("content") or "").strip().replace("\n"," ")
+    print(f"{i}. {t}\n   {u}")
+    if c:
+        print(f"   {c[:180]}")' "$LIMIT"

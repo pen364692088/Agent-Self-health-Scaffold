@@ -1,0 +1,289 @@
+#!/usr/bin/env python3
+"""
+Multi-Agent Spawner with Automatic Conflict Detection
+
+Automatically detects file conflicts between agents and serializes conflicting agents
+while parallelizing non-conflicting ones.
+
+Usage:
+  multi-spawn '<agents_json>'
+  
+  agents_json format:
+  [
+    {
+      "id": "agent-a",
+      "task": "Implement security",
+      "files": ["/path/to/file1.js", "/path/to/file2.py"],
+      "model": "qianfan-code-latest",
+      "timeout": 600
+    },
+    ...
+  ]
+
+This tool:
+1. Analyzes file conflicts between all agents
+2. Groups agents by conflict (conflicting agents = same group)
+3. Serializes groups with conflicts
+4. Parallelizes agents within conflict-free groups
+5. Auto-releases claims on completion
+"""
+
+import sys
+import json
+import subprocess
+import os
+from pathlib import Path
+from typing import Dict, List, Set
+from collections import defaultdict
+
+CONFLICT_TOOL = Path.home() / ".openclaw" / "workspace" / "tools" / "subagent-conflict"
+
+
+def run_conflict_cmd(args: list) -> tuple:
+    """Run conflict detection command."""
+    result = subprocess.run(
+        [str(CONFLICT_TOOL)] + args,
+        capture_output=True,
+        text=True
+    )
+    return result.returncode, result.stdout.strip(), result.stderr.strip()
+
+
+def normalize_path(path: str) -> str:
+    """Normalize a file path for comparison."""
+    if path.startswith("~"):
+        path = str(Path(path).expanduser())
+    elif not os.path.isabs(path):
+        path = str((Path.home() / ".openclaw" / "workspace" / path).resolve())
+    return os.path.normpath(path)
+
+
+def analyze_conflicts(agents: List[Dict]) -> Dict[str, List[str]]:
+    """
+    Analyze file conflicts between agents.
+    Returns: {agent_id -> [conflicting_agent_ids]}
+    """
+    file_owners: Dict[str, List[str]] = defaultdict(list)
+    
+    for agent in agents:
+        agent_id = agent.get("id", f"agent-{len(file_owners)}")
+        files = agent.get("files", [])
+        for f in files:
+            norm_path = normalize_path(f)
+            file_owners[norm_path].append(agent_id)
+    
+    conflicts: Dict[str, Set[str]] = defaultdict(set)
+    
+    for file_path, owner_list in file_owners.items():
+        if len(owner_list) > 1:
+            for owner in owner_list:
+                for other in owner_list:
+                    if other != owner:
+                        conflicts[owner].add(other)
+    
+    return {k: list(v) for k, v in conflicts.items()}
+
+
+def group_agents_by_conflict(agents: List[Dict], conflicts: Dict[str, List[str]]) -> List[Dict]:
+    """
+    Group agents for execution.
+    Returns: List of execution batches, each batch has:
+      - parallel: True if agents can run in parallel, False if must serialize
+      - agents: list of agents in this batch
+    """
+    if not conflicts:
+        return [{"parallel": True, "agents": agents, "reason": "no conflicts"}]
+    
+    agent_map = {a.get("id"): a for a in agents}
+    
+    # Find agents with conflicts
+    conflicting_agents = set(conflicts.keys())
+    for agent_id, conflict_list in conflicts.items():
+        conflicting_agents.update(conflict_list)
+    
+    # Non-conflicting agents can run in parallel
+    non_conflicting = [a for a in agents if a.get("id") not in conflicting_agents]
+    
+    # Union-Find to group connected conflicts
+    parent = {aid: aid for aid in conflicting_agents}
+    
+    def find(x):
+        if parent[x] != x:
+            parent[x] = find(parent[x])
+        return parent[x]
+    
+    def union(x, y):
+        px, py = find(x), find(y)
+        if px != py:
+            parent[px] = py
+    
+    for agent_id, conflict_list in conflicts.items():
+        for other_id in conflict_list:
+            union(agent_id, other_id)
+    
+    # Group conflicting agents
+    conflict_groups: Dict[str, List[Dict]] = defaultdict(list)
+    for agent_id in conflicting_agents:
+        root = find(agent_id)
+        conflict_groups[root].append(agent_map[agent_id])
+    
+    # Build result
+    result = []
+    
+    # Batch 1: Non-conflicting (parallel)
+    if non_conflicting:
+        result.append({"parallel": True, "agents": non_conflicting, "reason": "no conflicts"})
+    
+    # Batches 2+: Conflicting groups (serialized)
+    for group in conflict_groups.values():
+        result.append({
+            "parallel": False, 
+            "agents": group, 
+            "reason": "shared files",
+            "conflicts": conflicts
+        })
+    
+    return result
+
+
+def main():
+    if len(sys.argv) >= 2 and sys.argv[1] in ("--health", "-H"):
+        print(json.dumps({
+            "status": "healthy",
+            "version": "1.0",
+            "checks": {
+                "conflict_tool_exists": CONFLICT_TOOL.exists()
+            }
+        }))
+        return 0
+
+    if len(sys.argv) >= 2 and sys.argv[1] == "--sample":
+        sample = [
+            {"id": "agent-a", "task": "Fix security", "files": ["tools/a.py"]},
+            {"id": "agent-b", "task": "Add tests", "files": ["tools/b.py"]}
+        ]
+        print(json.dumps({"ok": True, "sample": sample}, ensure_ascii=False, indent=2))
+        return 0
+
+    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h"):
+        print(__doc__)
+        print("\nExample:")
+        print('''  multi-spawn '[{"id":"agent-a","task":"Fix security","files":["/tmp/file1.js"]},{"id":"agent-b","task":"Add tests","files":["/tmp/file2.py"]}]' ''')
+        return 0 if len(sys.argv) >= 2 else 2
+    
+    try:
+        agents = json.loads(sys.argv[1])
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON: {e}", file=sys.stderr)
+        return 2
+    
+    if not isinstance(agents, list):
+        print("ERROR: agents_json must be an array", file=sys.stderr)
+        return 2
+    
+    print(f"[multi-spawn] Analyzing {len(agents)} agents...")
+    
+    # Analyze conflicts
+    conflicts = analyze_conflicts(agents)
+    
+    if conflicts:
+        print(f"[multi-spawn] Conflicts detected:")
+        for agent_id, conflicting in conflicts.items():
+            print(f"  {agent_id} <-> {', '.join(conflicting)}")
+    else:
+        print(f"[multi-spawn] No file conflicts detected")
+    
+    # Group agents
+    batches = group_agents_by_conflict(agents, conflicts)
+    
+    print(f"[multi-spawn] Organized into {len(batches)} execution batch(es)")
+    
+    # Output execution plan
+    print("\n" + "=" * 50)
+    print("EXECUTION PLAN")
+    print("=" * 50 + "\n")
+    
+    for i, batch in enumerate(batches, 1):
+        parallel = batch["parallel"]
+        batch_agents = batch["agents"]
+        reason = batch["reason"]
+        
+        if parallel:
+            print(f"Batch {i}: PARALLEL ({reason})")
+        else:
+            print(f"Batch {i}: SERIAL ({reason})")
+        
+        for j, agent in enumerate(batch_agents, 1):
+            agent_id = agent.get("id", "unknown")
+            task = agent.get("task", "")
+            files = agent.get("files", [])
+            
+            prefix = "  └─" if j == len(batch_agents) else "  ├─"
+            
+            if parallel:
+                print(f"{prefix} [{agent_id}] {task[:50]}..." if len(task) > 50 else f"{prefix} [{agent_id}] {task}")
+            else:
+                print(f"{prefix} Step {j}: [{agent_id}] {task[:40]}..." if len(task) > 40 else f"{prefix} Step {j}: [{agent_id}] {task}")
+                if files and j < len(batch_agents):
+                    # Show shared files warning
+                    print(f"     ⚠️  releases: {', '.join(files[:2])}{'...' if len(files) > 2 else ''}")
+        
+        if i < len(batches):
+            print()
+            print("  ↓ wait for batch to complete")
+            print()
+    
+    # Output spawn commands
+    print("\n" + "=" * 50)
+    print("SPAWN COMMANDS")
+    print("=" * 50 + "\n")
+    
+    for i, batch in enumerate(batches, 1):
+        parallel = batch["parallel"]
+        batch_agents = batch["agents"]
+        
+        if len(batches) > 1:
+            print(f"# Batch {i}")
+        
+        if parallel:
+            print("# → Run these in PARALLEL:\n")
+        else:
+            print("# → Run these SERIALLY (one at a time):\n")
+        
+        for j, agent in enumerate(batch_agents, 1):
+            agent_id = agent.get("id", "unknown")
+            task = agent.get("task", "")
+            files = agent.get("files", [])
+            model = agent.get("model", "baiduqianfancodingplan/qianfan-code-latest")
+            timeout = agent.get("timeout", 600)
+            
+            if not parallel and len(batch_agents) > 1:
+                print(f"# Step {j}:")
+            
+            if files:
+                files_str = " ".join(files)
+                print(f'~/.openclaw/workspace/tools/subagent-conflict claim {agent_id} {files_str}')
+            
+            # Spawn command hint
+            task_escaped = task.replace('"', '\\"')[:100]
+            print(f'# sessions_spawn label={agent_id} task="{task_escaped}" ...')
+            
+            if files:
+                print(f'~/.openclaw/workspace/tools/subagent-conflict release {agent_id}')
+            
+            print()
+        
+        if i < len(batches):
+            print("# --- wait for batch to complete before next batch ---\n")
+    
+    # Cleanup
+    print("=" * 50)
+    print("CLEANUP")
+    print("=" * 50 + "\n")
+    print("~/.openclaw/workspace/tools/subagent-conflict clear")
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

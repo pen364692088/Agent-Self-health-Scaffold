@@ -1,0 +1,492 @@
+#!/usr/bin/env python3
+"""
+Session Indexer v2.0 - Parse JSONL session logs into structured SQLite + high-signal extraction
+
+Architecture (per Memory.txt):
+- Layer A: Raw JSONL (cold storage, keep as-is)
+- Layer B: SQLite structured index (this tool)
+- Layer C: High-signal semantic index (extracted for vector search)
+"""
+
+import argparse
+import json
+import sqlite3
+import os
+import sys
+import re
+import hashlib
+from datetime import datetime, timedelta
+from pathlib import Path
+
+DB_PATH = Path.home() / '.openclaw' / 'workspace' / '.session-index' / 'sessions.db'
+
+SCHEMA = '''
+-- Events table (Layer B: Structured)
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    event_id TEXT,
+    event_type TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    role TEXT,
+    tool_name TEXT,
+    status TEXT,
+    error_sig TEXT,
+    content_preview TEXT,
+    file_refs TEXT,
+    source_path TEXT NOT NULL,
+    source_line INTEGER,
+    content_hash TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_id ON events(session_id);
+CREATE INDEX IF NOT EXISTS idx_ts ON events(ts);
+CREATE INDEX IF NOT EXISTS idx_event_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS idx_tool_name ON events(tool_name);
+CREATE INDEX IF NOT EXISTS idx_role ON events(role);
+
+-- FTS5 for full-text search (standalone table)
+CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(
+    session_id, event_type, tool_name, content_preview
+);
+
+-- High-signal extractions (Layer C candidates)
+CREATE TABLE IF NOT EXISTS high_signal (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    event_id TEXT,
+    signal_type TEXT NOT NULL,  -- decision, error_fix, user_preference, key_conclusion
+    summary TEXT NOT NULL,
+    keywords TEXT,
+    source_path TEXT NOT NULL,
+    source_line INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_signal_type ON high_signal(signal_type);
+CREATE INDEX IF NOT EXISTS idx_keywords ON high_signal(keywords);
+
+-- Metadata
+CREATE TABLE IF NOT EXISTS metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
+
+-- Initialize metadata if not exists
+INSERT OR IGNORE INTO metadata (key, value) VALUES ('last_indexed_ts', '1970-01-01T00:00:00.000Z');
+INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '2.0');
+'''
+
+def sanitize_content(text, max_len=500):
+    """Remove sensitive information from content"""
+    if not text:
+        return None
+    
+    # Remove API keys, tokens, passwords
+    patterns = [
+        r'(api[_-]?key["\']?\s*[:=]\s*["\']?)[a-zA-Z0-9_-]{20,}',
+        r'(token["\']?\s*[:=]\s*["\']?)[a-zA-Z0-9_-]{20,}',
+        r'(password["\']?\s*[:=]\s*["\']?)[a-zA-Z0-9_-]{8,}',
+        r'(sk-[a-zA-Z0-9]{20,})',
+        r'(Bearer\s+[a-zA-Z0-9_-]{20,})',
+        r'(nvapi-[a-zA-Z0-9_-]{20,})',
+    ]
+    
+    for pattern in patterns:
+        text = re.sub(pattern, r'\1***REDACTED***', text, flags=re.IGNORECASE)
+    
+    # Remove file paths that might contain sensitive info
+    text = re.sub(r'/home/[^/\s]+/', '/home/***/', text)
+    text = re.sub(r'/Users/[^/\s]+/', '/Users/***/', text)
+    
+    # Truncate long content
+    if len(text) > max_len:
+        text = text[:max_len] + '...'
+    
+    return text
+
+def extract_error_signature(error_text):
+    """Extract error signature for clustering"""
+    if not error_text:
+        return None
+    
+    # Remove specific values but keep error patterns
+    error_sig = re.sub(r'\b\d{4,}\b', 'N', error_text)
+    error_sig = re.sub(r'\b[a-f0-9]{8,}\b', 'HASH', error_sig)
+    error_sig = re.sub(r'/[^/\s]+/', '/PATH/', error_sig)
+    error_sig = re.sub(r'"[^"]+"', '"STRING"', error_sig)
+    
+    return error_sig[:200] if error_sig else None
+
+def extract_file_refs(content_list):
+    """Extract file references from content"""
+    file_refs = []
+    if not isinstance(content_list, list):
+        return file_refs
+    
+    for item in content_list:
+        if isinstance(item, dict):
+            if item.get('type') == 'fileRef':
+                path = item.get('path', '')
+                if path:
+                    file_refs.append(path)
+            # Also extract from text content
+            if item.get('type') == 'text':
+                text = item.get('text', '')
+                # Find file paths in text
+                matches = re.findall(r'(/[a-zA-Z0-9_\-./]+\.[a-zA-Z]{1,10})', text)
+                file_refs.extend(matches[:5])  # Limit to 5
+    
+    return list(set(file_refs))[:10]
+
+def extract_high_signal(entry, msg, session_id, source_path, source_line):
+    """Extract high-signal content for Layer C semantic index"""
+    signals = []
+    
+    content = msg.get('content', [])
+    if not isinstance(content, list):
+        return signals
+    
+    role = msg.get('role', '')
+    
+    for item in content:
+        if not isinstance(item, dict):
+            continue
+            
+        item_type = item.get('type', '')
+        
+        # Tool calls - track tool_name
+        if item_type == 'toolCall':
+            tool_name = item.get('name', '')
+            tool_args = item.get('args', {})
+            
+            # Detect decisions
+            if tool_name in ['edit', 'write', 'exec']:
+                summary = f"{role}: {tool_name}"
+                if tool_args:
+                    # Extract key arg for summary
+                    if 'path' in tool_args:
+                        summary += f" {tool_args['path']}"
+                    elif 'command' in tool_args:
+                        cmd = str(tool_args['command'])[:50]
+                        summary += f" {cmd}"
+                
+                signals.append({
+                    'signal_type': 'decision',
+                    'summary': sanitize_content(summary, 200),
+                    'keywords': tool_name
+                })
+        
+        # Tool results - detect errors
+        if item_type == 'toolResult':
+            success = item.get('success', True)
+            if not success:
+                error_text = item.get('error', '') or item.get('text', '')
+                signals.append({
+                    'signal_type': 'error_fix',
+                    'summary': sanitize_content(f"ERROR: {error_text[:200]}", 200),
+                    'keywords': 'error'
+                })
+        
+        # Text content - extract key phrases
+        if item_type == 'text':
+            text = item.get('text', '')
+            
+            # User preferences
+            if role == 'user':
+                pref_patterns = [
+                    r'(prefer|偏好|喜欢|want|need|应该|必须)',
+                    r'(don\'t|不要|避免|exclude)',
+                ]
+                for pattern in pref_patterns:
+                    if re.search(pattern, text, re.IGNORECASE):
+                        # Extract sentence containing preference
+                        sentences = re.split(r'[.!?。！？]', text)
+                        for sent in sentences:
+                            if re.search(pattern, sent, re.IGNORECASE):
+                                signals.append({
+                                    'signal_type': 'user_preference',
+                                    'summary': sanitize_content(sent.strip(), 200),
+                                    'keywords': 'preference'
+                                })
+                                break
+                        break
+            
+            # Key conclusions (assistant)
+            if role == 'assistant':
+                conclusion_patterns = [
+                    r'(结论|conclusion|result|完成|done|success|失败|failed)',
+                    r'(推荐|recommend|建议|suggestion)',
+                ]
+                for pattern in conclusion_patterns:
+                    if re.search(pattern, text, re.IGNORECASE):
+                        sentences = re.split(r'[.!?。！？]', text)
+                        for sent in sentences:
+                            if re.search(pattern, sent, re.IGNORECASE) and len(sent) > 20:
+                                signals.append({
+                                    'signal_type': 'key_conclusion',
+                                    'summary': sanitize_content(sent.strip(), 200),
+                                    'keywords': 'conclusion'
+                                })
+                                break
+                        break
+    
+    return signals
+
+def index_session_file(db_path, session_file, last_indexed_ts=None):
+    """Index a single session file"""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    indexed_count = 0
+    signal_count = 0
+    session_id = Path(session_file).stem
+    file_ts = None
+    
+    try:
+        with open(session_file, 'r', encoding='utf-8') as f:
+            for line_num, line in enumerate(f, 1):
+                if not line.strip():
+                    continue
+                
+                try:
+                    entry = json.loads(line)
+                    
+                    # Extract common fields
+                    event_type = entry.get('type', 'unknown')
+                    event_id = entry.get('id', '')
+                    ts = entry.get('timestamp', '')
+                    
+                    if not ts:
+                        continue
+                    
+                    # Track latest timestamp
+                    file_ts = ts
+                    
+                    # Skip if already indexed (incremental mode)
+                    if last_indexed_ts and ts <= last_indexed_ts:
+                        continue
+                    
+                    # Process based on event type
+                    role = None
+                    tool_name = None
+                    status = None
+                    error_sig = None
+                    content_preview = None
+                    file_refs = None
+                    content_hash = None
+                    
+                    if event_type == 'message':
+                        msg = entry.get('message', {})
+                        if isinstance(msg, dict):
+                            role = msg.get('role', '')
+                            content = msg.get('content', [])
+                            
+                            if isinstance(content, list):
+                                for item in content:
+                                    if isinstance(item, dict):
+                                        # Text content
+                                        if item.get('type') == 'text':
+                                            text = item.get('text', '')
+                                            content_preview = sanitize_content(text, 200)
+                                            content_hash = hashlib.md5(text.encode()).hexdigest()[:16]
+                                        
+                                        # Tool call
+                                        elif item.get('type') == 'toolCall':
+                                            tool_name = item.get('name', '')
+                                        
+                                        # Tool result
+                                        elif item.get('type') == 'toolResult':
+                                            success = item.get('success', True)
+                                            status = 'success' if success else 'error'
+                                            if not success:
+                                                error_text = item.get('error', '') or item.get('text', '')
+                                                error_sig = extract_error_signature(error_text)
+                                
+                                # Extract file references
+                                file_refs_list = extract_file_refs(content)
+                                file_refs = json.dumps(file_refs_list) if file_refs_list else None
+                            
+                            # Extract high-signal content
+                            signals = extract_high_signal(entry, msg, session_id, str(session_file), line_num)
+                            for sig in signals:
+                                cursor.execute('''
+                                    INSERT INTO high_signal 
+                                    (session_id, event_id, signal_type, summary, keywords, source_path, source_line)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                                ''', (session_id, event_id, sig['signal_type'], sig['summary'], 
+                                      sig['keywords'], str(session_file), line_num))
+                                signal_count += 1
+                    
+                    elif event_type == 'custom':
+                        # Custom events (model-snapshot, etc.)
+                        custom_type = entry.get('customType', '')
+                        content_preview = f"custom:{custom_type}"
+                    
+                    elif event_type == 'session':
+                        # Session start
+                        cwd = entry.get('cwd', '')
+                        content_preview = f"session_start: {cwd}"
+                    
+                    # Insert into events table
+                    cursor.execute('''
+                        INSERT INTO events 
+                        (session_id, event_id, event_type, ts, role, tool_name, status, error_sig, 
+                         content_preview, file_refs, source_path, source_line, content_hash)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        session_id, event_id, event_type, ts, role, tool_name, status, error_sig,
+                        content_preview, file_refs, str(session_file), line_num, content_hash
+                    ))
+                    
+                    # Also insert into FTS table for full-text search
+                    if content_preview:
+                        cursor.execute('''
+                            INSERT INTO events_fts (session_id, event_type, tool_name, content_preview)
+                            VALUES (?, ?, ?, ?)
+                        ''', (session_id, event_type, tool_name or '', content_preview))
+                    
+                    indexed_count += 1
+                    
+                except json.JSONDecodeError:
+                    continue
+                except Exception as e:
+                    print(f"Error processing line {line_num}: {e}", file=sys.stderr)
+                    continue
+        
+        # Update last indexed timestamp
+        if file_ts:
+            cursor.execute('''
+                INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_indexed_ts', ?)
+            ''', (file_ts,))
+        
+        conn.commit()
+        
+    except Exception as e:
+        print(f"Error indexing {session_file}: {e}", file=sys.stderr)
+        conn.rollback()
+    finally:
+        conn.close()
+    
+    return indexed_count, signal_count
+
+def find_session_files(days=None, session_id=None):
+    """Find session files to index"""
+    sessions_dir = Path.home() / '.openclaw' / 'agents' / 'main' / 'sessions'
+    
+    if not sessions_dir.exists():
+        print(f"Sessions directory not found: {sessions_dir}", file=sys.stderr)
+        return []
+    
+    files = []
+    cutoff_date = None
+    
+    if days:
+        cutoff_date = datetime.now() - timedelta(days=days)
+    
+    for file_path in sessions_dir.glob('*.jsonl'):
+        if session_id and file_path.stem != session_id:
+            continue
+        
+        if cutoff_date:
+            file_mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
+            if file_mtime < cutoff_date:
+                continue
+        
+        files.append(file_path)
+    
+    return sorted(files, key=lambda x: x.stat().st_mtime, reverse=True)
+
+def main():
+    # Standard probes for preflight tooling
+    if "--health" in sys.argv:
+        print(json.dumps({"status": "healthy", "version": "2.0", "checks": {"db_parent_exists": DB_PATH.parent.exists(), "sessions_dir_exists": (Path.home() / ".openclaw" / "agents" / "main" / "sessions").exists()}}))
+        return
+    if "--sample" in sys.argv:
+        print(json.dumps({"ok": True, "sample": "session-indexer --days 1"}))
+        return
+    parser = argparse.ArgumentParser(description='Index OpenClaw session logs (v2.0)')
+    parser.add_argument('--all', action='store_true', help='Index all sessions')
+    parser.add_argument('--days', type=int, help='Index sessions from last N days')
+    parser.add_argument('--session', help='Index specific session ID')
+    parser.add_argument('--db', default=str(DB_PATH), help='Database path')
+    parser.add_argument('--stats', action='store_true', help='Show database stats')
+    parser.add_argument('--health', action='store_true', help='Health check for tool_doctor')
+    parser.add_argument('--sample', action='store_true', help='Sample call for tool_doctor')
+    
+    args = parser.parse_args()
+    
+    db_path = Path(args.db)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Initialize database
+    conn = sqlite3.connect(db_path)
+    conn.executescript(SCHEMA)
+    conn.close()
+    
+    # Stats mode
+    if args.stats:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT COUNT(*) FROM events")
+        events = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(DISTINCT session_id) FROM events")
+        sessions = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM high_signal")
+        signals = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT signal_type, COUNT(*) FROM high_signal GROUP BY signal_type")
+        signal_breakdown = cursor.fetchall()
+        
+        print(f"Database: {db_path}")
+        print(f"Events: {events}")
+        print(f"Sessions: {sessions}")
+        print(f"High-signal extractions: {signals}")
+        print("Signal breakdown:")
+        for sig_type, count in signal_breakdown:
+            print(f"  {sig_type}: {count}")
+        
+        conn.close()
+        return
+    
+    # Index mode
+    if not any([args.all, args.days, args.session]):
+        print("Error: Must specify one of --all, --days, --session, or --stats", file=sys.stderr)
+        sys.exit(1)
+    
+    # Find files to index
+    session_files = find_session_files(args.days, args.session)
+    
+    if not session_files:
+        print("No session files found to index")
+        return
+    
+    print(f"Found {len(session_files)} session files to index")
+    
+    # Get last indexed timestamp
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM metadata WHERE key = 'last_indexed_ts'")
+    last_indexed_ts = cursor.fetchone()
+    last_indexed_ts = last_indexed_ts[0] if last_indexed_ts else None
+    conn.close()
+    
+    # Index files
+    total_indexed = 0
+    total_signals = 0
+    for session_file in session_files:
+        count, signals = index_session_file(db_path, session_file, 
+                                            last_indexed_ts if not args.session else None)
+        total_indexed += count
+        total_signals += signals
+        if count > 0 or signals > 0:
+            print(f"  {session_file.name}: {count} events, {signals} signals")
+    
+    print(f"\nTotal: {total_indexed} events, {total_signals} high-signal extractions")
+
+if __name__ == '__main__':
+    main()

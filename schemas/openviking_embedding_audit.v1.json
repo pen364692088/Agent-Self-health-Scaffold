@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "openviking_embedding_audit.v1",
+  "title": "OpenViking Embedding Audit v1",
+  "type": "object",
+  "required": [
+    "audit_version",
+    "generated_at",
+    "doc_count",
+    "docs"
+  ],
+  "properties": {
+    "audit_version": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "doc_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "docs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "doc_id",
+          "doc_hash",
+          "chunk_count_total",
+          "chunk_count_embedded",
+          "embedding_status",
+          "embedding_coverage_pct",
+          "max_chunk_tokens_seen",
+          "status_counts",
+          "chunker_version",
+          "embedding_version",
+          "token_count_method",
+          "fallback_trigger_count",
+          "indexed_at",
+          "dual_guard_trim_count"
+        ],
+        "properties": {
+          "doc_id": {
+            "type": "string"
+          },
+          "doc_hash": {
+            "type": "string"
+          },
+          "chunk_count_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "chunk_count_embedded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "embedding_status": {
+            "type": "string"
+          },
+          "embedding_coverage_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_chunk_tokens_seen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_chunk_chars_seen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_chunk_bytes_seen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status_counts": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "truncated": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "skipped": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "error": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "ok",
+              "truncated",
+              "skipped",
+              "error"
+            ],
+            "additionalProperties": true
+          },
+          "chunker_version": {
+            "type": "string"
+          },
+          "embedding_version": {
+            "type": "string"
+          },
+          "token_count_method": {
+            "type": "string"
+          },
+          "fallback_trigger_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "indexed_at": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "dual_guard_trim_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

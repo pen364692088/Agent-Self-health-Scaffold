@@ -1,0 +1,138 @@
+#!/bin/bash
+# Testbot 聊天测试工具
+# 测试 emoji → emotiond 情感映射
+
+EMOTIOND_URL="http://127.0.0.1:18080"
+EMOTIOND_TOKEN=$(cat ~/.config/openemotion/emotiond_token 2>/dev/null)
+USER="moonlight"
+TARGET="testbot"
+
+cd /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+echo "=== Testbot 聊天测试 ==="
+echo "输入消息测试 emoji 情感效果，输入 'quit' 退出"
+echo ""
+
+# 显示当前情绪状态
+show_state() {
+    echo -e "\n📊 当前情绪状态:"
+    .venv/bin/python << PYEOF
+import asyncio
+import aiosqlite
+import json
+
+async def show():
+    db_path = "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond.db"
+    async with aiosqlite.connect(db_path) as db:
+        cursor = await db.execute("SELECT joy, sadness, anger, anxiety, loneliness, valence, arousal FROM mood_state LIMIT 1")
+        row = await cursor.fetchone()
+        if row:
+            print(f"  😊 Joy: {row[0]:.3f}")
+            print(f"  😢 Sadness: {row[1]:.3f}")
+            print(f"  😠 Anger: {row[2]:.3f}")
+            print(f"  😰 Anxiety: {row[3]:.3f}")
+            print(f"  😔 Loneliness: {row[4]:.3f}")
+            print(f"  Valence: {row[5]:.2f} | Arousal: {row[6]:.2f}")
+asyncio.run(show())
+PYEOF
+}
+
+# 显示关系状态
+show_relationship() {
+    echo -e "\n💕 与 $TARGET 的关系:"
+    .venv/bin/python << PYEOF
+import asyncio
+import aiosqlite
+
+async def show():
+    db_path = "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond.db"
+    async with aiosqlite.connect(db_path) as db:
+        cursor = await db.execute("SELECT target, bond, grudge, trust FROM relationships WHERE target = 'moonlight' OR target = 'testbot' LIMIT 5")
+        rows = await cursor.fetchall()
+        for row in rows:
+            print(f"  {row[0]}: bond={row[1]:.2f}, grudge={row[2]:.2f}, trust={row[3]:.2f}")
+asyncio.run(show())
+PYEOF
+}
+
+# 初始状态
+show_state
+show_relationship
+
+while true; do
+    echo -e "\n💬 你的消息: "
+    read -r message
+    
+    if [ "$message" = "quit" ] || [ "$message" = "exit" ]; then
+        echo "再见！"
+        break
+    fi
+    
+    if [ -z "$message" ]; then
+        continue
+    fi
+    
+    # 分析 emoji 并发送 world_event
+    echo -e "\n🔄 处理中..."
+    
+    result=$(.venv/bin/python << PYEOF
+import sys
+sys.path.insert(0, '.')
+from emotiond.emoji_emotion import analyze_message_emojis
+import json
+
+text = """$message"""
+result, world_event = analyze_message_emojis(
+    text=text,
+    actor="$USER",
+    target="$TARGET",
+    relationship={"bond": 0.8, "trust": 0.7},
+    user_id="$USER"
+)
+
+print("###ANALYSIS###")
+print(json.dumps({
+    "emojis": result.get("emojis", []),
+    "vector": result.get("aggregated_vector", {}),
+    "dominant": result.get("dominant_emotion"),
+    "confidence": result.get("confidence")
+}))
+
+if world_event:
+    print("###EVENT###")
+    print(json.dumps(world_event))
+PYEOF
+)
+    
+    # 显示分析结果
+    analysis=$(echo "$result" | sed -n '/###ANALYSIS###/,/###EVENT###/p' | grep -v "###")
+    event=$(echo "$result" | sed -n '/###EVENT###/,$p' | grep -v "###" | tail -1)
+    
+    echo -e "\n📈 Emoji 分析:"
+    echo "$analysis" | .venv/bin/python -c "
+import sys, json
+data = json.load(sys.stdin)
+print(f'  检测到的 emoji: {data[\"emojis\"]}')
+print(f'  主导情绪: {data[\"dominant\"]} ({data[\"confidence\"]:.2f})')
+vec = data['vector']
+print(f'  Joy: {vec[\"joy\"]:.2f} | Anger: {vec[\"anger\"]:.2f} | Sadness: {vec[\"sadness\"]:.2f}')
+" 2>/dev/null || echo "$analysis"
+    
+    # 发送到 emotiond
+    if [ -n "$event" ]; then
+        echo -e "\n🚀 发送到 emotiond..."
+        response=$(curl -sS -X POST "$EMOTIOND_URL/event" \
+            -H "Authorization: Bearer $EMOTIOND_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$event")
+        
+        event_type=$(echo "$event" | .venv/bin/python -c "import sys,json; print(json.load(sys.stdin)['meta']['subtype'])" 2>/dev/null)
+        status=$(echo "$response" | .venv/bin/python -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','error'))" 2>/dev/null)
+        emotion=$(echo "$response" | .venv/bin/python -c "import sys,json; d=json.load(sys.stdin); print(d.get('appraisal',{}).get('emotion_label','?'))" 2>/dev/null)
+        
+        echo "  Event type: $event_type → status: $status, emotion: $emotion"
+    fi
+    
+    # 显示更新后的状态
+    show_state
+done

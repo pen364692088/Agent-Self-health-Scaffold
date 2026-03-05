@@ -1,0 +1,11 @@
+name: memory-dashboard_happy
+tool: tools/memory-dashboard
+input:
+  json: true
+expect:
+  status: success
+  output_contains:
+    - "ts"
+    - "config_hash"
+    - "use_attribution"
+  schema_valid: true

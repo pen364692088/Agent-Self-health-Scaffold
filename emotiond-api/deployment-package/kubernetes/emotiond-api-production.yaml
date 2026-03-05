@@ -1,0 +1,104 @@
+# Auto-generated from production-deployment.yaml
+# Document 1: Deployment
+
+# Production Deployment Configuration
+# Environment: Production
+# Purpose: Full production deployment with all security and monitoring features
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emotiond-api-production
+  namespace: emotiond
+  labels:
+    app: emotiond-api
+    environment: production
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: emotiond-api
+      environment: production
+  template:
+    metadata:
+      labels:
+        app: emotiond-api
+        environment: production
+        version: v1.0.0
+    spec:
+      containers:
+      - name: emotiond-api
+        image: emotiond/api:v1.0.0
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: emotiond-secrets
+              key: jwt-secret
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: emotiond-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: emotiond-secrets
+              key: redis-url
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: logs
+        persistentVolumeClaim:
+          claimName: emotiond-logs-pvc
+      securityContext:
+        fsGroup: 1000

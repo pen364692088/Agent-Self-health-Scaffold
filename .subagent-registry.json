@@ -1,0 +1,42 @@
+{
+  "claims": {
+    "agent-metacog": {
+      "files": [
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/core.py",
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/api.py",
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/models.py",
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/meta_cognition.py"
+      ],
+      "claimed_at": "2026-02-28T16:06:21.849356",
+      "original_paths": [
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/core.py",
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/api.py",
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/models.py",
+        "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/meta_cognition.py"
+      ]
+    }
+  },
+  "history": [
+    {
+      "event": "cleared",
+      "agent_id": "system",
+      "timestamp": "2026-02-28T15:02:19.325358",
+      "cleared_count": 1
+    },
+    {
+      "event": "released",
+      "agent_id": "agent-state",
+      "timestamp": "2026-02-28T15:37:29.552785"
+    },
+    {
+      "event": "released",
+      "agent_id": "agent-appraisal",
+      "timestamp": "2026-02-28T15:50:20.735744"
+    },
+    {
+      "event": "released",
+      "agent_id": "agent-ledger",
+      "timestamp": "2026-02-28T16:06:21.713251"
+    }
+  ]
+}

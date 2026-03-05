@@ -1,0 +1,43 @@
+{
+  "version": "ops_run.v1",
+  "script_version": "openviking_ops_cron.v1",
+  "run_id": "051910-1bbc3c40",
+  "started_at": "2026-03-05T05:19:10.363645+00:00",
+  "ended_at": "2026-03-05T05:19:10.876016+00:00",
+  "status": "ok",
+  "errors": [],
+  "inputs": {
+    "root_uri": "viking://resources/user/memory/",
+    "doc_ids": [
+      "viking://resources/user/memory/2026-03-03-orchestrator-v2.md"
+    ],
+    "config": "/home/moonlight/.openclaw/workspace/config/openviking_ops.yaml",
+    "config_hash": "79a081f782d0bb9e"
+  },
+  "artifacts": {
+    "run_dir": "/home/moonlight/.openclaw/workspace/artifacts/openviking/ops_runs/20260305/051910-1bbc3c40",
+    "metrics": "/home/moonlight/.openclaw/workspace/artifacts/openviking/ops_runs/20260305/051910-1bbc3c40/metrics.json",
+    "policy": "/home/moonlight/.openclaw/workspace/artifacts/openviking/ops_runs/20260305/051910-1bbc3c40/policy_decision.json",
+    "health": "/home/moonlight/.openclaw/workspace/artifacts/openviking/ops_runs/20260305/051910-1bbc3c40/healthcheck_result.json"
+  },
+  "health": {
+    "version": "openviking_embedding_healthcheck.v1",
+    "status": "HEALTHY",
+    "coverage_min": 1.0,
+    "skipped_chunks_count": 0,
+    "policy_levels": {
+      "error": false,
+      "warn": false
+    },
+    "reasons": []
+  },
+  "alerting": {
+    "enabled": true,
+    "results": [],
+    "retry": {
+      "retried": 0,
+      "delivered": 0,
+      "kept": 0
+    }
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "pending": {
+    "task_8db0f53f": {
+      "task_id": "task_8db0f53f",
+      "run_id": "run_3f053c73",
+      "child_session_key": "agent:main:subagent:005b73fc521f41d2adf75d769e0bd937",
+      "description": "MVP11.4.6 P1: Threshold Calibration Script - see TASK_MVP1146_P1.md",
+      "status": "pending",
+      "deadline": "2026-03-05T09:01:42.540909",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T08:01:42.540913",
+      "started_at": "2026-03-05T08:01:42.540915",
+      "completed_at": null,
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": null,
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    }
+  },
+  "completed": {
+    "task_344feebc": {
+      "task_id": "task_344feebc",
+      "run_id": "run_025ce4ec",
+      "child_session_key": "agent:main:subagent:ccb9168d7c61415089973e171755c323",
+      "description": "MVP11.2 Soak+EffectSize+CI guard (see TASK_MVP11_2_SOAK_EFFECT_SIZE.md)",
+      "status": "timeout",
+      "deadline": "2026-03-04T21:28:52.120057",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-04T20:28:52.120064",
+      "started_at": "2026-03-04T20:28:52.120066",
+      "completed_at": "2026-03-05T03:41:17.613577",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Task exceeded deadline without completion"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_f6b71d0a": {
+      "task_id": "task_f6b71d0a",
+      "run_id": "run_59b226ae",
+      "child_session_key": "agent:main:subagent:95de9fcc65124942904c6b434ff4babc",
+      "description": "MVP11.3.3 Phase 1: Update build_mvp11_trend_7d.py - see SESSION-STATE.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T01:56:02.276864",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T00:56:02.276867",
+      "started_at": "2026-03-05T00:56:02.276869",
+      "completed_at": "2026-03-05T03:41:17.613577",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Task exceeded deadline without completion"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_dc571f62": {
+      "task_id": "task_dc571f62",
+      "run_id": "run_7519fce3",
+      "child_session_key": "agent:main:subagent:748ea9e4904b4c7d980a6174cf95ba21",
+      "description": "MVP11.4 Trace-driven Replay Hardening - see SESSION-STATE.md Task B",
+      "status": "timeout",
+      "deadline": "2026-03-05T03:34:52.803728",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T02:34:52.803731",
+      "started_at": "2026-03-05T02:34:52.803732",
+      "completed_at": "2026-03-05T03:41:17.613577",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Task exceeded deadline without completion"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_b6dac10a": {
+      "task_id": "task_b6dac10a",
+      "run_id": "run_bbafcf7f",
+      "child_session_key": "agent:main:subagent:2a084cf9cb954f808382437891257ff4",
+      "description": "MVP11.4.5 P1: Implement concentration.py module - see TASK_MVP1145_P1.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T04:42:56.150623",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T03:42:56.150625",
+      "started_at": "2026-03-05T03:42:56.150626",
+      "completed_at": "2026-03-05T07:52:59.167298",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Task exceeded deadline without completion"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_0957a6ce": {
+      "task_id": "task_0957a6ce",
+      "run_id": "run_2c0656aa",
+      "child_session_key": "agent:main:subagent:047cec92fb08440b8551a5d072cd6e0b",
+      "description": "MVP11.4.5 P4: Add concentration fields to nightly - see TASK_MVP1145_P4.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T04:43:06.213198",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T03:43:06.213200",
+      "started_at": "2026-03-05T03:43:06.213201",
+      "completed_at": "2026-03-05T07:52:59.167298",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Task exceeded deadline without completion"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    }
+  },
+  "timestamp": "2026-03-05T08:01:42.540976"
+}

@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-03-05T06:41:26.956958+00:00",
+  "policy_mode": "warn_soft",
+  "doc_count": 6,
+  "decisions": [
+    {
+      "doc_id": "viking://resources/user/memory/memory_10/Memory_Bootstrap_Core_Rules/Active_Skills_High-Value_7more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_10/Memory_Bootstrap_Core_Rules/MVP-9_Hardening_Key_Learni_3more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_10/Memory_Bootstrap_Core_Rules/MVP112_Cycle_Evidence_Laye_4more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_10/Memory_Bootstrap_Core_Rules/Memory_Bootstrap_Core_Rule_6more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_10/Memory_Bootstrap_Core_Rules/Memory_Retrieve_v12_OpenVi_6more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_10/Memory_Bootstrap_Core_Rules/僵尸任务清理机制_2026-03-04_6more.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    }
+  ]
+}

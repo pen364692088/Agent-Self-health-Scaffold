@@ -1,0 +1,9 @@
+name: memory-dashboard_health
+tool: tools/memory-dashboard
+input:
+  health: true
+expect:
+  status: success
+  output_contains:
+    - "status"
+  schema_valid: true

@@ -1,0 +1,153 @@
+#!/bin/bash
+# Subagent Orchestration Enforcer v2.0
+# 检查 sessions_spawn 是否通过 run 命令生成
+
+set -e
+
+WORKSPACE="${WORKSPACE:-$HOME/.openclaw/workspace}"
+ORCHESTRATOR_DIR="$WORKSPACE/tools/orchestrator"
+PENDING_FILE="$ORCHESTRATOR_DIR/pending_subtasks.json"
+MAILBOX_DIR="$WORKSPACE/reports/subtasks"
+
+echo "Subagent Orchestration Enforcer v2.0"
+echo "====================================="
+echo
+
+# 检查 1: pending 任务检查 (运行时)
+check_pending_tasks() {
+    echo "Check 1: Pending tasks status"
+    
+    if [ -f "$PENDING_FILE" ]; then
+        pending_count=$(jq '.pending | length' "$PENDING_FILE" 2>/dev/null || echo "0")
+        if [ "$pending_count" -gt 0 ]; then
+            echo "⚠️  Found $pending_count pending tasks"
+            echo "   Run: subtask-orchestrate resume"
+            return 1
+        fi
+    fi
+    
+    echo "✅ No pending tasks"
+    return 0
+}
+
+# 检查 2: 门禁1 - sessions_spawn 必须通过 run 命令
+check_spawn_via_run() {
+    echo
+    echo "Check 2: sessions_spawn usage policy"
+    
+    # 检查最近的 sessions 是否通过 run 命令注册
+    # 通过检查 pending_subtasks.json 中的任务是否有对应的注册记录
+    
+    if [ -f "$PENDING_FILE" ]; then
+        # 获取所有 pending task_ids
+        task_ids=$(jq -r '.pending | keys[]' "$PENDING_FILE" 2>/dev/null || true)
+        
+        for task_id in $task_ids; do
+            # 检查是否有对应的 run_id 和 session_key
+            has_run_id=$(jq --arg tid "$task_id" '.pending[$tid].run_id // empty' "$PENDING_FILE" 2>/dev/null)
+            
+            if [ -z "$has_run_id" ] || [ "$has_run_id" = "null" ]; then
+                echo "❌ FAIL: Task $task_id has no run_id (orphan spawn)"
+                echo "   This indicates a direct sessions_spawn without registration"
+                echo "   Use: subtask-orchestrate run"
+                return 1
+            fi
+        done
+    fi
+    
+    echo "✅ All spawns registered via run command"
+    return 0
+}
+
+# 检查 3: 孤儿任务 (pending 但无 mailbox)
+check_orphan_tasks() {
+    echo
+    echo "Check 3: Orphan tasks (pending but no mailbox)"
+    
+    if [ ! -f "$PENDING_FILE" ]; then
+        echo "✅ No pending file"
+        return 0
+    fi
+    
+    task_ids=$(jq -r '.pending | keys[]' "$PENDING_FILE" 2>/dev/null || true)
+    orphan_count=0
+    
+    for task_id in $task_ids; do
+        # 检查任务年龄
+        created=$(jq -r --arg tid "$task_id" '.pending[$tid].created_at // empty' "$PENDING_FILE" 2>/dev/null || true)
+        
+        if [ -n "$created" ]; then
+            created_ts=$(date -d "$created" +%s 2>/dev/null || echo "0")
+            now_ts=$(date +%s)
+            age_seconds=$((now_ts - created_ts))
+            
+            # 超过 5 分钟的任务警告
+            if [ $age_seconds -gt 300 ]; then
+                echo "⚠️  Old task: $task_id (age: ${age_seconds}s)"
+                orphan_count=$((orphan_count + 1))
+            fi
+        fi
+    done
+    
+    if [ $orphan_count -gt 0 ]; then
+        echo "⚠️  Found $orphan_count old pending tasks"
+        echo "   Consider: subtask-orchestrate resume or gc"
+        return 0  # Warning only
+    fi
+    
+    echo "✅ No orphan tasks"
+    return 0
+}
+
+# 检查 4: spawn→join 成对 (最近完成的任务)
+check_spawn_join_pairs() {
+    echo
+    echo "Check 4: spawn→join pairing"
+    
+    if [ -f "$PENDING_FILE" ]; then
+        total=$(jq '.pending | length + .completed | length' "$PENDING_FILE" 2>/dev/null || echo "0")
+        completed=$(jq '.completed | length' "$PENDING_FILE" 2>/dev/null || echo "0")
+        
+        if [ "$total" -gt 0 ]; then
+            success_rate=$(echo "scale=2; $completed / $total * 100" | bc 2>/dev/null || echo "0")
+            echo "   Total tasks: $total"
+            echo "   Completed:   $completed"
+            echo "   Success rate: ${success_rate}%"
+        fi
+    fi
+    
+    echo "✅ Pairing check passed"
+    return 0
+}
+
+# 主检查流程
+main() {
+    local exit_code=0
+    
+    check_pending_tasks || exit_code=1
+    check_spawn_via_run || exit_code=1
+    check_orphan_tasks
+    check_spawn_join_pairs
+    
+    echo
+    echo "====================================="
+    if [ $exit_code -eq 0 ]; then
+        echo "✅ All checks passed"
+    else
+        echo "❌ Some checks failed"
+        echo
+        echo "Remediation:"
+        echo "  1. Run: subtask-orchestrate resume"
+        echo "  2. Ensure all spawns use: subtask-orchestrate run"
+    fi
+    
+    return $exit_code
+}
+
+# 支持 --ci 模式
+if [ "$1" = "--ci" ]; then
+    main > /dev/null 2>&1
+    exit $?
+fi
+
+main
