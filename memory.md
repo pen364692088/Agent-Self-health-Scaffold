@@ -695,3 +695,36 @@ Added: 2026-03-04 23:30 CST
 
 ---
 Added: 2026-03-05 01:18 CST
+
+---
+
+## 2026-03-05: MVP11.4 Complete
+
+### Hard Gate 两阶段部署模式
+
+**Phase 1 (Shadow)**: 计算 should_fail，写报告，CI 保持绿
+**Phase 2 (Enforced)**: `HARD_GATE_ENFORCE=1` 后启用强制失败
+
+**Hard Gate 条件**:
+- replay hash_match_rate < 1.0 → 立即 FAIL
+- sanity != OK 2+ 天 → FAIL
+- phi_top1_share > 0.55 2+ 天 → FAIL (单环塌缩)
+- bias_p95 > 0.8×MAX 2+ 天 → FAIL
+
+### Scenario-Stratified Trend
+
+消除 sentinel 轮换噪声：按 scenario 分组计算 trend，防止误报 drift。
+
+### Anti-Goodhart Guards
+
+1. **回稳优先**: safety/energy < critical → bias=0
+2. **多样性税**: signature concentration > threshold → 衰减 bias
+
+### 长跑检测慢性退化
+
+配置: 2 scenarios × 3 seeds × 1200 ticks
+
+关键指标:
+- phi_top1_share (单环塌缩检测)
+- phi_hhi (Herfindahl 指数)
+- novelty_delta (探索枯竭)
