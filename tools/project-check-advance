@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+"""
+Project Check Auto-Advance
+
+自动推进到下一 phase，兼容现有 callback-handler 架构。
+
+使用方式：
+  project-check-advance <check_id> [--auto-spawn]
+
+流程：
+  1. 读取 WORKFLOW_STATE.json（兼容格式）
+  2. 检查当前 phase 状态
+  3. 如果完成 → 推进到下一 phase
+  4. 如果使用 --auto-spawn → 自动执行 sessions_spawn
+"""
+
+import json
+import sys
+import subprocess
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+ARTIFACTS_BASE = WORKSPACE / "artifacts" / "project_check"
+WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+
+
+def load_workflow():
+    """Load workflow state."""
+    if WORKFLOW_FILE.exists():
+        with open(WORKFLOW_FILE) as f:
+            return json.load(f)
+    return {"active": False, "steps": []}
+
+
+def save_workflow(state):
+    """Save workflow state."""
+    state["updated_at"] = datetime.utcnow().isoformat()
+    with open(WORKFLOW_FILE, "w") as f:
+        json.dump(state, f, indent=2)
+
+
+def get_phase_status(artifacts_dir, phase_id):
+    """Read phase status.json."""
+    status_path = artifacts_dir / phase_id / "status.json"
+    if status_path.exists():
+        with open(status_path) as f:
+            return json.load(f)
+    return None
+
+
+def create_workflow_for_check(check_id, manifest):
+    """Create WORKFLOW_STATE.json for project-check."""
+    steps = []
+    for phase in manifest["phases"]:
+        steps.append({
+            "id": phase["id"],
+            "task_id": check_id,
+            "name": phase["name"],
+            "status": "pending",
+            "completed_at": None,
+            "summary": "",
+            "artifacts": []
+        })
+    
+    return {
+        "active": True,
+        "workflow_type": "serial",
+        "task_id": check_id,
+        "steps": steps,
+        "notify_on_done": f"✅ Project check complete: {check_id}",
+        "check_id": check_id,
+        "created_at": datetime.utcnow().isoformat()
+    }
+
+
+def advance_phase(check_id, auto_spawn=False):
+    """Advance to next phase if current is done."""
+    # Load manifest
+    manifest_path = ARTIFACTS_BASE / check_id / "manifest.json"
+    if not manifest_path.exists():
+        print(f"ERROR: Check not found: {check_id}", file=sys.stderr)
+        return False
+    
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    
+    artifacts_dir = Path(manifest["artifacts_dir"])
+    
+    # Load or create workflow state
+    workflow = load_workflow()
+    
+    # If workflow is for different check, create new one
+    if workflow.get("check_id") != check_id:
+        workflow = create_workflow_for_check(check_id, manifest)
+    
+    # Update all phase statuses
+    for step in workflow["steps"]:
+        phase_id = step["id"]
+        status = get_phase_status(artifacts_dir, phase_id)
+        if status:
+            if status.get("state") == "done" and status.get("ok"):
+                step["status"] = "done"
+                step["completed_at"] = status.get("finished_at")
+                step["summary"] = "OK"
+            elif status.get("state") == "failed":
+                step["status"] = "failed"
+                step["completed_at"] = status.get("finished_at")
+                step["summary"] = status.get("error", {}).get("message", "Failed")
+    
+    # Check for next pending phase
+    next_phase = None
+    for step in workflow["steps"]:
+        if step["status"] == "pending":
+            # Check dependencies
+            phase_config = next(
+                (p for p in manifest["phases"] if p["id"] == step["id"]),
+                None
+            )
+            if phase_config:
+                deps = phase_config.get("depends_on", [])
+                all_deps_done = all(
+                    any(s["id"] == dep and s["status"] == "done" for s in workflow["steps"])
+                    for dep in deps
+                )
+                if all_deps_done:
+                    next_phase = step
+                    break
+    
+    # Check if all done
+    all_done = all(s["status"] in ["done", "failed"] for s in workflow["steps"])
+    
+    if all_done:
+        workflow["active"] = False
+        workflow["completed_at"] = datetime.utcnow().isoformat()
+        save_workflow(workflow)
+        
+        # Check final result
+        all_ok = all(s["status"] == "done" for s in workflow["steps"])
+        
+        print(f"✅ Check complete: {check_id}")
+        print(f"   Result: {'PASS' if all_ok else 'FAIL'}")
+        print(f"   Report: {artifacts_dir}/final/FINAL_CHECK_REPORT.md")
+        
+        # Return completion message for callback
+        return {
+            "action": "notify_user",
+            "message": workflow["notify_on_done"] if all_ok else f"❌ Project check failed: {check_id}",
+            "should_silence": False,
+            "check_id": check_id,
+            "ok": all_ok
+        }
+    
+    if next_phase:
+        save_workflow(workflow)
+        
+        phase_id = next_phase["id"]
+        phase_config = next(p for p in manifest["phases"] if p["id"] == phase_id)
+        
+        print(f"Next phase: {phase_id} - {next_phase['name']}")
+        print(f"Entrypoint: {phase_config['entrypoint']}")
+        
+        if auto_spawn:
+            # Auto spawn phase worker
+            phase_dir = artifacts_dir / phase_id
+            phase_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Write pending status
+            with open(phase_dir / "status.json", "w") as f:
+                json.dump({
+                    "phase": phase_id,
+                    "state": "pending",
+                    "ok": False,
+                    "started_at": datetime.utcnow().isoformat() + "Z"
+                }, f, indent=2)
+            
+            # Execute phase directly (not via sessions_spawn for now)
+            entrypoint = phase_config["entrypoint"]
+            print(f"Executing: {entrypoint}")
+            
+            # Return spawn info
+            return {
+                "action": "spawn_next",
+                "phase_id": phase_id,
+                "entrypoint": entrypoint,
+                "should_silence": True,
+                "check_id": check_id
+            }
+        else:
+            print()
+            print("Run manually:")
+            print(f"  project-check spawn {check_id} {phase_id}")
+            
+            return {
+                "action": "spawn_next",
+                "phase_id": phase_id,
+                "should_silence": True,
+                "check_id": check_id
+            }
+    
+    # No more phases, but not all done (blocked by failure)
+    save_workflow(workflow)
+    print("No more phases to run (blocked by failure)")
+    
+    return {
+        "action": "notify_user",
+        "message": f"⚠️ Project check blocked: {check_id}",
+        "should_silence": False,
+        "check_id": check_id
+    }
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Project Check Auto-Advance")
+    parser.add_argument("check_id", help="Check ID")
+    parser.add_argument("--auto-spawn", action="store_true", help="Auto spawn next phase")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--init", action="store_true", help="Initialize workflow state")
+    
+    args = parser.parse_args()
+    
+    if args.init:
+        manifest_path = ARTIFACTS_BASE / args.check_id / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        
+        workflow = create_workflow_for_check(args.check_id, manifest)
+        save_workflow(workflow)
+        
+        print(f"✅ Initialized workflow for: {args.check_id}")
+        return
+    
+    result = advance_phase(args.check_id, args.auto_spawn)
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    elif result:
+        # For callback compatibility
+        pass
+
+
+if __name__ == "__main__":
+    main()
