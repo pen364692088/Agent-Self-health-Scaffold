@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""
+Spawn with Callback - 自动注入回调指令的子代理启动器
+
+Usage:
+  spawn-with-callback "<task>" --model <model> [--timeout 300] [--parent <session_key>]
+  spawn-with-callback --help
+  spawn-with-callback --health
+"""
+
+import json
+import sys
+import uuid
+import os
+from datetime import datetime
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+LEDGER = WORKSPACE / "tools" / "task-ledger"
+
+CALLBACK_TEMPLATE = '''
+**元信息**：
+- parentSessionKey: {parent_session_key}
+- taskId: {task_id}
+
+**完成要求**：
+1. 完成任务后，构造结构化完成消息：
+   ```json
+   {{
+     "type": "subagent_done",
+     "task_id": "{task_id}",
+     "child_session_key": "当前session key",
+     "status": "completed|failed",
+     "summary": "任务摘要",
+     "artifacts": ["产出文件路径"]
+   }}
+   ```
+2. 使用 sessions_send 发送给 parentSessionKey：
+   `sessions_send(sessionKey="{parent_session_key}", message=<上述JSON>, timeoutSeconds=30)`
+3. 输出 ANNOUNCE_SKIP: true
+
+**任务内容**：
+{task_content}
+'''
+
+
+def get_current_session_key():
+    """获取当前 session key"""
+    session_key = os.environ.get("OPENCLAW_SESSION_KEY", "")
+    if session_key:
+        return session_key
+    
+    session_file = Path.home() / ".openclaw" / "current_session.txt"
+    if session_file.exists():
+        return session_file.read_text().strip()
+    
+    return "agent:main:telegram:direct:unknown"
+
+
+def generate_task_id():
+    """生成唯一任务 ID"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    short_uuid = uuid.uuid4().hex[:8]
+    return f"task_{timestamp}_{short_uuid}"
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+    
+    if sys.argv[1] == "--health":
+        print(json.dumps({"status": "healthy"}))
+        sys.exit(0)
+    
+    if sys.argv[1] == "--help":
+        print(__doc__)
+        print("""
+Examples:
+  spawn-with-callback "修复 XYZ bug" -m baiduqianfancodingplan/qianfan-code-latest
+  spawn-with-callback "实现新功能" -m iflow/qwen3-coder-plus -t 600
+  spawn-with-callback "代码审查" --parent agent:main:telegram:direct:123456
+""")
+        sys.exit(0)
+    
+    # 解析参数
+    task = ""
+    model = "baiduqianfancodingplan/qianfan-code-latest"
+    timeout = 300
+    parent_session_key = None
+    output_format = "json"  # json or args
+    
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg in ("--model", "-m") and i + 1 < len(sys.argv):
+            model = sys.argv[i + 1]
+            i += 2
+        elif arg in ("--timeout", "-t") and i + 1 < len(sys.argv):
+            timeout = int(sys.argv[i + 1])
+            i += 2
+        elif arg in ("--parent", "-p") and i + 1 < len(sys.argv):
+            parent_session_key = sys.argv[i + 1]
+            i += 2
+        elif arg == "--args":
+            output_format = "args"
+            i += 1
+        elif not arg.startswith("-"):
+            task = arg
+            i += 1
+        else:
+            i += 1
+    
+    if not task:
+        print("Error: task description required", file=sys.stderr)
+        sys.exit(1)
+    
+    if not parent_session_key:
+        parent_session_key = get_current_session_key()
+    
+    task_id = generate_task_id()
+    
+    # 注入回调指令
+    full_task = CALLBACK_TEMPLATE.format(
+        parent_session_key=parent_session_key,
+        task_id=task_id,
+        task_content=task
+    )
+    
+    # 记录到 ledger
+    import subprocess
+    subprocess.run([
+        str(LEDGER), "init", task_id, parent_session_key, task[:100]
+    ], capture_output=True)
+    
+    # 输出
+    if output_format == "args":
+        # 直接输出 sessions_spawn 参数（JSON 格式，可用于 sessions_spawn tool）
+        spawn_args = {
+            "runtime": "subagent",
+            "model": model,
+            "task": full_task,
+            "timeoutSeconds": timeout
+        }
+        print(json.dumps(spawn_args, ensure_ascii=False))
+    else:
+        # 输出完整信息
+        output = {
+            "task_id": task_id,
+            "parent_session_key": parent_session_key,
+            "model": model,
+            "timeout": timeout,
+            "spawn_args": {
+                "runtime": "subagent",
+                "model": model,
+                "task": full_task,
+                "timeoutSeconds": timeout
+            },
+            "next_step": "使用 sessions_spawn 工具，传入 spawn_args"
+        }
+        print(json.dumps(output, indent=2, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

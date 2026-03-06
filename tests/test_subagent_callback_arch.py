@@ -11,6 +11,7 @@ from pathlib import Path
 WORKSPACE = Path.home() / ".openclaw" / "workspace"
 HANDLER = str(WORKSPACE / "tools" / "subagent-completion-handler")
 LEDGER = str(WORKSPACE / "tools" / "task-ledger")
+SPAWN_WRAPPER = str(WORKSPACE / "tools" / "spawn-with-callback")
 
 
 def run_tool(cmd: list) -> dict:
@@ -52,20 +53,16 @@ def test_handler_structured_payload():
 
 def test_task_ledger():
     """测试 task ledger 功能"""
-    # 初始化
-    result = run_tool([LEDGER, "init", "test_ledger_e2e", "agent:main:test", "E2E测试任务"])
+    result = run_tool([LEDGER, "init", "test_ledger_e2e_2", "agent:main:test", "E2E测试任务"])
     assert result.get("status") == "ok"
     
-    # spawn
-    result = run_tool([LEDGER, "spawn", "test_ledger_e2e", "agent:main:subagent:test", "run_e2e"])
+    result = run_tool([LEDGER, "spawn", "test_ledger_e2e_2", "agent:main:subagent:test", "run_e2e"])
     
-    # complete
-    result = run_tool([LEDGER, "complete", "test_ledger_e2e", "completed", "E2E测试完成"])
+    result = run_tool([LEDGER, "complete", "test_ledger_e2e_2", "completed", "E2E测试完成"])
     assert result.get("status") == "ok"
     
-    # show
-    entry = run_tool([LEDGER, "show", "test_ledger_e2e"])
-    assert entry.get("task_id") == "test_ledger_e2e"
+    entry = run_tool([LEDGER, "show", "test_ledger_e2e_2"])
+    assert entry.get("task_id") == "test_ledger_e2e_2"
     assert entry.get("state") == "completed"
     print("✅ task-ledger 功能正常")
 
@@ -89,6 +86,34 @@ def test_handler_health():
     print("✅ subagent-completion-handler 健康")
 
 
+def test_spawn_with_callback_tool():
+    """测试 spawn-with-callback 工具"""
+    # 健康检查
+    output = run_tool([SPAWN_WRAPPER, "--health"])
+    assert output.get("status") == "healthy"
+    
+    # 生成 spawn 参数
+    result = subprocess.run(
+        [SPAWN_WRAPPER, '测试任务', '-m', 'test-model', '-p', 'agent:main:test'],
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode == 0
+    
+    output = json.loads(result.stdout)
+    assert output.get('task_id', '').startswith('task_')
+    assert output.get('parent_session_key') == 'agent:main:test'
+    assert output.get('model') == 'test-model'
+    
+    spawn_args = output.get('spawn_args', {})
+    assert spawn_args.get('runtime') == 'subagent'
+    assert 'parentSessionKey' in spawn_args.get('task', '')
+    assert 'sessions_send' in spawn_args.get('task', '')
+    assert 'ANNOUNCE_SKIP' in spawn_args.get('task', '')
+    
+    print("✅ spawn-with-callback 工具正常")
+
+
 def main():
     tests = [
         test_subagent_tools_config,
@@ -96,6 +121,7 @@ def main():
         test_task_ledger,
         test_template_exists,
         test_handler_health,
+        test_spawn_with_callback_tool,
     ]
     
     passed = 0

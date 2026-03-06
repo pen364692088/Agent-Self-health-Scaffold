@@ -8,7 +8,30 @@
 
 **解决方案**: 子代理必须显式使用 `sessions_send` 回传结果给父代理。
 
-### Spawn 子代理时必须包含
+### ⚠️ 强制使用 spawn-with-callback 工具
+
+**禁止**直接调用 `sessions_spawn`，**必须**使用：
+
+```bash
+~/.openclaw/workspace/tools/spawn-with-callback "<任务描述>" -m <模型> [-t 超时秒数]
+```
+
+**示例**：
+```bash
+spawn-with-callback "修复 XYZ bug" -m baiduqianfancodingplan/qianfan-code-latest -t 300
+```
+
+工具会自动：
+1. 注入 `parentSessionKey`
+2. 生成唯一 `taskId`
+3. 添加回调指令
+4. 记录到 Task Ledger
+
+**输出**：包含 `spawn_args` 的 JSON，直接用于 `sessions_spawn`
+
+### 手动 spawn 时必须包含
+
+如果必须手动 spawn（不推荐），task 必须包含：
 
 ```text
 **元信息**：
