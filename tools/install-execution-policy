@@ -1,24 +1,99 @@
 #!/usr/bin/env bash
-# install-execution-policy v2.1 - 为新项目安装 Execution Policy Trust Anchor
+# install-execution-policy v2.2 - 新项目默认脚手架 (Shadow Mode)
 #
 # 用法:
-#   install-execution-policy [target_dir] [--version v2.1|v1.0]
+#   install-execution-policy [target_dir] [options]
 #
-# 如果不指定 target_dir，默认当前目录
-# --version 默认 v2.1 (Trust Anchor)
+# 选项:
+#   --mode shadow|enforce    默认 shadow (观察模式，不硬拦)
+#   --enforce                等同于 --mode enforce
+#   --no-execution-policy    跳过安装 (显式退出)
+#   --skip-checks            跳过安装后自检
+#   --version v2.1|v1.0      版本选择，默认 v2.1
+#
+# 环境变量:
+#   EXECUTION_POLICY_DISABLED=1  跳过安装 (显式退出)
+#   EXECUTION_POLICY_MODE        默认模式 (shadow|enforce)
+#
+# 设计原则:
+#   - 新项目默认"带壳启动"
+#   - Shadow mode 优先，观察不硬拦
+#   - 满足条件后再切 Enforced
+#   - 保留显式退出路径
 
 set -e
 
 SOURCE_DIR="$HOME/.openclaw/workspace"
 TARGET_DIR="${1:-.}"
 VERSION="v2.1"
+MODE="shadow"
+SKIP_CHECKS=false
 
-# 解析参数
+# ============================================
+# 参数解析
+# ============================================
+
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --mode)
+      MODE="$2"
+      shift 2
+      ;;
+    --enforce)
+      MODE="enforce"
+      shift
+      ;;
+    --no-execution-policy)
+      echo "⚠️  Execution Policy installation skipped (--no-execution-policy)"
+      exit 0
+      ;;
+    --skip-checks)
+      SKIP_CHECKS=true
+      shift
+      ;;
     --version)
       VERSION="$2"
       shift 2
+      ;;
+    --help|-h)
+      cat << 'USAGE'
+install-execution-policy v2.2 - 新项目默认脚手架
+
+用法:
+  install-execution-policy [target_dir] [options]
+
+选项:
+  --mode shadow|enforce    默认 shadow (观察模式，不硬拦)
+  --enforce                等同于 --mode enforce
+  --no-execution-policy    跳过安装 (显式退出)
+  --skip-checks            跳过安装后自检
+  --version v2.1|v1.0      版本选择，默认 v2.1
+  --help                   显示帮助
+
+环境变量:
+  EXECUTION_POLICY_DISABLED=1  跳过安装
+  EXECUTION_POLICY_MODE        默认模式
+
+示例:
+  # 默认 shadow mode
+  install-execution-policy /path/to/project
+
+  # 强制 enforce mode (不推荐新项目使用)
+  install-execution-policy /path/to/project --enforce
+
+  # 显式退出
+  install-execution-policy /path/to/project --no-execution-policy
+
+两阶段启用策略:
+  1. 新项目默认 Shadow mode
+  2. 满足条件后切 Enforced:
+     - 正常测试通过
+     - 对抗测试通过
+     - Happy path 通过
+     - 旁路审计无高风险
+     - 关键指标稳定
+USAGE
+      exit 0
       ;;
     *)
       TARGET_DIR="$1"
@@ -27,29 +102,58 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# 检查环境变量退出
+if [ "${EXECUTION_POLICY_DISABLED:-0}" = "1" ]; then
+  echo "⚠️  Execution Policy installation skipped (EXECUTION_POLICY_DISABLED=1)"
+  exit 0
+fi
+
+# 环境变量覆盖模式
+if [ -n "$EXECUTION_POLICY_MODE" ]; then
+  MODE="$EXECUTION_POLICY_MODE"
+fi
+
+# ============================================
+# Banner
+# ============================================
+
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  Execution Policy $VERSION Installer - Trust Anchor         ║"
+echo "║  Execution Policy $VERSION - Default Scaffold              ║"
+echo "║  Mode: $MODE                                              " | sed 's/ *$/ /' | head -c 60
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Target: $TARGET_DIR"
 echo ""
 
-# 创建目录结构
+if [ "$MODE" = "enforce" ]; then
+  echo "⚠️  WARNING: Enforce mode enabled. Messages may be BLOCKED."
+  echo "   Recommended: Start with shadow mode, switch after validation."
+  echo ""
+fi
+
+# ============================================
+# 目录结构
+# ============================================
+
 echo "▸ Creating directory structure..."
 mkdir -p "$TARGET_DIR/tools"
 mkdir -p "$TARGET_DIR/schemas"
 mkdir -p "$TARGET_DIR/artifacts/receipts"
 mkdir -p "$TARGET_DIR/artifacts/baseline"
+mkdir -p "$TARGET_DIR/artifacts/shadow_log"
 mkdir -p "$TARGET_DIR/reports"
 mkdir -p "$TARGET_DIR/tests/adversarial"
 mkdir -p "$TARGET_DIR/docs/releases"
 mkdir -p "$TARGET_DIR/.github/workflows"
 mkdir -p "$TARGET_DIR/hooks/execution-policy-enforcer"
 
+echo "  ✓ directories created"
+
 # ============================================
 # v2.1 Trust Anchor Tools
 # ============================================
-echo "▸ Installing v2.1 Trust Anchor tools..."
+
+echo "▸ Installing Trust Anchor tools..."
 
 TRUST_TOOLS=(
   "receipt-signer"
@@ -60,30 +164,45 @@ TRUST_TOOLS=(
   "state-authority"
   "verify-and-close-v2"
   "safe-message"
+  "finalize-response"
+  "done-guard"
+  "output-interceptor"
+  "receipt-validator"
+  "execution-metrics"
+  "execution-degradation-monitor"
+  "completion-bypass-audit"
 )
+
+installed=0
+skipped=0
 
 for tool in "${TRUST_TOOLS[@]}"; do
   if [ -f "$SOURCE_DIR/tools/$tool" ]; then
     cp "$SOURCE_DIR/tools/$tool" "$TARGET_DIR/tools/"
     chmod +x "$TARGET_DIR/tools/$tool"
+    installed=$((installed + 1))
     echo "  ✓ $tool"
   else
-    echo "  ⚠ $tool (not found, skipping)"
+    skipped=$((skipped + 1))
+    echo "  ⊘ $tool (not found)"
   fi
 done
 
-# 兼容旧版本的软链接
+# 兼容软链接
 ln -sf verify-and-close-v2 "$TARGET_DIR/tools/verify-and-close" 2>/dev/null || true
-ln -sf verify-and-close-v2 "$TARGET_DIR/tools/done-guard" 2>/dev/null || true
+
+echo "  Installed: $installed, Skipped: $skipped"
 
 # ============================================
 # Schemas
 # ============================================
+
 echo "▸ Installing schemas..."
 
 SCHEMAS=(
   "task_receipt.v1.schema.json"
   "doctor_report.v1.schema.json"
+  "subagent_receipt.v1.schema.json"
 )
 
 for schema in "${SCHEMAS[@]}"; do
@@ -96,6 +215,7 @@ done
 # ============================================
 # Tests
 # ============================================
+
 echo "▸ Installing tests..."
 
 if [ -f "$SOURCE_DIR/tests/test_execution_policy.py" ]; then
@@ -106,8 +226,8 @@ if [ -f "$SOURCE_DIR/tests/test_trust_anchor.py" ]; then
   cp "$SOURCE_DIR/tests/test_trust_anchor.py" "$TARGET_DIR/tests/"
 fi
 
-if [ -f "$SOURCE_DIR/tests/adversarial/test_execution_policy_adversarial.py" ]; then
-  cp "$SOURCE_DIR/tests/adversarial/test_execution_policy_adversarial.py" "$TARGET_DIR/tests/adversarial/"
+if [ -d "$SOURCE_DIR/tests/adversarial" ]; then
+  cp "$SOURCE_DIR/tests/adversarial/"*.py "$TARGET_DIR/tests/adversarial/" 2>/dev/null || true
 fi
 
 echo "  ✓ tests installed"
@@ -115,6 +235,7 @@ echo "  ✓ tests installed"
 # ============================================
 # CI Workflow
 # ============================================
+
 echo "▸ Installing CI workflow..."
 
 if [ -f "$SOURCE_DIR/.github/workflows/execution-policy-gate.yml" ]; then
@@ -125,24 +246,38 @@ fi
 # ============================================
 # Documentation
 # ============================================
+
 echo "▸ Installing documentation..."
 
-if [ -f "$SOURCE_DIR/docs/releases/TRUST_ANCHOR_v2.1_HANDOFF.md" ]; then
-  cp "$SOURCE_DIR/docs/releases/TRUST_ANCHOR_v2.1_HANDOFF.md" "$TARGET_DIR/docs/releases/"
-fi
+DOCS=(
+  "docs/releases/TRUST_ANCHOR_v2.1_HANDOFF.md"
+  "docs/releases/NATIVE_HOOK_INTEGRATION.md"
+  "docs/EXECUTION_POLICY_DEFAULT_SCAFFOLD.md"
+)
 
-if [ -f "$SOURCE_DIR/docs/releases/NATIVE_HOOK_INTEGRATION.md" ]; then
-  cp "$SOURCE_DIR/docs/releases/NATIVE_HOOK_INTEGRATION.md" "$TARGET_DIR/docs/releases/"
-fi
+for doc in "${DOCS[@]}"; do
+  if [ -f "$SOURCE_DIR/$doc" ]; then
+    mkdir -p "$TARGET_DIR/$(dirname $doc)"
+    cp "$SOURCE_DIR/$doc" "$TARGET_DIR/$doc"
+  fi
+done
 
 echo "  ✓ documentation installed"
 
 # ============================================
-# Hook Scaffold (NEW)
+# Hook Scaffold (Shadow Mode by Default)
 # ============================================
+
 echo "▸ Creating native hook scaffold..."
 
-cat > "$TARGET_DIR/hooks/execution-policy-enforcer/hook.json" << 'HOOK'
+# hook.json - 根据模式配置
+if [ "$MODE" = "enforce" ]; then
+  HOOK_MODE="enforce"
+else
+  HOOK_MODE="shadow"
+fi
+
+cat > "$TARGET_DIR/hooks/execution-policy-enforcer/hook.json" << HOOK
 {
   "name": "execution-policy-enforcer",
   "version": "1.0.0",
@@ -152,22 +287,29 @@ cat > "$TARGET_DIR/hooks/execution-policy-enforcer/hook.json" << 'HOOK'
   "handler": "handler.js",
   "config": {
     "policyVersion": "2.1",
-    "enforcementMode": "shadow",
+    "enforcementMode": "$HOOK_MODE",
     "auditEnabled": true,
     "auditFile": "reports/execution_policy_audit.jsonl"
+  },
+  "opt_out": {
+    "env": "EXECUTION_POLICY_DISABLED",
+    "flag": "--no-execution-policy"
   }
 }
 HOOK
 
+# handler.js - 支持 shadow/enforce 模式
 cat > "$TARGET_DIR/hooks/execution-policy-enforcer/handler.js" << 'HANDLER'
 /**
  * Execution Policy Enforcer Hook v1.0
  * 
- * Enforces Trust Anchor v2.1 before messages are sent.
- * Runs as pre-send middleware with priority 50.
+ * Two-phase enforcement:
+ * - Shadow mode: Log violations, don't block (default for new projects)
+ * - Enforce mode: Block non-compliant messages (after validation)
  * 
- * Shadow mode: log violations without blocking
- * Enforce mode: block non-compliant messages
+ * Explicit opt-out:
+ * - EXECUTION_POLICY_DISABLED=1
+ * - --no-execution-policy flag
  */
 
 const { execSync } = require('child_process');
@@ -175,59 +317,52 @@ const fs = require('fs');
 const path = require('path');
 
 const WORKSPACE_DIR = process.env.OPENCLAW_WORKSPACE_DIR || process.env.HOME + '/.openclaw/workspace';
-const ENFORCEMENT_MODE = process.env.EXECUTION_POLICY_MODE || 'shadow'; // 'shadow' | 'enforce'
+
+// 模式: shadow | enforce
+const ENFORCEMENT_MODE = process.env.EXECUTION_POLICY_MODE || 'shadow';
+
+// 显式退出检查
+const DISABLED = process.env.EXECUTION_POLICY_DISABLED === '1';
 
 /**
- * Verify execution policy using Python tools
+ * Verify execution policy
  */
 function verifyExecutionPolicy(context) {
-  try {
-    const receipt = context._receipt;
-    const sessionId = context.sessionId || 'unknown';
-    
-    // If no receipt, check if this is an agent-originated message
-    if (!receipt) {
-      // In shadow mode, log but allow
-      // In enforce mode, this should be caught by agent-layer checks
-      return {
-        valid: true,
-        reason: 'no_receipt_agent_message',
-        mode: ENFORCEMENT_MODE
-      };
-    }
-    
-    // Verify receipt signature
-    const receiptPath = `/tmp/receipt_${Date.now()}.json`;
-    fs.writeFileSync(receiptPath, JSON.stringify(receipt));
-    
-    try {
-      const result = execSync(
-        `cd ${WORKSPACE_DIR} && tools/receipt-signer verify ${receiptPath}`,
-        { encoding: 'utf-8', timeout: 5000 }
-      );
-      
-      const parsed = JSON.parse(result);
-      fs.unlinkSync(receiptPath);
-      
-      return {
-        valid: parsed.valid === true,
-        reason: parsed.valid ? 'valid_signature' : 'invalid_signature',
-        details: parsed
-      };
-    } catch (e) {
-      fs.unlinkSync(receiptPath);
-      return {
-        valid: false,
-        reason: 'verification_error',
-        error: e.message
-      };
-    }
-  } catch (e) {
+  if (DISABLED) {
+    return { valid: true, reason: 'explicitly_disabled', mode: 'disabled' };
+  }
+  
+  const receipt = context._receipt;
+  
+  if (!receipt) {
+    // Shadow mode: allow, log
+    // Enforce mode: should be caught by agent-layer, but allow here
     return {
-      valid: false,
-      reason: 'exception',
-      error: e.message
+      valid: true,
+      reason: 'no_receipt_agent_message',
+      mode: ENFORCEMENT_MODE
     };
+  }
+  
+  // Verify receipt signature
+  const receiptPath = `/tmp/receipt_${Date.now()}.json`;
+  try {
+    fs.writeFileSync(receiptPath, JSON.stringify(receipt));
+    const result = execSync(
+      `cd ${WORKSPACE_DIR} && tools/receipt-signer verify ${receiptPath}`,
+      { encoding: 'utf-8', timeout: 5000 }
+    );
+    fs.unlinkSync(receiptPath);
+    
+    const parsed = JSON.parse(result);
+    return {
+      valid: parsed.valid === true,
+      reason: parsed.valid ? 'valid_signature' : 'invalid_signature',
+      details: parsed
+    };
+  } catch (e) {
+    try { fs.unlinkSync(receiptPath); } catch (_) {}
+    return { valid: false, reason: 'verification_error', error: e.message };
   }
 }
 
@@ -248,6 +383,11 @@ function writeAuditLog(entry) {
  * Main handler
  */
 const handler = async (event) => {
+  // 显式退出检查
+  if (DISABLED) {
+    return event;
+  }
+  
   try {
     if (event.type !== 'message' || event.action !== 'sending') return event;
     
@@ -267,39 +407,42 @@ const handler = async (event) => {
       action_taken: 'none'
     };
     
-    if (!result.valid && ENFORCEMENT_MODE === 'enforce') {
-      // Block the message
-      event.context.text = "I need to reconsider my response.";
-      event.context._policyBlock = result.reason;
-      auditEntry.action_taken = 'blocked';
-      auditEntry.block_reason = result.reason;
-      
-      console.log('[execution-policy-enforcer] Message blocked:', result.reason);
-    } else if (!result.valid) {
-      // Shadow mode: log but allow
-      auditEntry.action_taken = 'shadow_logged';
-      console.log('[execution-policy-enforcer] Policy violation (shadow):', result.reason);
+    if (!result.valid) {
+      if (ENFORCEMENT_MODE === 'enforce') {
+        // Enforce mode: BLOCK the message
+        event.context.text = "I need to reconsider my response.";
+        event.context._policyBlock = result.reason;
+        auditEntry.action_taken = 'blocked';
+        
+        console.log('[execution-policy-enforcer] BLOCKED:', result.reason);
+      } else {
+        // Shadow mode: log but allow
+        auditEntry.action_taken = 'shadow_logged';
+        console.log('[execution-policy-enforcer] SHADOW violation:', result.reason);
+      }
     }
     
     writeAuditLog(auditEntry);
     return event;
   } catch (e) {
     console.error('[execution-policy-enforcer] Handler error:', e.message);
-    return event;  // On error, allow the message through
+    return event;  // On error, allow through
   }
 };
 
 module.exports = handler;
 module.exports.verifyExecutionPolicy = verifyExecutionPolicy;
 module.exports.ENFORCEMENT_MODE = ENFORCEMENT_MODE;
+module.exports.DISABLED = DISABLED;
 HANDLER
 
-echo "  ✓ hook.json"
-echo "  ✓ handler.js (shadow mode)"
+echo "  ✓ hook.json ($HOOK_MODE mode)"
+echo "  ✓ handler.js"
 
 # ============================================
 # .gitignore
 # ============================================
+
 echo "▸ Updating .gitignore..."
 
 if [ -f "$TARGET_DIR/.gitignore" ]; then
@@ -309,8 +452,10 @@ if [ -f "$TARGET_DIR/.gitignore" ]; then
 # Execution Policy v2.1
 artifacts/receipts/*.json
 artifacts/baseline/
+artifacts/shadow_log/*.jsonl
 reports/*.jsonl
 !artifacts/baseline/.gitkeep
+!artifacts/shadow_log/.gitkeep
 GITIGNORE
   fi
 else
@@ -318,24 +463,118 @@ else
 # Execution Policy v2.1
 artifacts/receipts/*.json
 artifacts/baseline/
+artifacts/shadow_log/*.jsonl
 reports/*.jsonl
 !artifacts/baseline/.gitkeep
+!artifacts/shadow_log/.gitkeep
 GITIGNORE
 fi
 
-# 创建 .gitkeep
 touch "$TARGET_DIR/artifacts/receipts/.gitkeep"
 touch "$TARGET_DIR/artifacts/baseline/.gitkeep"
+touch "$TARGET_DIR/artifacts/shadow_log/.gitkeep"
 touch "$TARGET_DIR/reports/.gitkeep"
 
+echo "  ✓ .gitignore updated"
+
 # ============================================
-# 完成
+# 环境变量模板
 # ============================================
+
+echo "▸ Creating environment template..."
+
+cat > "$TARGET_DIR/.env.execution-policy.example" << 'ENV'
+# Execution Policy v2.1 Configuration
+# Copy to .env or set in environment
+
+# Mode: shadow (observe) | enforce (block)
+EXECUTION_POLICY_MODE=shadow
+
+# Explicit opt-out (not recommended)
+# EXECUTION_POLICY_DISABLED=1
+
+# Audit log path
+# EXECUTION_POLICY_AUDIT_FILE=reports/execution_policy_audit.jsonl
+ENV
+
+echo "  ✓ .env.execution-policy.example"
+
+# ============================================
+# 安装后自检
+# ============================================
+
+check_results=()
+check_pass=0
+check_fail=0
+
+run_check() {
+  local name="$1"
+  local cmd="$2"
+  
+  if eval "$cmd" > /dev/null 2>&1; then
+    check_results+=("  ✓ $name")
+    check_pass=$((check_pass + 1))
+    return 0
+  else
+    check_results+=("  ✗ $name")
+    check_fail=$((check_fail + 1))
+    return 1
+  fi
+}
+
+if [ "$SKIP_CHECKS" = false ]; then
+  echo ""
+  echo "▸ Running installation checks..."
+  
+  cd "$TARGET_DIR"
+  
+  # 检查 hook 是否已注册
+  run_check "Hook registered" "test -f hooks/execution-policy-enforcer/hook.json"
+  
+  # 检查 signer 是否可用
+  run_check "receipt-signer" "test -x tools/receipt-signer"
+  
+  # 检查 state-authority 是否可调用
+  run_check "state-authority" "test -x tools/state-authority"
+  
+  # 检查 schema 是否存在
+  run_check "Schema exists" "test -f schemas/task_receipt.v1.schema.json"
+  
+  # 检查 CI workflow 是否写入
+  run_check "CI workflow" "test -f .github/workflows/execution-policy-gate.yml"
+  
+  # 检查 protected channels 配置 (可选)
+  run_check "Tools directory" "test -d tools"
+  
+  # 输出结果
+  for result in "${check_results[@]}"; do
+    echo "$result"
+  done
+  
+  echo ""
+  echo "  Checks: $check_pass passed, $check_fail failed"
+fi
+
+# ============================================
+# 完成 Banner
+# ============================================
+
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  ✅ Execution Policy $VERSION Installed                     ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
+echo "Mode: $MODE"
+echo ""
+
+if [ "$MODE" = "shadow" ]; then
+  echo "📋 Shadow Mode Active"
+  echo "   - Violations will be LOGGED, not blocked"
+  echo "   - Review artifacts/shadow_log/ for violations"
+  echo "   - Switch to enforce mode after validation"
+  echo ""
+fi
+
 echo "Installed components:"
 echo ""
 echo "  Trust Anchor Chain:"
@@ -343,34 +582,38 @@ echo "    receipt-signer → gate-a/b/c-signer → final-aggregator"
 echo "    → state-authority → verify-and-close-v2 → safe-message"
 echo ""
 echo "  Native Hook:"
-echo "    hooks/execution-policy-enforcer/ (shadow mode)"
+echo "    hooks/execution-policy-enforcer/ ($MODE mode)"
 echo ""
-echo "  Tests:"
-echo "    tests/test_execution_policy.py"
-echo "    tests/adversarial/test_execution_policy_adversarial.py"
-echo ""
-echo "  CI:"
-echo "    .github/workflows/execution-policy-gate.yml"
+echo "  Opt-out:"
+echo "    EXECUTION_POLICY_DISABLED=1"
+echo "    or --no-execution-policy flag"
 echo ""
 echo "────────────────────────────────────────────────────────────"
 echo ""
 echo "Next steps:"
 echo ""
-echo "  1. Add to SOUL.md or AGENTS.md:"
-echo ""
-echo '     ## Task Completion Protocol (强制)'
-echo '     verify-and-close-v2 → safe-message'
-echo '     或使用 spawn-with-callback 自动处理'
+echo "  1. Review shadow log:"
+echo "     cat artifacts/shadow_log/execution_policy_audit.jsonl"
 echo ""
 echo "  2. Run tests:"
 echo "     python3 tests/test_execution_policy.py"
 echo ""
-echo "  3. Enable enforcement mode (after shadow observation):"
-echo "     export EXECUTION_POLICY_MODE=enforce"
+echo " 3. Enable hook in ~/.openclaw/openclaw.json:"
 echo ""
-echo "  4. Enable hook in ~/.openclaw/openclaw.json:"
+echo '    {"hooks": {"internal": {"entries": {'
+echo '      "execution-policy-enforcer": {"enabled": true}'
+echo '    }}}}'
 echo ""
-echo '     {"hooks": {"internal": {"entries": {'
-echo '       "execution-policy-enforcer": {"enabled": true}'
-echo '     }}}}'
+if [ "$MODE" = "shadow" ]; then
+  echo "  4. After validation, switch to enforce mode:"
+  echo "     export EXECUTION_POLICY_MODE=enforce"
+  echo "     # or update hook.json: enforcementMode: enforce"
+  echo ""
+  echo "  Validation criteria:"
+  echo "    - Normal tests pass"
+  echo "    - Adversarial tests pass"
+  echo "    - Happy path verified"
+  echo "    - No high-risk bypass audit findings"
+  echo "    - Metrics stable for observation period"
+fi
 echo ""

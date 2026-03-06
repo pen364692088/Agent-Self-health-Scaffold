@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7040",
+  "message_id": "7046",
   "from": "telegram:8420019401",
-  "timestamp": 1772814268000,
+  "timestamp": 1772814581000,
   "decision": {
     "action": "attack",
-    "decision_id": 89,
+    "decision_id": 90,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 0.0032492362693205923,
+        "bond": 0.0031529695521520136,
         "grudge": 0,
         "trust": 0.5000000000000003,
         "repair_bank": 0
@@ -38,7 +38,7 @@
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.07847477088079624,
+          "score": 0.07844589086564566,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.07097477088079625,
+          "score": 0.07094589086564568,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.03647477088079626,
+          "score": 0.03644589086564569,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -132,7 +132,7 @@
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-06T16:27:55.866Z",
+  "generated_at": "2026-03-06T16:31:06.444Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 0.0032492362693205923,
+          "bond": 0.0031529695521520136,
           "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
@@ -176,7 +176,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1772814475.852145,
+      "generated_at": 1772814666.4301345,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

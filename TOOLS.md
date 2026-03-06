@@ -54,13 +54,13 @@
   "channel": "telegram",
   "from": "telegram:8420019401",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7040",
-  "ts": 1772814268000,
+  "message_id": "7046",
+  "ts": 1772814581000,
   "dt_seconds": 300,
-  "request_id_base": "telegram:7040",
+  "request_id_base": "telegram:7046",
   "pre_decision": {
     "action": "attack",
-    "decision_id": 89
+    "decision_id": 90
   },
   "allowed_subtypes_infer": [
     "care",
