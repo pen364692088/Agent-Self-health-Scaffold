@@ -1,0 +1,945 @@
+#!/usr/bin/env python3
+"""
+prompt-assemble v1.0 - Prompt Assembler with Light Enforced Mode
+
+Assembles prompts from multiple sources following priority order.
+Implements Light Enforced Mode for compression when pressure >= 0.85.
+
+Usage:
+  prompt-assemble --session-id <id> --state <file> --history <file>
+  prompt-assemble --session-id <id> --state <file> --history <file> --max-tokens 100000
+  prompt-assemble --session-id <id> --state <file> --history <file> --dry-run
+  prompt-assemble --health
+  prompt-assemble --test
+
+Output (JSON):
+  {
+    "prompt_tokens": 45000,
+    "layers": {
+      "resident": {"tokens": 5000, "components": [...]},
+      "active": {"tokens": 30000, "turns": [...]},
+      "recall": {"tokens": 2000, "snippets": [...]}
+    },
+    "compression_applied": true,
+    "compression_event": "cmp_001"
+  }
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Any, Optional, Tuple
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+BUDGET_CHECK = WORKSPACE / "tools" / "context-budget-check"
+COMPRESS_TOOL = WORKSPACE / "tools" / "context-compress"
+RETRIEVE_TOOL = WORKSPACE / "tools" / "context-retrieve"
+
+# Pressure threshold for Light Enforced Mode
+LIGHT_ENFORCED_THRESHOLD = 0.85
+
+# Default window sizes
+DEFAULT_ACTIVE_WINDOW = 6
+LIGHT_ENFORCED_ACTIVE_WINDOW = 12
+
+# Layer token budgets (approximate)
+RESIDENT_BUDGET_RATIO = 0.10  # 10% of max tokens
+ACTIVE_BUDGET_RATIO = 0.70   # 70% of max tokens
+RECALL_BUDGET_RATIO = 0.10   # 10% of max tokens
+
+
+def estimate_tokens(text: str) -> int:
+    """Estimate token count using simple heuristic: 4 chars ≈ 1 token."""
+    if not text:
+        return 0
+    return max(1, len(text) // 4)
+
+
+def estimate_json_tokens(data: Any) -> int:
+    """Estimate tokens from JSON-serializable data."""
+    try:
+        text = json.dumps(data, ensure_ascii=False)
+        return estimate_tokens(text)
+    except:
+        return 0
+
+
+def load_json_file(path: Path) -> Optional[Dict]:
+    """Load JSON file safely."""
+    if not path.exists():
+        return None
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except:
+        return None
+
+
+def load_jsonl_file(path: Path) -> List[Dict]:
+    """Load JSONL file and return list of records."""
+    records = []
+    if not path.exists():
+        return records
+    with open(path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    return records
+
+
+def run_budget_check(state_path: Path, history_path: Path, max_tokens: int) -> Dict:
+    """Run context-budget-check and return result."""
+    try:
+        result = subprocess.run(
+            [
+                str(BUDGET_CHECK),
+                "--state", str(state_path),
+                "--history", str(history_path),
+                "--max-tokens", str(max_tokens),
+                "--json"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+        else:
+            return {
+                "error": result.stderr,
+                "estimated_tokens": 0,
+                "ratio": 0,
+                "pressure_level": "normal"
+            }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "estimated_tokens": 0,
+            "ratio": 0,
+            "pressure_level": "normal"
+        }
+
+
+def run_compression(
+    session_id: str,
+    state_path: Path,
+    history_path: Path,
+    max_tokens: int,
+    mode: str = "shadow"
+) -> Optional[Dict]:
+    """Run compression and return result if triggered."""
+    try:
+        result = subprocess.run(
+            [
+                str(COMPRESS_TOOL),
+                "--session-id", session_id,
+                "--state", str(state_path),
+                "--history", str(history_path),
+                "--max-tokens", str(max_tokens),
+                "--mode", mode,
+                "--json"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if data.get("compression_triggered"):
+                return data
+        return None
+    except Exception as e:
+        return None
+
+
+def run_retrieval(
+    query: str,
+    session_id: str,
+    max_snippets: int = 3
+) -> List[Dict]:
+    """Run retrieval and return snippets."""
+    try:
+        result = subprocess.run(
+            [
+                str(RETRIEVE_TOOL),
+                "--query", query,
+                "--session-id", session_id,
+                "--max-snippets", str(max_snippets),
+                "--json"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return data.get("snippets", [])
+        return []
+    except Exception as e:
+        return []
+
+
+def extract_messages_from_history(records: List[Dict]) -> List[Dict]:
+    """Extract user/assistant messages from history records."""
+    messages = []
+    turn_count = 0
+    
+    for record in records:
+        if record.get("type") != "message":
+            continue
+        
+        msg = record.get("message", {})
+        role = msg.get("role")
+        
+        if role in ("user", "assistant"):
+            turn_count += 1
+            content = msg.get("content", [])
+            text_parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    if item.get("type") == "text":
+                        text_parts.append(item.get("text", ""))
+                    elif item.get("type") == "thinking":
+                        text_parts.append(item.get("thinking", ""))
+            
+            messages.append({
+                "turn": turn_count,
+                "role": role,
+                "text": "\n".join(text_parts),
+                "timestamp": record.get("ts")
+            })
+    
+    return messages
+
+
+def get_recent_turns(messages: List[Dict], count: int) -> List[int]:
+    """Get turn numbers for the most recent N turns."""
+    if not messages:
+        return []
+    
+    turns = [m["turn"] for m in messages]
+    return turns[-count:] if len(turns) >= count else turns
+
+
+def get_current_user_message(messages: List[Dict]) -> Optional[Dict]:
+    """Get the most recent user message."""
+    for msg in reversed(messages):
+        if msg["role"] == "user":
+            return msg
+    return None
+
+
+def build_resident_layer(
+    state: Dict,
+    max_tokens: int
+) -> Dict:
+    """Build resident layer from active state."""
+    components = []
+    tokens = 0
+    
+    # 1. Task goal (required)
+    if "task_goal" in state:
+        task_goal = state["task_goal"]
+        tokens += estimate_tokens(task_goal)
+        components.append("task_goal")
+    
+    # 2. Open loops (only open ones)
+    open_loops = state.get("open_loops", [])
+    active_loops = [l for l in open_loops if l.get("status") == "open"]
+    if active_loops:
+        tokens += estimate_json_tokens(active_loops)
+        components.append("open_loops")
+    
+    # 3. Hard constraints
+    hard_constraints = state.get("hard_constraints", [])
+    if hard_constraints:
+        tokens += estimate_json_tokens(hard_constraints)
+        components.append("hard_constraints")
+    
+    # 4. Response contract
+    if "response_contract" in state:
+        contract = state["response_contract"]
+        tokens += estimate_json_tokens(contract)
+        components.append("response_contract")
+    
+    # 5. Current focus (if present)
+    if state.get("current_focus"):
+        tokens += estimate_tokens(state["current_focus"])
+        components.append("current_focus")
+    
+    return {
+        "tokens": tokens,
+        "components": components,
+        "data": {
+            "task_goal": state.get("task_goal", ""),
+            "open_loops": active_loops,
+            "hard_constraints": hard_constraints,
+            "response_contract": state.get("response_contract", {}),
+            "current_focus": state.get("current_focus", "")
+        }
+    }
+
+
+def build_active_layer(
+    messages: List[Dict],
+    window_size: int,
+    current_user_msg: Optional[Dict]
+) -> Dict:
+    """Build active layer from recent conversation."""
+    turns = get_recent_turns(messages, window_size)
+    tokens = 0
+    
+    # Include current user message separately if not in window
+    if current_user_msg and current_user_msg["turn"] not in turns:
+        turns.append(current_user_msg["turn"])
+    
+    # Calculate tokens
+    active_messages = [m for m in messages if m["turn"] in turns]
+    for msg in active_messages:
+        tokens += estimate_tokens(msg["text"])
+        tokens += estimate_tokens(msg["role"])
+    
+    return {
+        "tokens": tokens,
+        "turns": turns,
+        "message_count": len(active_messages)
+    }
+
+
+def build_recall_layer(
+    snippets: List[Dict],
+    max_tokens: int
+) -> Dict:
+    """Build recall layer from retrieval snippets."""
+    tokens = 0
+    included_snippets = []
+    
+    for snippet in snippets:
+        snippet_tokens = estimate_json_tokens(snippet)
+        if tokens + snippet_tokens <= max_tokens:
+            tokens += snippet_tokens
+            included_snippets.append(snippet.get("capsule_id", snippet.get("source", "unknown")))
+    
+    return {
+        "tokens": tokens,
+        "snippets": included_snippets,
+        "total_snippets": len(snippets)
+    }
+
+
+def should_trigger_light_enforced(budget: Dict) -> bool:
+    """Check if Light Enforced Mode should trigger."""
+    ratio = budget.get("ratio", 0)
+    return ratio >= LIGHT_ENFORCED_THRESHOLD
+
+
+def assemble_prompt(
+    session_id: str,
+    state_path: Path,
+    history_path: Path,
+    max_tokens: int,
+    dry_run: bool = False
+) -> Dict:
+    """Main assembly logic."""
+    
+    # Load state
+    state = load_json_file(state_path)
+    if not state:
+        return {
+            "error": {
+                "type": "state_load_failed",
+                "message": f"Could not load state from {state_path}"
+            }
+        }
+    
+    # Load history
+    records = load_jsonl_file(history_path)
+    messages = extract_messages_from_history(records)
+    
+    if not messages:
+        return {
+            "error": {
+                "type": "no_messages",
+                "message": "No messages found in history"
+            }
+        }
+    
+    # Run budget check
+    budget = run_budget_check(state_path, history_path, max_tokens)
+    
+    if "error" in budget and budget.get("estimated_tokens", -1) == 0:
+        return {
+            "error": {
+                "type": "budget_check_failed",
+                "message": budget.get("error", "Unknown error")
+            }
+        }
+    
+    # Determine if Light Enforced Mode
+    light_enforced = should_trigger_light_enforced(budget)
+    window_size = LIGHT_ENFORCED_ACTIVE_WINDOW if light_enforced else DEFAULT_ACTIVE_WINDOW
+    
+    # Compression (if needed)
+    compression_event = None
+    compression_applied = False
+    
+    if light_enforced and not dry_run:
+        compression_result = run_compression(
+            session_id,
+            state_path,
+            history_path,
+            max_tokens,
+            mode="shadow"  # Use shadow mode for planning
+        )
+        
+        if compression_result:
+            compression_event = compression_result.get("event_id")
+            compression_applied = True
+    
+    # Build layers
+    resident_layer = build_resident_layer(state, int(max_tokens * RESIDENT_BUDGET_RATIO))
+    
+    current_user_msg = get_current_user_message(messages)
+    active_layer = build_active_layer(messages, window_size, current_user_msg)
+    
+    # Retrieval (trigger on open loops or current topic)
+    snippets = []
+    if state.get("open_loops") or state.get("current_focus"):
+        query = state.get("current_focus", "")
+        open_loop_text = " ".join([
+            l.get("description", "") 
+            for l in state.get("open_loops", []) 
+            if l.get("status") == "open"
+        ])
+        if open_loop_text:
+            query = f"{query} {open_loop_text}".strip()
+        
+        if query:
+            snippets = run_retrieval(query, session_id, max_snippets=3)
+    
+    recall_layer = build_recall_layer(snippets, int(max_tokens * RECALL_BUDGET_RATIO))
+    
+    # Calculate total tokens
+    total_tokens = (
+        resident_layer["tokens"] + 
+        active_layer["tokens"] + 
+        recall_layer["tokens"]
+    )
+    
+    # Build result
+    result = {
+        "session_id": session_id,
+        "prompt_tokens": total_tokens,
+        "max_tokens": max_tokens,
+        "ratio": round(total_tokens / max_tokens, 4) if max_tokens > 0 else 0,
+        "layers": {
+            "resident": {
+                "tokens": resident_layer["tokens"],
+                "components": resident_layer["components"]
+            },
+            "active": {
+                "tokens": active_layer["tokens"],
+                "turns": active_layer["turns"]
+            },
+            "recall": {
+                "tokens": recall_layer["tokens"],
+                "snippets": recall_layer["snippets"]
+            }
+        },
+        "pressure_level": budget.get("pressure_level", "normal"),
+        "light_enforced_mode": light_enforced,
+        "compression_applied": compression_applied,
+        "compression_event": compression_event,
+        "budget_snapshot": {
+            "estimated_tokens": budget.get("estimated_tokens", 0),
+            "ratio": budget.get("ratio", 0),
+            "pressure_level": budget.get("pressure_level", "normal")
+        }
+    }
+    
+    # Add dry-run flag
+    if dry_run:
+        result["dry_run"] = True
+        result["message"] = "Dry run: showing assembly plan without applying changes"
+    
+    return result
+
+
+def health_check() -> Dict:
+    """Perform health check."""
+    issues = []
+    checks = {}
+    
+    # Check dependencies
+    checks["budget_check_exists"] = BUDGET_CHECK.exists()
+    checks["compress_tool_exists"] = COMPRESS_TOOL.exists()
+    checks["retrieve_tool_exists"] = RETRIEVE_TOOL.exists()
+    
+    if not BUDGET_CHECK.exists():
+        issues.append(f"context-budget-check not found at {BUDGET_CHECK}")
+    if not COMPRESS_TOOL.exists():
+        issues.append(f"context-compress not found at {COMPRESS_TOOL}")
+    if not RETRIEVE_TOOL.exists():
+        issues.append(f"context-retrieve not found at {RETRIEVE_TOOL}")
+    
+    # Test budget check
+    try:
+        result = subprocess.run(
+            [str(BUDGET_CHECK), "--health"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        checks["budget_check_healthy"] = result.returncode == 0
+    except Exception as e:
+        checks["budget_check_healthy"] = False
+        issues.append(f"Budget check failed: {e}")
+    
+    # Test compress tool
+    try:
+        result = subprocess.run(
+            [str(COMPRESS_TOOL), "--health"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        checks["compress_tool_healthy"] = result.returncode == 0
+    except Exception as e:
+        checks["compress_tool_healthy"] = False
+        issues.append(f"Compress tool failed: {e}")
+    
+    # Test retrieve tool
+    try:
+        result = subprocess.run(
+            [str(RETRIEVE_TOOL), "--health"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        checks["retrieve_tool_healthy"] = result.returncode == 0
+    except Exception as e:
+        checks["retrieve_tool_healthy"] = False
+        issues.append(f"Retrieve tool failed: {e}")
+    
+    return {
+        "status": "healthy" if not issues else "degraded",
+        "checks": checks,
+        "issues": issues if issues else None,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def self_test() -> Dict:
+    """Run self-test."""
+    tests = []
+    
+    # Test 1: Token estimation
+    try:
+        test_str = "Test string for token estimation"
+        tokens = estimate_tokens(test_str)
+        expected = len(test_str) // 4
+        if tokens == expected:
+            tests.append({"name": "token_estimation", "status": "pass"})
+        else:
+            tests.append({
+                "name": "token_estimation",
+                "status": "fail",
+                "details": f"Expected {expected}, got {tokens}"
+            })
+    except Exception as e:
+        tests.append({"name": "token_estimation", "status": "fail", "details": str(e)})
+    
+    # Test 2: Resident layer building
+    try:
+        test_state = {
+            "session_id": "test_session",
+            "task_goal": "Build a prompt assembler",
+            "open_loops": [
+                {"loop_id": "loop_1", "description": "Test loop", "status": "open"}
+            ],
+            "hard_constraints": ["Must preserve constraints"],
+            "response_contract": {
+                "speaker_mode": "assistant",
+                "core_points": ["Be helpful"],
+                "must_not_upgrade": []
+            }
+        }
+        
+        layer = build_resident_layer(test_state, 10000)
+        
+        assert layer["tokens"] > 0
+        assert "task_goal" in layer["components"]
+        assert "open_loops" in layer["components"]
+        assert "hard_constraints" in layer["components"]
+        
+        tests.append({"name": "resident_layer_building", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "resident_layer_building", "status": "fail", "details": str(e)})
+    except Exception as e:
+        tests.append({"name": "resident_layer_building", "status": "fail", "details": str(e)})
+    
+    # Test 3: Active layer building
+    try:
+        test_messages = [
+            {"turn": 1, "role": "user", "text": "Hello"},
+            {"turn": 2, "role": "assistant", "text": "Hi there!"},
+            {"turn": 3, "role": "user", "text": "How are you?"},
+            {"turn": 4, "role": "assistant", "text": "I'm doing well!"},
+        ]
+        
+        layer = build_active_layer(test_messages, window_size=3, current_user_msg=None)
+        
+        assert layer["tokens"] > 0
+        assert len(layer["turns"]) == 3
+        assert layer["message_count"] == 3
+        
+        tests.append({"name": "active_layer_building", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "active_layer_building", "status": "fail", "details": str(e)})
+    except Exception as e:
+        tests.append({"name": "active_layer_building", "status": "fail", "details": str(e)})
+    
+    # Test 4: Recall layer building
+    try:
+        test_snippets = [
+            {"capsule_id": "cap_001", "relevance": 0.9, "content": {"topic": "Test topic 1"}},
+            {"capsule_id": "cap_002", "relevance": 0.8, "content": {"topic": "Test topic 2"}}
+        ]
+        
+        layer = build_recall_layer(test_snippets, max_tokens=10000)
+        
+        assert layer["tokens"] > 0
+        assert len(layer["snippets"]) == 2
+        assert layer["total_snippets"] == 2
+        
+        tests.append({"name": "recall_layer_building", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "recall_layer_building", "status": "fail", "details": str(e)})
+    except Exception as e:
+        tests.append({"name": "recall_layer_building", "status": "fail", "details": str(e)})
+    
+    # Test 5: Light Enforced Mode trigger
+    try:
+        high_pressure = {"ratio": 0.90, "pressure_level": "standard"}
+        low_pressure = {"ratio": 0.50, "pressure_level": "normal"}
+        
+        assert should_trigger_light_enforced(high_pressure) == True
+        assert should_trigger_light_enforced(low_pressure) == False
+        
+        tests.append({"name": "light_enforced_trigger", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "light_enforced_trigger", "status": "fail", "details": str(e)})
+    except Exception as e:
+        tests.append({"name": "light_enforced_trigger", "status": "fail", "details": str(e)})
+    
+    # Test 6: Budget check integration
+    try:
+        result = subprocess.run(
+            [str(BUDGET_CHECK), "--test"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        budget_result = json.loads(result.stdout)
+        tests.append({
+            "name": "budget_check_integration",
+            "status": "pass" if budget_result.get("status") == "pass" else "fail"
+        })
+    except Exception as e:
+        tests.append({"name": "budget_check_integration", "status": "fail", "details": str(e)})
+    
+    # Test 7: Full assembly with test data
+    try:
+        # Create test files
+        import tempfile
+        
+        test_dir = Path(tempfile.mkdtemp())
+        test_state_file = test_dir / "active_state.json"
+        test_history_file = test_dir / "raw.jsonl"
+        
+        # Write test state
+        test_state = {
+            "session_id": "test_session_001",
+            "task_goal": "Test prompt assembly",
+            "mode": "implementation",
+            "response_contract": {
+                "speaker_mode": "assistant",
+                "core_points": ["Be helpful"],
+                "must_not_upgrade": []
+            },
+            "open_loops": [],
+            "hard_constraints": ["Test constraint"],
+            "recent_tools": [],
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        with open(test_state_file, 'w') as f:
+            json.dump(test_state, f)
+        
+        # Write test history
+        test_records = [
+            {"type": "message", "message": {"role": "user", "content": [{"type": "text", "text": "Hello"}]}},
+            {"type": "message", "message": {"role": "assistant", "content": [{"type": "text", "text": "Hi there!"}]}},
+            {"type": "message", "message": {"role": "user", "content": [{"type": "text", "text": "How are you?"}]}},
+        ]
+        
+        with open(test_history_file, 'w') as f:
+            for r in test_records:
+                f.write(json.dumps(r) + "\n")
+        
+        # Run assembly
+        result = assemble_prompt(
+            session_id="test_session_001",
+            state_path=test_state_file,
+            history_path=test_history_file,
+            max_tokens=100000,
+            dry_run=True
+        )
+        
+        # Cleanup
+        import shutil
+        shutil.rmtree(test_dir)
+        
+        # Verify result
+        assert "error" not in result
+        assert "prompt_tokens" in result
+        assert "layers" in result
+        assert "resident" in result["layers"]
+        assert "active" in result["layers"]
+        assert result["dry_run"] == True
+        
+        tests.append({"name": "full_assembly", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "full_assembly", "status": "fail", "details": str(e)})
+    except Exception as e:
+        tests.append({"name": "full_assembly", "status": "fail", "details": str(e)})
+    
+    passed = sum(1 for t in tests if t["status"] == "pass")
+    failed = len(tests) - passed
+    
+    return {
+        "status": "pass" if failed == 0 else "fail",
+        "total": len(tests),
+        "passed": passed,
+        "failed": failed,
+        "tests": tests,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="prompt-assemble v1.0 - Prompt Assembler with Light Enforced Mode"
+    )
+    
+    parser.add_argument(
+        "--session-id", "-s",
+        help="Session identifier"
+    )
+    
+    parser.add_argument(
+        "--state",
+        type=Path,
+        help="Path to active_state.json"
+    )
+    
+    parser.add_argument(
+        "--history",
+        type=Path,
+        help="Path to conversation history (raw.jsonl)"
+    )
+    
+    parser.add_argument(
+        "--max-tokens", "-m",
+        type=int,
+        default=100000,
+        help="Maximum token budget (default: 100000)"
+    )
+    
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Output assembly plan only, don't apply changes"
+    )
+    
+    parser.add_argument(
+        "--json", "-j",
+        action="store_true",
+        help="Output as JSON"
+    )
+    
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="Run health check"
+    )
+    
+    parser.add_argument(
+        "--test", "-t",
+        action="store_true",
+        help="Run self-test"
+    )
+    
+    args = parser.parse_args()
+    
+    # Health check mode
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "healthy" else 1
+    
+    # Self-test mode
+    if args.test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "pass" else 1
+    
+    # Validate required args for assembly
+    if not args.session_id:
+        print(json.dumps({
+            "error": {"type": "missing_arg", "message": "--session-id is required"}
+        }, indent=2))
+        return 1
+    
+    if not args.state:
+        print(json.dumps({
+            "error": {"type": "missing_arg", "message": "--state is required"}
+        }, indent=2))
+        return 1
+    
+    if not args.history:
+        print(json.dumps({
+            "error": {"type": "missing_arg", "message": "--history is required"}
+        }, indent=2))
+        return 1
+    
+    # Check file existence
+    if not args.state.exists():
+        print(json.dumps({
+            "error": {"type": "file_not_found", "message": f"State file not found: {args.state}"}
+        }, indent=2))
+        return 1
+    
+    if not args.history.exists():
+        print(json.dumps({
+            "error": {"type": "file_not_found", "message": f"History file not found: {args.history}"}
+        }, indent=2))
+        return 1
+    
+    # Run assembly
+    try:
+        result = assemble_prompt(
+            session_id=args.session_id,
+            state_path=args.state,
+            history_path=args.history,
+            max_tokens=args.max_tokens,
+            dry_run=args.dry_run
+        )
+        
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if "error" not in result else 1
+        
+    except Exception as e:
+        print(json.dumps({
+            "error": {"type": "execution_error", "message": str(e)}
+        }, indent=2))
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+
+# === Low Confidence Protection Rule ===
+# v2.0 新增：低 confidence 的 capsule recall 只能进 recall 附加区
+
+def apply_low_confidence_protection(retrieval_snippets: List[Dict], resident_state: Dict) -> Dict:
+    """
+    低 confidence 保护规则：
+    - confidence >= 0.60: 正常进 recall 层
+    - confidence < 0.60: 只能进 low_confidence 区，不能覆盖 resident
+    
+    保护对象（不可被低 confidence 覆盖）：
+    - task_goal
+    - open_loops
+    - recent_commitments
+    - tool_execution_state
+    - recent_errors
+    - user_corrected_constraints
+    - response_contract
+    """
+    
+    PROTECTED_RESIDENT_FIELDS = {
+        "task_goal",
+        "open_loops", 
+        "recent_commitments",
+        "tool_execution_state",
+        "recent_errors",
+        "user_corrected_constraints",
+        "response_contract"
+    }
+    
+    HIGH_CONFIDENCE_THRESHOLD = 0.60
+    
+    high_confidence_snippets = []
+    low_confidence_snippets = []
+    
+    for snippet in retrieval_snippets:
+        confidence = snippet.get("confidence", 0.5)
+        if confidence >= HIGH_CONFIDENCE_THRESHOLD:
+            high_confidence_snippets.append(snippet)
+        else:
+            # 标记为低 confidence，需谨慎使用
+            low_confidence_snippets.append({
+                **snippet,
+                "warning": "low_confidence_use_with_caution",
+                "forbidden_actions": [
+                    "overwrite_resident",
+                    "modify_commitments",
+                    "change_task_goal"
+                ]
+            })
+    
+    return {
+        "high_confidence": high_confidence_snippets,
+        "low_confidence": low_confidence_snippets,
+        "protection_applied": len(low_confidence_snippets) > 0,
+        "protected_fields": list(PROTECTED_RESIDENT_FIELDS)
+    }
+
+
+def safe_merge_with_resident(resident_state: Dict, recall_data: Dict) -> Dict:
+    """
+    安全合并 recall 数据到 resident state。
+    低 confidence 数据不会覆盖 resident 硬状态。
+    """
+    PROTECTED_FIELDS = {
+        "task_goal", "open_loops", "recent_commitments",
+        "tool_execution_state", "recent_errors",
+        "user_corrected_constraints", "response_contract"
+    }
+    
+    merged = dict(resident_state)
+    
+    # 只允许高 confidence 数据影响非保护字段
+    for snippet in recall_data.get("high_confidence", []):
+        content = snippet.get("content", {})
+        if isinstance(content, dict):
+            for key, value in content.items():
+                if key not in PROTECTED_FIELDS:
+                    if key not in merged:
+                        merged[key] = value
+                    # 已存在的字段不覆盖
+    
+    # 低 confidence 数据只进 recall 层，不合并
+    merged["_low_confidence_recall"] = recall_data.get("low_confidence", [])
+    
+    return merged

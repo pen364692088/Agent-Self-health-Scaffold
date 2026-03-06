@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "active_state.v1.schema.json",
+  "title": "Active State",
+  "description": "Session resident state structure for context compression system",
+  "type": "object",
+  "required": [
+    "session_id",
+    "task_goal",
+    "mode",
+    "response_contract",
+    "open_loops",
+    "hard_constraints",
+    "recent_tools",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Unique session identifier"
+    },
+    "task_goal": {
+      "type": "string",
+      "description": "Primary goal of the current task"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["exploration", "implementation", "review", "debugging", "planning"],
+      "description": "Current operational mode"
+    },
+    "response_contract": {
+      "type": "object",
+      "required": ["speaker_mode", "core_points", "must_not_upgrade"],
+      "properties": {
+        "speaker_mode": {
+          "type": "string",
+          "description": "Current speaker persona/mode"
+        },
+        "core_points": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Key points that must be maintained in responses"
+        },
+        "must_not_upgrade": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Items that must not be elevated or changed"
+        }
+      },
+      "additionalProperties": false
+    },
+    "open_loops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["loop_id", "description", "status"],
+        "properties": {
+          "loop_id": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "type": "string", "enum": ["open", "blocked", "waiting", "resolved"] },
+          "since_turn": { "type": "integer" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Unresolved items requiring follow-up"
+    },
+    "hard_constraints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Non-negotiable constraints from user or system"
+    },
+    "recent_tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool_name", "turn"],
+        "properties": {
+          "tool_name": { "type": "string" },
+          "turn": { "type": "integer" },
+          "result_summary": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Recently used tools with context"
+    },
+    "current_focus": {
+      "type": "string",
+      "description": "Current focus area"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,419 @@
+#!/usr/bin/env python3
+"""
+context-budget-check v1.0 - Prompt Token Budget Checker
+
+Estimates token usage and outputs pressure level for context management.
+
+Usage:
+  context-budget-check --state <file> --history <file>
+  context-budget-check --state <file> --history <file> --max-tokens 100000
+  context-budget-check --snapshot --state <file> --history <file>
+  context-budget-check --health
+  context-budget-check --test
+  context-budget-check --json
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Optional, Any
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SNAPSHOTS_DIR = WORKSPACE / "artifacts" / "budget_snapshots"
+
+
+def estimate_tokens(text: str) -> int:
+    """
+    Estimate token count using simple heuristic: 4 chars ≈ 1 token.
+    This is a rough approximation that works for most LLM tokenizers.
+    """
+    if not text:
+        return 0
+    return max(1, len(text) // 4)
+
+
+def estimate_json_tokens(data: Any) -> int:
+    """Estimate tokens from JSON-serializable data."""
+    try:
+        text = json.dumps(data, ensure_ascii=False)
+        return estimate_tokens(text)
+    except:
+        return 0
+
+
+def estimate_jsonl_tokens(path: Path) -> int:
+    """Estimate tokens from JSONL file (conversation history)."""
+    if not path.exists():
+        return 0
+    
+    total = 0
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        data = json.loads(line)
+                        # Extract content from various message formats
+                        if isinstance(data, dict):
+                            # OpenAI/OpenClaw message format
+                            content = data.get('content', '')
+                            if isinstance(content, str):
+                                total += estimate_tokens(content)
+                            elif isinstance(content, list):
+                                for item in content:
+                                    if isinstance(item, dict):
+                                        total += estimate_tokens(item.get('text', ''))
+                            # Also count role and other metadata
+                            total += estimate_tokens(data.get('role', ''))
+                            total += estimate_tokens(str(data.get('tool_calls', '')))
+                        else:
+                            total += estimate_json_tokens(data)
+                    except json.JSONDecodeError:
+                        total += estimate_tokens(line)
+    except Exception as e:
+        print(f"Warning: Error reading history file: {e}", file=sys.stderr)
+    
+    return total
+
+
+def estimate_state_tokens(path: Path) -> int:
+    """Estimate tokens from active_state.json."""
+    if not path.exists():
+        return 0
+    
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return estimate_json_tokens(data)
+    except Exception as e:
+        print(f"Warning: Error reading state file: {e}", file=sys.stderr)
+        return 0
+
+
+def get_pressure_level(ratio: float) -> str:
+    """
+    Determine pressure level based on ratio.
+    
+    Thresholds:
+    - ratio < 0.70 → "normal"
+    - ratio >= 0.70 → "light"
+    - ratio >= 0.85 → "standard"
+    - ratio >= 0.92 → "strong"
+    """
+    if ratio >= 0.92:
+        return "strong"
+    elif ratio >= 0.85:
+        return "standard"
+    elif ratio >= 0.70:
+        return "light"
+    else:
+        return "normal"
+
+
+def get_threshold_hit(ratio: float) -> Optional[str]:
+    """Return which threshold was hit, if any."""
+    if ratio >= 0.92:
+        return "strong"
+    elif ratio >= 0.85:
+        return "standard"
+    elif ratio >= 0.70:
+        return "light"
+    return None
+
+
+def generate_snapshot_id() -> str:
+    """Generate unique snapshot ID."""
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"snap_{ts}"
+
+
+def check_budget(
+    state_path: Optional[Path],
+    history_path: Optional[Path],
+    max_tokens: int = 100000
+) -> Dict[str, Any]:
+    """Calculate budget and return result."""
+    estimated_tokens = 0
+    
+    if state_path and state_path.exists():
+        estimated_tokens += estimate_state_tokens(state_path)
+    
+    if history_path and history_path.exists():
+        estimated_tokens += estimate_jsonl_tokens(history_path)
+    
+    ratio = estimated_tokens / max_tokens if max_tokens > 0 else 0
+    pressure_level = get_pressure_level(ratio)
+    threshold_hit = get_threshold_hit(ratio)
+    
+    result = {
+        "estimated_tokens": estimated_tokens,
+        "max_tokens": max_tokens,
+        "ratio": round(ratio, 4),
+        "pressure_level": pressure_level,
+        "threshold_hit": threshold_hit,
+        "snapshot_id": generate_snapshot_id()
+    }
+    
+    return result
+
+
+def save_snapshot(result: Dict[str, Any], state_path: Optional[Path]) -> Path:
+    """Save budget snapshot to file."""
+    SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    snapshot = {
+        "snapshot_id": result["snapshot_id"],
+        "session_id": "unknown",
+        "estimated_tokens": result["estimated_tokens"],
+        "max_tokens": result["max_tokens"],
+        "ratio": result["ratio"],
+        "pressure_level": result["pressure_level"],
+        "threshold_type": result["threshold_hit"] or "none",
+        "created_at": datetime.now().isoformat()
+    }
+    
+    # Try to extract session_id from state file
+    if state_path and state_path.exists():
+        try:
+            with open(state_path, 'r') as f:
+                state = json.load(f)
+                snapshot["session_id"] = state.get("session_id", "unknown")
+        except:
+            pass
+    
+    snapshot_path = SNAPSHOTS_DIR / f"{result['snapshot_id']}.json"
+    with open(snapshot_path, 'w') as f:
+        json.dump(snapshot, f, indent=2)
+    
+    return snapshot_path
+
+
+def health_check() -> Dict[str, Any]:
+    """Perform health check."""
+    issues = []
+    
+    # Check if we can write to snapshots directory
+    try:
+        SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+        test_file = SNAPSHOTS_DIR / ".health_test"
+        test_file.write_text("ok")
+        test_file.unlink()
+    except Exception as e:
+        issues.append(f"Cannot write to snapshots directory: {e}")
+    
+    # Check if we can estimate tokens
+    try:
+        test_tokens = estimate_tokens("Hello, world!")
+        if test_tokens < 1:
+            issues.append("Token estimation returned 0 for non-empty string")
+    except Exception as e:
+        issues.append(f"Token estimation failed: {e}")
+    
+    return {
+        "status": "healthy" if not issues else "degraded",
+        "checks": {
+            "snapshots_dir": str(SNAPSHOTS_DIR),
+            "token_estimation": "ok"
+        },
+        "issues": issues if issues else None,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def self_test() -> Dict[str, Any]:
+    """Run self-test."""
+    tests = []
+    
+    # Test 1: Token estimation
+    try:
+        test_str = "Test string for token estimation check"
+        tokens = estimate_tokens(test_str)
+        expected = len(test_str) // 4
+        if tokens == expected:
+            tests.append({"name": "token_estimation", "status": "pass"})
+        else:
+            tests.append({"name": "token_estimation", "status": "fail", 
+                         "details": f"Expected {expected}, got {tokens}"})
+    except Exception as e:
+        tests.append({"name": "token_estimation", "status": "fail", "details": str(e)})
+    
+    # Test 2: Pressure level calculation
+    try:
+        assert get_pressure_level(0.5) == "normal"
+        assert get_pressure_level(0.75) == "light"
+        assert get_pressure_level(0.88) == "standard"
+        assert get_pressure_level(0.95) == "strong"
+        tests.append({"name": "pressure_levels", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "pressure_levels", "status": "fail", "details": str(e)})
+    
+    # Test 3: Threshold hit detection
+    try:
+        assert get_threshold_hit(0.5) is None
+        assert get_threshold_hit(0.75) == "light"
+        assert get_threshold_hit(0.88) == "standard"
+        assert get_threshold_hit(0.95) == "strong"
+        tests.append({"name": "threshold_detection", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "threshold_detection", "status": "fail", "details": str(e)})
+    
+    # Test 4: Budget calculation
+    try:
+        result = check_budget(None, None, 100000)
+        assert "estimated_tokens" in result
+        assert "ratio" in result
+        assert "pressure_level" in result
+        assert result["estimated_tokens"] == 0
+        assert result["ratio"] == 0
+        assert result["pressure_level"] == "normal"
+        tests.append({"name": "budget_calculation", "status": "pass"})
+    except Exception as e:
+        tests.append({"name": "budget_calculation", "status": "fail", "details": str(e)})
+    
+    # Test 5: JSONL parsing
+    try:
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+            f.write('{"role": "user", "content": "Hello"}\n')
+            f.write('{"role": "assistant", "content": "Hi there!"}\n')
+            temp_path = Path(f.name)
+        
+        tokens = estimate_jsonl_tokens(temp_path)
+        temp_path.unlink()
+        
+        if tokens > 0:
+            tests.append({"name": "jsonl_parsing", "status": "pass"})
+        else:
+            tests.append({"name": "jsonl_parsing", "status": "fail", 
+                         "details": "Token count was 0"})
+    except Exception as e:
+        tests.append({"name": "jsonl_parsing", "status": "fail", "details": str(e)})
+    
+    # Test 6: Snapshot generation
+    try:
+        result = check_budget(None, None, 100000)
+        snapshot_path = save_snapshot(result, None)
+        assert snapshot_path.exists()
+        
+        with open(snapshot_path, 'r') as f:
+            snapshot = json.load(f)
+        
+        assert "snapshot_id" in snapshot
+        assert "estimated_tokens" in snapshot
+        
+        snapshot_path.unlink()
+        tests.append({"name": "snapshot_generation", "status": "pass"})
+    except Exception as e:
+        tests.append({"name": "snapshot_generation", "status": "fail", "details": str(e)})
+    
+    passed = sum(1 for t in tests if t["status"] == "pass")
+    failed = len(tests) - passed
+    
+    return {
+        "status": "pass" if failed == 0 else "fail",
+        "total": len(tests),
+        "passed": passed,
+        "failed": failed,
+        "tests": tests,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Context Budget Checker - Estimate token usage and pressure level"
+    )
+    
+    parser.add_argument(
+        "--state", "-s",
+        type=Path,
+        help="Path to active_state.json"
+    )
+    
+    parser.add_argument(
+        "--history", "-H",
+        type=Path,
+        help="Path to conversation history (JSONL)"
+    )
+    
+    parser.add_argument(
+        "--max-tokens", "-m",
+        type=int,
+        default=100000,
+        help="Maximum token budget (default: 100000)"
+    )
+    
+    parser.add_argument(
+        "--snapshot",
+        action="store_true",
+        help="Generate budget snapshot file"
+    )
+    
+    parser.add_argument(
+        "--json", "-j",
+        action="store_true",
+        help="Output as JSON"
+    )
+    
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="Run health check"
+    )
+    
+    parser.add_argument(
+        "--test", "-t",
+        action="store_true",
+        help="Run self-test"
+    )
+    
+    args = parser.parse_args()
+    
+    # Health check mode
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "healthy" else 1
+    
+    # Self-test mode
+    if args.test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "pass" else 1
+    
+    # Budget check mode
+    if not args.state and not args.history:
+        print(json.dumps({
+            "error": {
+                "type": "missing_input",
+                "message": "At least one of --state or --history is required"
+            }
+        }, indent=2))
+        return 1
+    
+    try:
+        result = check_budget(args.state, args.history, args.max_tokens)
+        
+        # Generate snapshot if requested
+        if args.snapshot:
+            snapshot_path = save_snapshot(result, args.state)
+            result["snapshot_path"] = str(snapshot_path)
+        
+        print(json.dumps(result, indent=2))
+        return 0
+        
+    except Exception as e:
+        print(json.dumps({
+            "error": {
+                "type": "execution_error",
+                "message": str(e)
+            }
+        }, indent=2))
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

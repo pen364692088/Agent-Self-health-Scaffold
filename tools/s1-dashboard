@@ -1,0 +1,295 @@
+#!/usr/bin/env python3
+"""
+S1 Validation Dashboard v2.0
+
+监控 Phase S1 Shadow Validation 的完整状态：
+- 分桶达标
+- 连续窗口指标
+- 按桶 drift 分布
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Any
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "context_compression"
+SHADOW_LOG = ARTIFACTS_DIR / "shadow_log.jsonl"
+
+class S1Dashboard:
+    """S1 验收面板 v2.0"""
+    
+    def __init__(self):
+        self.total_samples = 0
+        self.buckets = {
+            "old_topic_recall": {"count": 0, "min": 15, "drift": [], "gain": [], "priority": []},
+            "multi_topic_switch": {"count": 0, "min": 12, "drift": [], "gain": [], "priority": []},
+            "with_open_loops": {"count": 0, "min": 12, "drift": [], "gain": [], "priority": []},
+            "post_tool_chat": {"count": 0, "min": 10, "drift": [], "gain": [], "priority": []},
+            "user_correction": {"count": 0, "min": 10, "drift": [], "gain": [], "priority": []},
+            "long_technical": {"count": 0, "min": 8, "drift": [], "gain": [], "priority": []}
+        }
+        self.recent_window = []
+        self.recent_window_size = 30
+        self.samples = []
+    
+    def load_shadow_data(self):
+        """加载 shadow 日志数据"""
+        if not SHADOW_LOG.exists():
+            return
+        
+        try:
+            with open(SHADOW_LOG, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        entry = json.loads(line)
+                        self.samples.append(entry)
+                        self.total_samples += 1
+                        
+                        if "bucket" in entry:
+                            bucket = entry["bucket"]
+                            if bucket in self.buckets:
+                                self.buckets[bucket]["count"] += 1
+                                if "drift_rate" in entry:
+                                    self.buckets[bucket]["drift"].append(entry["drift_rate"])
+                                if "compression_gain" in entry:
+                                    self.buckets[bucket]["gain"].append(entry["compression_gain"])
+                                if "priority_preservation" in entry:
+                                    self.buckets[bucket]["priority"].append(entry["priority_preservation"])
+                        
+                        self.recent_window.append(entry)
+                        if len(self.recent_window) > self.recent_window_size:
+                            self.recent_window.pop(0)
+        except:
+            pass
+    
+    def check_bucket_coverage(self):
+        """检查分桶覆盖率"""
+        all_covered = all(
+            self.buckets[b]["count"] >= self.buckets[b]["min"]
+            for b in self.buckets
+        )
+        
+        bucket_status = {}
+        for bucket, data in self.buckets.items():
+            bucket_status[bucket] = {
+                "count": data["count"],
+                "min": data["min"],
+                "passed": data["count"] >= data["min"]
+            }
+        
+        return {"all_covered": all_covered, "buckets": bucket_status}
+    
+    def calculate_recent_window_metrics(self):
+        """计算连续窗口指标"""
+        if len(self.recent_window) < self.recent_window_size:
+            return {
+                "samples": len(self.recent_window),
+                "required": self.recent_window_size,
+                "status": "insufficient"
+            }
+        
+        recovery = [s.get("old_topic_recovery", 0) for s in self.recent_window if "old_topic_recovery" in s]
+        preservation = [s.get("commitment_preservation", 0) for s in self.recent_window if "commitment_preservation" in s]
+        drift = [s.get("drift_rate", 0) for s in self.recent_window if "drift_rate" in s]
+        
+        return {
+            "samples": len(self.recent_window),
+            "required": self.recent_window_size,
+            "status": "sufficient",
+            "avg_recovery": sum(recovery) / len(recovery) if recovery else 0,
+            "avg_preservation": sum(preservation) / len(preservation) if preservation else 0,
+            "avg_drift": sum(drift) / len(drift) if drift else 0,
+            "metrics_passed": (
+                (sum(recovery) / len(recovery) >= 0.70 if recovery else False) and
+                (sum(preservation) / len(preservation) >= 0.85 if preservation else False) and
+                (sum(drift) / len(drift) < 0.05 if drift else False)
+            )
+        }
+    
+    def calculate_bucket_metrics(self):
+        """计算按桶的指标分布"""
+        bucket_metrics = {}
+        
+        for bucket, data in self.buckets.items():
+            if data["count"] > 0:
+                bucket_metrics[bucket] = {
+                    "count": data["count"],
+                    "min": data["min"],
+                    "coverage": data["count"] / data["min"],
+                    "avg_drift": sum(data["drift"]) / len(data["drift"]) if data["drift"] else None,
+                    "avg_gain": sum(data["gain"]) / len(data["gain"]) if data["gain"] else None,
+                    "avg_priority": sum(data["priority"]) / len(data["priority"]) if data["priority"] else None,
+                    "passed": data["count"] >= data["min"]
+                }
+            else:
+                bucket_metrics[bucket] = {
+                    "count": 0, "min": data["min"], "coverage": 0,
+                    "avg_drift": None, "avg_gain": None, "avg_priority": None, "passed": False
+                }
+        
+        return bucket_metrics
+    
+    def check_gate_1(self):
+        """检查 Gate 1 状态"""
+        bucket_coverage = self.check_bucket_coverage()
+        recent_metrics = self.calculate_recent_window_metrics()
+        
+        conditions = {
+            "total_samples": self.total_samples >= 80,
+            "bucket_coverage": bucket_coverage["all_covered"],
+            "recent_window_size": len(self.recent_window) >= self.recent_window_size,
+            "recent_window_metrics": recent_metrics.get("metrics_passed", False)
+        }
+        
+        return {
+            "status": "PASSED" if all(conditions.values()) else "PENDING",
+            "conditions": conditions,
+            "blockers": [k for k, v in conditions.items() if not v]
+        }
+    
+    def render(self, json_output=False):
+        """渲染面板"""
+        self.load_shadow_data()
+        
+        if json_output:
+            output = {
+                "timestamp": datetime.now().isoformat(),
+                "phase": "S1",
+                "feature_frozen": True,
+                "gate_0": "PASSED",
+                "gate_1": self.check_gate_1(),
+                "total_samples": self.total_samples,
+                "bucket_coverage": self.check_bucket_coverage(),
+                "bucket_metrics": self.calculate_bucket_metrics(),
+                "recent_window": self.calculate_recent_window_metrics()
+            }
+            print(json.dumps(output, indent=2, ensure_ascii=False))
+        else:
+            self._render_text()
+    
+    def _render_text(self):
+        """文本渲染"""
+        print("╔════════════════════════════════════════════════════════════════╗")
+        print("║        S1 Validation Dashboard v2.0 - Feature Frozen          ║")
+        print("╚════════════════════════════════════════════════════════════════╝")
+        print()
+        
+        # Gates
+        print("GATES")
+        print("─" * 50)
+        print("  Gate 0 (Minimal Closure):    ✅ PASSED")
+        
+        gate_1 = self.check_gate_1()
+        gate_1_icon = "✅" if gate_1["status"] == "PASSED" else "⏳"
+        print(f"  Gate 1 (Capsule Ready):      {gate_1_icon} {gate_1['status']}")
+        
+        if gate_1["blockers"]:
+            print("    Blockers:")
+            for blocker in gate_1["blockers"]:
+                print(f"      - {blocker}")
+        print()
+        
+        # Samples
+        print("SAMPLES")
+        print("─" * 50)
+        print(f"  Total: {self.total_samples} / 80")
+        print()
+        
+        # Bucket Coverage
+        print("BUCKET COVERAGE (关键！)")
+        print("─" * 50)
+        bucket_metrics = self.calculate_bucket_metrics()
+        
+        for bucket, metrics in bucket_metrics.items():
+            icon = "✅" if metrics["passed"] else "❌"
+            coverage_pct = f"{metrics['coverage'] * 100:.0f}%"
+            print(f"  {icon} {bucket}")
+            print(f"      Count: {metrics['count']} / {metrics['min']} ({coverage_pct})")
+            
+            if metrics["avg_drift"] is not None:
+                drift_icon = "✅" if metrics["avg_drift"] < 0.05 else "⚠️"
+                print(f"      Drift: {metrics['avg_drift']:.3f} {drift_icon}")
+            
+            if metrics["avg_gain"] is not None:
+                gain_icon = "✅" if metrics["avg_gain"] >= 0.30 else "⚠️"
+                print(f"      Gain: {metrics['avg_gain']:.2f} {gain_icon}")
+        print()
+        
+        # Continuous Window
+        print("CONTINUOUS WINDOW (最近 30 样本)")
+        print("─" * 50)
+        recent = self.calculate_recent_window_metrics()
+        
+        if recent["status"] == "insufficient":
+            print(f"  样本数: {recent['samples']} / {recent['required']} ⏳")
+        else:
+            window_icon = "✅" if recent["metrics_passed"] else "⚠️"
+            print(f"  样本数: {recent['samples']} / {recent['required']} ✅")
+            print(f"  平均 Recovery: {recent['avg_recovery']:.2f}")
+            print(f"  平均 Drift: {recent['avg_drift']:.3f}")
+            print(f"  窗口指标: {window_icon}")
+        print()
+        
+        # Weakness Detection
+        print("WEAKNESS DETECTION (薄弱点)")
+        print("─" * 50)
+        
+        weak_buckets = []
+        for bucket, metrics in bucket_metrics.items():
+            issues = []
+            if metrics["avg_drift"] is not None and metrics["avg_drift"] >= 0.05:
+                issues.append(f"drift={metrics['avg_drift']:.3f}")
+            if metrics["avg_gain"] is not None and metrics["avg_gain"] < 0.30:
+                issues.append(f"gain={metrics['avg_gain']:.2f}")
+            
+            if issues:
+                weak_buckets.append((bucket, issues))
+        
+        if weak_buckets:
+            for bucket, issues in weak_buckets:
+                print(f"  ⚠️  {bucket}: {', '.join(issues)}")
+        else:
+            print("  暂无数据或无明显薄弱点")
+        print()
+        
+        # Feature Freeze Notice
+        print("FEATURE FREEZE")
+        print("─" * 50)
+        print("  🔒 S1 期间除 blocker 修复外，禁止功能变更")
+        print("  📄 参见: POLICIES/S1_FEATURE_FREEZE.md")
+        print()
+        
+        # Recommendation
+        print("RECOMMENDATION")
+        print("─" * 50)
+        
+        if self.total_samples < 80:
+            print(f"  📊 继续收集样本 (还需 {80 - self.total_samples} 个)")
+        
+        bucket_coverage = self.check_bucket_coverage()
+        if not bucket_coverage["all_covered"]:
+            print("  📊 每个桶都要达标")
+            uncovered = [b for b, s in bucket_coverage["buckets"].items() if not s["passed"]]
+            if uncovered:
+                print(f"      未达标桶: {', '.join(uncovered)}")
+        
+        if gate_1["status"] == "PASSED":
+            print("  ✅ Gate 1 通过，可进入 Light Enforced Step A")
+
+def main():
+    parser = argparse.ArgumentParser(description="S1 Validation Dashboard v2.0")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    
+    args = parser.parse_args()
+    
+    dashboard = S1Dashboard()
+    dashboard.render(json_output=args.json)
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

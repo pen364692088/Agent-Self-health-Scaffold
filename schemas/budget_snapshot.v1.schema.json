@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "budget_snapshot.v1.schema.json",
+  "title": "Budget Snapshot",
+  "description": "Context budget measurement snapshot",
+  "type": "object",
+  "required": [
+    "snapshot_id",
+    "session_id",
+    "estimated_tokens",
+    "ratio",
+    "pressure_level",
+    "threshold_type",
+    "created_at"
+  ],
+  "properties": {
+    "snapshot_id": {
+      "type": "string",
+      "description": "Unique snapshot identifier"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session identifier"
+    },
+    "estimated_tokens": {
+      "type": "integer",
+      "description": "Estimated token count"
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Maximum context window size"
+    },
+    "ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Usage ratio (estimated_tokens / max_tokens)"
+    },
+    "pressure_level": {
+      "type": "string",
+      "enum": ["none", "low", "medium", "high", "critical"],
+      "description": "Derived pressure level"
+    },
+    "threshold_type": {
+      "type": "string",
+      "enum": ["none", "gradual", "aggressive", "emergency"],
+      "description": "Threshold category based on ratio"
+    },
+    "turn_count": {
+      "type": "integer",
+      "description": "Number of turns in context"
+    },
+    "capsule_count": {
+      "type": "integer",
+      "description": "Number of capsules created so far"
+    },
+    "resident_turns": {
+      "type": "integer",
+      "description": "Turns kept in resident context"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

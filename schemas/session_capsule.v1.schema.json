@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "session_capsule.v1.schema.json",
+  "title": "Session Capsule",
+  "description": "Compressed context capsule for session archival and retrieval",
+  "type": "object",
+  "required": [
+    "capsule_id",
+    "session_id",
+    "source_turn_range",
+    "topic",
+    "summary",
+    "decisions",
+    "open_loops",
+    "hard_constraints",
+    "entities",
+    "retrieval_keys",
+    "reconstructable",
+    "created_at"
+  ],
+  "properties": {
+    "capsule_id": {
+      "type": "string",
+      "description": "Unique capsule identifier"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Parent session identifier"
+    },
+    "source_turn_range": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "integer", "description": "Starting turn number" },
+        "end": { "type": "integer", "description": "Ending turn number" }
+      },
+      "additionalProperties": false
+    },
+    "topic": {
+      "type": "string",
+      "description": "Main topic of the compressed content"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Concise summary of the content"
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["decision", "rationale"],
+        "properties": {
+          "decision": { "type": "string" },
+          "rationale": { "type": "string" },
+          "turn": { "type": "integer" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Key decisions made in this turn range"
+    },
+    "open_loops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["loop_id", "description"],
+        "properties": {
+          "loop_id": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Open loops at time of compression"
+    },
+    "hard_constraints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Hard constraints active in this range"
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["person", "file", "tool", "concept", "project", "other"] },
+          "mentions": { "type": "integer" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Named entities in the content"
+    },
+    "retrieval_keys": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Keywords for semantic retrieval"
+    },
+    "reconstructable": {
+      "type": "boolean",
+      "description": "Whether full content can be reconstructed from archives"
+    },
+    "vector_stored": {
+      "type": "boolean",
+      "description": "Whether indexed in vector database"
+    },
+    "archive_path": {
+      "type": "string",
+      "description": "Path to full archived content if reconstructable"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

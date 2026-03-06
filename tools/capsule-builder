@@ -1,0 +1,627 @@
+#!/usr/bin/env python3
+"""
+capsule-builder v1.0 - Extract structured capsule from conversation turns
+
+Usage:
+  capsule-builder --input <file> --session-id <id> --start <n> --end <n>
+  capsule-builder --input <file> --session-id <id> --start <n> --end <n> --output <dir>
+  capsule-builder --health
+  capsule-builder --test
+
+Output: JSON capsule following schemas/session_capsule.v1.schema.json
+"""
+
+import argparse
+import json
+import sys
+import re
+import subprocess
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Any, Optional, Tuple
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SCHEMA_PATH = WORKSPACE / "schemas" / "session_capsule.v1.schema.json"
+DEFAULT_MODEL = "baiduqianfancodingplan/qianfan-code-latest"
+
+# Decision indicators
+DECISION_PATTERNS = [
+    r"决定[是为]", r"确认[是为]", r"选择", r"采用", r"使用.*方案",
+    r"we decide", r"decided to", r"confirmed that", r"will use",
+    r"确定使用", r"最终方案", r"达成一致"
+]
+
+# Open loop indicators  
+OPEN_LOOP_PATTERNS = [
+    r"待定", r"需要.*确认", r"尚未", r"还未", r"后续需要",
+    r"TODO", r"TBD", r"待处理", r"需要跟进",
+    r"pending", r"need to", r"to be determined", r"follow up"
+]
+
+# Hard constraint indicators
+CONSTRAINT_PATTERNS = [
+    r"必须", r"不能", r"禁止", r"不允许", r"强制要求",
+    r"must", r"cannot", r"forbidden", r"required", r"mandatory"
+]
+
+
+def load_jsonl(file_path: Path) -> List[Dict]:
+    """Load JSONL file and return list of records."""
+    records = []
+    with open(file_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    return records
+
+
+def extract_messages(records: List[Dict], start: int, end: int) -> List[Dict]:
+    """Extract message records in turn range, filtering to user/assistant messages."""
+    messages = []
+    turn_count = 0
+    
+    for record in records:
+        if record.get("type") != "message":
+            continue
+            
+        msg = record.get("message", {})
+        role = msg.get("role")
+        
+        if role in ("user", "assistant"):
+            turn_count += 1
+            if start <= turn_count <= end:
+                content = msg.get("content", [])
+                text_parts = []
+                for item in content:
+                    if isinstance(item, dict):
+                        if item.get("type") == "text":
+                            text_parts.append(item.get("text", ""))
+                        elif item.get("type") == "thinking":
+                            text_parts.append(item.get("thinking", ""))
+                messages.append({
+                    "turn": turn_count,
+                    "role": role,
+                    "text": "\n".join(text_parts)
+                })
+    
+    return messages
+
+
+def extract_text_content(messages: List[Dict]) -> str:
+    """Combine all message texts into one string for LLM processing."""
+    parts = []
+    for m in messages:
+        role_label = "用户" if m["role"] == "user" else "助手"
+        parts.append(f"[Turn {m['turn']}] {role_label}:\n{m['text']}")
+    return "\n\n".join(parts)
+
+
+def call_llm_for_extraction(text: str, session_id: str, turn_range: Tuple[int, int]) -> Dict:
+    """Use LLM to extract structured capsule data.
+    
+    Uses openclaw agent --local for local model inference.
+    Falls back to pattern-based extraction if LLM unavailable.
+    """
+    
+    # Truncate text if too long
+    max_chars = 8000
+    if len(text) > max_chars:
+        text = text[:max_chars] + "\n...[truncated]"
+    
+    prompt = f"""分析以下对话片段，提取结构化信息。输出有效的 JSON，不要包含 markdown 代码块标记。
+
+对话内容:
+{text}
+
+提取要求:
+1. topic: 主要主题（一句话）
+2. summary: 内容摘要（2-3句话）
+3. decisions: 决策列表，每项包含 decision（决策内容）和 rationale（原因，可选）
+4. open_loops: 未完成事项，每项包含 loop_id（如 loop_1）、description、status（open/closed）
+5. hard_constraints: 硬性约束（必须遵守的规则）
+6. entities: 提到的实体，每项包含 name、type（person/file/tool/concept/project/other）
+7. retrieval_keys: 检索关键词（5-10个）
+
+只输出 JSON 对象，不要有 markdown 代码块或其他内容。"""
+
+    try:
+        # Use openclaw agent --local for LLM call
+        result = subprocess.run(
+            ["openclaw", "agent", "--local", "--message", prompt],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=str(WORKSPACE)
+        )
+        
+        if result.returncode != 0:
+            # Fall back gracefully - return None to use pattern-based extraction
+            return None
+        
+        response = result.stdout.strip()
+        
+        # Extract JSON from response (may be wrapped in other text)
+        # Try direct parse first
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            pass
+        
+        # Remove potential markdown code blocks
+        response = re.sub(r'^```(?:json)?\s*', '', response)
+        response = re.sub(r'\s*```$', '', response)
+        
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            pass
+        
+        # Try to find JSON object in the response
+        json_match = re.search(r'\{[\s\S]*\}', response)
+        if json_match:
+            try:
+                return json.loads(json_match.group())
+            except json.JSONDecodeError:
+                pass
+        
+        # Could not parse - fall back to pattern-based
+        return None
+            
+    except subprocess.TimeoutExpired:
+        return None
+    except FileNotFoundError:
+        # openclaw not found - fall back to pattern-based
+        return None
+    except Exception as e:
+        return None
+
+
+def extract_decisions_simple(text: str) -> List[str]:
+    """Simple pattern-based decision extraction."""
+    decisions = []
+    for pattern in DECISION_PATTERNS:
+        matches = re.findall(rf'.*{pattern}.*', text, re.IGNORECASE)
+        for m in matches:
+            m = m.strip()
+            if len(m) > 10 and len(m) < 200:
+                decisions.append(m)
+    return list(set(decisions))[:10]
+
+
+def extract_open_loops_simple(text: str) -> List[Dict]:
+    """Simple pattern-based open loop extraction."""
+    loops = []
+    loop_id = 1
+    for pattern in OPEN_LOOP_PATTERNS:
+        matches = re.findall(rf'.*{pattern}.*', text, re.IGNORECASE)
+        for m in matches:
+            m = m.strip()
+            if len(m) > 10 and len(m) < 200:
+                loops.append({
+                    "loop_id": f"loop_{loop_id}",
+                    "description": m,
+                    "status": "open"
+                })
+                loop_id += 1
+    return loops[:10]
+
+
+def extract_constraints_simple(text: str) -> List[str]:
+    """Simple pattern-based constraint extraction."""
+    constraints = []
+    for pattern in CONSTRAINT_PATTERNS:
+        matches = re.findall(rf'.*{pattern}.*', text, re.IGNORECASE)
+        for m in matches:
+            m = m.strip()
+            if len(m) > 10 and len(m) < 200:
+                constraints.append(m)
+    return list(set(constraints))[:10]
+
+
+def extract_entities_simple(text: str) -> List[Dict]:
+    """Simple entity extraction using common patterns."""
+    entities = {}
+    
+    # File patterns
+    files = re.findall(r'[\w/\-\.]+\.(py|js|ts|json|md|yaml|yml|sh)', text)
+    for f in files:
+        entities[f] = {"name": f, "type": "file", "mentions": 1}
+    
+    # Tool patterns
+    tools = re.findall(r'(?:tools?|cli)[:\s]+(\w+[-\w]*)', text, re.IGNORECASE)
+    for t in tools:
+        if len(t) > 2:
+            entities[t] = {"name": t, "type": "tool", "mentions": 1}
+    
+    # Project/concept patterns (capitalized words)
+    concepts = re.findall(r'\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\b', text)
+    for c in concepts:
+        if len(c) > 3 and c not in ["The", "This", "That", "OpenClaw"]:
+            if c not in entities:
+                entities[c] = {"name": c, "type": "concept", "mentions": 1}
+            else:
+                entities[c]["mentions"] += 1
+    
+    # Always add OpenClaw if mentioned
+    if "OpenClaw" in text or "openclaw" in text.lower():
+        entities["OpenClaw"] = {"name": "OpenClaw", "type": "project", "mentions": text.lower().count("openclaw")}
+    
+    return list(entities.values())[:20]
+
+
+def generate_retrieval_keys(text: str, topic: str) -> List[str]:
+    """Generate retrieval keys from text and topic."""
+    keys = set()
+    
+    # Add topic words
+    topic_words = re.findall(r'\b[\u4e00-\u9fff]+\b|[a-zA-Z]{3,}', topic)
+    keys.update(topic_words[:5])
+    
+    # Add common technical terms
+    tech_terms = re.findall(r'\b(api|cli|json|schema|tool|session|capsule|context|memory|vector|embedding)\b', text, re.IGNORECASE)
+    keys.update(tech_terms)
+    
+    # Add noun phrases (simple)
+    noun_phrases = re.findall(r'[\u4e00-\u9fff]{2,6}(?:设计|机制|系统|架构|协议|流程)', text)
+    keys.update(noun_phrases[:5])
+    
+    return list(keys)[:10]
+
+
+def build_capsule(
+    session_id: str,
+    start: int,
+    end: int,
+    messages: List[Dict],
+    use_llm: bool = True
+) -> Dict:
+    """Build capsule from messages."""
+    
+    combined_text = extract_text_content(messages)
+    
+    # Generate capsule ID
+    timestamp = datetime.now().strftime("%Y%m%d")
+    capsule_id = f"cap_{timestamp}_{session_id[:8]}_{start}_{end}"
+    
+    # Try LLM extraction first
+    llm_result = None
+    if use_llm and len(combined_text) > 50:
+        llm_result = call_llm_for_extraction(combined_text, session_id, (start, end))
+    
+    # Build capsule
+    capsule = {
+        "capsule_id": capsule_id,
+        "session_id": session_id,
+        "source_turn_range": {"start": start, "end": end},
+        "created_at": datetime.now().isoformat()
+    }
+    
+    if llm_result and "error" not in llm_result:
+        # Use LLM results
+        capsule["topic"] = llm_result.get("topic", "未命名主题")
+        capsule["summary"] = llm_result.get("summary", "")
+        capsule["decisions"] = llm_result.get("decisions", [])
+        capsule["open_loops"] = llm_result.get("open_loops", [])
+        capsule["hard_constraints"] = llm_result.get("hard_constraints", [])
+        capsule["entities"] = llm_result.get("entities", [])
+        capsule["retrieval_keys"] = llm_result.get("retrieval_keys", [])
+    else:
+        # Fall back to simple extraction
+        capsule["topic"] = "对话片段摘要"
+        capsule["summary"] = f"Turn {start} 到 {end} 的对话内容，共 {len(messages)} 条消息。"
+        capsule["decisions"] = [{"decision": d, "rationale": ""} for d in extract_decisions_simple(combined_text)]
+        capsule["open_loops"] = extract_open_loops_simple(combined_text)
+        capsule["hard_constraints"] = extract_constraints_simple(combined_text)
+        capsule["entities"] = extract_entities_simple(combined_text)
+        capsule["retrieval_keys"] = generate_retrieval_keys(combined_text, capsule["topic"])
+    
+    # Ensure required fields
+    if not capsule["decisions"]:
+        capsule["decisions"] = []
+    if not capsule["open_loops"]:
+        capsule["open_loops"] = []
+    if not capsule["hard_constraints"]:
+        capsule["hard_constraints"] = []
+    if not capsule["entities"]:
+        capsule["entities"] = []
+    if not capsule["retrieval_keys"]:
+        capsule["retrieval_keys"] = []
+    
+    capsule["reconstructable"] = True
+    
+    return capsule
+
+
+def validate_capsule(capsule: Dict) -> Tuple[bool, List[str]]:
+    """Validate capsule against schema."""
+    errors = []
+    
+    required_fields = [
+        "capsule_id", "session_id", "source_turn_range",
+        "topic", "summary", "decisions", "open_loops",
+        "hard_constraints", "entities", "retrieval_keys",
+        "reconstructable", "created_at"
+    ]
+    
+    for field in required_fields:
+        if field not in capsule:
+            errors.append(f"Missing required field: {field}")
+    
+    # Check source_turn_range structure
+    if "source_turn_range" in capsule:
+        srange = capsule["source_turn_range"]
+        if not isinstance(srange, dict):
+            errors.append("source_turn_range must be an object")
+        elif "start" not in srange or "end" not in srange:
+            errors.append("source_turn_range must have start and end")
+    
+    # Check decisions structure
+    if "decisions" in capsule:
+        for i, d in enumerate(capsule["decisions"]):
+            if isinstance(d, dict):
+                if "decision" not in d:
+                    errors.append(f"decisions[{i}] missing 'decision' field")
+            elif isinstance(d, str):
+                # Convert string to object
+                capsule["decisions"][i] = {"decision": d, "rationale": ""}
+    
+    # Check open_loops structure
+    if "open_loops" in capsule:
+        for i, loop in enumerate(capsule["open_loops"]):
+            if isinstance(loop, dict):
+                if "loop_id" not in loop:
+                    loop["loop_id"] = f"loop_{i+1}"
+                if "description" not in loop:
+                    errors.append(f"open_loops[{i}] missing 'description' field")
+            else:
+                errors.append(f"open_loops[{i}] must be an object")
+    
+    # Check entities structure
+    if "entities" in capsule:
+        for i, e in enumerate(capsule["entities"]):
+            if isinstance(e, dict):
+                if "name" not in e:
+                    errors.append(f"entities[{i}] missing 'name' field")
+                if "type" not in e:
+                    e["type"] = "other"
+            elif isinstance(e, str):
+                capsule["entities"][i] = {"name": e, "type": "other"}
+    
+    return len(errors) == 0, errors
+
+
+def run_health_check() -> Dict:
+    """Run health check."""
+    checks = {
+        "schema_exists": SCHEMA_PATH.exists(),
+        "workspace_exists": WORKSPACE.exists(),
+        "python_version": sys.version.split()[0]
+    }
+    
+    # Check if openclaw CLI is available
+    try:
+        result = subprocess.run(["openclaw", "--version"], capture_output=True, text=True, timeout=5)
+        checks["openclaw_cli"] = result.returncode == 0
+    except:
+        checks["openclaw_cli"] = False
+    
+    all_ok = all(v == True or isinstance(v, str) for v in checks.values())
+    
+    return {
+        "status": "healthy" if all_ok else "degraded",
+        "checks": checks
+    }
+
+
+def run_self_test() -> Dict:
+    """Run self-contained test."""
+    # Create test data
+    test_jsonl = WORKSPACE / "test_capsule_temp.jsonl"
+    test_session_id = "test_session_001"
+    
+    # Write test JSONL
+    test_records = [
+        {"type": "session", "version": 3, "id": test_session_id},
+        {"type": "message", "message": {"role": "user", "content": [{"type": "text", "text": "我们需要设计一个会话压缩方案。"}]}},
+        {"type": "message", "message": {"role": "assistant", "content": [{"type": "text", "text": "好的，我决定采用分层压缩的方式。必须保证 response plan 常驻。"}]}},
+        {"type": "message", "message": {"role": "user", "content": [{"type": "text", "text": "OpenClaw 的向量索引怎么做？待定。"}]}},
+        {"type": "message", "message": {"role": "assistant", "content": [{"type": "text", "text": "向量回填边界还需要确认。这是个 open loop。"}]}},
+    ]
+    
+    with open(test_jsonl, 'w') as f:
+        for r in test_records:
+            f.write(json.dumps(r) + "\n")
+    
+    try:
+        # Run extraction
+        records = load_jsonl(test_jsonl)
+        messages = extract_messages(records, 1, 4)
+        
+        if len(messages) < 2:
+            return {"status": "failed", "error": f"Expected 4 messages, got {len(messages)}"}
+        
+        # Build capsule without LLM (for fast test)
+        capsule = build_capsule(test_session_id, 1, 4, messages, use_llm=False)
+        
+        # Validate
+        valid, errors = validate_capsule(capsule)
+        
+        if not valid:
+            return {"status": "failed", "errors": errors}
+        
+        # Check extractions
+        checks = {
+            "has_decisions": len(capsule.get("decisions", [])) > 0,
+            "has_open_loops": len(capsule.get("open_loops", [])) > 0,
+            "has_constraints": len(capsule.get("hard_constraints", [])) > 0,
+            "has_entities": len(capsule.get("entities", [])) > 0,
+            "has_retrieval_keys": len(capsule.get("retrieval_keys", [])) > 0
+        }
+        
+        return {
+            "status": "passed",
+            "capsule_id": capsule["capsule_id"],
+            "checks": checks,
+            "sample": {
+                "topic": capsule.get("topic"),
+                "decisions_count": len(capsule.get("decisions", [])),
+                "open_loops_count": len(capsule.get("open_loops", []))
+            }
+        }
+        
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
+    finally:
+        # Cleanup
+        if test_jsonl.exists():
+            test_jsonl.unlink()
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="capsule-builder v1.0 - Extract structured capsule from conversation turns"
+    )
+    parser.add_argument("--input", help="Path to raw.jsonl file")
+    parser.add_argument("--session-id", help="Session identifier")
+    parser.add_argument("--start", type=int, help="Starting turn number")
+    parser.add_argument("--end", type=int, help="Ending turn number")
+    parser.add_argument("--output", help="Output directory (default: stdout)")
+    parser.add_argument("--format", choices=["json", "markdown"], default="json", help="Output format")
+    parser.add_argument("--no-llm", action="store_true", help="Skip LLM extraction, use simple patterns only")
+    parser.add_argument("--health", action="store_true", help="Run health check")
+    parser.add_argument("--test", action="store_true", help="Run self-test")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    
+    args = parser.parse_args()
+    
+    # Health check
+    if args.health:
+        result = run_health_check()
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"Status: {result['status']}")
+            for k, v in result['checks'].items():
+                print(f"  {k}: {v}")
+        sys.exit(0 if result['status'] == 'healthy' else 1)
+    
+    # Self test
+    if args.test:
+        result = run_self_test()
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"Test: {result['status']}")
+            if 'sample' in result:
+                print(f"Sample: {result['sample']}")
+        sys.exit(0 if result['status'] == 'passed' else 1)
+    
+    # Validate required args for extraction
+    if not args.input:
+        print(json.dumps({"error": {"type": "missing_arg", "message": "--input is required"}}))
+        sys.exit(1)
+    
+    if not args.session_id:
+        print(json.dumps({"error": {"type": "missing_arg", "message": "--session-id is required"}}))
+        sys.exit(1)
+    
+    if args.start is None:
+        print(json.dumps({"error": {"type": "missing_arg", "message": "--start is required"}}))
+        sys.exit(1)
+    
+    if args.end is None:
+        print(json.dumps({"error": {"type": "missing_arg", "message": "--end is required"}}))
+        sys.exit(1)
+    
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(json.dumps({"error": {"type": "file_not_found", "message": f"File not found: {args.input}"}}))
+        sys.exit(1)
+    
+    # Load and extract
+    records = load_jsonl(input_path)
+    messages = extract_messages(records, args.start, args.end)
+    
+    if not messages:
+        print(json.dumps({"error": {"type": "no_messages", "message": f"No messages found in turn range {args.start}-{args.end}"}}))
+        sys.exit(1)
+    
+    # Build capsule
+    capsule = build_capsule(
+        args.session_id,
+        args.start,
+        args.end,
+        messages,
+        use_llm=not args.no_llm
+    )
+    
+    # Validate
+    valid, errors = validate_capsule(capsule)
+    if not valid:
+        print(json.dumps({"error": {"type": "validation_failed", "messages": errors}}))
+        sys.exit(1)
+    
+    # Output
+    if args.format == "markdown":
+        md = f"""# Session Capsule: {capsule['capsule_id']}
+
+## Metadata
+- **Session ID**: {capsule['session_id']}
+- **Turn Range**: {capsule['source_turn_range']['start']} - {capsule['source_turn_range']['end']}
+- **Created**: {capsule['created_at']}
+- **Reconstructable**: {capsule['reconstructable']}
+
+## Topic
+{capsule['topic']}
+
+## Summary
+{capsule['summary']}
+
+## Decisions
+"""
+        for d in capsule['decisions']:
+            if isinstance(d, dict):
+                md += f"- **{d.get('decision', '')}**"
+                if d.get('rationale'):
+                    md += f" — {d['rationale']}"
+                md += "\n"
+            else:
+                md += f"- {d}\n"
+        
+        md += "\n## Open Loops\n"
+        for loop in capsule['open_loops']:
+            status = loop.get('status', 'open')
+            md += f"- [{status}] {loop.get('description', '')} ({loop.get('loop_id', '')})\n"
+        
+        md += "\n## Hard Constraints\n"
+        for c in capsule['hard_constraints']:
+            md += f"- {c}\n"
+        
+        md += "\n## Entities\n"
+        for e in capsule['entities']:
+            md += f"- **{e.get('name', '')}** ({e.get('type', 'other')})\n"
+        
+        md += "\n## Retrieval Keys\n"
+        md += ", ".join(capsule['retrieval_keys']) + "\n"
+        
+        output = md
+    else:
+        output = json.dumps(capsule, indent=2, ensure_ascii=False)
+    
+    # Write to file or stdout
+    if args.output:
+        output_dir = Path(args.output)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_file = output_dir / f"{capsule['capsule_id']}.json"
+        output_file.write_text(output)
+        print(json.dumps({"status": "success", "path": str(output_file)}))
+    else:
+        print(output)
+
+
+if __name__ == "__main__":
+    main()

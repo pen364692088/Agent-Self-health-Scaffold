@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "compression_event.v1.schema.json",
+  "title": "Compression Event",
+  "description": "Log entry for context compression events",
+  "type": "object",
+  "required": [
+    "event_id",
+    "session_id",
+    "trigger",
+    "pressure_level",
+    "before",
+    "after",
+    "resident_kept",
+    "capsules_created",
+    "evicted_turn_ranges",
+    "mode",
+    "created_at"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique event identifier"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session where compression occurred"
+    },
+    "trigger": {
+      "type": "string",
+      "enum": ["threshold_70", "threshold_85", "threshold_92", "manual", "turn_limit"],
+      "description": "What triggered the compression"
+    },
+    "pressure_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Context pressure level at event time"
+    },
+    "before": {
+      "type": "object",
+      "required": ["estimated_tokens", "turn_count"],
+      "properties": {
+        "estimated_tokens": { "type": "integer" },
+        "turn_count": { "type": "integer" },
+        "ratio": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "after": {
+      "type": "object",
+      "required": ["estimated_tokens", "turn_count"],
+      "properties": {
+        "estimated_tokens": { "type": "integer" },
+        "turn_count": { "type": "integer" },
+        "ratio": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "resident_kept": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "description": "Turn numbers kept in resident context"
+    },
+    "capsules_created": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Capsule IDs created during compression"
+    },
+    "evicted_turn_ranges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["start", "end"],
+        "properties": {
+          "start": { "type": "integer" },
+          "end": { "type": "integer" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Turn ranges evicted from context"
+    },
+    "vector_indexed": {
+      "type": "boolean",
+      "description": "Whether evicted content was indexed in vector DB"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["gradual", "aggressive", "emergency"],
+      "description": "Compression mode used"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "description": "Compression duration in milliseconds"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
