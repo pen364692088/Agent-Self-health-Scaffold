@@ -1,0 +1,473 @@
+#!/usr/bin/env python3
+"""
+S1 Auto Sampler - 自动收集 S1 验证样本
+
+收集两类样本：
+1. Real: 从真实 session 中只读复制符合 bucket 的片段
+2. Synthetic: 按模板生成压力样本，优先补最弱桶
+
+Usage:
+  s1-sampler --mode real --limit 10
+  s1-sampler --mode synthetic --limit 20 --priority-weakest
+  s1-sampler --mode both --target 80
+"""
+
+import argparse
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime
+import hashlib
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SESSION_INDEX = WORKSPACE / ".session-index" / "sessions"
+VALIDATION_DIR = WORKSPACE / "artifacts" / "context_compression" / "validation"
+SAMPLES_DIR = VALIDATION_DIR / "samples"
+BASELINE_COMMIT = "31a604a"
+
+# Bucket 定义
+BUCKETS = {
+    "old_topic_recall": {"min": 15, "description": "旧话题切回"},
+    "multi_topic_switch": {"min": 12, "description": "多主题跳转"},
+    "with_open_loops": {"count": 0, "min": 12, "description": "有未完成承诺"},
+    "post_tool_chat": {"min": 10, "description": "工具调用后继续"},
+    "user_correction": {"min": 10, "description": "用户修改约束"},
+    "long_technical": {"min": 8, "description": "长技术对话"}
+}
+
+# Synthetic 样本模板
+SYNTHETIC_TEMPLATES = {
+    "old_topic_recall": [
+        {
+            "description": "前 30 轮讨论 A，31-50 轮 B，51 轮回 A",
+            "turns_pattern": "A:30 -> B:20 -> A:1",
+            "has_commitment": True,
+            "expected_recall": ["decisions_made_in_A", "commitments_in_A"]
+        },
+        {
+            "description": "前 50 轮讨论 A，51-100 轮 B，101 轮回 A",
+            "turns_pattern": "A:50 -> B:50 -> A:1",
+            "has_commitment": True,
+            "expected_recall": ["decisions_made_in_A", "open_loops_in_A"]
+        }
+    ],
+    "multi_topic_switch": [
+        {
+            "description": "A -> B -> A -> C -> A",
+            "turns_pattern": "A:10 -> B:10 -> A:10 -> C:10 -> A:5",
+            "expected_merges": ["decisions_from_all_A_segments"]
+        }
+    ],
+    "with_open_loops": [
+        {
+            "description": "对话中有未完成承诺",
+            "open_loops_count": 3,
+            "expected_preservation": ["all_open_loops"]
+        }
+    ],
+    "post_tool_chat": [
+        {
+            "description": "工具报错后继续追问",
+            "tool_error": True,
+            "followup_turns": 3
+        },
+        {
+            "description": "工具成功后继续讨论",
+            "tool_success": True,
+            "followup_turns": 5
+        }
+    ],
+    "user_correction": [
+        {
+            "description": "用户修改约束",
+            "constraint_change": "initial -> modified",
+            "expected_behavior": "use_latest_constraint"
+        }
+    ],
+    "long_technical": [
+        {
+            "description": "包含文件名/路径/模块名",
+            "technical_entities": ["tools/", "schemas/", "POLICIES/"],
+            "expected_preservation": ["all_entities"]
+        }
+    ]
+}
+
+
+class S1Sampler:
+    """S1 自动采样器"""
+    
+    def __init__(self):
+        self.samples = []
+        self.bucket_counts = {b: 0 for b in BUCKETS}
+        
+    def find_weakest_bucket(self):
+        """找到当前最弱的桶"""
+        min_ratio = float('inf')
+        weakest = None
+        for bucket, config in BUCKETS.items():
+            ratio = self.bucket_counts[bucket] / config["min"]
+            if ratio < min_ratio:
+                min_ratio = ratio
+                weakest = bucket
+        return weakest
+    
+    def generate_sample_id(self, source_type, bucket):
+        """生成唯一样本 ID"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique = hashlib.md5(f"{timestamp}{bucket}".encode()).hexdigest()[:8]
+        return f"sample_{source_type}_{bucket}_{unique}"
+    
+    def create_sample_metadata(self, sample_id, session_id, source_type, bucket_tags):
+        """创建样本元数据"""
+        return {
+            "sample_id": sample_id,
+            "session_id": session_id,
+            "source_type": source_type,
+            "bucket_tags": bucket_tags,
+            "baseline_commit": BASELINE_COMMIT,
+            "retrieve_mode": "capsule_only",
+            "created_at": datetime.now().isoformat()
+        }
+    
+    def sample_real(self, limit=10):
+        """从真实 session 中收集样本"""
+        samples = []
+        
+        # 扫描 session 索引
+        if not SESSION_INDEX.exists():
+            print("Warning: Session index not found")
+            return samples
+        
+        session_files = sorted(SESSION_INDEX.glob("*.jsonl"), 
+                               key=lambda x: x.stat().st_mtime, 
+                               reverse=True)[:limit * 5]  # 扫描足够多的文件
+        
+        for session_file in session_files[:limit]:
+            session_id = session_file.stem
+            
+            # 分析 session 内容
+            with open(session_file, 'r') as f:
+                events = [json.loads(line) for line in f if line.strip()]
+            
+            # 检测 bucket 标签
+            bucket_tags = self._detect_buckets(events)
+            
+            if bucket_tags:  # 只收集符合某个桶的样本
+                sample_id = self.generate_sample_id("real", bucket_tags[0])
+                metadata = self.create_sample_metadata(
+                    sample_id, session_id, "real", bucket_tags
+                )
+                
+                samples.append({
+                    "metadata": metadata,
+                    "events": events[:100]  # 只保留前 100 个事件
+                })
+                
+                # 更新桶计数
+                for bucket in bucket_tags:
+                    self.bucket_counts[bucket] += 1
+        
+        return samples
+    
+    def sample_synthetic(self, limit=20, priority_weakest=True):
+        """生成 synthetic 样本"""
+        samples = []
+        
+        for _ in range(limit):
+            # 选择桶
+            if priority_weakest:
+                bucket = self.find_weakest_bucket()
+            else:
+                bucket = list(BUCKETS.keys())[len(samples) % len(BUCKETS)]
+            
+            # 获取模板
+            templates = SYNTHETIC_TEMPLATES.get(bucket, [])
+            if not templates:
+                continue
+            
+            template = templates[len(samples) % len(templates)]
+            
+            # 生成样本
+            sample_id = self.generate_sample_id("synthetic", bucket)
+            session_id = f"synthetic_{bucket}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            metadata = self.create_sample_metadata(
+                sample_id, session_id, "synthetic", [bucket]
+            )
+            
+            # 生成模拟事件
+            events = self._generate_synthetic_events(session_id, bucket, template)
+            
+            samples.append({
+                "metadata": metadata,
+                "events": events,
+                "template": template
+            })
+            
+            # 更新桶计数
+            self.bucket_counts[bucket] += 1
+        
+        return samples
+    
+    def _detect_buckets(self, events):
+        """检测事件属于哪些桶"""
+        buckets = []
+        
+        # 简单检测逻辑
+        topics = set()
+        has_open_loops = False
+        has_tool_error = False
+        has_user_correction = False
+        has_technical_terms = False
+        
+        for event in events[:50]:  # 只看前 50 个事件
+            content = str(event.get("content", "") or event.get("content_preview", ""))
+            
+            # 多主题检测
+            topic = event.get("topic", "")
+            if topic:
+                topics.add(topic)
+            
+            # open loops
+            if "open_loop" in content.lower() or "未完成" in content:
+                has_open_loops = True
+            
+            # 工具错误
+            if event.get("status") == "error" or "error" in content.lower():
+                has_tool_error = True
+            
+            # 用户修正
+            if "不对" in content or "改一下" in content or "不是" in content:
+                has_user_correction = True
+            
+            # 技术术语
+            if any(term in content for term in ["tools/", "schemas/", "POLICIES/", ".py", ".json"]):
+                has_technical_terms = True
+        
+        # 分类
+        if len(topics) >= 3:
+            buckets.append("multi_topic_switch")
+        if has_open_loops:
+            buckets.append("with_open_loops")
+        if has_tool_error:
+            buckets.append("post_tool_chat")
+        if has_user_correction:
+            buckets.append("user_correction")
+        if has_technical_terms:
+            buckets.append("long_technical")
+        
+        # 默认：如果没有匹配任何桶，标记为 old_topic_recall（需要人工确认）
+        if not buckets:
+            buckets.append("old_topic_recall")
+        
+        return buckets
+    
+    def _generate_synthetic_events(self, session_id, bucket, template):
+        """生成 synthetic 事件"""
+        events = []
+        base_time = datetime.now()
+        
+        # 根据 bucket 类型生成不同的事件
+        if bucket == "old_topic_recall":
+            # 模拟 A -> B -> A 切换
+            for i in range(30):  # Phase A
+                events.append({
+                    "turn": i + 1,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"讨论主题 A: 压缩设计 第 {i+1} 轮",
+                    "topic": "compression_design"
+                })
+            
+            # 添加决策和承诺
+            events.append({
+                "turn": 30,
+                "role": "assistant",
+                "content": "决定：使用三层模型",
+                "decision": True
+            })
+            events.append({
+                "turn": 31,
+                "role": "user",
+                "content": "好的，下一步要完成 S1 验证",
+                "open_loop": True
+            })
+            
+            # Phase B
+            for i in range(31, 51):
+                events.append({
+                    "turn": i,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"讨论主题 B: 检索设计 第 {i-30} 轮",
+                    "topic": "retrieval_design"
+                })
+            
+            # 切回 A
+            events.append({
+                "turn": 51,
+                "role": "user",
+                "content": "回到压缩设计，我们决定了什么？",
+                "topic": "compression_design",
+                "is_recall": True
+            })
+        
+        elif bucket == "with_open_loops":
+            # 生成带未完成承诺的对话
+            for i in range(20):
+                events.append({
+                    "turn": i + 1,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"讨论内容 {i+1}"
+                })
+            
+            # 添加未完成承诺
+            for j in range(3):
+                events.append({
+                    "turn": 21 + j,
+                    "role": "user",
+                    "content": f"TODO: 完成任务 {j+1}",
+                    "open_loop": True,
+                    "priority": "high" if j == 0 else "medium"
+                })
+        
+        elif bucket == "post_tool_chat":
+            # 工具调用后继续
+            events.append({
+                "turn": 1,
+                "role": "user",
+                "content": "运行 context-compress"
+            })
+            events.append({
+                "turn": 2,
+                "role": "tool",
+                "tool_name": "context-compress",
+                "status": "error",
+                "error": "OpenViking timeout"
+            })
+            events.append({
+                "turn": 3,
+                "role": "user",
+                "content": "为什么失败了？"
+            })
+            events.append({
+                "turn": 4,
+                "role": "assistant",
+                "content": "OpenViking 服务超时"
+            })
+            events.append({
+                "turn": 5,
+                "role": "user",
+                "content": "那怎么办？"
+            })
+        
+        elif bucket == "user_correction":
+            # 用户修改约束
+            events.append({
+                "turn": 1,
+                "role": "user",
+                "content": "必须使用 OpenViking"
+            })
+            events.append({
+                "turn": 2,
+                "role": "assistant",
+                "content": "好的，使用 OpenViking 作为向量后端"
+            })
+            events.append({
+                "turn": 3,
+                "role": "user",
+                "content": "不对，改成 capsule fallback 优先，OpenViking 可选"
+            })
+        
+        elif bucket == "long_technical":
+            # 技术对话
+            technical_paths = [
+                "tools/context-budget-check",
+                "schemas/session_capsule.v1.schema.json",
+                "POLICIES/CONTEXT_COMPRESSION.md"
+            ]
+            for i, path in enumerate(technical_paths):
+                events.append({
+                    "turn": i + 1,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"创建 {path}",
+                    "technical_entity": path
+                })
+        
+        elif bucket == "multi_topic_switch":
+            # 多主题切换
+            topics = ["compression", "retrieval", "compression", "metrics", "compression"]
+            for i, topic in enumerate(topics):
+                for j in range(10 if i < 4 else 5):
+                    events.append({
+                        "turn": len(events) + 1,
+                        "role": "user" if j % 2 == 0 else "assistant",
+                        "content": f"讨论 {topic} 第 {j+1} 轮",
+                        "topic": topic
+                    })
+        
+        return events
+    
+    def save_samples(self, samples, output_dir):
+        """保存样本"""
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        for sample in samples:
+            sample_id = sample["metadata"]["sample_id"]
+            output_file = output_dir / f"{sample_id}.json"
+            
+            with open(output_file, 'w') as f:
+                json.dump(sample, f, indent=2, ensure_ascii=False)
+        
+        print(f"Saved {len(samples)} samples to {output_dir}")
+    
+    def print_status(self):
+        """打印当前状态"""
+        print("\n=== Bucket Coverage ===")
+        for bucket, count in self.bucket_counts.items():
+            min_required = BUCKETS[bucket]["min"]
+            status = "✅" if count >= min_required else "❌"
+            print(f"  {status} {bucket}: {count}/{min_required}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="S1 Auto Sampler")
+    parser.add_argument("--mode", choices=["real", "synthetic", "both"], default="both")
+    parser.add_argument("--limit", type=int, default=20, help="Samples to collect")
+    parser.add_argument("--priority-weakest", action="store_true", default=True,
+                       help="Prioritize weakest bucket")
+    parser.add_argument("--output", type=str, 
+                       default=str(SAMPLES_DIR),
+                       help="Output directory")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    
+    args = parser.parse_args()
+    
+    sampler = S1Sampler()
+    all_samples = []
+    
+    if args.mode in ["real", "both"]:
+        real_samples = sampler.sample_real(limit=args.limit // 2 if args.mode == "both" else args.limit)
+        all_samples.extend(real_samples)
+        print(f"Collected {len(real_samples)} real samples")
+    
+    if args.mode in ["synthetic", "both"]:
+        synthetic_samples = sampler.sample_synthetic(
+            limit=args.limit // 2 if args.mode == "both" else args.limit,
+            priority_weakest=args.priority_weakest
+        )
+        all_samples.extend(synthetic_samples)
+        print(f"Generated {len(synthetic_samples)} synthetic samples")
+    
+    sampler.save_samples(all_samples, Path(args.output))
+    sampler.print_status()
+    
+    if args.json:
+        print(json.dumps({
+            "total_samples": len(all_samples),
+            "bucket_counts": sampler.bucket_counts
+        }, indent=2))
+
+
+if __name__ == "__main__":
+    main()

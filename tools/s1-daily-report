@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""
+S1 Daily Report - 自动生成 S1 验证日报
+
+Usage:
+  s1-daily-report
+  s1-daily-report --date 2026-03-06
+  s1-daily-report --output reports/daily/
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+VALIDATION_DIR = WORKSPACE / "artifacts" / "context_compression" / "validation"
+REPORTS_DIR = VALIDATION_DIR / "reports"
+SAMPLES_DIR = VALIDATION_DIR / "samples"
+
+BUCKET_MINIMUMS = {
+    "old_topic_recall": 15,
+    "multi_topic_switch": 12,
+    "with_open_loops": 12,
+    "post_tool_chat": 10,
+    "user_correction": 10,
+    "long_technical": 8
+}
+
+
+class S1DailyReport:
+    """S1 日报生成器"""
+    
+    def __init__(self, date: str = None):
+        self.date = date or datetime.now().strftime("%Y-%m-%d")
+        self.reports = self._load_reports()
+        self.samples = self._load_samples()
+    
+    def _load_reports(self) -> List[Dict]:
+        """加载今日报告"""
+        reports = []
+        if not REPORTS_DIR.exists():
+            return reports
+        
+        for report_file in REPORTS_DIR.glob("*_report.json"):
+            with open(report_file, 'r') as f:
+                report = json.load(f)
+                # 过滤今日报告
+                report_date = report.get("validated_at", "")[:10]
+                if report_date == self.date:
+                    reports.append(report)
+        
+        return reports
+    
+    def _load_samples(self) -> List[Dict]:
+        """加载样本"""
+        samples = []
+        if not SAMPLES_DIR.exists():
+            return samples
+        
+        for sample_file in SAMPLES_DIR.glob("sample_*.json"):
+            with open(sample_file, 'r') as f:
+                sample = json.load(f)
+                sample_date = sample.get("metadata", {}).get("created_at", "")[:10]
+                if sample_date == self.date:
+                    samples.append(sample)
+        
+        return samples
+    
+    def generate(self) -> str:
+        """生成日报"""
+        # 统计
+        total_samples = len(self.samples)
+        total_reports = len(self.reports)
+        
+        # 分桶统计
+        bucket_counts = {b: 0 for b in BUCKET_MINIMUMS}
+        bucket_status = {}
+        
+        for sample in self.samples:
+            bucket_tags = sample.get("metadata", {}).get("bucket_tags", [])
+            for bucket in bucket_tags:
+                if bucket in bucket_counts:
+                    bucket_counts[bucket] += 1
+        
+        for bucket, count in bucket_counts.items():
+            min_required = BUCKET_MINIMUMS[bucket]
+            bucket_status[bucket] = {
+                "count": count,
+                "min": min_required,
+                "passed": count >= min_required
+            }
+        
+        # 评分统计
+        avg_scores = {}
+        if self.reports:
+            metrics = [
+                "old_topic_recovery",
+                "commitment_preservation",
+                "commitment_drift",
+                "priority_preservation",
+                "compression_gain_ratio",
+                "source_mix_distribution"
+            ]
+            
+            for metric in metrics:
+                values = [r["scores"].get(metric, 0) for r in self.reports]
+                avg_scores[metric] = sum(values) / len(values) if values else 0
+        
+        # Hard fails
+        hard_fails = sum(1 for r in self.reports if r.get("hard_fail"))
+        
+        # 生成 Markdown
+        md = f"""# S1 Validation Daily Report
+
+**Date**: {self.date}
+**Baseline**: 31a604a
+**Mode**: capsule-only
+
+---
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Total Samples | {total_samples} |
+| Total Reports | {total_reports} |
+| Hard Fails | {hard_fails} |
+| Buckets Passed | {sum(1 for s in bucket_status.values() if s["passed"])}/6 |
+
+---
+
+## Bucket Coverage
+
+| Bucket | Count | Min | Status |
+|--------|-------|-----|--------|
+"""
+        
+        for bucket, status in bucket_status.items():
+            icon = "✅" if status["passed"] else "❌"
+            md += f"| {bucket} | {status['count']} | {status['min']} | {icon} |\n"
+        
+        md += f"""
+---
+
+## Average Scores
+
+| Metric | Value | Threshold |
+|--------|-------|-----------|
+| old_topic_recovery | {avg_scores.get('old_topic_recovery', 0):.3f} | >= 0.70 |
+| commitment_preservation | {avg_scores.get('commitment_preservation', 0):.3f} | >= 0.85 |
+| commitment_drift | {avg_scores.get('commitment_drift', 0):.3f} | < 0.05 |
+| priority_preservation | {avg_scores.get('priority_preservation', 0):.3f} | >= 0.80 |
+| compression_gain_ratio | {avg_scores.get('compression_gain_ratio', 0):.3f} | >= 0.30 |
+| source_mix_distribution | {avg_scores.get('source_mix_distribution', 0):.3f} | >= 0.90 |
+
+---
+
+## Samples by Source
+
+| Source | Count |
+|--------|-------|
+| Real | {sum(1 for s in self.samples if s.get('metadata', {}).get('source_type') == 'real')} |
+| Synthetic | {sum(1 for s in self.samples if s.get('metadata', {}).get('source_type') == 'synthetic')} |
+
+---
+
+## Recommendations
+
+"""
+        
+        # 生成建议
+        if total_samples < 80:
+            md += f"- **Priority**: Collect more samples ({80 - total_samples} more needed)\n"
+        
+        failed_buckets = [b for b, s in bucket_status.items() if not s["passed"]]
+        if failed_buckets:
+            md += f"- **Focus**: Prioritize samples for: {', '.join(failed_buckets)}\n"
+        
+        if avg_scores.get("commitment_preservation", 0) < 0.85:
+            md += "- **Warning**: commitment_preservation below threshold\n"
+        
+        if avg_scores.get("commitment_drift", 0) > 0.05:
+            md += "- **Warning**: commitment_drift above threshold\n"
+        
+        if hard_fails > 0:
+            md += f"- **Alert**: {hard_fails} hard fails detected\n"
+        
+        md += f"""
+---
+
+## Next Actions
+
+1. Run: `s1-sampler --mode synthetic --priority-weakest --limit 20`
+2. Run: `s1-validator-run --all`
+3. Run: `gate-eval`
+
+---
+
+*Generated by s1-daily-report at {datetime.now().isoformat()}*
+"""
+        
+        return md
+    
+    def save(self, output_dir: Path = None):
+        """保存日报"""
+        output_dir = output_dir or REPORTS_DIR / "daily"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        md = self.generate()
+        output_file = output_dir / f"{self.date}.md"
+        
+        with open(output_file, 'w') as f:
+            f.write(md)
+        
+        print(f"Daily report saved: {output_file}")
+        return output_file
+
+
+def main():
+    parser = argparse.ArgumentParser(description="S1 Daily Report")
+    parser.add_argument("--date", type=str, help="Date (YYYY-MM-DD)")
+    parser.add_argument("--output", type=str, help="Output directory")
+    
+    args = parser.parse_args()
+    
+    report = S1DailyReport(args.date)
+    
+    output_dir = Path(args.output) if args.output else None
+    report.save(output_dir)
+    
+    # 打印摘要
+    print("\n" + "=" * 50)
+    print(f"S1 Daily Report: {report.date}")
+    print("=" * 50)
+    print(f"Samples: {len(report.samples)}")
+    print(f"Reports: {len(report.reports)}")
+
+
+if __name__ == "__main__":
+    main()

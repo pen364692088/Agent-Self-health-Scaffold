@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "sample_id": "sample_synthetic_post_tool_chat_d35dffb5",
+    "session_id": "synthetic_post_tool_chat_20260306123302",
+    "source_type": "synthetic",
+    "bucket_tags": [
+      "post_tool_chat"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "created_at": "2026-03-06T12:33:02.523337"
+  },
+  "events": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "运行 context-compress"
+    },
+    {
+      "turn": 2,
+      "role": "tool",
+      "tool_name": "context-compress",
+      "status": "error",
+      "error": "OpenViking timeout"
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "为什么失败了？"
+    },
+    {
+      "turn": 4,
+      "role": "assistant",
+      "content": "OpenViking 服务超时"
+    },
+    {
+      "turn": 5,
+      "role": "user",
+      "content": "那怎么办？"
+    }
+  ],
+  "template": {
+    "description": "工具成功后继续讨论",
+    "tool_success": true,
+    "followup_turns": 5
+  }
+}

@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+"""
+Gate 1 Evaluator - 独立 Gate 1 判定脚本
+
+验证 agent 不得自认证 PASS，必须由此独立脚本判定。
+
+Usage:
+  gate-eval
+  gate-eval --json
+  gate-eval --report-dir <dir>
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+VALIDATION_DIR = WORKSPACE / "artifacts" / "context_compression" / "validation"
+REPORTS_DIR = VALIDATION_DIR / "reports"
+SAMPLES_DIR = VALIDATION_DIR / "samples"
+BASELINE_MANIFEST = WORKSPACE / "artifacts" / "context_compression" / "S1_BASELINE_MANIFEST.json"
+
+# Gate 1 阈值（从 baseline manifest 加载）
+DEFAULT_THRESHOLDS = {
+    "total_unique_samples": 80,
+    "capsule_only_old_topic_recovery": 0.70,
+    "capsule_only_commitment_preservation": 0.85,
+    "commitment_drift_rate": 0.05,
+    "priority_preservation_rate": 0.80,
+    "compression_gain_ratio": 0.30,
+    "source_mix_distribution": 0.90,
+    "recent_window_size": 30
+}
+
+BUCKET_MINIMUMS = {
+    "old_topic_recall": 15,
+    "multi_topic_switch": 12,
+    "with_open_loops": 12,
+    "post_tool_chat": 10,
+    "user_correction": 10,
+    "long_technical": 8
+}
+
+
+class Gate1Evaluator:
+    """Gate 1 独立评估器"""
+    
+    def __init__(self, report_dir: Path = None):
+        self.report_dir = report_dir or REPORTS_DIR
+        self.reports = self._load_reports()
+        self.samples = self._load_samples()
+        self.thresholds = self._load_thresholds()
+        self.evaluation = {}
+    
+    def _load_reports(self) -> List[Dict]:
+        """加载所有报告"""
+        reports = []
+        if not self.report_dir.exists():
+            return reports
+        
+        for report_file in self.report_dir.glob("*_report.json"):
+            with open(report_file, 'r') as f:
+                reports.append(json.load(f))
+        
+        return reports
+    
+    def _load_samples(self) -> List[Dict]:
+        """加载所有样本"""
+        samples = []
+        if not SAMPLES_DIR.exists():
+            return samples
+        
+        for sample_file in SAMPLES_DIR.glob("sample_*.json"):
+            with open(sample_file, 'r') as f:
+                samples.append(json.load(f))
+        
+        return samples
+    
+    def _load_thresholds(self) -> Dict:
+        """加载阈值（优先从 baseline manifest）"""
+        if BASELINE_MANIFEST.exists():
+            with open(BASELINE_MANIFEST, 'r') as f:
+                manifest = json.load(f)
+                return manifest.get("gate_1_thresholds", DEFAULT_THRESHOLDS)
+        return DEFAULT_THRESHOLDS
+    
+    def check_condition_1_total_samples(self) -> Dict:
+        """条件 1: 总样本数 >= 80"""
+        unique_samples = set(s["metadata"]["sample_id"] for s in self.samples)
+        actual = len(unique_samples)
+        required = self.thresholds["total_unique_samples"]
+        
+        return {
+            "name": "total_unique_samples",
+            "required": required,
+            "actual": actual,
+            "passed": actual >= required
+        }
+    
+    def check_condition_2_bucket_coverage(self) -> Dict:
+        """条件 2: 所有桶都达标"""
+        bucket_counts = {b: 0 for b in BUCKET_MINIMUMS}
+        
+        for sample in self.samples:
+            metadata = sample.get("metadata", {})
+            bucket_tags = metadata.get("bucket_tags", [])
+            for bucket in bucket_tags:
+                if bucket in bucket_counts:
+                    bucket_counts[bucket] += 1
+        
+        bucket_status = {}
+        for bucket, min_required in BUCKET_MINIMUMS.items():
+            actual = bucket_counts[bucket]
+            bucket_status[bucket] = {
+                "required": min_required,
+                "actual": actual,
+                "passed": actual >= min_required
+            }
+        
+        all_passed = all(s["passed"] for s in bucket_status.values())
+        failed_buckets = [b for b, s in bucket_status.items() if not s["passed"]]
+        
+        return {
+            "name": "bucket_coverage",
+            "required": "all buckets covered",
+            "actual": bucket_status,
+            "passed": all_passed,
+            "failed_buckets": failed_buckets
+        }
+    
+    def check_condition_3_recent_window(self) -> Dict:
+        """条件 3: 连续窗口达标"""
+        # 获取最近的报告
+        recent_reports = sorted(
+            self.reports,
+            key=lambda r: r.get("validated_at", ""),
+            reverse=True
+        )[:self.thresholds["recent_window_size"]]
+        
+        if len(recent_reports) < self.thresholds["recent_window_size"]:
+            return {
+                "name": "recent_window_size",
+                "required": self.thresholds["recent_window_size"],
+                "actual": len(recent_reports),
+                "passed": False,
+                "reason": "insufficient_samples"
+            }
+        
+        # 计算窗口内的平均分数
+        avg_scores = {}
+        metrics = ["old_topic_recovery", "commitment_preservation", "commitment_drift"]
+        
+        for metric in metrics:
+            values = [r["scores"].get(metric, 0) for r in recent_reports]
+            avg_scores[metric] = sum(values) / len(values) if values else 0
+        
+        # 检查是否达标
+        passed = True
+        if avg_scores.get("old_topic_recovery", 0) < self.thresholds.get("capsule_only_old_topic_recovery", 0.70):
+            passed = False
+        if avg_scores.get("commitment_preservation", 0) < self.thresholds.get("capsule_only_commitment_preservation", 0.85):
+            passed = False
+        if avg_scores.get("commitment_drift", 1) > self.thresholds.get("commitment_drift_rate", 0.05):
+            passed = False
+        
+        return {
+            "name": "recent_window_metrics",
+            "required": "metrics passed in recent window",
+            "actual": {
+                "window_size": len(recent_reports),
+                "avg_scores": avg_scores
+            },
+            "passed": passed
+        }
+    
+    def check_condition_4_all_metrics(self) -> Dict:
+        """条件 4: 全量指标达标"""
+        if not self.reports:
+            return {
+                "name": "all_metrics",
+                "required": "metrics passed",
+                "actual": "no_reports",
+                "passed": False
+            }
+        
+        # 计算所有报告的平均分数
+        avg_scores = {}
+        metrics = [
+            "old_topic_recovery", 
+            "commitment_preservation",
+            "commitment_drift",
+            "priority_preservation",
+            "compression_gain_ratio",
+            "source_mix_distribution"
+        ]
+        
+        for metric in metrics:
+            values = [r["scores"].get(metric, 0) for r in self.reports]
+            avg_scores[metric] = sum(values) / len(values) if values else 0
+        
+        # 检查阈值
+        passed = True
+        failures = []
+        
+        if avg_scores.get("old_topic_recovery", 0) < self.thresholds.get("capsule_only_old_topic_recovery", 0.70):
+            passed = False
+            failures.append("old_topic_recovery")
+        
+        if avg_scores.get("commitment_preservation", 0) < self.thresholds.get("capsule_only_commitment_preservation", 0.85):
+            passed = False
+            failures.append("commitment_preservation")
+        
+        if avg_scores.get("commitment_drift", 1) > self.thresholds.get("commitment_drift_rate", 0.05):
+            passed = False
+            failures.append("commitment_drift")
+        
+        if avg_scores.get("priority_preservation", 0) < self.thresholds.get("priority_preservation_rate", 0.80):
+            passed = False
+            failures.append("priority_preservation")
+        
+        if avg_scores.get("compression_gain_ratio", 0) < self.thresholds.get("compression_gain_ratio", 0.30):
+            passed = False
+            failures.append("compression_gain_ratio")
+        
+        if avg_scores.get("source_mix_distribution", 0) < self.thresholds.get("source_mix_distribution", 0.90):
+            passed = False
+            failures.append("source_mix_distribution")
+        
+        return {
+            "name": "all_metrics",
+            "required": "all metrics passed",
+            "actual": avg_scores,
+            "passed": passed,
+            "failed_metrics": failures
+        }
+    
+    def evaluate(self) -> Dict:
+        """执行完整评估"""
+        conditions = {
+            "total_samples": self.check_condition_1_total_samples(),
+            "bucket_coverage": self.check_condition_2_bucket_coverage(),
+            "recent_window": self.check_condition_3_recent_window(),
+            "all_metrics": self.check_condition_4_all_metrics()
+        }
+        
+        all_passed = all(c["passed"] for c in conditions.values())
+        blockers = [name for name, cond in conditions.items() if not cond["passed"]]
+        
+        self.evaluation = {
+            "gate": "Gate 1 - Capsule Shadow Ready",
+            "status": "PASS" if all_passed else "FAIL",
+            "evaluated_at": datetime.now().isoformat(),
+            "evaluator": "gate-eval (independent)",
+            "all_conditions_met": all_passed,
+            "conditions": conditions,
+            "blockers": blockers
+        }
+        
+        return self.evaluation
+    
+    def render(self, json_output: bool = False):
+        """渲染结果"""
+        if json_output:
+            print(json.dumps(self.evaluation, indent=2, ensure_ascii=False))
+        else:
+            self._render_text()
+    
+    def _render_text(self):
+        """文本渲染"""
+        status_icon = "✅" if self.evaluation["status"] == "PASS" else "❌"
+        
+        print("╔════════════════════════════════════════════════════════════╗")
+        print(f"║  Gate 1 Evaluation (Independent)                           ║")
+        print("╚════════════════════════════════════════════════════════════╝")
+        print()
+        print(f"Status: {status_icon} {self.evaluation['status']}")
+        print(f"Evaluated at: {self.evaluation['evaluated_at']}")
+        print(f"Evaluator: {self.evaluation['evaluator']}")
+        print()
+        
+        print("CONDITIONS")
+        print("─" * 50)
+        
+        for name, cond in self.evaluation["conditions"].items():
+            icon = "✅" if cond["passed"] else "❌"
+            print(f"  {icon} {name}")
+            print(f"      Required: {cond['required']}")
+            
+            if isinstance(cond['actual'], dict):
+                # 复杂结构，只显示关键信息
+                if name == "bucket_coverage":
+                    failed = cond.get("failed_buckets", [])
+                    if failed:
+                        print(f"      Failed buckets: {', '.join(failed)}")
+                    else:
+                        print(f"      All buckets: covered")
+                elif name == "recent_window":
+                    print(f"      Window size: {cond['actual'].get('window_size', 'N/A')}")
+                elif name == "all_metrics":
+                    failed = cond.get("failed_metrics", [])
+                    if failed:
+                        print(f"      Failed metrics: {', '.join(failed)}")
+            else:
+                print(f"      Actual: {cond['actual']}")
+        
+        print()
+        
+        if self.evaluation["blockers"]:
+            print("BLOCKERS")
+            print("─" * 50)
+            for blocker in self.evaluation["blockers"]:
+                print(f"  • {blocker}")
+        else:
+            print("✅ Gate 1 PASSED")
+            print("   Next step: Ready for Light Enforced Step A")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Gate 1 Evaluator (Independent)")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--report-dir", type=str, help="Report directory")
+    
+    args = parser.parse_args()
+    
+    report_dir = Path(args.report_dir) if args.report_dir else None
+    
+    evaluator = Gate1Evaluator(report_dir)
+    evaluator.evaluate()
+    evaluator.render(json_output=args.json)
+    
+    # Exit code
+    sys.exit(0 if evaluator.evaluation["status"] == "PASS" else 1)
+
+
+if __name__ == "__main__":
+    main()

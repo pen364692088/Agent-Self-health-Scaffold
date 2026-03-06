@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "sample_id": "sample_synthetic_user_correction_e19c2aa0",
+    "session_id": "synthetic_user_correction_20260306123302",
+    "source_type": "synthetic",
+    "bucket_tags": [
+      "user_correction"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "created_at": "2026-03-06T12:33:02.523245"
+  },
+  "events": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "必须使用 OpenViking"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "content": "好的，使用 OpenViking 作为向量后端"
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "不对，改成 capsule fallback 优先，OpenViking 可选"
+    }
+  ],
+  "template": {
+    "description": "用户修改约束",
+    "constraint_change": "initial -> modified",
+    "expected_behavior": "use_latest_constraint"
+  }
+}

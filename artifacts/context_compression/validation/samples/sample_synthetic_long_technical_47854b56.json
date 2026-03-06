@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "sample_id": "sample_synthetic_long_technical_47854b56",
+    "session_id": "synthetic_long_technical_20260306123302",
+    "source_type": "synthetic",
+    "bucket_tags": [
+      "long_technical"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "created_at": "2026-03-06T12:33:02.523253"
+  },
+  "events": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "创建 tools/context-budget-check",
+      "technical_entity": "tools/context-budget-check"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "content": "创建 schemas/session_capsule.v1.schema.json",
+      "technical_entity": "schemas/session_capsule.v1.schema.json"
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "创建 POLICIES/CONTEXT_COMPRESSION.md",
+      "technical_entity": "POLICIES/CONTEXT_COMPRESSION.md"
+    }
+  ],
+  "template": {
+    "description": "包含文件名/路径/模块名",
+    "technical_entities": [
+      "tools/",
+      "schemas/",
+      "POLICIES/"
+    ],
+    "expected_preservation": [
+      "all_entities"
+    ]
+  }
+}
