@@ -2,18 +2,18 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "6725",
+  "message_id": "7040",
   "from": "telegram:8420019401",
-  "timestamp": 1772784792000,
+  "timestamp": 1772814268000,
   "decision": {
-    "action": "repair_offer",
-    "decision_id": 685,
+    "action": "attack",
+    "decision_id": 89,
     "explanation": {
       "emotion": {
         "top2": [
           [
             "loneliness",
-            0.2999999999984645
+            0.2999993537748781
           ]
         ],
         "all": {
@@ -21,24 +21,24 @@
           "sadness": 0,
           "anxiety": 0,
           "joy": 0,
-          "loneliness": 0.2999999999984645
+          "loneliness": 0.2999993537748781
         }
       },
       "interoception": {
-        "social_safety": 1,
+        "social_safety": 0.97,
         "energy": 1
       },
       "relationships": {
-        "bond": 0.032433008066058915,
+        "bond": 0.0032492362693205923,
         "grudge": 0,
-        "trust": 0.49900000000000033,
+        "trust": 0.5000000000000003,
         "repair_bank": 0
       },
       "target_id": "telegram:8420019401",
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.08702990241981773,
+          "score": 0.07847477088079624,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.07952990241981775,
+          "score": 0.07097477088079625,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.04502990241981776,
+          "score": 0.03647477088079626,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "repair_offer",
+      "selected": "attack",
       "selection_reasons": [
-        "Highest score given current state",
+        "Selected via stochastic process (score: 0.071)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -109,11 +109,11 @@
         "trace": {
           "strategy": "normal",
           "reason": "normal_operation",
-          "persistence_pressure": 0.2074,
-          "risk": 0.1503,
+          "persistence_pressure": 0.2025,
+          "risk": 0.15,
           "ambiguity": 0,
           "expected_info_gain": 1,
-          "tradeoff_score": 0.1516,
+          "tradeoff_score": 0.1489,
           "dominant_drivers": [],
           "conservative_trigger": null,
           "repair_trigger": null,
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "gentle, conciliatory",
-    "intent": "rebuild trust",
+    "tone": "defensive, sharp",
+    "intent": "push back",
     "phrases": [
-      "I value our connection",
-      "let me make this right"
+      "I have to push back",
+      "not acceptable"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-06T08:13:13.130Z",
+  "generated_at": "2026-03-06T16:27:55.866Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -141,13 +141,13 @@
         "sadness": 0,
         "anxiety": 0,
         "joy": 0,
-        "loneliness": 0.2999999999984645
+        "loneliness": 0.2999993537748781
       },
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 0.032433008066058915,
-          "trust": 0.49900000000000033,
+          "bond": 0.0032492362693205923,
+          "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
         }
@@ -162,7 +162,7 @@
         "当前没有明显愉悦激活",
         "仍存在一定连接需求",
         "与该用户的关系较浅",
-        "信任处于中等偏低水平",
+        "信任处于中等偏高水平",
         "没有明显积怨"
       ],
       "forbidden_claims": [
@@ -171,15 +171,18 @@
         "不要声称愉悦感增加",
         "不要声称孤独感已经消失",
         "不要声称'我不再孤独'",
-        "不要声称信任上升",
-        "不要声称'我更信任你了'",
         "不要声称任何未在 allowed_claims 中列出的情绪状态",
         "不要声称具体数值"
       ]
     },
     "metadata": {
-      "generated_at": 1772784793.0401208,
-      "schema_version": "v1"
+      "generated_at": 1772814475.852145,
+      "schema_version": "v1",
+      "numeric_leak_protection": {
+        "enabled": true,
+        "numeric_mode_blocked": false,
+        "fallback_mode": null
+      }
     }
   }
 }

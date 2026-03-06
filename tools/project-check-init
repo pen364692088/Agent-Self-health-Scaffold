@@ -1,0 +1,323 @@
+#!/usr/bin/env python3
+"""
+project-check-init - Initialize a new project check run.
+
+Usage:
+    project-check-init <project_path> [options]
+    project-check-init --health
+
+Options:
+    --phases "A,B,C,D,E"   Which phases to run (default: all)
+    --artifact-root <dir>  Override artifact root (default: artifacts/project_check)
+    --config <file>        Load config from file
+    --health               Health check endpoint
+
+Exit codes:
+    0: Success
+    1: Invalid arguments
+    2: Project path not found
+    3: Permission denied
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+# Default phase definitions
+DEFAULT_PHASES = {
+    "A": {
+        "id": "phase_a_repo",
+        "name": "Repository Health Check",
+        "runner": "project-check-phase repo",
+        "artifacts_dir": "phase_a_repo",
+        "depends_on": [],
+        "stop_on_fail": True,
+        "timeout_seconds": 300
+    },
+    "B": {
+        "id": "phase_b_tests",
+        "name": "Test Suite Execution",
+        "runner": "project-check-phase tests",
+        "artifacts_dir": "phase_b_tests",
+        "depends_on": ["phase_a_repo"],
+        "stop_on_fail": True,
+        "timeout_seconds": 600
+    },
+    "C": {
+        "id": "phase_c_testbot",
+        "name": "Testbot Validation",
+        "runner": "project-check-phase testbot",
+        "artifacts_dir": "phase_c_testbot",
+        "depends_on": ["phase_b_tests"],
+        "stop_on_fail": False,
+        "timeout_seconds": 600
+    },
+    "D": {
+        "id": "phase_d_gate",
+        "name": "Final Gate Check",
+        "runner": "project-check-phase gate",
+        "artifacts_dir": "phase_d_gate",
+        "depends_on": ["phase_a_repo", "phase_b_tests", "phase_c_testbot"],
+        "stop_on_fail": True,
+        "timeout_seconds": 300
+    }
+}
+
+DEFAULT_CONFIG = {
+    "timeout_per_phase": 300,
+    "max_retries": 2,
+    "artifact_root": "artifacts/project_check",
+    "continue_on_failure": False,
+    "parallel_phases": False
+}
+
+
+def generate_check_id() -> str:
+    """Generate unique check_id with format: check_YYYYMMDD_HHMMSS_<short_hash>"""
+    now = datetime.now(timezone.utc)
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    # Generate short hash from timestamp + random bytes
+    hash_input = f"{timestamp}{os.urandom(8).hex()}".encode()
+    short_hash = hashlib.sha256(hash_input).hexdigest()[:6]
+    return f"check_{timestamp}_{short_hash}"
+
+
+def validate_project_path(path: str) -> Path:
+    """Validate that project path exists and is accessible."""
+    project_path = Path(path).resolve()
+    
+    if not project_path.exists():
+        print(f"Error: Project path not found: {project_path}", file=sys.stderr)
+        sys.exit(2)
+    
+    if not project_path.is_dir():
+        print(f"Error: Project path is not a directory: {project_path}", file=sys.stderr)
+        sys.exit(2)
+    
+    if not os.access(project_path, os.R_OK):
+        print(f"Error: Permission denied: {project_path}", file=sys.stderr)
+        sys.exit(3)
+    
+    return project_path
+
+
+def parse_phases(phase_str: str) -> list:
+    """Parse phase string like 'A,B,C' into phase definitions."""
+    if not phase_str:
+        return list(DEFAULT_PHASES.values())
+    
+    phase_letters = [p.strip().upper() for p in phase_str.split(",")]
+    
+    # Validate phase letters
+    valid_phases = set(DEFAULT_PHASES.keys())
+    invalid = set(phase_letters) - valid_phases
+    if invalid:
+        print(f"Error: Invalid phases: {', '.join(invalid)}", file=sys.stderr)
+        print(f"Valid phases: {', '.join(valid_phases)}", file=sys.stderr)
+        sys.exit(1)
+    
+    return [DEFAULT_PHASES[p] for p in phase_letters]
+
+
+def load_config_file(config_path: str) -> dict:
+    """Load configuration from JSON file."""
+    path = Path(config_path)
+    if not path.exists():
+        print(f"Error: Config file not found: {config_path}", file=sys.stderr)
+        sys.exit(1)
+    
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in config file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def create_manifest(check_id: str, project_path: Path, phases: list, config: dict) -> dict:
+    """Create manifest.json content."""
+    now = datetime.now(timezone.utc)
+    
+    manifest = {
+        "check_id": check_id,
+        "created_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "project_path": str(project_path),
+        "phases": phases,
+        "config": config
+    }
+    
+    return manifest
+
+
+def create_status(check_id: str, phases: list) -> dict:
+    """Create initial status.json content."""
+    now = datetime.now(timezone.utc)
+    
+    phase_status = []
+    for phase in phases:
+        phase_status.append({
+            "id": phase["id"],
+            "status": "pending",
+            "started_at": None,
+            "completed_at": None,
+            "exit_code": None,
+            "error": None,
+            "retries": 0
+        })
+    
+    status = {
+        "check_id": check_id,
+        "status": "initialized",
+        "created_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "updated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "current_phase": None,
+        "phases": phase_status,
+        "summary": {
+            "total_phases": len(phases),
+            "completed": 0,
+            "failed": 0,
+            "skipped": 0
+        }
+    }
+    
+    return status
+
+
+def validate_manifest_against_schema(manifest: dict) -> bool:
+    """Validate manifest against schema."""
+    schema_path = Path(__file__).parent.parent / "schemas" / "project_check_manifest.v1.schema.json"
+    
+    if not schema_path.exists():
+        # Schema file not found, skip validation but warn
+        print(f"Warning: Schema file not found at {schema_path}", file=sys.stderr)
+        return True
+    
+    try:
+        import jsonschema
+        with open(schema_path) as f:
+            schema = json.load(f)
+        jsonschema.validate(manifest, schema)
+        return True
+    except ImportError:
+        print("Warning: jsonschema not installed, skipping validation", file=sys.stderr)
+        return True
+    except jsonschema.ValidationError as e:
+        print(f"Error: Manifest validation failed: {e.message}", file=sys.stderr)
+        return False
+
+
+def health_check() -> dict:
+    """Return health status."""
+    return {
+        "status": "healthy",
+        "tool": "project-check-init",
+        "version": "1.0.0",
+        "checks": {
+            "schema_exists": (Path(__file__).parent.parent / "schemas" / "project_check_manifest.v1.schema.json").exists(),
+            "artifact_root_writable": os.access(Path(__file__).parent.parent / "artifacts" / "project_check", os.W_OK)
+        }
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Initialize a new project check run.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__
+    )
+    
+    parser.add_argument("project_path", nargs="?", help="Path to the project to check")
+    parser.add_argument("--phases", "-p", help="Which phases to run (e.g., 'A,B,C')")
+    parser.add_argument("--artifact-root", "-a", help="Override artifact root directory")
+    parser.add_argument("--config", "-c", help="Load config from JSON file")
+    parser.add_argument("--health", action="store_true", help="Health check endpoint")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be done without creating files")
+    
+    args = parser.parse_args()
+    
+    # Health check endpoint
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0
+    
+    # Validate required arguments
+    if not args.project_path:
+        print("Error: project_path is required", file=sys.stderr)
+        parser.print_help()
+        return 1
+    
+    # Validate project path
+    project_path = validate_project_path(args.project_path)
+    
+    # Parse phases
+    phases = parse_phases(args.phases)
+    
+    # Load config (file overrides defaults)
+    config = DEFAULT_CONFIG.copy()
+    if args.config:
+        file_config = load_config_file(args.config)
+        config.update(file_config)
+    
+    # Override artifact_root if specified
+    if args.artifact_root:
+        config["artifact_root"] = args.artifact_root
+    
+    # Generate check_id
+    check_id = generate_check_id()
+    
+    # Create manifest
+    manifest = create_manifest(check_id, project_path, phases, config)
+    
+    # Validate against schema
+    if not validate_manifest_against_schema(manifest):
+        return 1
+    
+    # Determine artifact directory
+    workspace_root = Path(__file__).parent.parent
+    artifact_root = workspace_root / config["artifact_root"]
+    check_dir = artifact_root / check_id
+    
+    if args.dry_run:
+        print("=== DRY RUN ===")
+        print(f"Check ID: {check_id}")
+        print(f"Project Path: {project_path}")
+        print(f"Artifact Dir: {check_dir}")
+        print(f"Phases: {[p['id'] for p in phases]}")
+        print("\n=== manifest.json ===")
+        print(json.dumps(manifest, indent=2))
+        print("\n=== status.json ===")
+        print(json.dumps(create_status(check_id, phases), indent=2))
+        return 0
+    
+    # Create artifact directory
+    try:
+        check_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        print(f"Error: Permission denied creating {check_dir}", file=sys.stderr)
+        return 3
+    
+    # Write manifest.json
+    manifest_path = check_dir / "manifest.json"
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2)
+    
+    # Write status.json
+    status = create_status(check_id, phases)
+    status_path = check_dir / "status.json"
+    with open(status_path, "w") as f:
+        json.dump(status, f, indent=2)
+    
+    # Output check_id to stdout
+    print(check_id)
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

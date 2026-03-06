@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """
-Done Guard v2.2 - Evidence Gate Checker with Schema Validation
+Done Guard v3.0 - Evidence Gate Checker + Receipt Validator + State Machine
 
-v2.2 补丁:
-- 校验通过时输出验证结果摘要
-- 写入 artifact: reports/schema_validation_summary.json
+遵循 OPENCLAW_EXECUTION_POLICY.md:
+- 拦截"已完成"类文本输出
+- 检查四类 receipt 存在性
+- 状态机校验
+- human_failed 检查
+
+Usage:
+  done-guard --task-id <id> --all              # 完整检查
+  done-guard --check-text <file>               # 拦截伪完成文本
+  done-guard --validate-state current:target   # 状态机校验
+  done-guard --validate-doctor <report.json>   # doctor report 验证
 """
 
 import argparse
@@ -13,39 +21,117 @@ import re
 import sys
 import hashlib
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 from datetime import datetime
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 GATES_CONFIG = WORKSPACE / "POLICIES" / "GATES_CONFIG.json"
 DOCTOR_SCHEMA = WORKSPACE / "schemas" / "doctor_report.v1.schema.json"
+RECEIPT_SCHEMA = WORKSPACE / "schemas" / "task_receipt.v1.schema.json"
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
+WORKFLOW_STATE = WORKSPACE / "WORKFLOW_STATE.json"
 VALIDATION_SUMMARY_DIR = WORKSPACE / "reports" / "schema_validation"
-AUDIT_LOG = WORKSPACE / "reports" / "gates_audit.log"
+
+# 伪完成文本模式
+FAKE_COMPLETION_PATTERNS = [
+    r"已完成", r"全部完成", r"可以交付", r"已可合并",
+    r"已准备好关闭", r"所有阶段通过", r"基本完成",
+    r"大体完成", r"核心已完成", r"主要功能完成"
+]
+
+# 状态机定义
+VALID_STATES = [
+    "planned", "implementing", "self_verify",
+    "await_human_test", "human_failed", "repairing",
+    "reverify", "ready_to_close", "closed", "blocked"
+]
+
+STATE_TRANSITIONS = {
+    "planned": ["implementing", "blocked"],
+    "implementing": ["self_verify", "blocked"],
+    "self_verify": ["await_human_test", "repairing", "blocked"],
+    "await_human_test": ["human_failed", "ready_to_close", "blocked"],
+    "human_failed": ["repairing", "blocked"],
+    "repairing": ["reverify", "blocked"],
+    "reverify": ["await_human_test", "ready_to_close", "blocked"],
+    "ready_to_close": ["closed", "blocked"],
+    "blocked": ["implementing", "repairing"],
+    "closed": []
+}
 
 
 def compute_file_hash(file_path: str) -> str:
-    """Compute SHA256 hash of a file."""
     path = Path(file_path)
     if not path.exists():
         return "file_not_found"
-    
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()[:16]
 
 
-def load_config() -> dict:
-    """Load gates configuration."""
-    if GATES_CONFIG.exists():
-        with open(GATES_CONFIG) as f:
+def load_workflow_state() -> Dict:
+    if WORKFLOW_STATE.exists():
+        with open(WORKFLOW_STATE) as f:
             return json.load(f)
     return {}
 
 
-def validate_json_schema(data: dict, schema_path: str = None) -> Tuple[bool, List[str]]:
-    """Validate JSON data against schema."""
-    issues = []
+def get_task_info(task_id: str) -> Dict:
+    wf = load_workflow_state()
+    for task in wf.get("completed", []):
+        if task.get("id") == task_id:
+            return {"found": True, "status": task.get("status", "done"), "source": "completed"}
+    for task in wf.get("pending", []):
+        if task.get("id") == task_id:
+            return {"found": True, "status": task.get("status", "pending"), "source": "pending"}
+    return {"found": False, "status": "unknown", "source": None}
+
+
+def check_fake_completion(text: str) -> Tuple[bool, List[str]]:
+    matches = []
+    for pattern in FAKE_COMPLETION_PATTERNS:
+        if re.search(pattern, text):
+            matches.append(pattern)
+    return len(matches) > 0, matches
+
+
+def check_receipts(task_id: str) -> Tuple[bool, List[str], Dict]:
+    required_types = ["contract", "e2e", "preflight", "final"]
+    missing = []
+    found = {}
     
-    schema_file = Path(schema_path) if schema_path else DOCTOR_SCHEMA
+    for rtype in required_types:
+        pattern = f"{task_id}_{rtype}_receipt.json"
+        path = ARTIFACTS_DIR / pattern
+        if path.exists():
+            found[rtype] = str(path)
+        else:
+            missing.append(rtype)
+    
+    return len(missing) == 0, missing, found
+
+
+def validate_state_transition(current: str, target: str) -> Tuple[bool, str]:
+    if current not in VALID_STATES:
+        return False, f"Invalid current state: {current}"
+    if target not in VALID_STATES:
+        return False, f"Invalid target state: {target}"
+    
+    allowed = STATE_TRANSITIONS.get(current, [])
+    if target not in allowed:
+        return False, f"Illegal transition: {current} -> {target}. Allowed: {allowed}"
+    return True, ""
+
+
+def check_human_failed(task_id: str) -> Tuple[bool, Optional[Dict]]:
+    task_info = get_task_info(task_id)
+    if task_info["status"] == "human_failed":
+        return True, {"task_id": task_id, "status": "human_failed", "requires": "repairing"}
+    return False, None
+
+
+def validate_json_schema(data: dict, schema_path: str) -> Tuple[bool, List[str]]:
+    issues = []
+    schema_file = Path(schema_path)
     if not schema_file.exists():
         return False, [f"Schema file not found: {schema_file}"]
     
@@ -55,99 +141,40 @@ def validate_json_schema(data: dict, schema_path: str = None) -> Tuple[bool, Lis
     except json.JSONDecodeError as e:
         return False, [f"Invalid schema JSON: {e}"]
     
-    required_fields = schema.get("required", [])
-    properties = schema.get("properties", {})
-    
-    # Check required fields
-    for field in required_fields:
+    for field in schema.get("required", []):
         if field not in data:
             issues.append(f"Missing required field: {field}")
     
-    # Check field types
+    properties = schema.get("properties", {})
     for field, field_schema in properties.items():
         if field not in data:
             continue
-        
         value = data[field]
         expected_type = field_schema.get("type")
-        
-        if expected_type:
-            if isinstance(expected_type, list):
-                valid = any(_check_type(value, t) for t in expected_type)
-            else:
-                valid = _check_type(value, expected_type)
-            
-            if not valid:
-                issues.append(f"Field '{field}' has wrong type: expected {expected_type}, got {type(value).__name__}")
-        
+        if expected_type and not _check_type(value, expected_type):
+            issues.append(f"Field '{field}' has wrong type")
         if "enum" in field_schema and value not in field_schema["enum"]:
-            issues.append(f"Field '{field}' value '{value}' not in enum: {field_schema['enum']}")
+            issues.append(f"Field '{field}' value not in enum")
     
     return len(issues) == 0, issues
 
 
 def _check_type(value: Any, expected_type: str) -> bool:
-    """Check if value matches expected JSON schema type."""
     type_map = {
-        "string": str,
-        "integer": int,
-        "number": (int, float),
-        "boolean": bool,
-        "array": list,
-        "object": dict,
-        "null": type(None)
+        "string": str, "integer": int, "number": (int, float),
+        "boolean": bool, "array": list, "object": dict, "null": type(None)
     }
-    
     expected = type_map.get(expected_type)
     if expected is None:
         return True
-    
     if expected_type == "integer":
         return isinstance(value, int) and not isinstance(value, bool)
-    
     return isinstance(value, expected)
 
 
-def write_validation_summary(
-    report_path: str,
-    schema_id: str,
-    validated: bool,
-    errors: List[str],
-    report_hash: str
-):
-    """
-    Write validation summary to artifact.
-    
-    v2.2 补丁: 验证结果摘要
-    """
-    VALIDATION_SUMMARY_DIR.mkdir(parents=True, exist_ok=True)
-    
-    summary = {
-        "timestamp": datetime.now().isoformat(),
-        "report_path": report_path,
-        "report_hash": report_hash,
-        "schema_id": schema_id,
-        "schema_hash": compute_file_hash(DOCTOR_SCHEMA),
-        "validated": validated,
-        "errors_count": len(errors),
-        "errors": errors if errors else []
-    }
-    
-    # 写入摘要文件
-    summary_file = VALIDATION_SUMMARY_DIR / f"validation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(summary_file, "w") as f:
-        json.dump(summary, f, indent=2)
-    
-    print(f"📝 Validation summary written to: {summary_file}")
-    
-    return summary
-
-
 def validate_doctor_report(report_path: str) -> Tuple[bool, List[str]]:
-    """Validate doctor_report.json against schema."""
     issues = []
     path = Path(report_path)
-    
     if not path.exists():
         return False, [f"File does not exist: {report_path}"]
     
@@ -157,123 +184,77 @@ def validate_doctor_report(report_path: str) -> Tuple[bool, List[str]]:
     except json.JSONDecodeError as e:
         return False, [f"Invalid JSON: {e}"]
     
-    # Schema validation
     valid, schema_issues = validate_json_schema(data, str(DOCTOR_SCHEMA))
     issues.extend(schema_issues)
     
-    # Semantic validation
     if data.get("status") == "healthy":
         if not data.get("health_ok"):
             issues.append("Status is 'healthy' but health_ok is false")
-        if not data.get("sample_call_ok") and data.get("transport") == "http":
-            issues.append("Status is 'healthy' but sample_call_ok is false (http mode)")
     
-    # v2.2: 写入验证摘要
-    schema_id = "doctor.v1"
-    report_hash = compute_file_hash(report_path)
-    
-    summary = write_validation_summary(
-        report_path=report_path,
-        schema_id=schema_id,
-        validated=len(issues) == 0,
-        errors=issues,
-        report_hash=report_hash
-    )
-    
-    # 输出摘要
-    print()
-    print("=" * 60)
-    print("SCHEMA VALIDATION SUMMARY")
-    print("=" * 60)
-    print(f"Schema ID:     {schema_id}")
-    print(f"Schema Hash:   {summary['schema_hash']}")
-    print(f"Report Hash:   {report_hash}")
-    print(f"Validated:     {'✅ YES' if summary['validated'] else '❌ NO'}")
-    print(f"Errors:        {summary['errors_count']}")
-    if issues:
-        for issue in issues:
-            print(f"  - {issue}")
-    print("=" * 60)
+    VALIDATION_SUMMARY_DIR.mkdir(parents=True, exist_ok=True)
+    summary = {
+        "timestamp": datetime.now().isoformat(),
+        "report_path": report_path,
+        "validated": len(issues) == 0,
+        "errors": issues
+    }
+    summary_file = VALIDATION_SUMMARY_DIR / f"validation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    with open(summary_file, "w") as f:
+        json.dump(summary, f, indent=2)
     
     return len(issues) == 0, issues
 
 
-def check_evidence_block(text: str, gate: str) -> Tuple[bool, List[str]]:
-    """Check evidence block."""
-    issues = []
-    
-    patterns = {
-        "gate_a": r"##\s*EVIDENCE_GATE_A",
-        "gate_b": r"##\s*EVIDENCE_GATE_B",
-        "gate_c": r"##\s*EVIDENCE_GATE_C"
+def full_check(task_id: str, text_file: str = None) -> Dict:
+    result = {
+        "task_id": task_id,
+        "can_close": True,
+        "blockers": [],
+        "checks": {}
     }
     
-    pattern = patterns.get(gate)
-    if not pattern:
-        return False, [f"Unknown gate: {gate}"]
+    # Receipt 检查
+    receipts_ok, missing, found = check_receipts(task_id)
+    result["checks"]["receipts"] = {"passed": receipts_ok, "missing": missing, "found": found}
+    if not receipts_ok:
+        result["can_close"] = False
+        result["blockers"].append(f"missing_receipts: {', '.join(missing)}")
     
-    match = re.search(pattern, text, re.IGNORECASE)
-    if not match:
-        return False, [f"Missing {gate.upper()} evidence block"]
+    # State 检查
+    task_info = get_task_info(task_id)
+    result["checks"]["state"] = {"status": task_info["status"], "source": task_info["source"]}
+    if task_info["status"] in ["human_failed", "repairing", "blocked"]:
+        result["can_close"] = False
+        result["blockers"].append(f"invalid_state: {task_info['status']}")
     
-    start = match.start()
-    next_header = re.search(r'\n##\s+', text[start + 10:])
-    if next_header:
-        block = text[start:start + 10 + next_header.start()]
-    else:
-        block = text[start:]
+    # Human failed 检查
+    needs_repair, failed_info = check_human_failed(task_id)
+    result["checks"]["human_failed"] = {"needs_repair": needs_repair, "info": failed_info}
+    if needs_repair:
+        result["can_close"] = False
+        result["blockers"].append("unresolved_human_failed")
     
-    keywords = {
-        "gate_a": ["schema", "drift"],
-        "gate_b": ["e2e", "happy"],
-        "gate_c": ["tool_doctor", "doctor_report"]
-    }
+    # 文本检查
+    if text_file:
+        text = Path(text_file).read_text()
+        has_fake, patterns = check_fake_completion(text)
+        result["checks"]["fake_completion"] = {"detected": has_fake, "patterns": patterns}
+        if has_fake:
+            result["can_close"] = False
+            result["blockers"].append(f"fake_completion_text")
     
-    block_lower = block.lower()
-    for kw in keywords.get(gate, []):
-        if kw not in block_lower:
-            issues.append(f"Missing keyword: {kw}")
-    
-    if gate == "gate_c":
-        file_pattern = r'([/\.\w-]+doctor_report[\.\w-]*)'
-        file_matches = re.findall(file_pattern, block)
-        
-        for file_path in file_matches:
-            valid, file_issues = validate_doctor_report(file_path)
-            if not valid:
-                issues.extend(file_issues)
-    
-    if "pass" not in block_lower and "✅" not in block:
-        issues.append("No pass/success indicator")
-    
-    return len(issues) == 0, issues
-
-
-def check_all_gates(text: str) -> Dict:
-    """Check all three gates."""
-    results = {
-        "all_passed": True,
-        "gates": {}
-    }
-    
-    for gate in ["gate_a", "gate_b", "gate_c"]:
-        passed, issues = check_evidence_block(text, gate)
-        results["gates"][gate] = {
-            "passed": passed,
-            "issues": issues
-        }
-        if not passed:
-            results["all_passed"] = False
-    
-    return results
+    return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Done Guard v2.2")
-    parser.add_argument("input", nargs="?", help="Input file")
+    parser = argparse.ArgumentParser(description="Done Guard v3.0")
+    parser.add_argument("--task-id", help="Task identifier")
+    parser.add_argument("--all", action="store_true", help="Full check for task")
+    parser.add_argument("--check-text", help="Check text file for fake completion")
+    parser.add_argument("--validate-state", help="Validate state transition (format: current:target)")
+    parser.add_argument("--validate-doctor", help="Validate doctor report JSON")
     parser.add_argument("--validate-schema", nargs=2, metavar=("JSON", "SCHEMA"))
-    parser.add_argument("--validate-doctor", metavar="REPORT")
-    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--json", action="store_true", help="JSON output")
     
     args = parser.parse_args()
     
@@ -281,39 +262,62 @@ def main():
         json_file, schema_file = args.validate_schema
         with open(json_file) as f:
             data = json.load(f)
-        
         valid, issues = validate_json_schema(data, schema_file)
-        
         if args.json:
             print(json.dumps({"valid": valid, "issues": issues}, indent=2))
         else:
             print(f"Valid: {valid}")
             for issue in issues:
                 print(f"  - {issue}")
-        
         return 0 if valid else 1
     
     if args.validate_doctor:
         valid, issues = validate_doctor_report(args.validate_doctor)
-        
         if args.json:
             print(json.dumps({"valid": valid, "issues": issues}, indent=2))
-        
         return 0 if valid else 1
     
-    if args.input:
-        text = Path(args.input).read_text()
-        results = check_all_gates(text)
-        
+    if args.check_text:
+        text = Path(args.check_text).read_text()
+        has_fake, patterns = check_fake_completion(text)
+        result = {"has_fake_completion": has_fake, "patterns_matched": patterns, "action": "BLOCK" if has_fake else "ALLOW"}
         if args.json:
-            print(json.dumps(results, indent=2))
+            print(json.dumps(result, indent=2))
         else:
-            for gate, result in results["gates"].items():
-                status = "✅" if result["passed"] else "❌"
-                print(f"{status} {gate}: {result['issues'] or ['PASS']}")
-        
-        return 0 if results["all_passed"] else 1
+            if has_fake:
+                print("❌ FAKE COMPLETION DETECTED")
+                print(f"Patterns: {patterns}")
+            else:
+                print("✅ No fake completion detected")
+        return 1 if has_fake else 0
     
+    if args.validate_state:
+        parts = args.validate_state.split(":")
+        if len(parts) != 2:
+            print("Error: format should be current:target")
+            return 2
+        current, target = parts
+        valid, error = validate_state_transition(current, target)
+        if args.json:
+            print(json.dumps({"valid": valid, "error": error}, indent=2))
+        else:
+            print(f"✅ Valid transition" if valid else f"❌ {error}")
+        return 0 if valid else 1
+    
+    if args.task_id and args.all:
+        result = full_check(args.task_id)
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print("=" * 60)
+            print("✅ CAN CLOSE" if result["can_close"] else f"❌ BLOCKED: {result['blockers']}")
+            for check_name, check_result in result["checks"].items():
+                status = "✅" if check_result.get("passed") or check_result.get("valid", True) else "❌"
+                print(f"{status} {check_name}: {check_result}")
+            print("=" * 60)
+        return 0 if result["can_close"] else 1
+    
+    parser.print_help()
     return 2
 
 

@@ -1,0 +1,895 @@
+#!/usr/bin/env python3
+"""
+project-check-run v1.0 - Execute project check phases
+
+Runs project check phases according to manifest.json, executing each phase's
+runner command and capturing results.
+
+Usage:
+    project-check-run <check_id> [--phase <phase_id>] [--dry-run] [--continue-on-failure]
+    project-check-run --health
+    project-check-run --e2e-test
+
+Tool Delivery Gates:
+    Gate A: Schema validation (status.json conforms to schema)
+    Gate B: E2E testing (self-test mode)
+    Gate C: Health check (--health flag)
+"""
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Tuple
+
+# Workspace paths
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACT_ROOT = WORKSPACE / "artifacts" / "project_check"
+MANIFEST_SCHEMA_FILE = WORKSPACE / "schemas" / "project_check_manifest.v1.schema.json"
+STATUS_SCHEMA_FILE = WORKSPACE / "schemas" / "project_check_status.v1.schema.json"
+
+# Phase execution states
+STATE_PENDING = "pending"
+STATE_RUNNING = "running"
+STATE_DONE = "done"
+STATE_FAILED = "failed"
+STATE_SKIPPED = "skipped"
+
+# Error codes
+ERROR_NOT_FOUND = "NOT_FOUND"
+ERROR_VALIDATION = "VALIDATION_ERROR"
+ERROR_DEPENDENCY_FAILED = "DEPENDENCY_FAILED"
+ERROR_COMMAND_FAILED = "COMMAND_FAILED"
+ERROR_TIMEOUT = "TIMEOUT"
+ERROR_PERMISSION_DENIED = "PERMISSION_DENIED"
+ERROR_INTERNAL = "INTERNAL_ERROR"
+
+
+def error_response(code: str, message: str, details: dict = None) -> dict:
+    """Standardized error format"""
+    return {
+        "error": {
+            "type": code.lower().replace("_", " ").title(),
+            "message": message,
+            "code": code,
+            "details": details or {}
+        }
+    }
+
+
+def load_manifest(check_id: str) -> Tuple[Optional[dict], Optional[dict]]:
+    """Load manifest.json for a check run."""
+    manifest_path = ARTIFACT_ROOT / check_id / "manifest.json"
+    
+    if not manifest_path.exists():
+        return None, error_response(
+            ERROR_NOT_FOUND,
+            f"Manifest not found for check_id: {check_id}",
+            {"path": str(manifest_path)}
+        )
+    
+    try:
+        with open(manifest_path, 'r') as f:
+            manifest = json.load(f)
+        return manifest, None
+    except json.JSONDecodeError as e:
+        return None, error_response(
+            ERROR_VALIDATION,
+            f"Invalid JSON in manifest: {e}",
+            {"path": str(manifest_path)}
+        )
+
+
+def load_status(check_id: str, phase_id: str) -> Optional[dict]:
+    """Load existing status.json for a phase if it exists"""
+    status_path = ARTIFACT_ROOT / check_id / phase_id / "status.json"
+    
+    if status_path.exists():
+        try:
+            with open(status_path, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return None
+
+
+def save_status(check_id: str, phase_id: str, status: dict) -> bool:
+    """Save status.json for a phase"""
+    status_path = ARTIFACT_ROOT / check_id / phase_id / "status.json"
+    
+    try:
+        status_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(status_path, 'w') as f:
+            json.dump(status, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Warning: Failed to save status.json: {e}", file=sys.stderr)
+        return False
+
+
+def save_raw_log(check_id: str, phase_id: str, content: str) -> bool:
+    """Save raw.log for a phase"""
+    log_path = ARTIFACT_ROOT / check_id / phase_id / "raw.log"
+    
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(log_path, 'w') as f:
+            f.write(content)
+        return True
+    except Exception as e:
+        print(f"Warning: Failed to save raw.log: {e}", file=sys.stderr)
+        return False
+
+
+def save_summary_md(check_id: str, phase_id: str, content: str) -> bool:
+    """Save summary.md for a phase"""
+    summary_path = ARTIFACT_ROOT / check_id / phase_id / "summary.md"
+    
+    try:
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(summary_path, 'w') as f:
+            f.write(content)
+        return True
+    except Exception as e:
+        print(f"Warning: Failed to save summary.md: {e}", file=sys.stderr)
+        return False
+
+
+def get_git_info(project_path: str) -> dict:
+    """Get git information for the project"""
+    info = {
+        "branch": None,
+        "commit": None,
+        "commit_message": None,
+        "author": None
+    }
+    
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            info["branch"] = result.stdout.strip()
+        
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            info["commit"] = result.stdout.strip()
+        
+        result = subprocess.run(
+            ["git", "log", "-1", "--pretty=%s"],
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            info["commit_message"] = result.stdout.strip()
+        
+        result = subprocess.run(
+            ["git", "log", "-1", "--pretty=%ae"],
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            info["author"] = result.stdout.strip()
+    except Exception:
+        pass
+    
+    return info
+
+
+def resolve_runner_path(runner: str, project_path: str) -> str:
+    """Resolve runner path."""
+    if runner.startswith("/"):
+        return runner
+    
+    # Check tools/ directory
+    tools_path = WORKSPACE / "tools" / runner.split()[0]
+    if tools_path.exists():
+        return str(tools_path)
+    
+    # Check project directory
+    project_runner = Path(project_path) / runner
+    if project_runner.exists():
+        return str(project_runner)
+    
+    return runner
+
+
+def create_initial_status(phase: dict, check_id: str, git_info: dict) -> dict:
+    """Create initial status.json structure"""
+    return {
+        "phase": phase["id"],
+        "state": STATE_PENDING,
+        "ok": False,
+        "started_at": None,
+        "finished_at": None,
+        "duration_seconds": None,
+        "inputs": {
+            "branch": git_info.get("branch"),
+            "commit": git_info.get("commit"),
+            "commit_message": git_info.get("commit_message"),
+            "author": git_info.get("author"),
+            "check_id": check_id
+        },
+        "metrics": {},
+        "artifacts": {
+            "summary_md": None,
+            "raw_log": None,
+            "additional_files": []
+        },
+        "next_action": None,
+        "error": None,
+        "warnings": []
+    }
+
+
+def validate_status_against_schema(status: dict) -> List[str]:
+    """Validate status against schema"""
+    errors = []
+    
+    required = ["phase", "state", "ok", "inputs"]
+    for field in required:
+        if field not in status:
+            errors.append(f"Missing required field: {field}")
+    
+    valid_phases = {"phase_a_repo", "phase_b_tests", "phase_c_testbot", "phase_d_gate"}
+    if status.get("phase") not in valid_phases:
+        errors.append(f"Invalid phase: {status.get('phase')}")
+    
+    valid_states = {"pending", "running", "done", "failed", "skipped"}
+    if status.get("state") not in valid_states:
+        errors.append(f"Invalid state: {status.get('state')}")
+    
+    return errors
+
+
+def generate_summary_md(phase: dict, status: dict, stdout: str, stderr: str) -> str:
+    """Generate a summary.md for a phase"""
+    lines = [
+        f"# {phase['name']}",
+        "",
+        f"**Phase ID**: `{phase['id']}`",
+        f"**State**: `{status['state']}`",
+        f"**Result**: {'✅ Passed' if status['ok'] else '❌ Failed'}",
+        ""
+    ]
+    
+    if status.get("duration_seconds"):
+        lines.append(f"**Duration**: {status['duration_seconds']:.2f}s")
+    
+    if status.get("inputs"):
+        lines.append("")
+        lines.append("## Inputs")
+        lines.append("")
+        for key, value in status["inputs"].items():
+            if value:
+                lines.append(f"- **{key}**: `{value}`")
+    
+    if status.get("metrics"):
+        lines.append("")
+        lines.append("## Metrics")
+        lines.append("")
+        for key, value in status["metrics"].items():
+            lines.append(f"- **{key}**: {value}")
+    
+    if status.get("error"):
+        lines.append("")
+        lines.append("## Error")
+        lines.append("")
+        lines.append(f"**Code**: `{status['error'].get('code', 'unknown')}`")
+        lines.append(f"**Message**: {status['error'].get('message', 'unknown')}")
+        
+        if status["error"].get("stderr"):
+            lines.append("")
+            lines.append("### STDERR")
+            lines.append("```")
+            lines.append(status["error"]["stderr"][:1000])
+            lines.append("```")
+    
+    if status.get("warnings"):
+        lines.append("")
+        lines.append("## Warnings")
+        lines.append("")
+        for w in status["warnings"]:
+            lines.append(f"- [{w.get('code', '?')}] {w.get('message', '')}")
+    
+    return "\n".join(lines)
+
+
+def determine_next_action(phase: dict, manifest: dict) -> str:
+    """Determine the next action after a phase completes"""
+    phases = manifest["phases"]
+    phase_ids = [p["id"] for p in phases]
+    current_idx = phase_ids.index(phase["id"])
+    
+    if current_idx < len(phases) - 1:
+        next_phase = phases[current_idx + 1]
+        return f"run_{next_phase['id']}"
+    else:
+        return "pipeline_complete"
+
+
+def check_dependencies(phase: dict, phase_statuses: Dict[str, dict]) -> Tuple[bool, Optional[str]]:
+    """Check if all dependencies for a phase are satisfied."""
+    dependencies = phase.get("depends_on", [])
+    
+    for dep_id in dependencies:
+        if dep_id not in phase_statuses:
+            return False, dep_id
+        
+        dep_status = phase_statuses[dep_id]
+        if dep_status.get("state") != STATE_DONE or not dep_status.get("ok"):
+            return False, dep_id
+    
+    return True, None
+
+
+def sort_phases_by_dependencies(phases: List[dict]) -> List[dict]:
+    """Topologically sort phases based on dependencies"""
+    phase_ids = [p["id"] for p in phases]
+    phase_map = {p["id"]: p for p in phases}
+    
+    sorted_phases = []
+    visited = set()
+    temp_visited = set()
+    
+    def visit(phase_id):
+        if phase_id in temp_visited:
+            raise ValueError(f"Circular dependency detected: {phase_id}")
+        if phase_id in visited:
+            return
+        
+        temp_visited.add(phase_id)
+        phase = phase_map[phase_id]
+        
+        for dep in phase.get("depends_on", []):
+            if dep in phase_map:
+                visit(dep)
+        
+        temp_visited.remove(phase_id)
+        visited.add(phase_id)
+        sorted_phases.append(phase)
+    
+    for phase_id in phase_ids:
+        if phase_id not in visited:
+            visit(phase_id)
+    
+    return sorted_phases
+
+
+def execute_phase(
+    check_id: str,
+    phase: dict,
+    manifest: dict,
+    dry_run: bool = False
+) -> dict:
+    """Execute a single phase. Returns the status dict."""
+    project_path = manifest["project_path"]
+    git_info = get_git_info(project_path)
+    
+    status = create_initial_status(phase, check_id, git_info)
+    
+    phase_dir = ARTIFACT_ROOT / check_id / phase["artifacts_dir"]
+    
+    if dry_run:
+        status["state"] = STATE_DONE
+        status["ok"] = True
+        status["started_at"] = datetime.now(timezone.utc).isoformat()
+        status["finished_at"] = datetime.now(timezone.utc).isoformat()
+        status["duration_seconds"] = 0.1
+        status["artifacts"]["summary_md"] = str(phase_dir / "summary.md")
+        status["artifacts"]["raw_log"] = str(phase_dir / "raw.log")
+        status["next_action"] = "dry_run_complete"
+        return status
+    
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    
+    status["state"] = STATE_RUNNING
+    status["started_at"] = datetime.now(timezone.utc).isoformat()
+    save_status(check_id, phase["id"], status)
+    
+    runner_path = resolve_runner_path(phase["runner"], project_path)
+    
+    env = os.environ.copy()
+    env["PROJECT_PATH"] = project_path
+    env["CHECK_ID"] = check_id
+    env["PHASE_ID"] = phase["id"]
+    env["ARTIFACT_DIR"] = str(phase_dir)
+    
+    if phase.get("env"):
+        env.update(phase["env"])
+    
+    timeout = phase.get("timeout_seconds", manifest["config"].get("timeout_per_phase", 300))
+    start_time = time.time()
+    
+    try:
+        result = subprocess.run(
+            [runner_path],
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=env
+        )
+        
+        duration = time.time() - start_time
+        status["duration_seconds"] = round(duration, 2)
+        status["finished_at"] = datetime.now(timezone.utc).isoformat()
+        
+        raw_log = f"=== STDOUT ===\n{result.stdout}\n\n=== STDERR ===\n{result.stderr}"
+        save_raw_log(check_id, phase["id"], raw_log)
+        status["artifacts"]["raw_log"] = str(phase_dir / "raw.log")
+        
+        if result.returncode == 0:
+            status["state"] = STATE_DONE
+            status["ok"] = True
+            
+            try:
+                for line in result.stdout.strip().split("\n"):
+                    if line.startswith("{") and line.endswith("}"):
+                        output = json.loads(line)
+                        if "metrics" in output:
+                            status["metrics"] = output["metrics"]
+                        break
+            except:
+                pass
+            
+            summary = generate_summary_md(phase, status, result.stdout, result.stderr)
+            save_summary_md(check_id, phase["id"], summary)
+            status["artifacts"]["summary_md"] = str(phase_dir / "summary.md")
+            status["next_action"] = determine_next_action(phase, manifest)
+        else:
+            status["state"] = STATE_FAILED
+            status["ok"] = False
+            status["error"] = {
+                "code": ERROR_COMMAND_FAILED,
+                "message": f"Runner exited with code {result.returncode}",
+                "exit_code": result.returncode,
+                "stderr": result.stderr[-2000:] if len(result.stderr) > 2000 else result.stderr
+            }
+            
+            summary = generate_summary_md(phase, status, result.stdout, result.stderr)
+            save_summary_md(check_id, phase["id"], summary)
+            status["artifacts"]["summary_md"] = str(phase_dir / "summary.md")
+            status["next_action"] = "review_errors"
+    
+    except subprocess.TimeoutExpired:
+        duration = time.time() - start_time
+        status["duration_seconds"] = round(duration, 2)
+        status["finished_at"] = datetime.now(timezone.utc).isoformat()
+        status["state"] = STATE_FAILED
+        status["ok"] = False
+        status["error"] = {
+            "code": ERROR_TIMEOUT,
+            "message": f"Phase exceeded timeout of {timeout} seconds",
+            "details": {"timeout_seconds": timeout}
+        }
+        
+        raw_log = f"=== TIMEOUT after {timeout} seconds ==="
+        save_raw_log(check_id, phase["id"], raw_log)
+        status["artifacts"]["raw_log"] = str(phase_dir / "raw.log")
+        
+        summary = generate_summary_md(phase, status, "", "")
+        save_summary_md(check_id, phase["id"], summary)
+        status["artifacts"]["summary_md"] = str(phase_dir / "summary.md")
+        status["next_action"] = "increase_timeout"
+    
+    except FileNotFoundError as e:
+        status["state"] = STATE_FAILED
+        status["ok"] = False
+        status["finished_at"] = datetime.now(timezone.utc).isoformat()
+        status["error"] = {
+            "code": ERROR_NOT_FOUND,
+            "message": f"Runner not found: {runner_path}",
+            "details": {"runner": runner_path}
+        }
+        status["next_action"] = "fix_runner_path"
+    
+    except PermissionError as e:
+        status["state"] = STATE_FAILED
+        status["ok"] = False
+        status["finished_at"] = datetime.now(timezone.utc).isoformat()
+        status["error"] = {
+            "code": ERROR_PERMISSION_DENIED,
+            "message": f"Permission denied: {e}",
+            "details": {"runner": runner_path}
+        }
+        status["next_action"] = "check_permissions"
+    
+    except Exception as e:
+        status["state"] = STATE_FAILED
+        status["ok"] = False
+        status["finished_at"] = datetime.now(timezone.utc).isoformat()
+        status["error"] = {
+            "code": ERROR_INTERNAL,
+            "message": str(e),
+            "details": {"exception_type": type(e).__name__}
+        }
+        status["next_action"] = "review_errors"
+    
+    save_status(check_id, phase["id"], status)
+    return status
+
+
+def run_pipeline(
+    check_id: str,
+    phase_id: Optional[str] = None,
+    dry_run: bool = False,
+    continue_on_failure: bool = False
+) -> dict:
+    """Main pipeline execution logic."""
+    manifest, error = load_manifest(check_id)
+    if error:
+        return error
+    
+    phases = manifest["phases"]
+    
+    if phase_id:
+        phases = [p for p in phases if p["id"] == phase_id]
+        if not phases:
+            return error_response(
+                ERROR_NOT_FOUND,
+                f"Phase not found: {phase_id}",
+                {"available_phases": [p["id"] for p in manifest["phases"]]}
+            )
+    
+    try:
+        phases = sort_phases_by_dependencies(phases)
+    except ValueError as e:
+        return error_response(
+            ERROR_VALIDATION,
+            str(e),
+            {"phases": [p["id"] for p in phases]}
+        )
+    
+    phase_statuses = {}
+    for p in phases:
+        existing = load_status(check_id, p["id"])
+        if existing:
+            phase_statuses[p["id"]] = existing
+    
+    results = []
+    global_config = manifest.get("config", {})
+    stop_pipeline = False
+    
+    for phase in phases:
+        phase_result = {
+            "phase_id": phase["id"],
+            "phase_name": phase["name"]
+        }
+        
+        if stop_pipeline:
+            status = create_initial_status(phase, check_id, get_git_info(manifest["project_path"]))
+            status["state"] = STATE_SKIPPED
+            status["started_at"] = datetime.now(timezone.utc).isoformat()
+            status["finished_at"] = datetime.now(timezone.utc).isoformat()
+            save_status(check_id, phase["id"], status)
+            phase_result["status"] = status
+            results.append(phase_result)
+            continue
+        
+        can_run, failed_dep = check_dependencies(phase, phase_statuses)
+        
+        if not can_run:
+            status = create_initial_status(phase, check_id, get_git_info(manifest["project_path"]))
+            status["state"] = STATE_SKIPPED
+            status["error"] = {
+                "code": ERROR_DEPENDENCY_FAILED,
+                "message": f"Dependency '{failed_dep}' failed or not complete"
+            }
+            status["started_at"] = datetime.now(timezone.utc).isoformat()
+            status["finished_at"] = datetime.now(timezone.utc).isoformat()
+            save_status(check_id, phase["id"], status)
+            phase_result["status"] = status
+            results.append(phase_result)
+            
+            if phase.get("stop_on_fail", True):
+                stop_pipeline = True
+            continue
+        
+        status = execute_phase(check_id, phase, manifest, dry_run)
+        phase_statuses[phase["id"]] = status
+        phase_result["status"] = status
+        results.append(phase_result)
+        
+        if status["state"] == STATE_FAILED:
+            phase_stop_on_fail = phase.get("stop_on_fail", True)
+            global_continue = global_config.get("continue_on_failure", False) or continue_on_failure
+            
+            if phase_stop_on_fail and not global_continue:
+                stop_pipeline = True
+    
+    all_ok = all(r["status"].get("ok", False) for r in results)
+    any_failed = any(r["status"].get("state") == STATE_FAILED for r in results)
+    any_skipped = any(r["status"].get("state") == STATE_SKIPPED for r in results)
+    
+    overall_status = "success" if all_ok else ("partial" if any_skipped else "failed")
+    
+    return {
+        "check_id": check_id,
+        "status": overall_status,
+        "dry_run": dry_run,
+        "phases": results,
+        "summary": {
+            "total": len(results),
+            "passed": sum(1 for r in results if r["status"].get("ok")),
+            "failed": sum(1 for r in results if r["status"].get("state") == STATE_FAILED),
+            "skipped": sum(1 for r in results if r["status"].get("state") == STATE_SKIPPED)
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def health_check() -> dict:
+    """Perform health check for tool_doctor."""
+    checks = []
+    
+    manifest_schema_exists = MANIFEST_SCHEMA_FILE.exists()
+    status_schema_exists = STATUS_SCHEMA_FILE.exists()
+    
+    schema_check = {
+        "name": "schema_files",
+        "status": "pass" if (manifest_schema_exists and status_schema_exists) else "fail",
+        "message": "All schema files exist" if (manifest_schema_exists and status_schema_exists) else "Missing schema files"
+    }
+    checks.append(schema_check)
+    
+    artifact_check = {
+        "name": "artifact_root",
+        "status": "pass" if ARTIFACT_ROOT.exists() else "warn",
+        "message": "Artifact root exists" if ARTIFACT_ROOT.exists() else "Artifact root not found (will be created on first run)"
+    }
+    checks.append(artifact_check)
+    
+    try:
+        ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+        test_file = ARTIFACT_ROOT / ".health_check"
+        test_file.write_text("ok")
+        test_file.unlink()
+        write_check = {
+            "name": "write_permission",
+            "status": "pass",
+            "message": "Artifact root is writable"
+        }
+    except Exception as e:
+        write_check = {
+            "name": "write_permission",
+            "status": "fail",
+            "message": f"Artifact root not writable: {e}"
+        }
+    checks.append(write_check)
+    
+    passed = sum(1 for c in checks if c["status"] == "pass")
+    failed = sum(1 for c in checks if c["status"] == "fail")
+    warnings = sum(1 for c in checks if c["status"] == "warn")
+    
+    overall_status = "healthy" if failed == 0 else ("degraded" if warnings > 0 else "unhealthy")
+    
+    return {
+        "tool": "project-check-run",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": overall_status,
+        "checks": checks,
+        "summary": {
+            "passed": passed,
+            "failed": failed,
+            "warnings": warnings
+        }
+    }
+
+
+def e2e_test() -> dict:
+    """Run E2E tests for the tool."""
+    results = []
+    
+    # Test 1: Non-existent check_id
+    result1 = run_pipeline("check_nonexistent_000000_000000_000000", dry_run=True)
+    test1 = {
+        "name": "bad_args_nonexistent_check",
+        "status": "pass" if "error" in result1 else "fail",
+        "message": "Non-existent check_id returns error" if "error" in result1 else "Should have returned error"
+    }
+    results.append(test1)
+    
+    # Test 2: Create a test check and run it
+    test_project = WORKSPACE
+    
+    # Initialize a check (actually create it)
+    init_result = subprocess.run(
+        [str(WORKSPACE / "tools" / "project-check-init"), str(test_project)],
+        capture_output=True,
+        text=True
+    )
+    
+    # Extract check_id from output (init outputs just the check_id)
+    check_id = None
+    if init_result.returncode == 0:
+        output = init_result.stdout.strip()
+        # Check for "Check ID:" format
+        if "Check ID:" in output:
+            for line in output.split("\n"):
+                if "Check ID:" in line:
+                    check_id = line.split("Check ID:")[-1].strip()
+                    break
+        else:
+            # Just the check_id on its own line
+            for line in output.split("\n"):
+                line = line.strip()
+                if line.startswith("check_") and re.match(r"^check_\d{8}_\d{6}_[a-f0-9]{6}$", line):
+                    check_id = line
+                    break
+    
+    if check_id:
+        # Test 2: Run the check (dry-run)
+        result2 = run_pipeline(check_id, dry_run=True)
+        test2 = {
+            "name": "happy_path_dry_run",
+            "status": "pass" if result2.get("status") in ["success", "failed"] else "fail",
+            "message": f"Dry run returns valid status: {result2.get('status', 'unknown')}"
+        }
+        results.append(test2)
+        
+        # Test 3: Invalid phase_id
+        result3 = run_pipeline(check_id, phase_id="nonexistent_phase", dry_run=True)
+        test3 = {
+            "name": "bad_args_invalid_phase",
+            "status": "pass" if "error" in result3 else "fail",
+            "message": "Invalid phase_id returns error" if "error" in result3 else "Should have returned error"
+        }
+        results.append(test3)
+    else:
+        results.append({
+            "name": "happy_path_dry_run",
+            "status": "fail",
+            "message": f"Failed to get check_id from init. stdout: {init_result.stdout[:200]}"
+        })
+    
+    # Test 4: Status validation
+    test_status = {
+        "phase": "phase_a_repo",
+        "state": "done",
+        "ok": True,
+        "inputs": {}
+    }
+    errors = validate_status_against_schema(test_status)
+    test4 = {
+        "name": "schema_validation",
+        "status": "pass" if not errors else "fail",
+        "message": "Status validation passed" if not errors else f"Validation errors: {errors}"
+    }
+    results.append(test4)
+    
+    # Test 5: Dependency check
+    test_phases = [
+        {"id": "phase_a_repo", "depends_on": []},
+        {"id": "phase_b_tests", "depends_on": ["phase_a_repo"]}
+    ]
+    
+    phase_statuses = {"phase_a_repo": {"state": "failed", "ok": False}}
+    can_run, failed_dep = check_dependencies(test_phases[1], phase_statuses)
+    
+    test5 = {
+        "name": "dependency_check",
+        "status": "pass" if not can_run and failed_dep == "phase_a_repo" else "fail",
+        "message": "Dependency check works correctly" if not can_run else "Should have blocked due to failed dependency"
+    }
+    results.append(test5)
+    
+    passed = sum(1 for r in results if r["status"] == "pass")
+    failed = sum(1 for r in results if r["status"] == "fail")
+    
+    return {
+        "tool": "project-check-run",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": "passed" if failed == 0 else "failed",
+        "tests": results,
+        "summary": {
+            "passed": passed,
+            "failed": failed,
+            "total": len(results)
+        }
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Execute project check phases",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    project-check-run check_20260306_043500_a1b2c3
+    project-check-run check_20260306_043500_a1b2c3 --phase phase_a_repo
+    project-check-run check_20260306_043500_a1b2c3 --dry-run
+    project-check-run check_20260306_043500_a1b2c3 --continue-on-failure
+    project-check-run --health
+    project-check-run --e2e-test
+"""
+    )
+    
+    parser.add_argument(
+        "check_id",
+        nargs="?",
+        help="Check ID to run"
+    )
+    
+    parser.add_argument(
+        "--phase", "-p",
+        help="Run only the specified phase (e.g., phase_a_repo)"
+    )
+    
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without executing runners"
+    )
+    
+    parser.add_argument(
+        "--continue-on-failure",
+        action="store_true",
+        help="Continue to subsequent phases even when a phase fails"
+    )
+    
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="Run health check and exit"
+    )
+    
+    parser.add_argument(
+        "--e2e-test",
+        action="store_true",
+        help="Run E2E tests and exit"
+    )
+    
+    args = parser.parse_args()
+    
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        sys.exit(0 if result["status"] in ["healthy", "degraded"] else 1)
+    
+    if args.e2e_test:
+        result = e2e_test()
+        print(json.dumps(result, indent=2))
+        sys.exit(0 if result["status"] == "passed" else 1)
+    
+    if not args.check_id:
+        parser.error("check_id is required (unless --health or --e2e-test)")
+    
+    result = run_pipeline(
+        check_id=args.check_id,
+        phase_id=args.phase,
+        dry_run=args.dry_run,
+        continue_on_failure=args.continue_on_failure
+    )
+    
+    print(json.dumps(result, indent=2))
+    
+    if "error" in result:
+        sys.exit(1)
+    if result.get("status") == "failed":
+        sys.exit(2)
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""gate-a-signer - Gate A 独立签发器"""
+import argparse
+import json
+import subprocess
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
+RECEIPT_SIGNER = WORKSPACE / "tools" / "receipt-signer"
+
+def run_gate_a(task_id: str, scope_paths: list = None) -> dict:
+    started_at = datetime.now().isoformat()
+    
+    checks = []
+    issues = []
+    
+    # 检查任务定义
+    wf_path = WORKSPACE / "WORKFLOW_STATE.json"
+    task_defined = False
+    if wf_path.exists():
+        try:
+            wf = json.loads(wf_path.read_text())
+            for task in wf.get("completed", []) + wf.get("pending", []):
+                if task.get("id") == task_id:
+                    task_defined = True
+                    checks.append({"name": "task_defined", "status": "pass"})
+                    break
+        except:
+            pass
+    
+    if not task_defined:
+        checks.append({"name": "task_defined", "status": "skip", "details": "standalone task"})
+    
+    # 检查 scope
+    if scope_paths:
+        for path in scope_paths:
+            if not Path(path).exists() and not (WORKSPACE / path).exists():
+                issues.append(f"Scope path not found: {path}")
+        checks.append({"name": "scope_valid", "status": "pass" if not issues else "fail"})
+    else:
+        checks.append({"name": "scope_valid", "status": "skip", "details": "no scope specified"})
+    
+    result = "pass" if not issues else "fail"
+    finished_at = datetime.now().isoformat()
+    
+    # 保存 checks 到临时文件
+    checks_file = Path("/tmp") / f"gate_a_checks_{task_id}.json"
+    checks_file.write_text(json.dumps({"checks": checks, "issues": issues}))
+    
+    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = ARTIFACTS_DIR / f"{task_id}_gate_a_receipt.json"
+    
+    # 调用 receipt-signer 生成带签名的 receipt
+    proc = subprocess.run([
+        str(RECEIPT_SIGNER), "--sign", "--gate", "a",
+        "--task-id", task_id, "--result", result,
+        "--output", str(output_path),
+        "--started-at", started_at,
+        "--finished-at", finished_at
+    ], capture_output=True, text=True)
+    
+    if output_path.exists():
+        receipt = json.loads(output_path.read_text())
+        # 添加 checks（这些不会影响签名验证，因为验证只检查核心字段）
+        receipt["checks"] = checks
+        receipt["issues"] = issues
+        output_path.write_text(json.dumps(receipt, indent=2))
+        return receipt
+    
+    return {"error": "Failed to sign receipt"}
+
+def main():
+    parser = argparse.ArgumentParser(description="gate-a-signer")
+    parser.add_argument("--task-id", required=True)
+    parser.add_argument("--scope")
+    parser.add_argument("--json", action="store_true")
+    
+    args = parser.parse_args()
+    scope_paths = args.scope.split(",") if args.scope else []
+    receipt = run_gate_a(args.task_id, scope_paths)
+    
+    if args.json:
+        print(json.dumps(receipt, indent=2))
+    else:
+        print(f"{'✅' if receipt.get('result') == 'pass' else '❌'} Gate A: {receipt.get('result')}")
+    
+    return 0 if receipt.get("result") == "pass" else 1
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

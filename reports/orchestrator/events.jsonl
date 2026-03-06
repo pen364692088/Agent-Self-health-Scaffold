@@ -102,3 +102,5 @@
 {"ts": "2026-03-05T12:54:50.142306", "task_id": "task_121547cd", "state_from": "none", "state_to": "pending", "run_id": "run_c2db22da", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
 {"ts": "2026-03-05T12:54:50.255043", "task_id": "task_a4c561e9", "state_from": "none", "state_to": "pending", "run_id": "run_98242a6d", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
 {"ts": "2026-03-05T12:55:59.093813", "task_id": "task_5a809a51", "state_from": "pending", "state_to": "timeout", "run_id": "run_fd8fb577", "attempt": 0, "elapsed_ms": 0, "reason": "zombie_cleanup"}
+{"ts": "2026-03-06T04:58:51.398115", "task_id": "task_ea027b22", "state_from": "none", "state_to": "pending", "run_id": "run_bebac9fc", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
+{"ts": "2026-03-06T05:01:04.809470", "task_id": "task_69e1b68b", "state_from": "none", "state_to": "pending", "run_id": "run_8bac4f4d", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}

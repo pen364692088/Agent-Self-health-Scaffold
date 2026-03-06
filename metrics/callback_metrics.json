@@ -2,10 +2,24 @@
   "advances": [
     {
       "workflow_id": "unknown",
-      "step_id": "phase_a3",
+      "step_id": "3",
       "success": true,
-      "latency_ms": 0.11467933654785156,
-      "timestamp": "2026-03-05T22:22:53.068395"
+      "latency_ms": 0.293731689453125,
+      "timestamp": "2026-03-06T07:14:31.535430"
+    },
+    {
+      "workflow_id": "unknown",
+      "step_id": "4",
+      "success": true,
+      "latency_ms": 0.09608268737792969,
+      "timestamp": "2026-03-06T07:15:31.603138"
+    },
+    {
+      "workflow_id": "unknown",
+      "step_id": "6",
+      "success": true,
+      "latency_ms": 0.09894371032714844,
+      "timestamp": "2026-03-06T07:32:33.570337"
     }
   ],
   "global_inflight": 0

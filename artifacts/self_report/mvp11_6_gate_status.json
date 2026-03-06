@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-03-06T08:45:00CST",
+  "tools": [
+    {
+      "name": "check-response-path-coverage",
+      "gate_a": "PASS",
+      "gate_b": "PASS",
+      "gate_c": "PASS",
+      "ready": true,
+      "notes": "Coverage checker operational"
+    },
+    {
+      "name": "enforcement_matrix.json",
+      "gate_a": "PASS",
+      "gate_b": "PASS",
+      "gate_c": "N/A",
+      "ready": true,
+      "notes": "Data file, validated with jq"
+    },
+    {
+      "name": "response_path_inventory.json",
+      "gate_a": "PASS",
+      "gate_b": "PASS",
+      "gate_c": "N/A",
+      "ready": true,
+      "notes": "Data file, validated with jq"
+    },
+    {
+      "name": "srap-daily-report",
+      "gate_a": "PENDING",
+      "gate_b": "PENDING",
+      "gate_c": "PENDING",
+      "ready": false,
+      "notes": "Requires shadow data for validation"
+    },
+    {
+      "name": "srap-start-shadow",
+      "gate_a": "PENDING",
+      "gate_b": "PENDING",
+      "gate_c": "PENDING",
+      "ready": false,
+      "notes": "Requires shadow data for validation"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "ready": 3,
+    "pending": 2,
+    "ready_rate": 0.6
+  }
+}

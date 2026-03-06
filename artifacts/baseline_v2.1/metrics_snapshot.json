@@ -1,0 +1,13 @@
+{
+  "collection_time": "2026-03-06T10:07:06.715552",
+  "window_hours": 24,
+  "metrics": {
+    "verify_and_close_invocations_total": 8,
+    "finalize_response_blocks_total": 13,
+    "missing_receipt_block_total": 7,
+    "fake_completion_block_total": 6,
+    "done_guard_blocks_total": 7,
+    "illegal_transition_block_total": 0,
+    "human_failed_to_repairing_success_rate": "N/A"
+  }
+}

@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""
+verify-and-close v2.1 - Tamper-Evident Trust Anchor Integration
+
+集成：
+1. Gate A/B/C 独立签发器
+2. Final aggregator（只能汇总，不能覆盖）
+3. State authority（状态迁移权威）
+
+流程：
+  Gate A signer → Gate B signer → Gate C signer → Final aggregator → State authority
+
+这个版本确保：
+- 每个 Gate 独立签发，不能互相冒充
+- Final 只能聚合，不能伪造
+- 状态迁移需要 receipt 验证
+"""
+import sys
+import json
+import subprocess
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS = WORKSPACE / "tools"
+
+GATE_A_SIGNER = TOOLS / "gate-a-signer"
+GATE_B_SIGNER = TOOLS / "gate-b-signer"
+GATE_C_SIGNER = TOOLS / "gate-c-signer"
+FINAL_AGGREGATOR = TOOLS / "final-aggregator"
+STATE_AUTHORITY = TOOLS / "state-authority"
+
+
+def run_tool(tool_path: str, args: list) -> tuple:
+    """运行工具"""
+    result = subprocess.run(
+        [tool_path] + args,
+        capture_output=True,
+        text=True,
+        cwd=WORKSPACE
+    )
+    return result.returncode, result.stdout, result.stderr
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="verify-and-close v2.1 - Trust Anchor Edition")
+    parser.add_argument("--task-id", required=True)
+    parser.add_argument("--scope", help="Comma-separated scope paths")
+    parser.add_argument("--artifacts", help="Comma-separated artifact paths")
+    parser.add_argument("--skip-e2e", action="store_true")
+    parser.add_argument("--advance-state", action="store_true", help="Auto-advance to ready_to_close")
+    parser.add_argument("--json", action="store_true")
+    
+    args = parser.parse_args()
+    
+    task_id = args.task_id
+    
+    print(f"\n{'='*60}")
+    print(f"verify-and-close v2.1 - Trust Anchor Edition")
+    print(f"Task: {task_id}")
+    print(f"{'='*60}\n")
+    
+    # Step 1: Gate A Signer
+    print("Step 1: Gate A (Contract) - Independent Signer")
+    gate_a_args = ["--task-id", task_id, "--json"]
+    if args.scope:
+        gate_a_args.extend(["--scope", args.scope])
+    
+    code_a, out_a, err_a = run_tool(str(GATE_A_SIGNER), gate_a_args)
+    receipt_a = json.loads(out_a) if out_a else {}
+    status_a = "✅" if code_a == 0 else "❌"
+    print(f"  {status_a} Gate A: {receipt_a.get('result', 'unknown')}")
+    print(f"     Signer: {receipt_a.get('signer_id', 'unknown')}")
+    print(f"     Signature: {receipt_a.get('signature', '')[:16]}...")
+    
+    # Step 2: Gate B Signer
+    print("\nStep 2: Gate B (E2E) - Independent Signer")
+    gate_b_args = ["--task-id", task_id, "--json"]
+    if args.skip_e2e:
+        gate_b_args.append("--skip-e2e")
+    
+    code_b, out_b, err_b = run_tool(str(GATE_B_SIGNER), gate_b_args)
+    receipt_b = json.loads(out_b) if out_b else {}
+    status_b = "✅" if code_b == 0 else "❌"
+    print(f"  {status_b} Gate B: {receipt_b.get('result', 'unknown')}")
+    print(f"     Signer: {receipt_b.get('signer_id', 'unknown')}")
+    
+    # Step 3: Gate C Signer
+    print("\nStep 3: Gate C (Preflight) - Independent Signer")
+    gate_c_args = ["--task-id", task_id, "--json"]
+    if args.artifacts:
+        gate_c_args.extend(["--artifacts", args.artifacts])
+    
+    code_c, out_c, err_c = run_tool(str(GATE_C_SIGNER), gate_c_args)
+    receipt_c = json.loads(out_c) if out_c else {}
+    status_c = "✅" if code_c == 0 else "❌"
+    print(f"  {status_c} Gate C: {receipt_c.get('result', 'unknown')}")
+    print(f"     Signer: {receipt_c.get('signer_id', 'unknown')}")
+    
+    # Step 4: Final Aggregator
+    print("\nStep 4: Final Aggregator (Can only aggregate, not override)")
+    code_final, out_final, err_final = run_tool(
+        str(FINAL_AGGREGATOR),
+        ["--task-id", task_id, "--json"]
+    )
+    receipt_final = json.loads(out_final) if out_final else {}
+    status_final = "✅" if code_final == 0 else "❌"
+    
+    print(f"  {status_final} Final: {receipt_final.get('result', 'unknown')}")
+    print(f"     Aggregator: {receipt_final.get('signer_id', 'unknown')}")
+    print(f"     Gate A: {receipt_final.get('gate_results', {}).get('gate_a', 'unknown')}")
+    print(f"     Gate B: {receipt_final.get('gate_results', {}).get('gate_b', 'unknown')}")
+    print(f"     Gate C: {receipt_final.get('gate_results', {}).get('gate_c', 'unknown')}")
+    
+    # Step 5: State Authority (Optional)
+    if args.advance_state and code_final == 0:
+        print("\nStep 5: State Authority (Transition)")
+        code_state, out_state, err_state = run_tool(
+            str(STATE_AUTHORITY),
+            ["--advance", task_id, "ready_to_close", "--json"]
+        )
+        state_result = json.loads(out_state) if out_state else {}
+        status_state = "✅" if code_state == 0 else "❌"
+        print(f"  {status_state} {state_result.get('message', 'unknown')}")
+    
+    # Summary
+    print(f"\n{'='*60}")
+    all_pass = code_a == 0 and code_b == 0 and code_c == 0 and code_final == 0
+    
+    if all_pass:
+        print("RESULT: READY_TO_CLOSE")
+        print(f"Final Receipt: artifacts/receipts/{task_id}_final_receipt.json")
+        print("All gates signed by independent authorities")
+    else:
+        print("RESULT: BLOCKED")
+        print("One or more gates failed")
+    
+    print(f"{'='*60}\n")
+    
+    if args.json:
+        result = {
+            "task_id": task_id,
+            "result": "READY_TO_CLOSE" if all_pass else "BLOCKED",
+            "gate_a": {"result": receipt_a.get("result"), "signer": receipt_a.get("signer_id")},
+            "gate_b": {"result": receipt_b.get("result"), "signer": receipt_b.get("signer_id")},
+            "gate_c": {"result": receipt_c.get("result"), "signer": receipt_c.get("signer_id")},
+            "final": {"result": receipt_final.get("result"), "signer": receipt_final.get("signer_id")}
+        }
+        print(json.dumps(result, indent=2))
+    
+    return 0 if all_pass else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

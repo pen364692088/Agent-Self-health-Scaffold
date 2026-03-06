@@ -1,0 +1,18 @@
+{
+  "task_id": "task1",
+  "receipt_type": "contract",
+  "status": "pass",
+  "generated_at": "2026-03-06T08:56:03.382771",
+  "checks": [
+    {
+      "name": "task_defined",
+      "status": "pass"
+    },
+    {
+      "name": "scope_valid",
+      "status": "pass"
+    }
+  ],
+  "state_before": "running",
+  "state_after": "self_verify"
+}

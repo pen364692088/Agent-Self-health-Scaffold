@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""
+Response Path Coverage Checker v1.0
+Checks that all response paths are covered by SRAP governance chain.
+"""
+
+import json
+import sys
+from pathlib import Path
+
+INVENTORY_PATH = Path(__file__).parent.parent / "artifacts/self_report/response_path_inventory.json"
+
+def load_inventory():
+    """Load path inventory from JSON file."""
+    if not INVENTORY_PATH.exists():
+        return None
+    with open(INVENTORY_PATH) as f:
+        return json.load(f)
+
+def check_coverage(inventory, path_id=None, audit_mode=False):
+    """Check coverage for all paths or specific path."""
+    results = {
+        "status": "ok",
+        "total": 0,
+        "covered": 0,
+        "partial": 0,
+        "uncovered": 0,
+        "paths": [],
+        "exit_code": 0
+    }
+    
+    if not inventory:
+        results["status"] = "error"
+        results["error"] = "Inventory file not found or invalid"
+        results["exit_code"] = 3
+        return results
+    
+    paths = inventory.get("paths", [])
+    if path_id:
+        paths = [p for p in paths if p.get("path_id") == path_id]
+    
+    for path in paths:
+        path_id_val = path.get("path_id", "unknown")
+        components = path.get("components", {})
+        category = path.get("category", "C")
+        
+        # Calculate coverage
+        component_count = sum(1 for v in components.values() if v)
+        total_components = len(components)
+        coverage_pct = component_count / total_components if total_components > 0 else 0
+        
+        path_result = {
+            "path_id": path_id_val,
+            "category": category,
+            "coverage_pct": round(coverage_pct, 2),
+            "components": components
+        }
+        
+        results["total"] += 1
+        
+        if category == "A":
+            results["covered"] += 1
+            path_result["status"] = "covered"
+        elif category == "B":
+            results["partial"] += 1
+            path_result["status"] = "partial"
+            path_result["justification"] = path.get("justification", "No justification provided")
+            if audit_mode:
+                results["exit_code"] = max(results["exit_code"], 1)
+        else:  # Category C
+            results["uncovered"] += 1
+            path_result["status"] = "uncovered"
+            path_result["justification"] = path.get("justification", "No justification provided")
+            results["exit_code"] = max(results["exit_code"], 2)
+        
+        results["paths"].append(path_result)
+    
+    # Summary
+    results["coverage_rate"] = results["covered"] / results["total"] if results["total"] > 0 else 0
+    
+    if results["exit_code"] == 0:
+        results["status"] = "all_covered"
+    elif results["exit_code"] == 1:
+        results["status"] = "partial_coverage"
+    else:
+        results["status"] = "uncovered_paths"
+    
+    return results
+
+def health_check():
+    """Return health status for Gate C."""
+    return {
+        "status": "healthy",
+        "version": "1.0",
+        "inventory_path": str(INVENTORY_PATH)
+    }
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Response Path Coverage Checker")
+    parser.add_argument("--path", help="Check specific path")
+    parser.add_argument("--audit", action="store_true", help="Audit mode (strict)")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--health", action="store_true", help="Health check for Gate C")
+    args = parser.parse_args()
+    
+    if args.health:
+        print(json.dumps(health_check()))
+        return 0
+    
+    inventory = load_inventory()
+    results = check_coverage(inventory, args.path, args.audit)
+    
+    if args.json:
+        print(json.dumps(results, indent=2))
+    else:
+        print(f"Response Path Coverage Report")
+        print(f"=" * 40)
+        print(f"Total paths: {results['total']}")
+        print(f"Covered (A): {results['covered']}")
+        print(f"Partial (B): {results['partial']}")
+        print(f"Uncovered (C): {results['uncovered']}")
+        print(f"Coverage rate: {results['coverage_rate']:.1%}")
+        print()
+        
+        for p in results["paths"]:
+            status_icon = "✅" if p["status"] == "covered" else "⚠️" if p["status"] == "partial" else "❌"
+            print(f"{status_icon} {p['path_id']}: {p['category']} ({p['coverage_pct']:.0%})")
+            if p["status"] != "covered":
+                print(f"   └─ {p.get('justification', 'No justification')}")
+        
+        print()
+        print(f"Status: {results['status']}")
+    
+    return results["exit_code"]
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -49,3 +49,87 @@
 [2026-03-06T01:01:43.388564] [INFO] 兜底发现未推进: phase_b_shadow (da478cdb-cfbd-472d-adfe-e6d287fd7373)
 [2026-03-06T01:01:43.548157] [INFO] Processing event: da478cdb-cfbd-472d-adfe-e6d287fd7373
 [2026-03-06T01:01:43.584512] [INFO] ✅ Event da478cdb-cfbd-472d-adfe-e6d287fd7373 processed successfully
+[2026-03-06T04:38:10.832256] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:38:10.985328] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:38:11.019986] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:38:40.959509] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:38:41.123881] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:38:41.163568] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:42:11.513665] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:42:11.541375] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:42:11.698946] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:42:11.742251] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:42:11.872048] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:42:11.916215] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T04:42:41.516644] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:42:41.548505] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:42:41.714531] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:42:41.761894] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:42:41.896440] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:42:41.943323] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T04:44:41.792697] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:44:41.832656] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:44:42.009924] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:44:42.060059] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:44:42.202514] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:44:42.252682] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T04:47:41.931145] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:47:41.958669] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:47:42.113413] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:47:42.148722] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:47:42.276727] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:47:42.312618] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T04:48:11.994521] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:48:12.021479] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:48:12.175106] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:48:12.210833] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:48:12.338769] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:48:12.375149] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T04:49:42.161221] [INFO] 兜底发现未推进: phase_c (04a8fd80-c578-41e6-8fc7-ed2260e1c860)
+[2026-03-06T04:49:42.314415] [INFO] Processing event: 04a8fd80-c578-41e6-8fc7-ed2260e1c860
+[2026-03-06T04:49:42.346039] [INFO] ✅ Event 04a8fd80-c578-41e6-8fc7-ed2260e1c860 processed successfully
+[2026-03-06T04:50:42.275626] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:50:42.303982] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:50:42.331641] [INFO] 兜底发现未推进: phase_c (04a8fd80-c578-41e6-8fc7-ed2260e1c860)
+[2026-03-06T04:50:42.492125] [INFO] Processing event: 04a8fd80-c578-41e6-8fc7-ed2260e1c860
+[2026-03-06T04:50:42.528751] [INFO] ✅ Event 04a8fd80-c578-41e6-8fc7-ed2260e1c860 processed successfully
+[2026-03-06T04:50:42.657505] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:50:42.694136] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:50:42.828008] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:50:42.866006] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T04:58:13.213963] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:58:13.241498] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:58:13.270124] [INFO] 兜底发现未推进: phase_c (04a8fd80-c578-41e6-8fc7-ed2260e1c860)
+[2026-03-06T04:58:13.299437] [INFO] 兜底发现未推进: phase_d (30f97ce6-ff6f-490c-b91c-a6c9991f354f)
+[2026-03-06T04:58:13.456636] [INFO] Processing event: 04a8fd80-c578-41e6-8fc7-ed2260e1c860
+[2026-03-06T04:58:13.495552] [INFO] ✅ Event 04a8fd80-c578-41e6-8fc7-ed2260e1c860 processed successfully
+[2026-03-06T04:58:13.624815] [INFO] Processing event: 30f97ce6-ff6f-490c-b91c-a6c9991f354f
+[2026-03-06T04:58:13.659025] [INFO] ✅ Event 30f97ce6-ff6f-490c-b91c-a6c9991f354f processed successfully
+[2026-03-06T04:58:13.791610] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:58:13.831259] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:58:13.959889] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:58:13.992967] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T04:59:13.341898] [INFO] 兜底发现未推进: phase_a (c5296bd3-9fac-4cb3-936c-a71faa810721)
+[2026-03-06T04:59:13.374001] [INFO] 兜底发现未推进: phase_b (cca1865f-c0e8-4fbb-8c32-705b6660bd76)
+[2026-03-06T04:59:13.406540] [INFO] 兜底发现未推进: phase_c (04a8fd80-c578-41e6-8fc7-ed2260e1c860)
+[2026-03-06T04:59:13.441556] [INFO] 兜底发现未推进: phase_d (30f97ce6-ff6f-490c-b91c-a6c9991f354f)
+[2026-03-06T04:59:13.610057] [INFO] Processing event: 04a8fd80-c578-41e6-8fc7-ed2260e1c860
+[2026-03-06T04:59:13.649639] [INFO] ✅ Event 04a8fd80-c578-41e6-8fc7-ed2260e1c860 processed successfully
+[2026-03-06T04:59:13.781413] [INFO] Processing event: 30f97ce6-ff6f-490c-b91c-a6c9991f354f
+[2026-03-06T04:59:13.818238] [INFO] ✅ Event 30f97ce6-ff6f-490c-b91c-a6c9991f354f processed successfully
+[2026-03-06T04:59:13.948784] [INFO] Processing event: c5296bd3-9fac-4cb3-936c-a71faa810721
+[2026-03-06T04:59:13.984989] [INFO] ✅ Event c5296bd3-9fac-4cb3-936c-a71faa810721 processed successfully
+[2026-03-06T04:59:14.116974] [INFO] Processing event: cca1865f-c0e8-4fbb-8c32-705b6660bd76
+[2026-03-06T04:59:14.153081] [INFO] ✅ Event cca1865f-c0e8-4fbb-8c32-705b6660bd76 processed successfully
+[2026-03-06T07:14:31.334842] [INFO] 兜底发现未推进: 1 (run_numeric_leak_001)
+[2026-03-06T07:14:31.501107] [INFO] Processing event: run_numeric_leak_001
+[2026-03-06T07:14:31.541232] [INFO] ✅ Event run_numeric_leak_001 processed successfully
+[2026-03-06T07:15:31.420527] [INFO] 兜底发现未推进: 1 (run_numeric_leak_001)
+[2026-03-06T07:15:31.572660] [INFO] Processing event: run_numeric_leak_001
+[2026-03-06T07:15:31.607887] [INFO] ✅ Event run_numeric_leak_001 processed successfully
+[2026-03-06T07:32:33.381425] [INFO] 兜底发现未推进: 4 (0a4a937c-7285-49fd-b57c-c56ca46f367a)
+[2026-03-06T07:32:33.535255] [INFO] Processing event: 0a4a937c-7285-49fd-b57c-c56ca46f367a
+[2026-03-06T07:32:33.575452] [INFO] ✅ Event 0a4a937c-7285-49fd-b57c-c56ca46f367a processed successfully
+[2026-03-06T08:09:38.071186] [INFO] 兜底发现未推进: 7 (439a23de-9b55-4bba-8a60-59e350bf1b28)
+[2026-03-06T08:09:38.238699] [INFO] Processing event: 439a23de-9b55-4bba-8a60-59e350bf1b28
+[2026-03-06T08:09:38.279783] [INFO] ✅ Event 439a23de-9b55-4bba-8a60-59e350bf1b28 processed successfully

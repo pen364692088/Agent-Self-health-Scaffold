@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""
+completion-bypass-audit v1.0 - 扫描仓库中未保护的完成输出点
+
+目标：
+1. 找出所有产生"完成/总结/交付/ready"类输出的代码
+2. 检查是否经过 finalize-response / output-interceptor
+3. 报告未覆盖的旁路风险
+
+Usage:
+  completion-bypass-audit [--dir <path>] [--json]
+"""
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Dict, List, Tuple, Set
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+
+# 完成类输出模式
+COMPLETION_PATTERNS = [
+    # 中文
+    r"已完成", r"全部完成", r"可以交付", r"已可合并",
+    r"已准备好关闭", r"所有阶段通过", r"基本完成",
+    r"大体完成", r"核心已完成", r"主要功能完成",
+    r"实现完成", r"任务完成", r"交付完成",
+    r"✅.*完成", r"🎉.*完成",
+    
+    # 英文
+    r"completed", r"finished", r"done", r"ready to close",
+    r"ready for review", r"ready to ship", r"delivered",
+    r"all tests passed", r"all gates passed",
+    
+    # 混合
+    r"READY_TO_CLOSE", r"TASK_COMPLETED", r"FINAL_SUMMARY",
+]
+
+# 受保护的调用模式
+PROTECTED_PATTERNS = [
+    r"finalize-response",
+    r"output-interceptor", 
+    r"done-guard",
+    r"verify-and-close",
+]
+
+# 需要扫描的文件类型
+SCAN_EXTENSIONS = [
+    ".py", ".js", ".ts", ".sh", ".bash",
+    ".md", ".txt", ".json",
+    ".yml", ".yaml"
+]
+
+# 需要排除的目录
+EXCLUDE_DIRS = [
+    "node_modules", ".git", "__pycache__",
+    "venv", ".venv", "dist", "build",
+    "tmp", "temp", ".cache"
+]
+
+
+def should_scan(path: Path) -> bool:
+    """检查是否应该扫描该文件"""
+    # 排除目录
+    for exclude in EXCLUDE_DIRS:
+        if exclude in path.parts:
+            return False
+    
+    # 检查扩展名
+    return path.suffix in SCAN_EXTENSIONS
+
+
+def scan_file(path: Path) -> List[Dict]:
+    """扫描单个文件，返回发现的问题"""
+    issues = []
+    
+    try:
+        content = path.read_text()
+        lines = content.split("\n")
+    except:
+        return issues
+    
+    # 检查每一行
+    for line_num, line in enumerate(lines, 1):
+        # 跳过注释行
+        stripped = line.strip()
+        if stripped.startswith("#") or stripped.startswith("//"):
+            continue
+        
+        # 检查完成模式
+        for pattern in COMPLETION_PATTERNS:
+            if re.search(pattern, line, re.IGNORECASE):
+                # 检查是否受保护
+                is_protected = any(
+                    re.search(p, content) for p in PROTECTED_PATTERNS
+                )
+                
+                # 检查是否是测试文件（测试中的伪完成是预期行为）
+                is_test = "test" in path.name.lower() or "test" in str(path).lower()
+                
+                if not is_protected and not is_test:
+                    issues.append({
+                        "file": str(path.relative_to(WORKSPACE)),
+                        "line": line_num,
+                        "content": line.strip()[:100],
+                        "matched_pattern": pattern,
+                        "risk": "medium" if "完成" in line or "completed" in line.lower() else "low"
+                    })
+    
+    return issues
+
+
+def scan_directory(dir_path: Path) -> Dict:
+    """扫描目录"""
+    result = {
+        "scan_time": datetime.now().isoformat(),
+        "scan_dir": str(dir_path),
+        "files_scanned": 0,
+        "issues_found": [],
+        "summary": {}
+    }
+    
+    for path in dir_path.rglob("*"):
+        if not path.is_file():
+            continue
+        
+        if not should_scan(path):
+            continue
+        
+        result["files_scanned"] += 1
+        issues = scan_file(path)
+        result["issues_found"].extend(issues)
+    
+    # 按风险级别汇总
+    result["summary"] = {
+        "total_issues": len(result["issues_found"]),
+        "high_risk": len([i for i in result["issues_found"] if i["risk"] == "high"]),
+        "medium_risk": len([i for i in result["issues_found"] if i["risk"] == "medium"]),
+        "low_risk": len([i for i in result["issues_found"] if i["risk"] == "low"]),
+        "unique_files": len(set(i["file"] for i in result["issues_found"]))
+    }
+    
+    return result
+
+
+def check_tool_integration() -> List[Dict]:
+    """检查关键工具是否集成了拦截器"""
+    integrations = []
+    
+    # 检查 callback-worker
+    callback_worker = WORKSPACE / "tools" / "callback-worker"
+    if callback_worker.exists():
+        content = callback_worker.read_text()
+        has_finalize = "finalize-response" in content or "output-interceptor" in content
+        integrations.append({
+            "tool": "callback-worker",
+            "has_protection": has_finalize,
+            "status": "✅ protected" if has_finalize else "❌ unprotected"
+        })
+    
+    # 检查 callback-handler-auto
+    callback_handler = WORKSPACE / "tools" / "callback-handler-auto"
+    if callback_handler.exists():
+        content = callback_handler.read_text()
+        has_finalize = "finalize-response" in content or "output-interceptor" in content
+        integrations.append({
+            "tool": "callback-handler-auto",
+            "has_protection": has_finalize,
+            "status": "✅ protected" if has_finalize else "❌ unprotected"
+        })
+    
+    # 检查 spawn-with-callback
+    spawn_callback = WORKSPACE / "tools" / "spawn-with-callback"
+    if spawn_callback.exists():
+        content = spawn_callback.read_text()
+        has_finalize = "finalize-response" in content or "output-interceptor" in content
+        integrations.append({
+            "tool": "spawn-with-callback",
+            "has_protection": has_finalize,
+            "status": "✅ protected" if has_finalize else "❌ unprotected"
+        })
+    
+    return integrations
+
+
+def generate_report(result: Dict, integrations: List[Dict]) -> str:
+    """生成报告"""
+    lines = []
+    lines.append("=" * 70)
+    lines.append("COMPLETION BYPASS AUDIT REPORT")
+    lines.append("=" * 70)
+    lines.append(f"Scan Time: {result['scan_time']}")
+    lines.append(f"Directory: {result['scan_dir']}")
+    lines.append(f"Files Scanned: {result['files_scanned']}")
+    lines.append("")
+    
+    # 工具集成状态
+    lines.append("-" * 70)
+    lines.append("TOOL INTEGRATION STATUS")
+    lines.append("-" * 70)
+    for integ in integrations:
+        lines.append(f"  {integ['status']}: {integ['tool']}")
+    lines.append("")
+    
+    # 问题汇总
+    lines.append("-" * 70)
+    lines.append("ISSUE SUMMARY")
+    lines.append("-" * 70)
+    summary = result["summary"]
+    lines.append(f"  Total Issues: {summary['total_issues']}")
+    lines.append(f"  High Risk: {summary['high_risk']}")
+    lines.append(f"  Medium Risk: {summary['medium_risk']}")
+    lines.append(f"  Low Risk: {summary['low_risk']}")
+    lines.append(f"  Unique Files: {summary['unique_files']}")
+    lines.append("")
+    
+    # 详细问题
+    if result["issues_found"]:
+        lines.append("-" * 70)
+        lines.append("DETAILED ISSUES (sorted by risk)")
+        lines.append("-" * 70)
+        
+        # 按风险排序
+        sorted_issues = sorted(
+            result["issues_found"],
+            key=lambda x: (x["risk"] == "high", x["risk"] == "medium"),
+            reverse=True
+        )
+        
+        # 只显示前 20 个
+        for issue in sorted_issues[:20]:
+            lines.append(f"")
+            lines.append(f"  [{issue['risk'].upper()}] {issue['file']}:{issue['line']}")
+            lines.append(f"    Pattern: {issue['matched_pattern']}")
+            lines.append(f"    Content: {issue['content']}")
+        
+        if len(sorted_issues) > 20:
+            lines.append(f"")
+            lines.append(f"  ... and {len(sorted_issues) - 20} more issues")
+    
+    lines.append("")
+    lines.append("=" * 70)
+    
+    return "\n".join(lines)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="completion-bypass-audit v1.0")
+    parser.add_argument("--dir", default=str(WORKSPACE), help="Directory to scan")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--fix-hints", action="store_true", help="Show fix hints")
+    
+    args = parser.parse_args()
+    
+    dir_path = Path(args.dir)
+    result = scan_directory(dir_path)
+    integrations = check_tool_integration()
+    
+    if args.json:
+        output = {
+            "scan_result": result,
+            "tool_integrations": integrations
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        print(generate_report(result, integrations))
+        
+        if args.fix_hints:
+            print("\nFIX HINTS:")
+            print("-" * 70)
+            print("""
+For unprotected tools:
+
+1. callback-worker: Add before any output:
+   subprocess.run(["tools/output-interceptor", "--task-id", task_id, "--channel", "callback_auto_reply"])
+
+2. callback-handler-auto: Wrap completion output:
+   result = subprocess.run(["tools/finalize-response", "--task-id", task_id, "--summary", message])
+
+3. spawn-with-callback: Before spawning next agent:
+   Check receipts via receipt-validator
+
+For scripts that output completion:
+
+1. Add at start: source tools/execution-policy-common.sh
+2. Use: guard_completion() before final output
+3. Or: finalize-response --task-id $TASK_ID --summary "..."
+""")
+    
+    # 返回码
+    unprotected_count = sum(1 for i in integrations if not i["has_protection"])
+    return 1 if unprotected_count > 0 or result["summary"]["high_risk"] > 0 else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

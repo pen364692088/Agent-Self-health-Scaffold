@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""
+finalize-response v1.0 - Auto-wrap completion output with done-guard
+
+遵循 OPENCLAW_EXECUTION_POLICY.md:
+- 任何"完成总结"输出前，自动先过一遍 done-guard
+- 不靠 agent 自己决定何时检查
+- 把"发最终总结"这个动作本身包起来
+
+Usage:
+  finalize-response --task-id <id> --summary "..."
+  finalize-response --task-id <id> --file output.md
+  
+Exit codes:
+  0 - ALLOW: safe to output
+  1 - BLOCK: must repair first
+  2 - ERROR: invalid usage
+"""
+
+import argparse
+import json
+import sys
+import re
+from pathlib import Path
+from datetime import datetime
+from typing import Tuple, List
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+DONE_GUARD = WORKSPACE / "tools" / "done-guard"
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
+FINALIZE_LOG = WORKSPACE / "reports" / "finalize_log.jsonl"
+
+# 伪完成模式 (复用 done-guard)
+FAKE_COMPLETION_PATTERNS = [
+    r"已完成", r"全部完成", r"可以交付", r"已可合并",
+    r"已准备好关闭", r"所有阶段通过", r"基本完成",
+    r"大体完成", r"核心已完成", r"主要功能完成"
+]
+
+
+def check_fake_completion(text: str) -> Tuple[bool, List[str]]:
+    """Check if text contains fake completion phrases."""
+    matches = []
+    for pattern in FAKE_COMPLETION_PATTERNS:
+        if re.search(pattern, text):
+            matches.append(pattern)
+    return len(matches) > 0, matches
+
+
+def check_receipts_exist(task_id: str) -> Tuple[bool, List[str]]:
+    """Check if all required receipts exist."""
+    required = ["contract", "e2e", "preflight", "final"]
+    missing = []
+    
+    for rtype in required:
+        path = ARTIFACTS_DIR / f"{task_id}_{rtype}_receipt.json"
+        if not path.exists():
+            missing.append(rtype)
+    
+    return len(missing) == 0, missing
+
+
+def log_finalize(task_id: str, allowed: bool, reason: str, details: dict = None):
+    """Log finalize decision."""
+    FINALIZE_LOG.parent.mkdir(parents=True, exist_ok=True)
+    
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "task_id": task_id,
+        "allowed": allowed,
+        "reason": reason
+    }
+    if details:
+        entry["details"] = details
+    
+    with open(FINALIZE_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="finalize-response v1.0")
+    parser.add_argument("--task-id", required=True, help="Task identifier")
+    parser.add_argument("--summary", help="Summary text to check")
+    parser.add_argument("--file", help="File containing summary")
+    parser.add_argument("--force", action="store_true", help="Force allow (dangerous)")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    
+    args = parser.parse_args()
+    
+    # Get summary text
+    summary = ""
+    if args.summary:
+        summary = args.summary
+    elif args.file:
+        summary = Path(args.file).read_text()
+    else:
+        # No summary provided, just check receipts
+        pass
+    
+    task_id = args.task_id
+    
+    # Step 1: Check for fake completion phrases
+    if summary:
+        has_fake, patterns = check_fake_completion(summary)
+        if has_fake:
+            log_finalize(task_id, False, "fake_completion_detected", {"patterns": patterns})
+            
+            result = {
+                "action": "BLOCK",
+                "reason": "fake_completion_detected",
+                "patterns": patterns,
+                "message": "Summary contains fake completion phrases. Run verify-and-close first.",
+                "required_action": "verify-and-close --task-id " + task_id
+            }
+            
+            if args.json:
+                print(json.dumps(result, indent=2))
+            else:
+                print("❌ BLOCKED: Fake completion detected")
+                print(f"Patterns: {patterns}")
+                print(f"Run: verify-and-close --task-id {task_id}")
+            
+            return 1
+    
+    # Step 2: Check receipts exist
+    receipts_ok, missing = check_receipts_exist(task_id)
+    
+    if not receipts_ok:
+        log_finalize(task_id, False, "missing_receipts", {"missing": missing})
+        
+        result = {
+            "action": "BLOCK",
+            "reason": "missing_receipts",
+            "missing": missing,
+            "message": f"Missing receipts: {missing}. Run verify-and-close first.",
+            "required_action": "verify-and-close --task-id " + task_id
+        }
+        
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print("❌ BLOCKED: Missing receipts")
+            print(f"Missing: {missing}")
+            print(f"Run: verify-and-close --task-id {task_id}")
+        
+        return 1
+    
+    # Step 3: All checks passed
+    log_finalize(task_id, True, "all_checks_passed")
+    
+    result = {
+        "action": "ALLOW",
+        "reason": "all_checks_passed",
+        "message": "Safe to output completion summary."
+    }
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print("✅ ALLOW: Safe to output")
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

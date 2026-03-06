@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""
+execution-metrics v1.0 - 运行指标收集
+
+6 个核心指标：
+1. verify_and_close_invocations_total
+2. done_guard_blocks_total
+3. finalize_response_blocks_total
+4. missing_receipt_block_total
+5. illegal_transition_block_total
+6. human_failed_to_repairing_success_rate
+
+Usage:
+  execution-metrics --collect
+  execution-metrics --report
+  execution-metrics --prometheus
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List
+from collections import defaultdict
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+METRICS_FILE = WORKSPACE / "reports" / "execution_metrics.jsonl"
+INTERCEPTOR_LOG = WORKSPACE / "reports" / "interceptor_log.jsonl"
+FINALIZE_LOG = WORKSPACE / "reports" / "finalize_log.jsonl"
+VALIDATION_LOG = WORKSPACE / "reports" / "receipt_validation.jsonl"
+GATES_AUDIT = WORKSPACE / "reports" / "gates_audit.log"
+
+
+def parse_jsonl(path: Path) -> List[Dict]:
+    """Parse JSONL file"""
+    if not path.exists():
+        return []
+    
+    entries = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except:
+                    pass
+    return entries
+
+
+def collect_metrics(window_hours: int = 24) -> Dict:
+    """Collect all metrics within time window"""
+    now = datetime.now()
+    cutoff = now - timedelta(hours=window_hours)
+    
+    metrics = {
+        "collection_time": now.isoformat(),
+        "window_hours": window_hours,
+        "metrics": {}
+    }
+    
+    # 1. verify_and_close_invocations_total
+    # 从 artifacts/receipts/ 目录统计
+    receipts_dir = WORKSPACE / "artifacts" / "receipts"
+    if receipts_dir.exists():
+        final_receipts = list(receipts_dir.glob("*_final_receipt.json"))
+        # 过滤时间窗口
+        recent = 0
+        for r in final_receipts:
+            try:
+                data = json.loads(r.read_text())
+                ts = data.get("generated_at", "")
+                # 简化时间解析
+                if ts:
+                    metrics["metrics"]["verify_and_close_invocations_total"] = len(final_receipts)
+                    break
+            except:
+                pass
+        metrics["metrics"]["verify_and_close_invocations_total"] = len(final_receipts)
+    
+    # 2-5. 从 finalize_log 统计
+    finalize_entries = parse_jsonl(FINALIZE_LOG)
+    recent_finalize = [
+        e for e in finalize_entries
+        if parse_timestamp(e.get("timestamp", "")) and parse_timestamp(e.get("timestamp", "")) > cutoff
+    ]
+    
+    blocks = defaultdict(int)
+    for e in recent_finalize:
+        if e.get("allowed") == False:
+            reason = e.get("reason", "unknown")
+            blocks[reason] += 1
+    
+    metrics["metrics"]["finalize_response_blocks_total"] = sum(blocks.values())
+    metrics["metrics"]["missing_receipt_block_total"] = blocks.get("missing_receipts", 0)
+    metrics["metrics"]["fake_completion_block_total"] = blocks.get("fake_completion_detected", 0)
+    
+    # 3. done_guard_blocks_total
+    # 从 interceptor_log 统计
+    interceptor_entries = parse_jsonl(INTERCEPTOR_LOG)
+    recent_intercept = [
+        e for e in interceptor_entries
+        if parse_timestamp(e.get("timestamp", "")) and parse_timestamp(e.get("timestamp", "")) > cutoff
+    ]
+    
+    guard_blocks = sum(1 for e in recent_intercept if e.get("allowed") == False)
+    metrics["metrics"]["done_guard_blocks_total"] = guard_blocks
+    
+    # 4. illegal_transition_block_total
+    # 从 validation_log 统计
+    validation_entries = parse_jsonl(VALIDATION_LOG)
+    illegal = sum(
+        1 for e in validation_entries
+        if "state_transition" in str(e.get("checks", {})) and 
+           not e.get("checks", {}).get("state_transitions", {}).get("passed", True)
+    )
+    metrics["metrics"]["illegal_transition_block_total"] = illegal
+    
+    # 6. human_failed_to_repairing_success_rate
+    # 从 workflow state 变更统计
+    # 简化：暂时设为 N/A
+    metrics["metrics"]["human_failed_to_repairing_success_rate"] = "N/A"
+    
+    return metrics
+
+
+def parse_timestamp(ts_str: str) -> datetime:
+    """Parse ISO timestamp"""
+    if not ts_str:
+        return None
+    try:
+        return datetime.fromisoformat(ts_str.replace("Z", "+00:00").replace("CST", ""))
+    except:
+        return None
+
+
+def format_prometheus(metrics: Dict) -> str:
+    """Format metrics as Prometheus exposition format"""
+    lines = []
+    lines.append("# HELP execution_policy_metrics OpenClaw Execution Policy Metrics")
+    lines.append("# TYPE execution_policy_metrics counter")
+    
+    for name, value in metrics.get("metrics", {}).items():
+        if isinstance(value, (int, float)):
+            lines.append(f'execution_policy_metrics{{metric="{name}"}} {value}')
+    
+    return "\n".join(lines)
+
+
+def generate_report(metrics: Dict) -> str:
+    """Generate human-readable report"""
+    lines = []
+    lines.append("=" * 60)
+    lines.append("EXECUTION POLICY METRICS")
+    lines.append("=" * 60)
+    lines.append(f"Collection Time: {metrics['collection_time']}")
+    lines.append(f"Window: {metrics['window_hours']} hours")
+    lines.append("")
+    lines.append("Metrics:")
+    
+    for name, value in metrics.get("metrics", {}).items():
+        lines.append(f"  {name}: {value}")
+    
+    lines.append("")
+    lines.append("=" * 60)
+    
+    return "\n".join(lines)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="execution-metrics v1.0")
+    parser.add_argument("--collect", action="store_true", help="Collect metrics")
+    parser.add_argument("--report", action="store_true", help="Generate report")
+    parser.add_argument("--prometheus", action="store_true", help="Prometheus format")
+    parser.add_argument("--window", type=int, default=24, help="Time window in hours")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    
+    args = parser.parse_args()
+    
+    if args.collect or args.report or args.prometheus:
+        metrics = collect_metrics(args.window)
+        
+        # 保存指标
+        METRICS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(METRICS_FILE, "a") as f:
+            f.write(json.dumps(metrics) + "\n")
+        
+        if args.prometheus:
+            print(format_prometheus(metrics))
+        elif args.json:
+            print(json.dumps(metrics, indent=2))
+        else:
+            print(generate_report(metrics))
+        
+        return 0
+    
+    parser.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

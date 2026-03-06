@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""
+Subagent SRAP Check v1.0
+将 subagent response 纳入 SRAP 治理链
+"""
+
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+
+sys.path.insert(0, "/home/moonlight/.openclaw/workspace/OpenEmotion")
+
+try:
+    from emotiond.self_report_check import (
+        check_self_report_compliance, 
+        ViolationType, 
+        Severity
+    )
+    HAS_CHECKER = True
+except ImportError as e:
+    HAS_CHECKER = False
+    IMPORT_ERROR = str(e)
+
+SHADOW_LOG = Path.home() / ".openclaw/workspace/artifacts/self_report/shadow_log.jsonl"
+
+
+def check_subagent_response(text: str, context: str = "") -> dict:
+    """Check subagent response for SRAP violations."""
+    
+    if not HAS_CHECKER:
+        return {
+            "error": IMPORT_ERROR,
+            "fallback": True,
+            "text_length": len(text),
+            "checked_at": datetime.now().isoformat()
+        }
+    
+    result = check_self_report_compliance(text)
+    
+    violations = []
+    for v in result.violations:
+        violations.append({
+            "type": v.type.value if hasattr(v.type, 'value') else str(v.type),
+            "severity": v.severity.value if hasattr(v.severity, 'value') else str(v.severity),
+            "evidence": v.evidence[:100] if len(v.evidence) > 100 else v.evidence,
+            "confidence": getattr(v, 'confidence', 1.0),
+            "would_block": v.would_block
+        })
+    
+    would_block = any(v.get("would_block", False) for v in violations)
+    
+    return {
+        "text_length": len(text),
+        "violation_count": len(violations),
+        "violations": violations,
+        "would_block": would_block,
+        "has_violations": result.has_violations if hasattr(result, 'has_violations') else len(violations) > 0,
+        "checked_at": datetime.now().isoformat()
+    }
+
+
+def log_to_shadow(check_result: dict, path_id: str = "subagent_response"):
+    SHADOW_LOG.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "path_id": path_id,
+        "check_type": "srap",
+        "mode": "shadow",
+        **check_result
+    }
+    with open(SHADOW_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def health_check():
+    return {
+        "status": "healthy" if HAS_CHECKER else "degraded",
+        "version": "1.0",
+        "checker_available": HAS_CHECKER,
+        "shadow_log": str(SHADOW_LOG)
+    }
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--text", help="Response text to check")
+    parser.add_argument("--context", default="")
+    parser.add_argument("--log", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--health", action="store_true")
+    args = parser.parse_args()
+    
+    if args.health:
+        print(json.dumps(health_check()))
+        return 0
+    
+    if not args.text:
+        print(json.dumps({"error": "--text required"}))
+        return 1
+    
+    result = check_subagent_response(args.text, args.context)
+    
+    if args.log:
+        log_to_shadow(result)
+        result["logged"] = True
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(f"Violations: {result.get('violation_count', 'N/A')}")
+        print(f"Would block: {result.get('would_block', 'N/A')}")
+    
+    return 2 if result.get('would_block', False) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

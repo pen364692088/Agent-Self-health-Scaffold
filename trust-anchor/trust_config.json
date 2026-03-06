@@ -1,0 +1,36 @@
+{
+  "version": "2.1",
+  "trust_anchors": {
+    "gate_a_signer": {
+      "id": "gate_a_authority",
+      "public_key_path": "~/.openclaw/workspace/trust-anchor/keys/gate_a.pub",
+      "private_key_path": "~/.openclaw/workspace/trust-anchor/keys/gate_a.key"
+    },
+    "gate_b_signer": {
+      "id": "gate_b_authority", 
+      "public_key_path": "~/.openclaw/workspace/trust-anchor/keys/gate_b.pub",
+      "private_key_path": "~/.openclaw/workspace/trust-anchor/keys/gate_b.key"
+    },
+    "gate_c_signer": {
+      "id": "gate_c_authority",
+      "public_key_path": "~/.openclaw/workspace/trust-anchor/keys/gate_c.pub",
+      "private_key_path": "~/.openclaw/workspace/trust-anchor/keys/gate_c.key"
+    },
+    "final_aggregator": {
+      "id": "final_aggregator_authority",
+      "public_key_path": "~/.openclaw/workspace/trust-anchor/keys/final.pub",
+      "private_key_path": "~/.openclaw/workspace/trust-anchor/keys/final.key"
+    },
+    "state_authority": {
+      "id": "state_transition_authority",
+      "public_key_path": "~/.openclaw/workspace/trust-anchor/keys/state.pub",
+      "private_key_path": "~/.openclaw/workspace/trust-anchor/keys/state.key"
+    }
+  },
+  "verification_policy": {
+    "require_all_signatures": true,
+    "verify_chain": true,
+    "max_receipt_age_hours": 24,
+    "revocation_check": false
+  }
+}

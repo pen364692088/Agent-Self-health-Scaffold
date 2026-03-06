@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "subagent_receipt.v1.schema.json",
+  "title": "Subagent Receipt v1",
+  "description": "子代理完成回执 schema (冻结)",
+  
+  "type": "object",
+  "required": ["task_id", "run_id", "status", "summary", "written_at"],
+  "additionalProperties": false,
+  
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "唯一任务 ID",
+      "pattern": "^task_[0-9]{8}_[0-9]{6}_[a-f0-9]{8}$"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "运行 ID",
+      "pattern": "^run_[a-f0-9]{8}$"
+    },
+    "session_key": {
+      "type": "string",
+      "description": "子代理 session key",
+      "default": ""
+    },
+    "parent_session_key": {
+      "type": "string",
+      "description": "父代理 session key (用于通知路由)",
+      "default": ""
+    },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "failed", "timeout"],
+      "description": "任务状态"
+    },
+    "summary": {
+      "type": "string",
+      "description": "任务摘要",
+      "maxLength": 500
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "产出文件路径",
+      "default": []
+    },
+    "error": {
+      "type": ["object", "null"],
+      "properties": {
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "trace": { "type": "string" }
+      },
+      "description": "错误详情 (仅 status=failed 时)"
+    },
+    "notify_user": {
+      "type": "boolean",
+      "description": "是否通知用户",
+      "default": true
+    },
+    "written_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "写入时间 (ISO8601)"
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "重试次数"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "扩展元数据"
+    }
+  }
+}

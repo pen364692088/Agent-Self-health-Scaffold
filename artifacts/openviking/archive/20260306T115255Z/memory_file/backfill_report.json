@@ -1,0 +1,435 @@
+{
+  "version": "openviking_backfill_embeddings.v3",
+  "generated_at": "2026-03-06T11:53:12.524509+00:00",
+  "dry_run": false,
+  "upsert": true,
+  "inputs": {
+    "doc_ids_count": 8,
+    "from_audit": null,
+    "since_days": null,
+    "only_non_ok": false,
+    "root_uri": "viking://resources/user/memory/"
+  },
+  "params": {
+    "max_tokens": 800,
+    "overlap_tokens": 100,
+    "overlap_policy": "min(100,max_tokens//8)",
+    "max_chars": 4000,
+    "max_bytes": 12000,
+    "embedding_version": "openviking.default",
+    "policy": "/home/moonlight/.openclaw/workspace/config/openviking_embedding_policy.yaml",
+    "tokenizer": "auto",
+    "openai_model": "text-embedding-3-large",
+    "hf_model": null,
+    "manifest": "/home/moonlight/.openclaw/workspace/artifacts/openviking/index_manifest.json"
+  },
+  "cost_estimate": {
+    "embed_calls_est": 212,
+    "chunk_total_est": 212,
+    "bytes_total_est": 160088,
+    "time_est_sec": 53.0,
+    "write_ops_est": 8
+  },
+  "summary": {
+    "processed": 8,
+    "failed": 0,
+    "coverage_before_avg": 0.0,
+    "coverage_after_avg": 1.0,
+    "skipped_after_total": 0,
+    "idempotent_skipped": 0
+  },
+  "artifacts": {
+    "embedding_audit": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260306T115255Z/memory_file/embedding_audit.json",
+    "offenders": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260306T115255Z/memory_file/embedding_offenders_topN.json",
+    "policy_decision": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260306T115255Z/memory_file/policy_decision.json",
+    "metrics": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260306T115255Z/memory_file/metrics.json",
+    "manifest": "/home/moonlight/.openclaw/workspace/artifacts/openviking/index_manifest.json"
+  },
+  "results": [
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-05_Workflow_Auto-A_4more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-05_Workflow_Auto-A_4more.md",
+        "doc_hash": "6f573bb6309b5fe0996a92113154af8392b37e537073d89ed45e4b90234734ce",
+        "chunk_count_total": 47,
+        "chunk_count_embedded": 47,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 636,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 47,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 11998,
+        "dual_guard_trim_count": 11951,
+        "indexed_at": "2026-03-06T11:53:02.196225+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 47,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 636,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 11998,
+      "dual_guard_trim_count": 11951,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-06_SRAP_Phase_A_441282fd.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-06_SRAP_Phase_A_441282fd.md",
+        "doc_hash": "2755b17bf1a65909f7d0e41509bdfd084380ac5184a19f95b27d820079b649a1",
+        "chunk_count_total": 5,
+        "chunk_count_embedded": 5,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 798,
+        "max_chunk_chars_seen": 672,
+        "max_chunk_bytes_seen": 798,
+        "status_counts": {
+          "ok": 5,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 91,
+        "dual_guard_trim_count": 86,
+        "indexed_at": "2026-03-06T11:53:02.537371+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 5,
+      "max_chunk_tokens": 798,
+      "max_chunk_chars": 672,
+      "max_chunk_bytes": 798,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 91,
+      "dual_guard_trim_count": 86,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Active_Skills_High-Value_7more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Active_Skills_High-Value_7more.md",
+        "doc_hash": "ecb441958f8e19baeb20c0e0c2fc1af96062039cc8247cb56891b3809c768941",
+        "chunk_count_total": 35,
+        "chunk_count_embedded": 35,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 771,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 35,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 8091,
+        "dual_guard_trim_count": 8056,
+        "indexed_at": "2026-03-06T11:53:02.893970+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 35,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 771,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 8091,
+      "dual_guard_trim_count": 8056,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP-9_Hardening_Key_Learni_3more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP-9_Hardening_Key_Learni_3more.md",
+        "doc_hash": "2cd83159b7833963511adfbe740e8ff3e17869174f8ad6bfc74378d75b8d6b83",
+        "chunk_count_total": 14,
+        "chunk_count_embedded": 14,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 696,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 14,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 1754,
+        "dual_guard_trim_count": 1740,
+        "indexed_at": "2026-03-06T11:53:03.249651+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 14,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 696,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 1754,
+      "dual_guard_trim_count": 1740,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP112_Cycle_Evidence_Laye_7more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP112_Cycle_Evidence_Laye_7more.md",
+        "doc_hash": "f4574262b68f386e00deb84d5002ebe9e4b9775c24a8ef5cb0ef0ef8a9a773e9",
+        "chunk_count_total": 30,
+        "chunk_count_embedded": 30,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 660,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 30,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 2137,
+        "dual_guard_trim_count": 2107,
+        "indexed_at": "2026-03-06T11:53:03.601698+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 30,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 660,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 2137,
+      "dual_guard_trim_count": 2107,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Bootstrap_Core_Rule_6more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Bootstrap_Core_Rule_6more.md",
+        "doc_hash": "6e9bd4cdccd26df7bbfb4bf52c34374aeed83dfa415bcb6bc84eaae74b3b13b7",
+        "chunk_count_total": 23,
+        "chunk_count_embedded": 23,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 791,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 23,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 4149,
+        "dual_guard_trim_count": 4126,
+        "indexed_at": "2026-03-06T11:53:03.937658+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 23,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 791,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 4149,
+      "dual_guard_trim_count": 4126,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Retrieve_v12_OpenVi_6more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Retrieve_v12_OpenVi_6more.md",
+        "doc_hash": "a372e85df8fca1399787c215db8d63ab00f6e50c31d553fc8ad9766b4acc99e3",
+        "chunk_count_total": 28,
+        "chunk_count_embedded": 28,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 679,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 28,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 7429,
+        "dual_guard_trim_count": 7401,
+        "indexed_at": "2026-03-06T11:53:04.295832+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 28,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 679,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 7429,
+      "dual_guard_trim_count": 7401,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/僵尸任务清理机制_2026-03-04_6more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/僵尸任务清理机制_2026-03-04_6more.md",
+        "doc_hash": "37febca288940bee9a6a80db2aad10e10b3e3efb78bbb9c69b5d2ed82edff220",
+        "chunk_count_total": 30,
+        "chunk_count_embedded": 30,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 800,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 30,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 2869,
+        "dual_guard_trim_count": 2839,
+        "indexed_at": "2026-03-06T11:53:04.634253+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 30,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 800,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 2869,
+      "dual_guard_trim_count": 2839,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    }
+  ],
+  "failures": []
+}

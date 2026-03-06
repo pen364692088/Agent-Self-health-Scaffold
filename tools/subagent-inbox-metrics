@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""
+Subagent Inbox Metrics - 监控指标
+
+输出 Prometheus 格式指标
+
+Usage:
+  subagent-inbox-metrics
+  subagent-inbox-metrics --json
+"""
+
+import json
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+INBOX_DIR = WORKSPACE / "reports" / "subtasks"
+
+
+def parse_iso_time(s: str) -> float:
+    """解析 ISO 时间"""
+    try:
+        return datetime.fromisoformat(s).timestamp()
+    except:
+        return 0
+
+
+def collect_metrics() -> dict:
+    """收集指标"""
+    now = time.time()
+    
+    metrics = {
+        "pending_count": 0,
+        "claimed_count": 0,
+        "processed_count": 0,
+        "receipt_ages": [],
+        "stuck_claimed_count": 0,
+        "stuck_threshold_seconds": 300  # 5 分钟
+    }
+    
+    if not INBOX_DIR.exists():
+        return metrics
+    
+    for file in INBOX_DIR.glob("*.done.json"):
+        metrics["pending_count"] += 1
+        
+        # 计算年龄
+        try:
+            with open(file) as f:
+                receipt = json.load(f)
+            written_at = parse_iso_time(receipt.get("written_at", ""))
+            if written_at > 0:
+                age = now - written_at
+                metrics["receipt_ages"].append(age)
+        except:
+            pass
+    
+    for file in INBOX_DIR.glob("*.claimed.json"):
+        metrics["claimed_count"] += 1
+        
+        # 检查是否卡住
+        try:
+            stat = file.stat()
+            claimed_time = stat.st_mtime
+            age = now - claimed_time
+            if age > metrics["stuck_threshold_seconds"]:
+                metrics["stuck_claimed_count"] += 1
+        except:
+            pass
+    
+    for file in INBOX_DIR.glob("*.processed.json"):
+        metrics["processed_count"] += 1
+    
+    # 计算 P95
+    if metrics["receipt_ages"]:
+        ages = sorted(metrics["receipt_ages"])
+        p95_idx = int(len(ages) * 0.95)
+        metrics["receipt_age_p95"] = ages[p95_idx]
+    else:
+        metrics["receipt_age_p95"] = 0
+    
+    return metrics
+
+
+def output_prometheus(metrics: dict):
+    """输出 Prometheus 格式"""
+    print("# HELP subagent_inbox_pending_count Number of pending receipts")
+    print("# TYPE subagent_inbox_pending_count gauge")
+    print(f"subagent_inbox_pending_count {metrics['pending_count']}")
+    
+    print("# HELP subagent_inbox_claimed_count Number of claimed receipts")
+    print("# TYPE subagent_inbox_claimed_count gauge")
+    print(f"subagent_inbox_claimed_count {metrics['claimed_count']}")
+    
+    print("# HELP subagent_inbox_processed_count Number of processed receipts")
+    print("# TYPE subagent_inbox_processed_count gauge")
+    print(f"subagent_inbox_processed_count {metrics['processed_count']}")
+    
+    print("# HELP subagent_inbox_receipt_age_p95_seconds P95 age of pending receipts")
+    print("# TYPE subagent_inbox_receipt_age_p95_seconds gauge")
+    print(f"subagent_inbox_receipt_age_p95_seconds {metrics['receipt_age_p95']:.2f}")
+    
+    print("# HELP subagent_inbox_stuck_claimed_count Number of stuck claimed receipts")
+    print("# TYPE subagent_inbox_stuck_claimed_count gauge")
+    print(f"subagent_inbox_stuck_claimed_count {metrics['stuck_claimed_count']}")
+
+
+def main():
+    json_output = "--json" in sys.argv
+    
+    metrics = collect_metrics()
+    
+    if json_output:
+        print(json.dumps(metrics, indent=2))
+    else:
+        output_prometheus(metrics)
+    
+    # 告警检查
+    alerts = []
+    if metrics["pending_count"] > 10:
+        alerts.append(f"pending_count > 10: {metrics['pending_count']}")
+    if metrics["receipt_age_p95"] > 60:
+        alerts.append(f"receipt_age_p95 > 60s: {metrics['receipt_age_p95']:.1f}s")
+    if metrics["stuck_claimed_count"] > 0:
+        alerts.append(f"stuck_claimed_count > 0: {metrics['stuck_claimed_count']}")
+    
+    if alerts:
+        print("\n# ALERTS")
+        for alert in alerts:
+            print(f"# ALERT: {alert}")
+
+
+if __name__ == "__main__":
+    main()

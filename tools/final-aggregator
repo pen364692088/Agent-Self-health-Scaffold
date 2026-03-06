@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+"""final-aggregator - 只能聚合，不能创造"""
+import argparse
+import json
+import subprocess
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
+RECEIPT_SIGNER = WORKSPACE / "tools" / "receipt-signer"
+
+
+def verify_and_load_receipt(receipt_path: Path) -> tuple:
+    """验证签名并加载 receipt"""
+    if not receipt_path.exists():
+        return False, "Missing", {}
+    
+    # 验证签名
+    result = subprocess.run(
+        [str(RECEIPT_SIGNER), "--verify", "--receipt", str(receipt_path), "--json"],
+        capture_output=True, text=True
+    )
+    
+    try:
+        verify_result = json.loads(result.stdout)
+        valid = verify_result.get("valid", False)
+        message = verify_result.get("message", "unknown")
+    except:
+        return False, "Parse error", {}
+    
+    # 加载 receipt 内容
+    try:
+        receipt = json.loads(receipt_path.read_text())
+    except:
+        return False, "JSON error", {}
+    
+    return valid, message, receipt
+
+
+def aggregate(task_id: str) -> dict:
+    started_at = datetime.now().isoformat()
+    
+    # 验证并加载 Gate receipts
+    valid_a, msg_a, receipt_a = verify_and_load_receipt(
+        ARTIFACTS_DIR / f"{task_id}_gate_a_receipt.json"
+    )
+    valid_b, msg_b, receipt_b = verify_and_load_receipt(
+        ARTIFACTS_DIR / f"{task_id}_gate_b_receipt.json"
+    )
+    valid_c, msg_c, receipt_c = verify_and_load_receipt(
+        ARTIFACTS_DIR / f"{task_id}_gate_c_receipt.json"
+    )
+    
+    gate_results = {
+        "gate_a": receipt_a.get("result", "missing") if valid_a else "missing",
+        "gate_b": receipt_b.get("result", "missing") if valid_b else "missing",
+        "gate_c": receipt_c.get("result", "missing") if valid_c else "missing"
+    }
+    
+    checks = [
+        {"name": "gate_a_valid", "status": "pass" if valid_a else "fail", "message": msg_a},
+        {"name": "gate_b_valid", "status": "pass" if valid_b else "fail", "message": msg_b},
+        {"name": "gate_c_valid", "status": "pass" if valid_c else "fail", "message": msg_c}
+    ]
+    
+    all_pass = valid_a and valid_b and valid_c and \
+               gate_results["gate_a"] == "pass" and \
+               gate_results["gate_b"] == "pass" and \
+               gate_results["gate_c"] == "pass"
+    
+    result = "pass" if all_pass else "fail"
+    finished_at = datetime.now().isoformat()
+    
+    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = ARTIFACTS_DIR / f"{task_id}_final_receipt.json"
+    
+    subprocess.run([
+        str(RECEIPT_SIGNER), "--sign", "--gate", "final",
+        "--task-id", task_id, "--result", result,
+        "--output", str(output_path),
+        "--started-at", started_at,
+        "--finished-at", finished_at
+    ], capture_output=True)
+    
+    if output_path.exists():
+        final_receipt = json.loads(output_path.read_text())
+        final_receipt["gate_results"] = gate_results
+        final_receipt["checks"] = checks
+        final_receipt["aggregated_from"] = {
+            "gate_a": receipt_a.get("content_hash") if receipt_a else None,
+            "gate_b": receipt_b.get("content_hash") if receipt_b else None,
+            "gate_c": receipt_c.get("content_hash") if receipt_c else None
+        }
+        output_path.write_text(json.dumps(final_receipt, indent=2))
+        return final_receipt
+    
+    return {"error": "Failed to create final receipt"}
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--task-id", required=True)
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+    
+    receipt = aggregate(args.task_id)
+    
+    if args.json:
+        print(json.dumps(receipt, indent=2))
+    else:
+        status = "✅" if receipt.get("result") == "pass" else "❌"
+        print(f"{status} Final: {receipt.get('result')}")
+        print(f"   Gate A: {receipt.get('gate_results', {}).get('gate_a', 'unknown')}")
+        print(f"   Gate B: {receipt.get('gate_results', {}).get('gate_b', 'unknown')}")
+        print(f"   Gate C: {receipt.get('gate_results', {}).get('gate_c', 'unknown')}")
+    
+    return 0 if receipt.get("result") == "pass" else 1
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

@@ -1,0 +1,41 @@
+{
+  "task_id": "task1",
+  "receipt_type": "final",
+  "status": "pass",
+  "generated_at": "2026-03-06T08:56:03.383056",
+  "checks": [
+    {
+      "name": "task_defined",
+      "status": "pass"
+    },
+    {
+      "name": "scope_valid",
+      "status": "pass"
+    },
+    {
+      "name": "test_collection",
+      "status": "skip"
+    },
+    {
+      "name": "validation",
+      "status": "pass",
+      "details": "deferred to CI"
+    },
+    {
+      "name": "done_guard_available",
+      "status": "pass"
+    }
+  ],
+  "artifacts": [
+    "/home/moonlight/.openclaw/workspace/artifacts/receipts/task1_contract_receipt.json",
+    "/home/moonlight/.openclaw/workspace/artifacts/receipts/task1_e2e_receipt.json",
+    "/home/moonlight/.openclaw/workspace/artifacts/receipts/task1_preflight_receipt.json"
+  ],
+  "gate_results": {
+    "gate_a": "pass",
+    "gate_b": "pass",
+    "gate_c": "pass"
+  },
+  "state_before": "running",
+  "state_after": "ready_to_close"
+}

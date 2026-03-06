@@ -1,0 +1,137 @@
+{
+  "version": "1.0",
+  "created_at": "2026-03-06T08:35:00CST",
+  "violations": {
+    "numeric_leak": {
+      "severity": "P0",
+      "default_action": "block",
+      "mode": "hard_block",
+      "required_confidence": 0.80,
+      "minimum_sample_requirement": 50,
+      "rollback_rule": {
+        "trigger": "fp_rate",
+        "threshold": 0.05,
+        "duration_days": 7
+      },
+      "escalation_rule": {
+        "trigger": "any_block",
+        "action": "immediate_alert"
+      }
+    },
+    "raw_state_fabrication": {
+      "severity": "P0",
+      "default_action": "block",
+      "mode": "hard_block",
+      "required_confidence": 0.85,
+      "minimum_sample_requirement": 30,
+      "rollback_rule": {
+        "trigger": "fp_rate",
+        "threshold": 0.03,
+        "duration_days": 7
+      },
+      "escalation_rule": {
+        "trigger": "any_block",
+        "action": "immediate_alert"
+      }
+    },
+    "replay_hash_mismatch": {
+      "severity": "P0",
+      "default_action": "block",
+      "mode": "hard_block",
+      "required_confidence": 1.00,
+      "minimum_sample_requirement": 10,
+      "rollback_rule": null,
+      "escalation_rule": {
+        "trigger": "any",
+        "action": "immediate_investigation"
+      }
+    },
+    "certainty_upgrade": {
+      "severity": "P1",
+      "default_action": "log",
+      "mode": "block_candidate",
+      "required_confidence": 0.75,
+      "minimum_sample_requirement": 100,
+      "rollback_rule": {
+        "trigger": "violation_rate",
+        "threshold": 0.02,
+        "duration_days": 14
+      },
+      "escalation_rule": {
+        "trigger": "rate",
+        "threshold": 0.10,
+        "duration_days": 3,
+        "action": "human_review"
+      }
+    },
+    "commitment_upgrade": {
+      "severity": "P1",
+      "default_action": "log",
+      "mode": "block_candidate",
+      "required_confidence": 0.75,
+      "minimum_sample_requirement": 100,
+      "rollback_rule": {
+        "trigger": "violation_rate",
+        "threshold": 0.02,
+        "duration_days": 14
+      },
+      "escalation_rule": {
+        "trigger": "rate",
+        "threshold": 0.10,
+        "duration_days": 3,
+        "action": "human_review"
+      }
+    },
+    "forbidden_internalization": {
+      "severity": "P1",
+      "default_action": "log",
+      "mode": "block_candidate",
+      "required_confidence": 0.70,
+      "minimum_sample_requirement": 100,
+      "rollback_rule": {
+        "trigger": "violation_rate",
+        "threshold": 0.02,
+        "duration_days": 14
+      },
+      "escalation_rule": {
+        "trigger": "rate",
+        "threshold": 0.10,
+        "duration_days": 3,
+        "action": "human_review"
+      }
+    },
+    "tone_escalation": {
+      "severity": "P2",
+      "default_action": "log",
+      "mode": "shadow_only",
+      "required_confidence": 0.65,
+      "minimum_sample_requirement": 200,
+      "rollback_rule": null,
+      "escalation_rule": {
+        "trigger": "rate",
+        "threshold": 0.20,
+        "duration_days": 7,
+        "action": "human_review"
+      }
+    }
+  },
+  "mode_definitions": {
+    "shadow_only": "Log only, never block. Used for monitoring and trend analysis.",
+    "block_candidate": "Log + track. Can be promoted to block after sufficient data.",
+    "hard_block": "Log + block immediately. Used for P0 violations."
+  },
+  "phase_transitions": {
+    "shadow_to_block_candidate": {
+      "min_samples": 100,
+      "violation_rate_threshold": 0.02,
+      "fp_rate_threshold": 0.05,
+      "human_review_count": 10
+    },
+    "block_candidate_to_hard_block": {
+      "min_blocks": 50,
+      "fp_rate_threshold": 0.02,
+      "stable_days": 14,
+      "human_review_count": 20
+    }
+  }
+}

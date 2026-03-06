@@ -1,0 +1,302 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "project_check_status.v1.schema.json",
+  "title": "Project Check Phase Status",
+  "description": "Schema for per-phase status tracking in project check pipeline",
+  "type": "object",
+  "required": ["phase", "state", "ok", "inputs"],
+  "additionalProperties": false,
+  "properties": {
+    "phase": {
+      "type": "string",
+      "description": "Phase identifier matching manifest phase.id",
+      "enum": [
+        "phase_a_repo",
+        "phase_b_tests",
+        "phase_c_testbot",
+        "phase_d_gate"
+      ],
+      "examples": ["phase_a_repo"]
+    },
+    "state": {
+      "type": "string",
+      "description": "Current execution state of the phase",
+      "enum": ["pending", "running", "done", "failed", "skipped"],
+      "examples": ["done"]
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "Overall success status (true if phase completed without errors)",
+      "examples": [true, false]
+    },
+    "started_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO8601 timestamp when phase execution started",
+      "examples": ["2026-03-06T04:35:00Z", null]
+    },
+    "finished_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO8601 timestamp when phase execution finished",
+      "examples": ["2026-03-06T04:36:30Z", null]
+    },
+    "duration_seconds": {
+      "type": ["number", "null"],
+      "description": "Execution duration in seconds",
+      "minimum": 0,
+      "examples": [90.5, null]
+    },
+    "inputs": {
+      "$ref": "#/definitions/inputs"
+    },
+    "metrics": {
+      "$ref": "#/definitions/metrics"
+    },
+    "artifacts": {
+      "$ref": "#/definitions/artifacts"
+    },
+    "next_action": {
+      "type": ["string", "null"],
+      "description": "Suggested next action for the user or orchestrator",
+      "examples": ["run_phase_b", "review_errors", null]
+    },
+    "error": {
+      "$ref": "#/definitions/error"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Non-fatal warnings encountered during phase execution",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Warning code for programmatic handling"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable warning message"
+          }
+        }
+      },
+      "default": []
+    }
+  },
+  "definitions": {
+    "inputs": {
+      "type": "object",
+      "description": "Input parameters for the phase",
+      "required": [],
+      "additionalProperties": true,
+      "properties": {
+        "branch": {
+          "type": "string",
+          "description": "Git branch being checked",
+          "examples": ["main", "feature/new-feature"]
+        },
+        "commit": {
+          "type": "string",
+          "description": "Git commit SHA",
+          "pattern": "^[a-f0-9]{7,40}$",
+          "examples": ["a1b2c3d4e5f6"]
+        },
+        "commit_message": {
+          "type": "string",
+          "description": "First line of commit message",
+          "examples": ["feat: add new feature"]
+        },
+        "author": {
+          "type": "string",
+          "description": "Commit author",
+          "examples": ["user@example.com"]
+        },
+        "check_id": {
+          "type": "string",
+          "description": "Reference to parent check run",
+          "examples": ["check_20260306_043500_a1b2c3"]
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Phase-specific metrics and measurements",
+      "additionalProperties": true,
+      "properties": {
+        "files_checked": {
+          "type": "integer",
+          "description": "Number of files processed",
+          "minimum": 0
+        },
+        "issues_found": {
+          "type": "integer",
+          "description": "Number of issues detected",
+          "minimum": 0
+        },
+        "warnings_count": {
+          "type": "integer",
+          "description": "Number of warnings",
+          "minimum": 0
+        },
+        "errors_count": {
+          "type": "integer",
+          "description": "Number of errors",
+          "minimum": 0
+        },
+        "tests_total": {
+          "type": "integer",
+          "description": "Total number of tests (for test phases)",
+          "minimum": 0
+        },
+        "tests_passed": {
+          "type": "integer",
+          "description": "Number of tests passed",
+          "minimum": 0
+        },
+        "tests_failed": {
+          "type": "integer",
+          "description": "Number of tests failed",
+          "minimum": 0
+        },
+        "coverage_percent": {
+          "type": "number",
+          "description": "Test coverage percentage",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "description": "Paths to generated artifacts",
+      "additionalProperties": false,
+      "properties": {
+        "summary_md": {
+          "type": ["string", "null"],
+          "description": "Path to summary markdown file",
+          "examples": ["artifacts/project_check/check_xxx/phase_a_repo/summary.md"]
+        },
+        "raw_log": {
+          "type": ["string", "null"],
+          "description": "Path to raw execution log",
+          "examples": ["artifacts/project_check/check_xxx/phase_a_repo/raw.log"]
+        },
+        "report_html": {
+          "type": ["string", "null"],
+          "description": "Path to HTML report (if generated)",
+          "examples": ["artifacts/project_check/check_xxx/phase_b_tests/coverage/index.html"]
+        },
+        "additional_files": {
+          "type": "array",
+          "description": "Other generated files",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "path": {"type": "string"},
+              "description": {"type": "string"}
+            }
+          },
+          "default": []
+        }
+      }
+    },
+    "error": {
+      "type": ["object", "null"],
+      "description": "Error details if phase failed",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Error code for programmatic handling",
+          "examples": ["TIMEOUT", "COMMAND_FAILED", "VALIDATION_ERROR"]
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message",
+          "examples": ["Command exited with code 1"]
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional error context",
+          "additionalProperties": true
+        },
+        "exit_code": {
+          "type": "integer",
+          "description": "Process exit code",
+          "examples": [1, 127]
+        },
+        "stderr": {
+          "type": "string",
+          "description": "Last N lines of stderr output",
+          "examples": ["Error: command not found\n"]
+        },
+        "retry_count": {
+          "type": "integer",
+          "description": "Number of retry attempts made",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "phase": "phase_a_repo",
+      "state": "done",
+      "ok": true,
+      "started_at": "2026-03-06T04:35:00Z",
+      "finished_at": "2026-03-06T04:36:30Z",
+      "duration_seconds": 90.5,
+      "inputs": {
+        "branch": "main",
+        "commit": "a1b2c3d",
+        "commit_message": "feat: add new feature",
+        "check_id": "check_20260306_043500_a1b2c3"
+      },
+      "metrics": {
+        "files_checked": 42,
+        "issues_found": 0,
+        "warnings_count": 2
+      },
+      "artifacts": {
+        "summary_md": "artifacts/project_check/check_20260306_043500_a1b2c3/phase_a_repo/summary.md",
+        "raw_log": "artifacts/project_check/check_20260306_043500_a1b2c3/phase_a_repo/raw.log"
+      },
+      "next_action": "run_phase_b",
+      "error": null,
+      "warnings": [
+        {"code": "DEPRECATED_PATTERN", "message": "Found 2 deprecated patterns"}
+      ]
+    },
+    {
+      "phase": "phase_b_tests",
+      "state": "failed",
+      "ok": false,
+      "started_at": "2026-03-06T04:37:00Z",
+      "finished_at": "2026-03-06T04:45:00Z",
+      "duration_seconds": 480,
+      "inputs": {
+        "branch": "main",
+        "commit": "a1b2c3d",
+        "check_id": "check_20260306_043500_a1b2c3"
+      },
+      "metrics": {
+        "tests_total": 100,
+        "tests_passed": 95,
+        "tests_failed": 5,
+        "coverage_percent": 87.5
+      },
+      "artifacts": {
+        "summary_md": "artifacts/project_check/check_20260306_043500_a1b2c3/phase_b_tests/summary.md",
+        "raw_log": "artifacts/project_check/check_20260306_043500_a1b2c3/phase_b_tests/raw.log"
+      },
+      "next_action": "review_errors",
+      "error": {
+        "code": "TESTS_FAILED",
+        "message": "5 tests failed",
+        "exit_code": 1,
+        "retry_count": 0
+      },
+      "warnings": []
+    }
+  ]
+}

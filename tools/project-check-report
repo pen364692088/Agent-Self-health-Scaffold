@@ -1,0 +1,818 @@
+#!/usr/bin/env python3
+"""
+project-check-report v1.0 - Generate final project check reports
+
+Reads all phase status.json files and generates consolidated reports:
+- FINAL_CHECK_STATUS.json - Machine-readable overall status
+- FINAL_CHECK_REPORT.md - Human-readable summary
+- one_liner.txt - Single-line result summary
+
+Usage:
+    project-check-report <check_id> [--format md|json|html]
+    project-check-report --health
+    project-check-report --e2e-test
+
+Options:
+    --format <fmt>   Output format (md, json, html) - default: md
+    --json           Shortcut for --format json
+    --health         Health check endpoint
+    --e2e-test       Run E2E self-test
+
+Tool Delivery Gates:
+    Gate A: Schema validation
+    Gate B: E2E testing (--e2e-test flag)
+    Gate C: Health check (--health flag)
+"""
+
+import argparse
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Tuple
+
+# Workspace paths
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACT_ROOT = WORKSPACE / "artifacts" / "project_check"
+MANIFEST_SCHEMA_FILE = WORKSPACE / "schemas" / "project_check_manifest.v1.schema.json"
+STATUS_SCHEMA_FILE = WORKSPACE / "schemas" / "project_check_status.v1.schema.json"
+
+# Phase states
+STATE_PENDING = "pending"
+STATE_RUNNING = "running"
+STATE_DONE = "done"
+STATE_FAILED = "failed"
+STATE_SKIPPED = "skipped"
+
+# Error codes
+ERROR_NOT_FOUND = "NOT_FOUND"
+ERROR_VALIDATION = "VALIDATION_ERROR"
+ERROR_INTERNAL = "INTERNAL_ERROR"
+
+
+def error_response(code: str, message: str, details: dict = None) -> dict:
+    """Standardized error format per Tool Delivery Gates."""
+    return {
+        "error": {
+            "type": code.lower().replace("_", " ").title(),
+            "message": message,
+            "code": code,
+            "details": details or {}
+        }
+    }
+
+
+def find_phase_dirs(check_dir: Path) -> List[Path]:
+    """Find all phase directories in a check run."""
+    phase_dirs = []
+    for item in check_dir.iterdir():
+        if item.is_dir() and item.name.startswith("phase_"):
+            phase_dirs.append(item)
+    return sorted(phase_dirs)
+
+
+def load_json_file(path: Path) -> Tuple[Optional[dict], Optional[dict]]:
+    """Load JSON file with error handling."""
+    if not path.exists():
+        return None, error_response(ERROR_NOT_FOUND, f"File not found: {path}")
+    
+    try:
+        with open(path, 'r') as f:
+            return json.load(f), None
+    except json.JSONDecodeError as e:
+        return None, error_response(ERROR_VALIDATION, f"Invalid JSON in {path}: {e}")
+
+
+def load_manifest(check_id: str, check_dir: Path) -> Tuple[Optional[dict], Optional[dict]]:
+    """Load manifest.json for a check run."""
+    manifest_path = check_dir / "manifest.json"
+    return load_json_file(manifest_path)
+
+
+def load_phase_status(phase_dir: Path) -> Tuple[Optional[dict], Optional[dict]]:
+    """Load status.json from a phase directory."""
+    status_path = phase_dir / "status.json"
+    return load_json_file(status_path)
+
+
+def aggregate_status(phases: List[dict]) -> dict:
+    """Aggregate status across all phases."""
+    total = len(phases)
+    completed = 0
+    failed = 0
+    skipped = 0
+    running = 0
+    pending = 0
+    total_issues = 0
+    total_warnings = 0
+    
+    for phase in phases:
+        state = phase.get("state", "pending")
+        ok = phase.get("ok", False)
+        
+        if state == STATE_DONE:
+            completed += 1
+        elif state == STATE_FAILED:
+            failed += 1
+        elif state == STATE_SKIPPED:
+            skipped += 1
+        elif state == STATE_RUNNING:
+            running += 1
+        else:
+            pending += 1
+        
+        # Accumulate metrics
+        metrics = phase.get("metrics", {})
+        total_issues += metrics.get("issues_found", 0)
+        total_issues += metrics.get("errors_count", 0)
+        total_warnings += metrics.get("warnings_count", 0)
+        total_warnings += len(phase.get("warnings", []))
+    
+    # Determine overall status
+    if failed > 0:
+        overall_status = "failed"
+    elif running > 0:
+        overall_status = "running"
+    elif pending > 0:
+        overall_status = "incomplete"
+    elif skipped == total:
+        overall_status = "skipped"
+    else:
+        overall_status = "success"
+    
+    return {
+        "total_phases": total,
+        "completed": completed,
+        "failed": failed,
+        "skipped": skipped,
+        "running": running,
+        "pending": pending,
+        "total_issues": total_issues,
+        "total_warnings": total_warnings,
+        "overall_status": overall_status,
+        "all_passed": failed == 0 and completed == total
+    }
+
+
+def generate_final_status(check_id: str, manifest: dict, phases: List[dict], summary: dict) -> dict:
+    """Generate FINAL_CHECK_STATUS.json content."""
+    now = datetime.now(timezone.utc)
+    
+    # Calculate total duration
+    total_duration = 0.0
+    for phase in phases:
+        duration = phase.get("duration_seconds")
+        if duration:
+            total_duration += duration
+    
+    final_status = {
+        "check_id": check_id,
+        "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "project_path": manifest.get("project_path") if manifest else None,
+        "created_at": manifest.get("created_at") if manifest else None,
+        "overall_status": summary["overall_status"],
+        "all_passed": summary["all_passed"],
+        "summary": {
+            "total_phases": summary["total_phases"],
+            "completed": summary["completed"],
+            "failed": summary["failed"],
+            "skipped": summary["skipped"],
+            "total_issues": summary["total_issues"],
+            "total_warnings": summary["total_warnings"],
+            "total_duration_seconds": round(total_duration, 2)
+        },
+        "phases": phases,
+        "recommendation": get_recommendation(summary, phases)
+    }
+    
+    return final_status
+
+
+def get_recommendation(summary: dict, phases: List[dict]) -> str:
+    """Generate recommendation based on results."""
+    if summary["all_passed"]:
+        return "All checks passed. Project is healthy."
+    
+    if summary["failed"] > 0:
+        failed_phases = [p for p in phases if p.get("state") == STATE_FAILED]
+        if failed_phases:
+            first_failure = failed_phases[0]
+            error = first_failure.get("error", {})
+            return f"Fix {first_failure.get('phase', 'unknown')}: {error.get('message', 'Unknown error')}"
+        return f"{summary['failed']} phase(s) failed. Review errors above."
+    
+    if summary["pending"] > 0:
+        return "Check is incomplete. Run remaining phases."
+    
+    if summary["running"] > 0:
+        return "Check is still running. Wait for completion."
+    
+    return "Review warnings and proceed with caution."
+
+
+def generate_markdown_report(check_id: str, manifest: dict, phases: List[dict], summary: dict) -> str:
+    """Generate FINAL_CHECK_REPORT.md content."""
+    lines = []
+    
+    # Header
+    lines.append(f"# Project Check Report")
+    lines.append("")
+    lines.append(f"**Check ID:** `{check_id}`")
+    
+    if manifest:
+        if manifest.get("project_path"):
+            lines.append(f"**Project:** `{manifest['project_path']}`")
+        if manifest.get("created_at"):
+            lines.append(f"**Created:** {manifest['created_at']}")
+    
+    lines.append(f"**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    lines.append("")
+    
+    # Summary section
+    lines.append("## Summary")
+    lines.append("")
+    
+    status_emoji = {
+        "success": "✅",
+        "failed": "❌",
+        "running": "🔄",
+        "incomplete": "⏳",
+        "skipped": "⏭️"
+    }.get(summary["overall_status"], "❓")
+    
+    lines.append(f"**Overall Status:** {status_emoji} **{summary['overall_status'].upper()}**")
+    lines.append("")
+    
+    lines.append("| Metric | Value |")
+    lines.append("|--------|-------|")
+    lines.append(f"| Total Phases | {summary['total_phases']} |")
+    lines.append(f"| Completed | {summary['completed']} |")
+    if summary['failed'] > 0:
+        lines.append(f"| Failed | **{summary['failed']}** |")
+    if summary['skipped'] > 0:
+        lines.append(f"| Skipped | {summary['skipped']} |")
+    if summary['total_issues'] > 0:
+        lines.append(f"| Issues Found | **{summary['total_issues']}** |")
+    if summary['total_warnings'] > 0:
+        lines.append(f"| Warnings | {summary['total_warnings']} |")
+    lines.append("")
+    
+    # Phase details
+    lines.append("## Phase Details")
+    lines.append("")
+    
+    for phase in phases:
+        phase_id = phase.get("phase", "unknown")
+        state = phase.get("state", "unknown")
+        ok = phase.get("ok", False)
+        
+        state_emoji = {
+            STATE_DONE: "✅" if ok else "❌",
+            STATE_FAILED: "❌",
+            STATE_RUNNING: "🔄",
+            STATE_PENDING: "⏳",
+            STATE_SKIPPED: "⏭️"
+        }.get(state, "❓")
+        
+        lines.append(f"### {state_emoji} {phase_id}")
+        lines.append("")
+        lines.append(f"- **State:** `{state}`")
+        lines.append(f"- **Passed:** {'Yes' if ok else 'No'}")
+        
+        if phase.get("duration_seconds"):
+            lines.append(f"- **Duration:** {phase['duration_seconds']:.2f}s")
+        
+        if phase.get("started_at"):
+            lines.append(f"- **Started:** {phase['started_at']}")
+        if phase.get("finished_at"):
+            lines.append(f"- **Finished:** {phase['finished_at']}")
+        
+        # Metrics
+        metrics = phase.get("metrics", {})
+        if metrics:
+            lines.append("")
+            lines.append("**Metrics:**")
+            lines.append("")
+            for k, v in metrics.items():
+                if isinstance(v, float):
+                    lines.append(f"- {k}: {v:.2f}")
+                else:
+                    lines.append(f"- {k}: {v}")
+        
+        # Error
+        if state == STATE_FAILED and phase.get("error"):
+            error = phase["error"]
+            lines.append("")
+            lines.append("**Error:**")
+            lines.append("")
+            lines.append(f"- **Code:** `{error.get('code', 'UNKNOWN')}`")
+            lines.append(f"- **Message:** {error.get('message', 'Unknown error')}")
+            if error.get("details"):
+                lines.append(f"- **Details:** `{json.dumps(error['details'])}`")
+        
+        # Warnings
+        warnings = phase.get("warnings", [])
+        if warnings:
+            lines.append("")
+            lines.append("**Warnings:**")
+            lines.append("")
+            for w in warnings:
+                lines.append(f"- [{w.get('code', 'WARN')}] {w.get('message', 'Unknown warning')}")
+        
+        lines.append("")
+    
+    # Recommendation
+    lines.append("## Recommendation")
+    lines.append("")
+    lines.append(get_recommendation(summary, phases))
+    lines.append("")
+    
+    # Footer
+    lines.append("---")
+    lines.append(f"*Generated by project-check-report v1.0*")
+    
+    return "\n".join(lines)
+
+
+def generate_html_report(check_id: str, manifest: dict, phases: List[dict], summary: dict) -> str:
+    """Generate HTML report."""
+    status_colors = {
+        "success": "#28a745",
+        "failed": "#dc3545",
+        "running": "#17a2b8",
+        "incomplete": "#ffc107",
+        "skipped": "#6c757d"
+    }
+    
+    state_colors = {
+        STATE_DONE: "#28a745",
+        STATE_FAILED: "#dc3545",
+        STATE_RUNNING: "#17a2b8",
+        STATE_PENDING: "#ffc107",
+        STATE_SKIPPED: "#6c757d"
+    }
+    
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Check Report - {check_id}</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; }}
+        h1 {{ color: #333; }}
+        .status {{ font-size: 24px; font-weight: bold; padding: 10px 20px; border-radius: 5px; color: white; display: inline-block; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+        th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+        th {{ background-color: #f5f5f5; }}
+        .phase {{ margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }}
+        .error {{ background-color: #fff5f5; padding: 10px; border-radius: 5px; margin: 10px 0; }}
+        .metrics {{ background-color: #f9f9f9; padding: 10px; border-radius: 5px; }}
+    </style>
+</head>
+<body>
+    <h1>Project Check Report</h1>
+    <p><strong>Check ID:</strong> <code>{check_id}</code></p>
+"""
+    
+    if manifest:
+        if manifest.get("project_path"):
+            html += f"    <p><strong>Project:</strong> <code>{manifest['project_path']}</code></p>\n"
+        if manifest.get("created_at"):
+            html += f"    <p><strong>Created:</strong> {manifest['created_at']}</p>\n"
+    
+    status_color = status_colors.get(summary["overall_status"], "#6c757d")
+    html += f"""
+    <h2>Summary</h2>
+    <div class="status" style="background-color: {status_color};">{summary['overall_status'].upper()}</div>
+    
+    <table>
+        <tr><th>Total Phases</th><td>{summary['total_phases']}</td></tr>
+        <tr><th>Completed</th><td>{summary['completed']}</td></tr>
+        <tr><th>Failed</th><td>{summary['failed']}</td></tr>
+        <tr><th>Skipped</th><td>{summary['skipped']}</td></tr>
+        <tr><th>Issues</th><td>{summary['total_issues']}</td></tr>
+        <tr><th>Warnings</th><td>{summary['total_warnings']}</td></tr>
+    </table>
+    
+    <h2>Phases</h2>
+"""
+    
+    for phase in phases:
+        phase_id = phase.get("phase", "unknown")
+        state = phase.get("state", "unknown")
+        ok = phase.get("ok", False)
+        state_color = state_colors.get(state, "#6c757d")
+        
+        html += f"""
+    <div class="phase">
+        <h3 style="color: {state_color};">{phase_id}: {state}</h3>
+        <p><strong>Passed:</strong> {'Yes' if ok else 'No'}</p>
+"""
+        
+        if phase.get("duration_seconds"):
+            html += f"        <p><strong>Duration:</strong> {phase['duration_seconds']:.2f}s</p>\n"
+        
+        # Metrics
+        metrics = phase.get("metrics", {})
+        if metrics:
+            html += '        <div class="metrics">\n'
+            html += '            <strong>Metrics:</strong><br>\n'
+            for k, v in metrics.items():
+                if isinstance(v, float):
+                    html += f"            {k}: {v:.2f}<br>\n"
+                else:
+                    html += f"            {k}: {v}<br>\n"
+            html += '        </div>\n'
+        
+        # Error
+        if state == STATE_FAILED and phase.get("error"):
+            error = phase["error"]
+            html += f"""
+        <div class="error">
+            <strong>Error:</strong> {error.get('code', 'UNKNOWN')}: {error.get('message', 'Unknown error')}
+        </div>
+"""
+        
+        html += "    </div>\n"
+    
+    html += f"""
+    <h2>Recommendation</h2>
+    <p>{get_recommendation(summary, phases)}</p>
+    
+    <hr>
+    <p><em>Generated by project-check-report v1.0</em></p>
+</body>
+</html>
+"""
+    
+    return html
+
+
+def generate_one_liner(summary: dict) -> str:
+    """Generate one_liner.txt content."""
+    if summary["all_passed"]:
+        return "✅ PASS - All checks successful"
+    
+    if summary["overall_status"] == "failed":
+        return f"❌ FAIL - {summary['failed']} phase(s) failed, {summary['total_issues']} issue(s)"
+    
+    if summary["overall_status"] == "incomplete":
+        return f"⏳ INCOMPLETE - {summary['pending']} phase(s) pending"
+    
+    if summary["overall_status"] == "running":
+        return f"🔄 RUNNING - {summary['running']} phase(s) in progress"
+    
+    if summary["overall_status"] == "skipped":
+        return f"⏭️ SKIPPED - {summary['skipped']} phase(s) skipped"
+    
+    return f"⚠️ {summary['overall_status'].upper()} - Review details"
+
+
+def generate_report(check_id: str, output_format: str = "md") -> Tuple[Optional[dict], Optional[dict]]:
+    """Generate final report for a check run."""
+    check_dir = ARTIFACT_ROOT / check_id
+    
+    if not check_dir.exists():
+        return None, error_response(
+            ERROR_NOT_FOUND,
+            f"Check not found: {check_id}",
+            {"check_id": check_id, "expected_path": str(check_dir)}
+        )
+    
+    # Load manifest
+    manifest, err = load_manifest(check_id, check_dir)
+    if err:
+        return None, err
+    
+    # Find all phase directories
+    phase_dirs = find_phase_dirs(check_dir)
+    
+    if not phase_dirs:
+        return None, error_response(
+            ERROR_NOT_FOUND,
+            f"No phase status files found for check: {check_id}",
+            {"check_id": check_id, "check_dir": str(check_dir)}
+        )
+    
+    # Load phase statuses
+    phases = []
+    for phase_dir in phase_dirs:
+        status, err = load_phase_status(phase_dir)
+        if err:
+            phases.append({
+                "phase": phase_dir.name,
+                "state": STATE_FAILED,
+                "ok": False,
+                "error": {
+                    "code": ERROR_INTERNAL,
+                    "message": f"Failed to load status: {err.get('error', {}).get('message', 'Unknown error')}"
+                }
+            })
+        else:
+            phases.append(status)
+    
+    # Aggregate status
+    summary = aggregate_status(phases)
+    
+    # Generate output
+    final_dir = check_dir / "final"
+    final_dir.mkdir(parents=True, exist_ok=True)
+    
+    result = {
+        "check_id": check_id,
+        "overall_status": summary["overall_status"],
+        "artifacts": {}
+    }
+    
+    # Always generate FINAL_CHECK_STATUS.json
+    final_status = generate_final_status(check_id, manifest, phases, summary)
+    status_path = final_dir / "FINAL_CHECK_STATUS.json"
+    with open(status_path, "w") as f:
+        json.dump(final_status, f, indent=2)
+    result["artifacts"]["status_json"] = str(status_path)
+    
+    # Generate FINAL_CHECK_REPORT.md
+    md_report = generate_markdown_report(check_id, manifest, phases, summary)
+    md_path = final_dir / "FINAL_CHECK_REPORT.md"
+    with open(md_path, "w") as f:
+        f.write(md_report)
+    result["artifacts"]["report_md"] = str(md_path)
+    
+    # Generate one_liner.txt
+    one_liner = generate_one_liner(summary)
+    one_liner_path = final_dir / "one_liner.txt"
+    with open(one_liner_path, "w") as f:
+        f.write(one_liner)
+    result["artifacts"]["one_liner"] = str(one_liner_path)
+    
+    # Generate HTML if requested
+    if output_format == "html":
+        html_report = generate_html_report(check_id, manifest, phases, summary)
+        html_path = final_dir / "FINAL_CHECK_REPORT.html"
+        with open(html_path, "w") as f:
+            f.write(html_report)
+        result["artifacts"]["report_html"] = str(html_path)
+    
+    # Include summary
+    result["summary"] = summary
+    
+    # Set output based on format
+    if output_format == "json":
+        result["output"] = final_status
+    elif output_format == "html":
+        result["output"] = html_report
+    else:
+        result["output"] = md_report
+    
+    return result, None
+
+
+def health_check() -> dict:
+    """Health check endpoint for Gate C."""
+    checks = []
+    
+    # Check artifact root exists
+    artifact_exists = ARTIFACT_ROOT.exists()
+    checks.append({
+        "name": "artifact_root",
+        "status": "pass" if artifact_exists else "fail",
+        "message": f"Artifact root {'exists' if artifact_exists else 'not found'}: {ARTIFACT_ROOT}"
+    })
+    
+    # Check schema files exist
+    manifest_schema_exists = MANIFEST_SCHEMA_FILE.exists()
+    checks.append({
+        "name": "manifest_schema",
+        "status": "pass" if manifest_schema_exists else "warn",
+        "message": f"Manifest schema {'found' if manifest_schema_exists else 'not found'}"
+    })
+    
+    status_schema_exists = STATUS_SCHEMA_FILE.exists()
+    checks.append({
+        "name": "status_schema",
+        "status": "pass" if status_schema_exists else "warn",
+        "message": f"Status schema {'found' if status_schema_exists else 'not found'}"
+    })
+    
+    # Sample call - try to generate report for an existing check
+    try:
+        existing_checks = [d.name for d in ARTIFACT_ROOT.iterdir() if d.is_dir() and d.name.startswith("check_")]
+        if existing_checks:
+            # Try a quick status read (not full report generation)
+            test_check = existing_checks[0]
+            test_dir = ARTIFACT_ROOT / test_check
+            manifest_exists = (test_dir / "manifest.json").exists()
+            checks.append({
+                "name": "sample_call",
+                "status": "pass" if manifest_exists else "warn",
+                "message": f"Sample check '{test_check}' {'has manifest' if manifest_exists else 'missing manifest'}"
+            })
+        else:
+            checks.append({
+                "name": "sample_call",
+                "status": "warn",
+                "message": "No existing check runs to sample"
+            })
+    except Exception as e:
+        checks.append({
+            "name": "sample_call",
+            "status": "fail",
+            "message": f"Failed to list checks: {e}"
+        })
+    
+    # Determine overall status
+    failed = sum(1 for c in checks if c["status"] == "fail")
+    warnings = sum(1 for c in checks if c["status"] == "warn")
+    
+    overall_status = "healthy" if failed == 0 else ("degraded" if warnings > 0 else "unhealthy")
+    
+    return {
+        "tool": "project-check-report",
+        "version": "1.0.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": overall_status,
+        "checks": checks,
+        "summary": {
+            "passed": sum(1 for c in checks if c["status"] == "pass"),
+            "failed": failed,
+            "warnings": warnings
+        }
+    }
+
+
+def find_check_with_phases() -> Optional[str]:
+    """Find a check ID that has phase status files."""
+    for check_dir in ARTIFACT_ROOT.iterdir():
+        if check_dir.is_dir() and check_dir.name.startswith("check_"):
+            # Check if any phase_* directory has status.json
+            for phase_dir in check_dir.iterdir():
+                if phase_dir.is_dir() and phase_dir.name.startswith("phase_"):
+                    if (phase_dir / "status.json").exists():
+                        return check_dir.name
+    return None
+
+
+def e2e_test() -> dict:
+    """E2E self-test for Gate B."""
+    results = {
+        "tool": "project-check-report",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "tests": []
+    }
+    
+    # Find a check with phase status files
+    test_check_id = find_check_with_phases()
+    
+    if test_check_id:
+        
+        # Test happy path - generate report (md format)
+        result1, err1 = generate_report(test_check_id, "md")
+        test1 = {
+            "name": "happy_path_generate_md",
+            "status": "pass" if result1 and not err1 else "fail",
+            "check_id": test_check_id
+        }
+        if result1:
+            test1["overall_status"] = result1.get("overall_status")
+            test1["artifacts"] = list(result1.get("artifacts", {}).keys())
+        if err1:
+            test1["error"] = err1
+        results["tests"].append(test1)
+        
+        # Test happy path - generate json format
+        result2, err2 = generate_report(test_check_id, "json")
+        test2 = {
+            "name": "happy_path_generate_json",
+            "status": "pass" if result2 and not err2 else "fail",
+            "check_id": test_check_id
+        }
+        if err2:
+            test2["error"] = err2
+        results["tests"].append(test2)
+        
+        # Test happy path - generate html format
+        result3, err3 = generate_report(test_check_id, "html")
+        test3 = {
+            "name": "happy_path_generate_html",
+            "status": "pass" if result3 and not err3 else "fail",
+            "check_id": test_check_id
+        }
+        if result3:
+            test3["has_html_artifact"] = "report_html" in result3.get("artifacts", {})
+        if err3:
+            test3["error"] = err3
+        results["tests"].append(test3)
+        
+        # Verify artifacts exist
+        check_dir = ARTIFACT_ROOT / test_check_id
+        final_dir = check_dir / "final"
+        
+        artifacts_exist = (
+            (final_dir / "FINAL_CHECK_STATUS.json").exists() and
+            (final_dir / "FINAL_CHECK_REPORT.md").exists() and
+            (final_dir / "one_liner.txt").exists()
+        )
+        
+        test4 = {
+            "name": "artifacts_created",
+            "status": "pass" if artifacts_exist else "fail",
+            "expected_files": [
+                "FINAL_CHECK_STATUS.json",
+                "FINAL_CHECK_REPORT.md", 
+                "one_liner.txt"
+            ]
+        }
+        results["tests"].append(test4)
+    else:
+        results["tests"].append({
+            "name": "happy_path_generate_report",
+            "status": "skip",
+            "reason": "No existing check runs found"
+        })
+    
+    # Test bad args - non-existent check
+    result5, err5 = generate_report("check_99999999_999999_nonexist")
+    test5 = {
+        "name": "bad_args_nonexistent_check",
+        "status": "pass" if err5 and not result5 else "fail",
+        "expected": "error response for non-existent check"
+    }
+    if err5:
+        test5["error_code"] = err5.get("error", {}).get("code")
+    results["tests"].append(test5)
+    
+    # Summary
+    passed = sum(1 for t in results["tests"] if t["status"] == "pass")
+    failed = sum(1 for t in results["tests"] if t["status"] == "fail")
+    skipped = sum(1 for t in results["tests"] if t["status"] == "skip")
+    
+    results["summary"] = {
+        "passed": passed,
+        "failed": failed,
+        "skipped": skipped,
+        "total": len(results["tests"])
+    }
+    
+    return results
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate final project check reports",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__
+    )
+    
+    parser.add_argument("check_id", nargs="?", help="Check ID to generate report for")
+    parser.add_argument("--format", "-f", choices=["md", "json", "html"], default="md",
+                        help="Output format (default: md)")
+    parser.add_argument("--json", "-j", action="store_true", help="Shortcut for --format json")
+    parser.add_argument("--health", action="store_true", help="Health check endpoint")
+    parser.add_argument("--e2e-test", action="store_true", help="Run E2E self-test")
+    
+    args = parser.parse_args()
+    
+    # Gate C: Health check
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] != "unhealthy" else 1
+    
+    # Gate B: E2E test
+    if args.e2e_test:
+        result = e2e_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["summary"]["failed"] == 0 else 1
+    
+    # Validate required arguments
+    if not args.check_id:
+        print("Error: check_id is required", file=sys.stderr)
+        parser.print_help()
+        return 1
+    
+    # Handle --json shortcut
+    output_format = "json" if args.json else args.format
+    
+    # Generate report
+    result, err = generate_report(args.check_id, output_format)
+    
+    if err:
+        print(json.dumps(err, indent=2))
+        return 1
+    
+    # Output
+    if output_format == "json":
+        print(json.dumps(result["output"], indent=2))
+    else:
+        print(result["output"])
+    
+    # Print artifact paths to stderr
+    print("\n# Artifacts generated:", file=sys.stderr)
+    for name, path in result.get("artifacts", {}).items():
+        print(f"#   {name}: {path}", file=sys.stderr)
+    
+    return 0 if result.get("overall_status") != "failed" else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

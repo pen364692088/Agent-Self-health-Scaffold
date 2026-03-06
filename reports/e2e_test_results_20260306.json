@@ -1,0 +1,181 @@
+{
+  "test_run": {
+    "test_id": "e2e_20260306_045828",
+    "timestamp": "2026-03-06T04:59:00Z",
+    "duration_seconds": 120,
+    "status": "passed"
+  },
+  "summary": {
+    "total_scenarios": 4,
+    "passed": 4,
+    "failed": 0,
+    "warnings": 1
+  },
+  "scenarios": {
+    "1_full_pipeline_e2e": {
+      "status": "passed",
+      "steps": [
+        {
+          "tool": "project-check-init",
+          "command": "project-check-init /tmp/test-project-e2e",
+          "result": "check_20260306_105914_abdd0b",
+          "exit_code": 0,
+          "artifacts_created": ["manifest.json", "status.json"]
+        },
+        {
+          "tool": "project-check-run",
+          "command": "project-check-run check_20260306_105914_abdd0b --continue-on-failure",
+          "result": "partial",
+          "exit_code": 0,
+          "phases_executed": 4,
+          "dependency_resolution": "verified"
+        },
+        {
+          "tool": "project-check-status",
+          "command": "project-check-status check_20260306_105914_abdd0b --json",
+          "result": "failed",
+          "exit_code": 0,
+          "output_format": "json"
+        },
+        {
+          "tool": "project-check-report",
+          "command": "project-check-report check_20260306_105914_abdd0b",
+          "result": "generated",
+          "exit_code": 0,
+          "artifacts_created": [
+            "FINAL_CHECK_STATUS.json",
+            "FINAL_CHECK_REPORT.md",
+            "one_liner.txt"
+          ]
+        }
+      ],
+      "artifacts_verified": [
+        "artifacts/project_check/check_20260306_105914_abdd0b/manifest.json",
+        "artifacts/project_check/check_20260306_105914_abdd0b/status.json",
+        "artifacts/project_check/check_20260306_105914_abdd0b/phase_a_repo/status.json",
+        "artifacts/project_check/check_20260306_105914_abdd0b/phase_b_tests/status.json",
+        "artifacts/project_check/check_20260306_105914_abdd0b/phase_c_testbot/status.json",
+        "artifacts/project_check/check_20260306_105914_abdd0b/phase_d_gate/status.json",
+        "artifacts/project_check/check_20260306_105914_abdd0b/final/FINAL_CHECK_STATUS.json",
+        "artifacts/project_check/check_20260306_105914_abdd0b/final/FINAL_CHECK_REPORT.md",
+        "artifacts/project_check/check_20260306_105914_abdd0b/final/one_liner.txt"
+      ]
+    },
+    "2_tool_delivery_gates": {
+      "status": "passed",
+      "tools_tested": [
+        {
+          "tool": "project-check-init",
+          "doctor_status": "healthy",
+          "checks_passed": 3,
+          "checks_failed": 0,
+          "warnings": 1,
+          "report_path": "reports/tool_doctor/doctor_report_project-check-init.json"
+        },
+        {
+          "tool": "project-check-run",
+          "doctor_status": "healthy",
+          "checks_passed": 3,
+          "checks_failed": 0,
+          "warnings": 1,
+          "report_path": "reports/tool_doctor/doctor_report_project-check-run.json"
+        },
+        {
+          "tool": "project-check-status",
+          "doctor_status": "healthy",
+          "checks_passed": 3,
+          "checks_failed": 0,
+          "warnings": 1,
+          "report_path": "reports/tool_doctor/doctor_report_project-check-status.json"
+        },
+        {
+          "tool": "project-check-report",
+          "doctor_status": "healthy",
+          "checks_passed": 3,
+          "checks_failed": 0,
+          "warnings": 1,
+          "report_path": "reports/tool_doctor/doctor_report_project-check-report.json"
+        }
+      ],
+      "gates_summary": {
+        "gate_a_schema": "pass",
+        "gate_b_e2e": "pass",
+        "gate_c_health": "pass"
+      }
+    },
+    "3_error_handling": {
+      "status": "passed",
+      "tests": [
+        {
+          "name": "invalid_check_id",
+          "tools_tested": ["project-check-run", "project-check-status", "project-check-report"],
+          "expected_error": "NOT_FOUND",
+          "result": "pass",
+          "error_handling": "proper_json_error_response"
+        },
+        {
+          "name": "missing_manifest_json",
+          "tool": "project-check-init",
+          "input": "/tmp/test-no-manifest",
+          "result": "pass",
+          "behavior": "creates_check_without_manifest"
+        },
+        {
+          "name": "invalid_project_path",
+          "tool": "project-check-init",
+          "input": "/tmp/non-existent-path-xyz",
+          "expected_error": "Project path not found",
+          "result": "pass"
+        }
+      ]
+    },
+    "4_integration_tests": {
+      "status": "passed",
+      "tests": [
+        {
+          "name": "dependency_resolution",
+          "scenario": "phase_b_tests skipped when phase_a_repo failed",
+          "result": "pass"
+        },
+        {
+          "name": "dry_run_mode",
+          "tools_tested": ["project-check-init", "project-check-run"],
+          "result": "pass"
+        },
+        {
+          "name": "phase_specific_run",
+          "tool": "project-check-run --phase phase_a_repo",
+          "result": "pass"
+        },
+        {
+          "name": "report_formats",
+          "formats_tested": ["md", "json"],
+          "result": "pass"
+        },
+        {
+          "name": "e2e_self_test",
+          "tools_with_e2e": ["project-check-run", "project-check-status", "project-check-report"],
+          "project-check-run": {"passed": 5, "failed": 0},
+          "project-check-status": {"passed": 4, "failed": 0},
+          "project-check-report": {"passed": 5, "failed": 0},
+          "result": "pass"
+        }
+      ]
+    }
+  },
+  "issues_found": [
+    {
+      "type": "warning",
+      "severity": "low",
+      "message": "Phase runners (project-check-phase) not installed - expected for E2E testing",
+      "impact": "Phases fail with NOT_FOUND error",
+      "recommendation": "Install phase runners for full integration testing"
+    }
+  ],
+  "recommendations": [
+    "All 4 tools pass tool_doctor health checks",
+    "Dependency resolution works correctly",
+    "Error handling returns proper JSON error responses",
+    "Consider adding --sample flag to tools for stronger preflight checks"
+  ]
+}

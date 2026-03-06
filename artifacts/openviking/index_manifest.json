@@ -585,6 +585,276 @@
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
       "indexed_at": "2026-03-06T07:24:19.136339+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_1/2026-03-06.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_1/2026-03-06.md",
+      "doc_content_hash": "592aec8e796711126aac382560f60b19ae1484c6e661e0e0d1a31bfc3a37e727",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:02.323457+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/2026-03-05_Workflow_Auto-A_4more.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/2026-03-05_Workflow_Auto-A_4more.md",
+      "doc_content_hash": "6f573bb6309b5fe0996a92113154af8392b37e537073d89ed45e4b90234734ce",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:08.117491+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/2026-03-06_SRAP_Phase_A_441282fd.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/2026-03-06_SRAP_Phase_A_441282fd.md",
+      "doc_content_hash": "2755b17bf1a65909f7d0e41509bdfd084380ac5184a19f95b27d820079b649a1",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:08.991025+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/Active_Skills_High-Value_7more.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/Active_Skills_High-Value_7more.md",
+      "doc_content_hash": "ecb441958f8e19baeb20c0e0c2fc1af96062039cc8247cb56891b3809c768941",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:09.894408+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/MVP-9_Hardening_Key_Learni_3more.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/MVP-9_Hardening_Key_Learni_3more.md",
+      "doc_content_hash": "2cd83159b7833963511adfbe740e8ff3e17869174f8ad6bfc74378d75b8d6b83",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:10.801345+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/MVP112_Cycle_Evidence_Laye_7more.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/MVP112_Cycle_Evidence_Laye_7more.md",
+      "doc_content_hash": "f4574262b68f386e00deb84d5002ebe9e4b9775c24a8ef5cb0ef0ef8a9a773e9",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:11.671264+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/Memory_Bootstrap_Core_Rule_6more.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/Memory_Bootstrap_Core_Rule_6more.md",
+      "doc_content_hash": "6e9bd4cdccd26df7bbfb4bf52c34374aeed83dfa415bcb6bc84eaae74b3b13b7",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:12.551802+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/Memory_Retrieve_v12_OpenVi_6more.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/Memory_Retrieve_v12_OpenVi_6more.md",
+      "doc_content_hash": "a372e85df8fca1399787c215db8d63ab00f6e50c31d553fc8ad9766b4acc99e3",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:13.442695+00:00"
+    },
+    "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/僵尸任务清理机制_2026-03-04_6more.md": {
+      "doc_id": "viking://resources/user/memory/memory_18/Memory_Bootstrap_Core_Rules/僵尸任务清理机制_2026-03-04_6more.md",
+      "doc_content_hash": "37febca288940bee9a6a80db2aad10e10b3e3efb78bbb9c69b5d2ed82edff220",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T08:31:14.317840+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_2/2026-03-06.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_2/2026-03-06.md",
+      "doc_content_hash": "592aec8e796711126aac382560f60b19ae1484c6e661e0e0d1a31bfc3a37e727",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:52:59.587805+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-05_Workflow_Auto-A_4more.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-05_Workflow_Auto-A_4more.md",
+      "doc_content_hash": "6f573bb6309b5fe0996a92113154af8392b37e537073d89ed45e4b90234734ce",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:06.003307+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-06_SRAP_Phase_A_441282fd.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/2026-03-06_SRAP_Phase_A_441282fd.md",
+      "doc_content_hash": "2755b17bf1a65909f7d0e41509bdfd084380ac5184a19f95b27d820079b649a1",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:06.868352+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Active_Skills_High-Value_7more.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Active_Skills_High-Value_7more.md",
+      "doc_content_hash": "ecb441958f8e19baeb20c0e0c2fc1af96062039cc8247cb56891b3809c768941",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:07.718081+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP-9_Hardening_Key_Learni_3more.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP-9_Hardening_Key_Learni_3more.md",
+      "doc_content_hash": "2cd83159b7833963511adfbe740e8ff3e17869174f8ad6bfc74378d75b8d6b83",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:08.568849+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP112_Cycle_Evidence_Laye_7more.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/MVP112_Cycle_Evidence_Laye_7more.md",
+      "doc_content_hash": "f4574262b68f386e00deb84d5002ebe9e4b9775c24a8ef5cb0ef0ef8a9a773e9",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:09.933723+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Bootstrap_Core_Rule_6more.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Bootstrap_Core_Rule_6more.md",
+      "doc_content_hash": "6e9bd4cdccd26df7bbfb4bf52c34374aeed83dfa415bcb6bc84eaae74b3b13b7",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:10.805565+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Retrieve_v12_OpenVi_6more.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/Memory_Retrieve_v12_OpenVi_6more.md",
+      "doc_content_hash": "a372e85df8fca1399787c215db8d63ab00f6e50c31d553fc8ad9766b4acc99e3",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:11.687205+00:00"
+    },
+    "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/僵尸任务清理机制_2026-03-04_6more.md": {
+      "doc_id": "viking://resources/user/memory/memory_19/Memory_Bootstrap_Core_Rules/僵尸任务清理机制_2026-03-04_6more.md",
+      "doc_content_hash": "37febca288940bee9a6a80db2aad10e10b3e3efb78bbb9c69b5d2ed82edff220",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T11:53:12.522673+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_3/2026-03-06.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_3/2026-03-06.md",
+      "doc_content_hash": "592aec8e796711126aac382560f60b19ae1484c6e661e0e0d1a31bfc3a37e727",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T12:29:07.467340+00:00"
+    },
+    "viking://resources/user/memory/memory_20/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_20/memory.md",
+      "doc_content_hash": "c199d617b5fc3fd3ae1b7f9e3d514db04c52e4a850d1f170e42136cae8f87fe0",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T12:29:10.325732+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_4/2026-03-06.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_4/2026-03-06.md",
+      "doc_content_hash": "592aec8e796711126aac382560f60b19ae1484c6e661e0e0d1a31bfc3a37e727",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T12:42:22.090480+00:00"
+    },
+    "viking://resources/user/memory/memory_21/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_21/memory.md",
+      "doc_content_hash": "c199d617b5fc3fd3ae1b7f9e3d514db04c52e4a850d1f170e42136cae8f87fe0",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T12:42:24.553240+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_5/2026-03-06.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_5/2026-03-06.md",
+      "doc_content_hash": "592aec8e796711126aac382560f60b19ae1484c6e661e0e0d1a31bfc3a37e727",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T14:21:46.881612+00:00"
+    },
+    "viking://resources/user/memory/memory_22/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_22/memory.md",
+      "doc_content_hash": "c199d617b5fc3fd3ae1b7f9e3d514db04c52e4a850d1f170e42136cae8f87fe0",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T14:21:49.697491+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_6/2026-03-06_Session_Log/Phase_15_Coverage_Closu_514bcfaf.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_6/2026-03-06_Session_Log/Phase_15_Coverage_Closu_514bcfaf.md",
+      "doc_content_hash": "907019b1a7d52e4869b56b05c5198cbc3f0c0fc542880eebaf785d28aa7deb60",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T14:50:14.613678+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_6/2026-03-06_Session_Log/Summary_8more.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_6/2026-03-06_Session_Log/Summary_8more.md",
+      "doc_content_hash": "d7ce873d28286c6033cc47683c1149bbe130a99176468f21f9a1b9ea540b6935",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T14:50:15.543778+00:00"
+    },
+    "viking://resources/user/memory/memory_23/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_23/memory.md",
+      "doc_content_hash": "c199d617b5fc3fd3ae1b7f9e3d514db04c52e4a850d1f170e42136cae8f87fe0",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T14:50:18.143136+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_7/2026-03-06_Session_Log/Phase_15_Coverage_Closu_514bcfaf.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_7/2026-03-06_Session_Log/Phase_15_Coverage_Closu_514bcfaf.md",
+      "doc_content_hash": "907019b1a7d52e4869b56b05c5198cbc3f0c0fc542880eebaf785d28aa7deb60",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T16:20:32.235848+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_7/2026-03-06_Session_Log/Summary_8more.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_7/2026-03-06_Session_Log/Summary_8more.md",
+      "doc_content_hash": "d7ce873d28286c6033cc47683c1149bbe130a99176468f21f9a1b9ea540b6935",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T16:20:33.113140+00:00"
+    },
+    "viking://resources/user/memory/memory_24/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_24/memory.md",
+      "doc_content_hash": "c199d617b5fc3fd3ae1b7f9e3d514db04c52e4a850d1f170e42136cae8f87fe0",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T16:20:35.658691+00:00"
     }
   }
 }

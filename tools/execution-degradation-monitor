@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+"""
+execution-degradation-monitor v1.0 - 退化监控与告警
+
+监控 4 个关键指标：
+1. finalize_response_blocks_total - 伪完成尝试频率
+2. missing_receipt_block_total - 调用链遗漏
+3. illegal_transition_block_total - 状态机脏路径
+4. human_failed_to_repairing_success_rate - 回退链健康度
+
+告警阈值：
+- blocks 升高 > 50%/hour → WARN
+- blocks 升高 > 100%/hour → ALERT
+- success_rate < 80% → WARN
+- success_rate < 50% → ALERT
+
+Usage:
+  execution-degradation-monitor --check
+  execution-degradation-monitor --report
+  execution-degradation-monitor --prometheus
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+from collections import defaultdict
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+INTERCEPTOR_LOG = WORKSPACE / "reports" / "interceptor_log.jsonl"
+FINALIZE_LOG = WORKSPACE / "reports" / "finalize_log.jsonl"
+VALIDATION_LOG = WORKSPACE / "reports" / "receipt_validation.jsonl"
+METRICS_FILE = WORKSPACE / "reports" / "execution_metrics.jsonl"
+ALERTS_FILE = WORKSPACE / "reports" / "degradation_alerts.jsonl"
+BASELINE_FILE = WORKSPACE / "reports" / "metrics_baseline.json"
+
+
+# 告警阈值
+THRESHOLDS = {
+    "finalize_response_blocks_hourly": {
+        "warn": 10,
+        "alert": 20,
+        "description": "伪完成尝试次数/小时"
+    },
+    "missing_receipt_blocks_hourly": {
+        "warn": 5,
+        "alert": 10,
+        "description": "缺 receipt 阻断次数/小时"
+    },
+    "illegal_transition_blocks_hourly": {
+        "warn": 3,
+        "alert": 5,
+        "description": "非法状态迁移次数/小时"
+    },
+    "human_failed_repair_success_rate": {
+        "warn": 0.8,
+        "alert": 0.5,
+        "description": "human_failed → repairing 成功率",
+        "inverse": True  # 越低越危险
+    }
+}
+
+
+def parse_jsonl(path: Path) -> List[Dict]:
+    """Parse JSONL file."""
+    if not path.exists():
+        return []
+    
+    entries = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except:
+                    pass
+    return entries
+
+
+def parse_timestamp(ts_str: str) -> Optional[datetime]:
+    """Parse ISO timestamp."""
+    if not ts_str:
+        return None
+    try:
+        # 尝试多种格式
+        for fmt in ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"]:
+            try:
+                return datetime.strptime(ts_str[:26], fmt)
+            except:
+                continue
+        # 回退到 fromisoformat
+        return datetime.fromisoformat(ts_str.replace("Z", "+00:00").split("+")[0])
+    except:
+        return None
+
+
+def collect_hourly_metrics() -> Dict:
+    """收集最近一小时的指标"""
+    now = datetime.now()
+    hour_ago = now - timedelta(hours=1)
+    
+    metrics = {
+        "collection_time": now.isoformat(),
+        "window": "1h",
+        "metrics": {},
+        "alerts": []
+    }
+    
+    # 1. finalize_response_blocks_hourly
+    finalize_entries = parse_jsonl(FINALIZE_LOG)
+    recent_blocks = [
+        e for e in finalize_entries
+        if parse_timestamp(e.get("timestamp", "")) and 
+           parse_timestamp(e.get("timestamp", "")) > hour_ago and
+           e.get("allowed") == False
+    ]
+    metrics["metrics"]["finalize_response_blocks_hourly"] = len(recent_blocks)
+    
+    # 2. missing_receipt_blocks_hourly
+    missing_blocks = sum(
+        1 for e in recent_blocks
+        if "receipt" in e.get("reason", "").lower()
+    )
+    metrics["metrics"]["missing_receipt_blocks_hourly"] = missing_blocks
+    
+    # 3. illegal_transition_blocks_hourly
+    validation_entries = parse_jsonl(VALIDATION_LOG)
+    illegal = sum(
+        1 for e in validation_entries
+        if parse_timestamp(e.get("timestamp", "")) and
+           parse_timestamp(e.get("timestamp", "")) > hour_ago and
+           not e.get("checks", {}).get("state_transitions", {}).get("passed", True)
+    )
+    metrics["metrics"]["illegal_transition_blocks_hourly"] = illegal
+    
+    # 4. human_failed_repair_success_rate (暂时设为 N/A)
+    metrics["metrics"]["human_failed_repair_success_rate"] = "N/A"
+    
+    return metrics
+
+
+def check_thresholds(metrics: Dict) -> List[Dict]:
+    """检查是否触发告警"""
+    alerts = []
+    
+    for metric_name, value in metrics["metrics"].items():
+        if value == "N/A":
+            continue
+        
+        threshold = THRESHOLDS.get(metric_name)
+        if not threshold:
+            continue
+        
+        is_inverse = threshold.get("inverse", False)
+        
+        if is_inverse:
+            # 越低越危险
+            if value < threshold["alert"]:
+                alerts.append({
+                    "metric": metric_name,
+                    "level": "ALERT",
+                    "value": value,
+                    "threshold": threshold["alert"],
+                    "description": threshold["description"]
+                })
+            elif value < threshold["warn"]:
+                alerts.append({
+                    "metric": metric_name,
+                    "level": "WARN",
+                    "value": value,
+                    "threshold": threshold["warn"],
+                    "description": threshold["description"]
+                })
+        else:
+            # 越高越危险
+            if isinstance(value, (int, float)):
+                if value > threshold["alert"]:
+                    alerts.append({
+                        "metric": metric_name,
+                        "level": "ALERT",
+                        "value": value,
+                        "threshold": threshold["alert"],
+                        "description": threshold["description"]
+                    })
+                elif value > threshold["warn"]:
+                    alerts.append({
+                        "metric": metric_name,
+                        "level": "WARN",
+                        "value": value,
+                        "threshold": threshold["warn"],
+                        "description": threshold["description"]
+                    })
+    
+    return alerts
+
+
+def generate_report(metrics: Dict, alerts: List[Dict]) -> str:
+    """生成报告"""
+    lines = []
+    lines.append("=" * 70)
+    lines.append("EXECUTION DEGRADATION MONITOR")
+    lines.append("=" * 70)
+    lines.append(f"Collection Time: {metrics['collection_time']}")
+    lines.append(f"Window: {metrics['window']}")
+    lines.append("")
+    
+    # 指标
+    lines.append("-" * 70)
+    lines.append("METRICS")
+    lines.append("-" * 70)
+    for name, value in metrics["metrics"].items():
+        threshold = THRESHOLDS.get(name, {})
+        threshold_str = f"(warn: {threshold.get('warn', 'N/A')}, alert: {threshold.get('alert', 'N/A')})"
+        lines.append(f"  {name}: {value} {threshold_str}")
+    lines.append("")
+    
+    # 告警
+    if alerts:
+        lines.append("-" * 70)
+        lines.append("ALERTS")
+        lines.append("-" * 70)
+        for alert in alerts:
+            level = alert["level"]
+            symbol = "🚨" if level == "ALERT" else "⚠️"
+            lines.append(f"  {symbol} [{level}] {alert['metric']}")
+            lines.append(f"     Value: {alert['value']}, Threshold: {alert['threshold']}")
+            lines.append(f"     {alert['description']}")
+        lines.append("")
+    else:
+        lines.append("-" * 70)
+        lines.append("STATUS: ✅ NO ALERTS - System is healthy")
+        lines.append("-" * 70)
+        lines.append("")
+    
+    lines.append("=" * 70)
+    
+    return "\n".join(lines)
+
+
+def format_prometheus(metrics: Dict) -> str:
+    """Format as Prometheus exposition format."""
+    lines = []
+    lines.append("# HELP execution_degradation_metrics OpenClaw Execution Degradation Metrics")
+    lines.append("# TYPE execution_degradation_metrics gauge")
+    
+    for name, value in metrics["metrics"].items():
+        if isinstance(value, (int, float)):
+            lines.append(f'execution_degradation_metrics{{metric="{name}"}} {value}')
+    
+    return "\n".join(lines)
+
+
+def log_alerts(alerts: List[Dict]):
+    """记录告警"""
+    if not alerts:
+        return
+    
+    ALERTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    
+    for alert in alerts:
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            **alert
+        }
+        with open(ALERTS_FILE, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="execution-degradation-monitor v1.0")
+    parser.add_argument("--check", action="store_true", help="Check and alert")
+    parser.add_argument("--report", action="store_true", help="Generate report")
+    parser.add_argument("--prometheus", action="store_true", help="Prometheus format")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--baseline", action="store_true", help="Update baseline")
+    
+    args = parser.parse_args()
+    
+    if args.check or args.report or args.prometheus:
+        metrics = collect_hourly_metrics()
+        alerts = check_thresholds(metrics)
+        
+        # 记录告警
+        if alerts:
+            log_alerts(alerts)
+        
+        # 保存指标
+        METRICS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(METRICS_FILE, "a") as f:
+            f.write(json.dumps(metrics) + "\n")
+        
+        if args.prometheus:
+            print(format_prometheus(metrics))
+        elif args.json:
+            output = {"metrics": metrics, "alerts": alerts}
+            print(json.dumps(output, indent=2))
+        else:
+            print(generate_report(metrics, alerts))
+        
+        # 返回码：有 ALERT 级别告警返回 1
+        has_alert = any(a["level"] == "ALERT" for a in alerts)
+        return 1 if has_alert else 0
+    
+    if args.baseline:
+        # 更新基线
+        metrics = collect_hourly_metrics()
+        BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(BASELINE_FILE, "w") as f:
+            json.dump({
+                "timestamp": datetime.now().isoformat(),
+                "baseline": metrics["metrics"]
+            }, f, indent=2)
+        print(f"✅ Baseline updated: {BASELINE_FILE}")
+        return 0
+    
+    parser.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

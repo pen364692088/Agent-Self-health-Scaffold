@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""
+receipt-signer v2.1 - Tamper-Evident Receipt Signing
+
+签名只对核心字段计算，验证时忽略额外字段（checks, issues 等）
+"""
+import argparse
+import json
+import sys
+import hashlib
+import hmac
+import subprocess
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+KEYS_DIR = WORKSPACE / "trust-anchor" / "keys"
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
+DEFAULT_SECRET = "openclaw-execution-policy-secret-key-v2.1"
+
+# 用于签名的核心字段
+SIGNATURE_FIELDS = [
+    "task_id", "run_id", "commit", "workspace_hash",
+    "gate_name", "started_at", "finished_at", "result",
+    "parent_receipt_hash", "signer_id", "receipt_version", "content_hash"
+]
+
+
+def get_signer_key(signer_id: str) -> str:
+    key_file = KEYS_DIR / f"{signer_id}.key"
+    if key_file.exists():
+        return key_file.read_text().strip()
+    return DEFAULT_SECRET
+
+
+def compute_workspace_hash() -> str:
+    hashes = []
+    try:
+        result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=WORKSPACE, capture_output=True, text=True)
+        if result.returncode == 0:
+            hashes.append(f"commit:{result.stdout.strip()[:8]}")
+    except:
+        hashes.append("commit:unknown")
+    
+    wf_state = WORKSPACE / "WORKFLOW_STATE.json"
+    if wf_state.exists():
+        h = hashlib.sha256(wf_state.read_text().encode()).hexdigest()[:8]
+        hashes.append(f"workflow:{h}")
+    
+    return hashlib.sha256("|".join(hashes).encode()).hexdigest()[:16]
+
+
+def compute_content_hash(receipt: dict) -> str:
+    """只对核心字段计算 hash"""
+    core_fields = ["task_id", "run_id", "gate_name", "result", "started_at", "finished_at"]
+    values = [f"{f}:{receipt.get(f, '')}" for f in core_fields if f in receipt]
+    return hashlib.sha256("|".join(values).encode()).hexdigest()[:16]
+
+
+def sign_receipt(task_id, gate_name, result, run_id=None, parent_hash=None, started_at=None, finished_at=None):
+    now = datetime.now()
+    signer_map = {"a": "gate_a", "b": "gate_b", "c": "gate_c", "final": "final_aggregator"}
+    signer_id = signer_map.get(str(gate_name).lower(), "unknown")
+    secret = get_signer_key(signer_id)
+    
+    receipt = {
+        "task_id": task_id,
+        "run_id": run_id or f"run_{now.strftime('%Y%m%d%H%M%S')}",
+        "commit": subprocess.getoutput("cd /home/moonlight/.openclaw/workspace && git rev-parse --short HEAD 2>/dev/null || echo 'unknown'"),
+        "workspace_hash": compute_workspace_hash(),
+        "gate_name": gate_name,
+        "started_at": started_at or now.isoformat(),
+        "finished_at": finished_at or now.isoformat(),
+        "result": result,
+        "parent_receipt_hash": parent_hash or "",
+        "signer_id": signer_id,
+        "receipt_version": "2.1"
+    }
+    
+    receipt["content_hash"] = compute_content_hash(receipt)
+    
+    # 签名：只对核心字段
+    message = json.dumps({k: receipt[k] for k in SIGNATURE_FIELDS if k in receipt}, sort_keys=True)
+    receipt["signature"] = hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+    
+    return receipt
+
+
+def verify_receipt(receipt: dict) -> tuple:
+    """验证签名：只检查核心字段"""
+    signature = receipt.get("signature")
+    if not signature:
+        return False, "Missing signature"
+    
+    signer_id = receipt.get("signer_id")
+    if not signer_id:
+        return False, "Missing signer_id"
+    
+    secret = get_signer_key(signer_id)
+    
+    # 只对核心字段计算签名（忽略 checks, issues, gate_results 等额外字段）
+    core_data = {k: receipt[k] for k in SIGNATURE_FIELDS if k in receipt}
+    message = json.dumps(core_data, sort_keys=True)
+    expected = hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+    
+    if hmac.compare_digest(signature, expected):
+        return True, "Valid signature"
+    else:
+        return False, "Signature mismatch"
+
+
+def main():
+    parser = argparse.ArgumentParser(description="receipt-signer v2.1")
+    parser.add_argument("--sign", action="store_true")
+    parser.add_argument("--verify", action="store_true")
+    parser.add_argument("--chain-verify", action="store_true")
+    parser.add_argument("--gate")
+    parser.add_argument("--task-id")
+    parser.add_argument("--result", default="pass")
+    parser.add_argument("--receipt")
+    parser.add_argument("--run-id")
+    parser.add_argument("--parent-hash")
+    parser.add_argument("--started-at")
+    parser.add_argument("--finished-at")
+    parser.add_argument("--output")
+    parser.add_argument("--json", action="store_true")
+    
+    args = parser.parse_args()
+    
+    if args.sign:
+        if not args.task_id or not args.gate:
+            print("Error: --task-id and --gate required", file=sys.stderr)
+            return 2
+        
+        receipt = sign_receipt(
+            task_id=args.task_id,
+            gate_name=args.gate,
+            result=args.result,
+            run_id=args.run_id,
+            parent_hash=args.parent_hash,
+            started_at=args.started_at,
+            finished_at=args.finished_at
+        )
+        
+        if args.output:
+            Path(args.output).write_text(json.dumps(receipt, indent=2))
+            if not args.json:
+                print(f"✅ Signed: {args.output}")
+        else:
+            print(json.dumps(receipt, indent=2))
+        
+        return 0
+    
+    if args.verify:
+        if not args.receipt:
+            print("Error: --receipt required", file=sys.stderr)
+            return 2
+        
+        path = Path(args.receipt)
+        if not path.exists():
+            result = {"valid": False, "message": f"File not found: {args.receipt}"}
+            print(json.dumps(result, indent=2) if args.json else f"❌ {result['message']}")
+            return 1
+        
+        receipt = json.loads(path.read_text())
+        valid, message = verify_receipt(receipt)
+        
+        result = {"valid": valid, "message": message, "signer": receipt.get("signer_id")}
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"{'✅ VALID' if valid else '❌ INVALID'}: {message}")
+        
+        return 0 if valid else 1
+    
+    if args.chain_verify:
+        if not args.task_id:
+            print("Error: --task-id required", file=sys.stderr)
+            return 2
+        
+        issues = []
+        for gate in ["a", "b", "c", "final"]:
+            path = ARTIFACTS_DIR / f"{args.task_id}_gate_{gate}_receipt.json"
+            if path.exists():
+                receipt = json.loads(path.read_text())
+                valid, msg = verify_receipt(receipt)
+                if not valid:
+                    issues.append(f"{gate}: {msg}")
+        
+        result = {"valid": len(issues) == 0, "issues": issues}
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"{'✅ Chain valid' if result['valid'] else '❌ Chain invalid'}")
+        
+        return 0 if result["valid"] else 1
+    
+    parser.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

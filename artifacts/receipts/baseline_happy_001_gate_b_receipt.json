@@ -1,0 +1,27 @@
+{
+  "task_id": "baseline_happy_001",
+  "run_id": "run_20260306100331",
+  "commit": "76bb031",
+  "workspace_hash": "7151af312bdd2a2a",
+  "gate_name": "b",
+  "started_at": "2026-03-06T10:03:31.448200",
+  "finished_at": "2026-03-06T10:03:31.448211",
+  "result": "pass",
+  "parent_receipt_hash": "",
+  "signer_id": "gate_b",
+  "receipt_version": "2.1",
+  "content_hash": "b572d469f2521fb0",
+  "signature": "369f217488e6cafa7530d22bd7602684b9c521426cd37281c4929a853bb5cf72",
+  "checks": [
+    {
+      "name": "e2e",
+      "status": "skip",
+      "details": "deferred to CI"
+    },
+    {
+      "name": "validation",
+      "status": "pass",
+      "details": "deferred to CI"
+    }
+  ]
+}

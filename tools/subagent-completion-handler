@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 """
-子代理完成处理器 v2.0
+子代理完成处理器 v2.2
 
-支持两种触发方式：
-1. 显式结构化 payload（推荐）：从 sessions_send 收到的 subagent_done 消息
-2. 传统 run_id 查找：兼容旧工作流
+v2.2 修复：
+- 幂等处理：已完成的步骤不再重复处理
+- 多维度匹配：task_id / run_id / orchestrator 映射
 
 Usage:
   subagent-completion-handler --payload '<json>'
   subagent-completion-handler <run_id>
   subagent-completion-handler --health
+  subagent-completion-handler --status
 """
 
 import json
 import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
 
 WORKSPACE = Path.home() / ".openclaw" / "workspace"
 WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+ORCHESTRATOR_FILE = WORKSPACE / "tools" / "orchestrator" / "pending_subtasks.json"
 LEDGER_TOOL = WORKSPACE / "tools" / "task-ledger"
 
 
@@ -41,56 +44,110 @@ def save_workflow(state: dict):
         json.dump(state, f, indent=2, ensure_ascii=False)
 
 
-def find_step_by_run_id(state: dict, run_id: str) -> tuple:
-    """根据 run_id 找到对应步骤及其索引"""
-    steps = state.get('steps', [])
-    for i, step in enumerate(steps):
-        if step.get('run_id') == run_id:
-            return step, i
-    return None, -1
+def load_orchestrator():
+    """加载 orchestrator 状态"""
+    if not ORCHESTRATOR_FILE.exists():
+        return None
+    try:
+        with open(ORCHESTRATOR_FILE, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return None
 
 
-def find_step_by_task_id(state: dict, task_id: str) -> tuple:
+def find_step_by_task_id(state: dict, task_id: str, exclude_done: bool = False) -> tuple:
     """根据 task_id 找到对应步骤及其索引"""
     steps = state.get('steps', [])
     for i, step in enumerate(steps):
         if step.get('id') == task_id or step.get('task_id') == task_id:
+            if exclude_done and step.get('status') == 'done':
+                continue
             return step, i
     return None, -1
 
 
-def handle_structured_payload(payload: dict) -> dict:
+def find_step_by_run_id(state: dict, run_id: str, exclude_done: bool = False) -> tuple:
+    """根据 run_id 找到对应步骤"""
+    steps = state.get('steps', [])
+    for i, step in enumerate(steps):
+        if exclude_done and step.get('status') == 'done':
+            continue
+        step_run_id = step.get('run_id', '')
+        if step_run_id == run_id or run_id in step_run_id or step_run_id in run_id:
+            return step, i
+    return None, -1
+
+
+def find_task_in_orchestrator(task_id: str) -> dict:
+    """在 orchestrator 中查找任务"""
+    orch = load_orchestrator()
+    if not orch:
+        return None
+    return orch.get('pending', {}).get(task_id)
+
+
+def try_match_step(state: dict, payload: dict, exclude_done: bool = True) -> tuple:
     """
-    处理结构化 payload（推荐方式）
+    多维度匹配步骤
     
-    payload 格式：
-    {
-      "type": "subagent_done",
-      "task_id": "xxx",
-      "child_session_key": "agent:main:subagent:xxx",
-      "status": "completed|failed",
-      "summary": "...",
-      "artifacts": ["..."],
-      "next_hint": "ready_for_review|needs_followup|blocked"
-    }
+    Args:
+        state: 工作流状态
+        payload: 回调 payload
+        exclude_done: 是否排除已完成的步骤（幂等）
+    
+    Returns:
+        (step, index, match_method) 或 (None, -1, None)
     """
+    task_id = payload.get('task_id', '')
+    child_session_key = payload.get('child_session_key', '')
+    
+    # 提取 run_id
+    run_id = ''
+    if child_session_key:
+        parts = child_session_key.split(':')
+        if len(parts) >= 4:
+            run_id = parts[-1]
+    
+    # 方法 1: task_id 匹配
+    step, idx = find_step_by_task_id(state, task_id, exclude_done)
+    if step:
+        return step, idx, 'task_id'
+    
+    # 方法 2: run_id 匹配
+    if run_id:
+        step, idx = find_step_by_run_id(state, run_id, exclude_done)
+        if step:
+            return step, idx, 'run_id'
+    
+    # 方法 3: orchestrator 映射
+    orch_task = find_task_in_orchestrator(task_id)
+    if orch_task:
+        orch_run_id = orch_task.get('run_id', '')
+        if orch_run_id:
+            step, idx = find_step_by_run_id(state, orch_run_id, exclude_done)
+            if step:
+                return step, idx, 'orchestrator_mapping'
+    
+    # 方法 4: 尝试匹配已完成的步骤（用于检测重复回调）
+    if exclude_done:
+        step, idx, method = try_match_step(state, payload, exclude_done=False)
+        if step and step.get('status') == 'done':
+            return step, idx, 'already_done'
+    
+    return None, -1, None
+
+
+def handle_structured_payload(payload: dict) -> dict:
+    """处理结构化 payload"""
     task_id = payload.get('task_id')
     status = payload.get('status', 'completed')
     summary = payload.get('summary', '')
     artifacts = payload.get('artifacts', [])
-    child_session_key = payload.get('child_session_key', '')
-    
-    # 更新 ledger
-    import subprocess
-    subprocess.run([
-        str(LEDGER_TOOL), 'complete', task_id, status, summary
-    ], capture_output=True)
     
     # 加载工作流
     state = load_workflow()
     
     if not state or not state.get('active'):
-        # 没有活动工作流，直接返回结果
         return {
             "action": "notify_user",
             "message": f"✅ 子任务完成: {task_id}\n{summary}",
@@ -98,25 +155,40 @@ def handle_structured_payload(payload: dict) -> dict:
             "artifacts": artifacts
         }
     
-    # 找到对应步骤
-    step, idx = find_step_by_task_id(state, task_id)
-    if step:
-        step['status'] = 'done' if status == 'completed' else 'failed'
-        step['completed_at'] = datetime.now().isoformat()
-        step['summary'] = summary
-        step['artifacts'] = artifacts
-    else:
-        # 尝试用 child_session_key 匹配
-        step, idx = find_step_by_run_id(state, child_session_key.split(':')[-1])
-        if step:
-            step['status'] = 'done' if status == 'completed' else 'failed'
-            step['completed_at'] = datetime.now().isoformat()
+    # 多维度匹配（排除已完成）
+    step, idx, match_method = try_match_step(state, payload, exclude_done=True)
     
-    # 检查下一步
+    if match_method == 'already_done':
+        # 幂等：步骤已完成，忽略重复回调
+        return {
+            "action": "ignore",
+            "reason": "duplicate_callback",
+            "task_id": task_id,
+            "step_id": step.get('id'),
+            "should_silence": True
+        }
+    
+    if not step:
+        # 没找到匹配步骤
+        return {
+            "action": "ignore",
+            "reason": "step_not_found",
+            "task_id": task_id,
+            "should_silence": False
+        }
+    
+    # 更新步骤状态
+    step['status'] = 'done' if status == 'completed' else 'failed'
+    step['completed_at'] = datetime.now().isoformat()
+    step['summary'] = summary
+    step['artifacts'] = artifacts
+    step['match_method'] = match_method
+    
+    # 检查是否还有待处理步骤
     steps = state.get('steps', [])
     pending_steps = [
         (i, s) for i, s in enumerate(steps)
-        if s.get('status') in ('pending', 'running')
+        if s.get('status') in ('pending', 'running') and s.get('id') != step.get('id')
     ]
     
     if pending_steps:
@@ -148,62 +220,6 @@ def handle_structured_payload(payload: dict) -> dict:
         return {
             "action": "notify_user",
             "message": state.get("notify_on_done", f"✅ 流程完成: {task_id}"),
-            "should_silence": False,
-            "artifacts": artifacts
-        }
-
-
-def handle_run_id(run_id: str) -> dict:
-    """传统方式：根据 run_id 处理（兼容旧工作流）"""
-    state = load_workflow()
-    
-    if not state:
-        return {"action": "ignore", "should_silence": False, "reason": "no_workflow_file"}
-    
-    if not state.get("active"):
-        return {"action": "ignore", "should_silence": False, "reason": "workflow_inactive"}
-    
-    step, idx = find_step_by_run_id(state, run_id)
-    if not step:
-        return {"action": "ignore", "should_silence": False, "reason": f"run_id_not_found: {run_id}"}
-    
-    step['status'] = 'done'
-    step['completed_at'] = datetime.now().isoformat()
-    
-    steps = state.get('steps', [])
-    pending_steps = [
-        (i, s) for i, s in enumerate(steps)
-        if s.get('status') in ('pending', 'running')
-    ]
-    
-    if pending_steps:
-        next_idx, next_step = pending_steps[0]
-        depends_on = next_step.get('depends_on', [])
-        completed_ids = [s.get('id') for s in steps if s.get('status') == 'done']
-        
-        if all(d in completed_ids for d in depends_on):
-            save_workflow(state)
-            return {
-                "action": "spawn_next",
-                "next_step": next_step,
-                "workflow": state,
-                "should_silence": True
-            }
-        else:
-            save_workflow(state)
-            return {
-                "action": "wait_for_dependencies",
-                "waiting_for": [d for d in depends_on if d not in completed_ids],
-                "should_silence": True
-            }
-    else:
-        state['active'] = False
-        state['completed_at'] = datetime.now().isoformat()
-        save_workflow(state)
-        
-        return {
-            "action": "notify_user",
-            "message": state.get("notify_on_done", "流程完成"),
             "should_silence": False
         }
 
@@ -213,37 +229,64 @@ def main():
         print(__doc__)
         sys.exit(1)
     
-    if sys.argv[1] in ("--health", "-H"):
-        print(json.dumps({"status": "healthy"}))
+    if sys.argv[1] == "--health":
+        print(json.dumps({"status": "healthy", "version": "2.2"}))
         sys.exit(0)
     
-    if sys.argv[1] == "--payload" and len(sys.argv) >= 3:
-        # 结构化 payload 模式
+    if sys.argv[1] == "--status":
+        state = load_workflow()
+        if state:
+            print(json.dumps(state, indent=2, ensure_ascii=False))
+        else:
+            print(json.dumps({"active": False, "message": "No active workflow"}))
+        sys.exit(0)
+    
+    if sys.argv[1] == "--payload":
+        if len(sys.argv) < 3:
+            print("Error: --payload requires JSON argument", file=sys.stderr)
+            sys.exit(1)
         try:
             payload = json.loads(sys.argv[2])
-        except json.JSONDecodeError:
-            print(json.dumps({"action": "error", "reason": "invalid_json"}))
+            result = handle_structured_payload(payload)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON: {e}", file=sys.stderr)
             sys.exit(1)
-        
-        result = handle_structured_payload(payload)
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+        sys.exit(0)
     
-    elif sys.argv[1].startswith("{"):
-        # 直接传入 JSON
-        try:
-            payload = json.loads(sys.argv[1])
-        except json.JSONDecodeError:
-            print(json.dumps({"action": "error", "reason": "invalid_json"}))
-            sys.exit(1)
-        
-        result = handle_structured_payload(payload)
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+    # 传统 run_id 模式
+    run_id = sys.argv[1]
+    state = load_workflow()
     
+    if not state or not state.get('active'):
+        print(json.dumps({"action": "ignore", "reason": "workflow_inactive", "should_silence": False}))
+        sys.exit(0)
+    
+    step, idx = find_step_by_run_id(state, run_id, exclude_done=True)
+    
+    if step:
+        step['status'] = 'done'
+        step['completed_at'] = datetime.now().isoformat()
+        
+        # 检查下一步
+        steps = state.get('steps', [])
+        pending = [(i, s) for i, s in enumerate(steps) if s.get('status') in ('pending', 'running')]
+        
+        if pending:
+            save_workflow(state)
+            print(json.dumps({"action": "spawn_next", "next_step": pending[0][1], "should_silence": True}))
+        else:
+            state['active'] = False
+            state['completed_at'] = datetime.now().isoformat()
+            save_workflow(state)
+            print(json.dumps({"action": "notify_user", "message": state.get("notify_on_done", "完成"), "should_silence": False}))
     else:
-        # 传统 run_id 模式
-        run_id = sys.argv[1]
-        result = handle_run_id(run_id)
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+        # 检查是否已完成（幂等）
+        step, idx = find_step_by_run_id(state, run_id, exclude_done=False)
+        if step and step.get('status') == 'done':
+            print(json.dumps({"action": "ignore", "reason": "duplicate_callback", "should_silence": True}))
+        else:
+            print(json.dumps({"action": "ignore", "reason": "run_id_not_found", "should_silence": False}))
 
 
 if __name__ == "__main__":

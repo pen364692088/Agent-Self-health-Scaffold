@@ -1,0 +1,14 @@
+{
+  "task_id": "task_20260306_074206_0ff6952b",
+  "run_id": "run_f9bbe091",
+  "session_key": "agent:main:subagent:c605e901-dab5-49ee-aa53-1b9e758b67b5",
+  "parent_session_key": "agent:main:telegram:direct:unknown",
+  "status": "completed",
+  "summary": "Intent Alignment Contract v2.1 implementation complete. Created emotiond/self_report_contract.py with SelfReportContract dataclass including intent, intent_alignment_score (0-1), intent_drift flag, and contract_version bumped to v2.1. Added intent validation logic with classify_intent() and calculate_intent_alignment() functions. Updated self_report_check.py with new violation types (INTENT_DRIFT, INTENT_MISALIGNMENT) and integrated intent alignment checking. Updated gates.py with intent_alignment gate and shadow mode contract validation. Created comprehensive unit tests (33 tests all passing) in tests/test_intent_alignment_contract.py.",
+  "artifacts": [],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-06T07:52:02.766878",
+  "retry_count": 0,
+  "metadata": {}
+}

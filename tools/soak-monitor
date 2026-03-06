@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""
+Soak Monitor - 24h 稳定性监控
+
+每小时记录指标，24h 后生成报告
+
+Usage:
+  soak-monitor start
+  soak-monitor status
+  soak-monitor report
+"""
+
+import json
+import sys
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+LOG_FILE = WORKSPACE / "reports" / "soak_metrics.jsonl"
+METRICS_TOOL = WORKSPACE / "tools" / "subagent-inbox-metrics"
+
+SOAK_DURATION_HOURS = 24
+SAMPLE_INTERVAL_SECONDS = 3600  # 1 小时
+
+
+def collect_sample() -> dict:
+    """收集一个样本"""
+    import subprocess
+    
+    result = subprocess.run(
+        [str(METRICS_TOOL), "--json"],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode != 0:
+        return {"error": result.stderr}
+    
+    # 解析输出（跳过 ALERTS 部分）
+    lines = result.stdout.strip().split('\n')
+    json_line = None
+    for line in lines:
+        if line.startswith('{'):
+            json_line = line
+            break
+    
+    if json_line:
+        return json.loads(json_line)
+    
+    return {"error": "no json output"}
+
+
+def record_sample(sample: dict):
+    """记录样本"""
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    
+    entry = {
+        "ts": datetime.now().isoformat(),
+        **sample
+    }
+    
+    with open(LOG_FILE, 'a') as f:
+        f.write(json.dumps(entry) + '\n')
+
+
+def generate_report() -> dict:
+    """生成 24h 报告"""
+    if not LOG_FILE.exists():
+        return {"error": "no data"}
+    
+    samples = []
+    with open(LOG_FILE) as f:
+        for line in f:
+            if line.strip():
+                samples.append(json.loads(line))
+    
+    if not samples:
+        return {"error": "no samples"}
+    
+    # 分析
+    pending_counts = [s.get("pending_count", 0) for s in samples]
+    age_p95s = [s.get("receipt_age_p95", 0) for s in samples]
+    stuck_counts = [s.get("stuck_claimed_count", 0) for s in samples]
+    
+    report = {
+        "duration_hours": len(samples),
+        "samples": len(samples),
+        "pending_count": {
+            "min": min(pending_counts),
+            "max": max(pending_counts),
+            "avg": sum(pending_counts) / len(pending_counts),
+            "trend": "stable" if max(pending_counts) - min(pending_counts) < 5 else "increasing"
+        },
+        "receipt_age_p95": {
+            "min": min(age_p95s),
+            "max": max(age_p95s),
+            "avg": sum(age_p95s) / len(age_p95s),
+            "trend": "stable" if max(age_p95s) < 120 else "increasing"
+        },
+        "stuck_claimed": {
+            "max": max(stuck_counts),
+            "occurrences": sum(1 for x in stuck_counts if x > 0)
+        },
+        "verdict": "pass" if max(pending_counts) < 20 and max(age_p95s) < 120 and max(stuck_counts) == 0 else "needs_attention"
+    }
+    
+    return report
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+    
+    cmd = sys.argv[1]
+    
+    if cmd == "start":
+        print(f"Starting 24h soak monitor (interval: {SAMPLE_INTERVAL_SECONDS}s)")
+        
+        start_time = datetime.now()
+        end_time = start_time + timedelta(hours=SOAK_DURATION_HOURS)
+        
+        print(f"Start: {start_time}")
+        print(f"End: {end_time}")
+        
+        while datetime.now() < end_time:
+            sample = collect_sample()
+            record_sample(sample)
+            
+            print(f"[{datetime.now().isoformat()}] pending={sample.get('pending_count')}, age_p95={sample.get('receipt_age_p95', 0):.1f}s")
+            
+            time.sleep(SAMPLE_INTERVAL_SECONDS)
+        
+        print("\n=== 24h Soak Complete ===")
+        report = generate_report()
+        print(json.dumps(report, indent=2))
+    
+    elif cmd == "status":
+        if not LOG_FILE.exists():
+            print("No soak data")
+            sys.exit(0)
+        
+        with open(LOG_FILE) as f:
+            lines = f.readlines()
+        
+        print(f"Samples: {len(lines)}")
+        
+        if lines:
+            last = json.loads(lines[-1])
+            print(f"Last: {last.get('ts')}")
+            print(f"Pending: {last.get('pending_count')}")
+            print(f"Age P95: {last.get('receipt_age_p95', 0):.1f}s")
+    
+    elif cmd == "report":
+        report = generate_report()
+        print(json.dumps(report, indent=2))
+    
+    else:
+        print(__doc__)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

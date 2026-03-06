@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-03-06T12:29:10.327738+00:00",
+  "policy_mode": "warn_soft",
+  "doc_count": 1,
+  "decisions": [
+    {
+      "doc_id": "viking://resources/user/memory/memory_20/memory.md",
+      "level": "OK",
+      "reasons": [],
+      "suggested_actions": [],
+      "policy_mode": "warn_soft"
+    }
+  ]
+}

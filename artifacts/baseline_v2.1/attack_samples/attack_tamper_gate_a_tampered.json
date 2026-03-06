@@ -1,0 +1,28 @@
+{
+  "task_id": "attack_tamper_001",
+  "run_id": "run_20260306100706",
+  "commit": "76bb031",
+  "workspace_hash": "7151af312bdd2a2a",
+  "gate_name": "a",
+  "started_at": "2026-03-06T10:07:06.618116",
+  "finished_at": "2026-03-06T10:07:06.618248",
+  "result": "TAMPERED",
+  "parent_receipt_hash": "",
+  "signer_id": "gate_a",
+  "receipt_version": "2.1",
+  "content_hash": "127a75cb387c26be",
+  "signature": "8b0fea5c32f9e8c0a4be37ec973d45e7f8f30d72f94343f18db84663d73a17d6",
+  "checks": [
+    {
+      "name": "task_defined",
+      "status": "skip",
+      "details": "standalone task"
+    },
+    {
+      "name": "scope_valid",
+      "status": "skip",
+      "details": "no scope specified"
+    }
+  ],
+  "issues": []
+}

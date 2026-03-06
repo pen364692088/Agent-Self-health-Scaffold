@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""
+⚠️ DEPRECATED: 此工具已废弃
+
+请使用新的 subagent-inbox 工具：
+  subagent-inbox check --once      # 替代此工具
+  subagent-inbox write ...         # 写入回执
+  subagent-inbox process <task_id> # 处理回执
+
+废弃原因：
+  - check-subagent-mailbox 缺少原子写入
+  - 缺少幂等状态机
+  - 已被 subagent-inbox v1.0 替代
+
+迁移指南：
+  旧: check-subagent-mailbox --json
+  新: subagent-inbox check --once --json
+
+文档: docs/SUBAGENT_INBOX_ARCHITECTURE.md
+"""
+
+import sys
+import json
+
+def main():
+    print(__doc__)
+    print(json.dumps({
+        "deprecated": True,
+        "replacement": "subagent-inbox",
+        "commands": {
+            "check": "subagent-inbox check --once",
+            "write": "subagent-inbox write --task-id ...",
+            "process": "subagent-inbox process <task_id>"
+        }
+    }, indent=2))
+    sys.exit(1)
+
+if __name__ == "__main__":
+    main()

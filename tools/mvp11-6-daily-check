@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""
+MVP11.6 Daily Check v2.0 - Coverage-Aware Shadow Monitoring
+
+新增：
+- Path-level sample counts
+- Coverage ratio tracking
+- Uncovered path warning
+- Phase C validity check
+"""
+
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+from collections import defaultdict
+
+WORKSPACE = Path.home() / ".openclaw/workspace"
+SHADOW_LOG = WORKSPACE / "artifacts/self_report/shadow_log.jsonl"
+INVENTORY = WORKSPACE / "artifacts/self_report/response_path_inventory.json"
+DAILY_REPORT = WORKSPACE / "artifacts/self_report/shadow_hardening_daily.jsonl"
+PHASE_C_GATE = WORKSPACE / "artifacts/self_report/phase_c_gate.json"
+
+
+def load_inventory():
+    if not INVENTORY.exists():
+        return {"paths": [], "summary": {}}
+    with open(INVENTORY) as f:
+        return json.load(f)
+
+
+def analyze_shadow_log():
+    """Analyze shadow log by path."""
+    if not SHADOW_LOG.exists():
+        return {"total": 0, "by_path": {}, "violations": {}}
+    
+    by_path = defaultdict(lambda: {"count": 0, "violations": 0, "blocks": 0})
+    all_violations = defaultdict(int)
+    total = 0
+    
+    with open(SHADOW_LOG) as f:
+        for line in f:
+            try:
+                entry = json.loads(line)
+                total += 1
+                path_id = entry.get("path_id", "unknown")
+                by_path[path_id]["count"] += 1
+                
+                if entry.get("would_block"):
+                    by_path[path_id]["blocks"] += 1
+                
+                for v in entry.get("violations", []):
+                    vtype = v.get("type", "unknown")
+                    all_violations[vtype] += 1
+                    by_path[path_id]["violations"] += 1
+            except:
+                pass
+    
+    return {"total": total, "by_path": dict(by_path), "violations": dict(all_violations)}
+
+
+def check_phase_c_validity(sample_count, coverage_rate):
+    """Check if data is valid for Phase C decision."""
+    result = {
+        "valid": True,
+        "issues": [],
+        "warnings": []
+    }
+    
+    # Rule 1: Sample count
+    if sample_count < 200:
+        result["valid"] = False
+        result["issues"].append(f"Sample count {sample_count} < 200")
+    
+    # Rule 2: Coverage rate (NEW)
+    if coverage_rate < 0.75:
+        result["valid"] = False
+        result["issues"].append(f"Coverage rate {coverage_rate:.1%} < 75%")
+    
+    # Rule 3: Numeric leak rate
+    # (Would check from actual data, skip for now)
+    
+    return result
+
+
+def main():
+    inventory = load_inventory()
+    shadow = analyze_shadow_log()
+    
+    # Calculate coverage
+    paths = inventory.get("paths", [])
+    total_paths = len(paths)
+    category_a = sum(1 for p in paths if p.get("category") == "A")
+    category_b = sum(1 for p in paths if p.get("category") == "B")
+    category_c = sum(1 for p in paths if p.get("category") == "C")
+    
+    coverage_rate = category_a / total_paths if total_paths > 0 else 0
+    
+    # Phase C validity
+    phase_c = check_phase_c_validity(shadow["total"], coverage_rate)
+    
+    # Build report
+    report = {
+        "timestamp": datetime.now().isoformat(),
+        "samples": {
+            "total": shadow["total"],
+            "target": 200,
+            "progress_pct": min(100, shadow["total"] / 2)
+        },
+        "coverage": {
+            "total_paths": total_paths,
+            "category_a": category_a,
+            "category_b": category_b,
+            "category_c": category_c,
+            "rate": coverage_rate,
+            "target_rate": 0.75
+        },
+        "path_samples": shadow["by_path"],
+        "violations": shadow["violations"],
+        "phase_c_validity": phase_c,
+        "status": "collecting" if shadow["total"] < 200 else "ready_for_analysis"
+    }
+    
+    # Save daily report
+    with open(DAILY_REPORT, "a") as f:
+        f.write(json.dumps(report) + "\n")
+    
+    # Save phase C gate
+    with open(PHASE_C_GATE, "w") as f:
+        json.dump(phase_c, f, indent=2)
+    
+    # Print summary
+    print("=" * 50)
+    print("MVP11.6 Daily Check v2.0 (Coverage-Aware)")
+    print("=" * 50)
+    
+    print(f"\n📊 Samples:")
+    print(f"  Total: {shadow['total']} / 200 ({min(100, shadow['total']/2):.0f}%)")
+    
+    print(f"\n🔒 Coverage:")
+    print(f"  Category A (covered): {category_a}")
+    print(f"  Category B (partial): {category_b}")
+    print(f"  Category C (uncovered): {category_c}")
+    print(f"  Rate: {coverage_rate:.1%} (target: 75%)")
+    
+    if shadow["by_path"]:
+        print(f"\n📁 Path-level samples:")
+        for path_id, stats in shadow["by_path"].items():
+            print(f"  {path_id}: {stats['count']} samples, {stats['violations']} violations")
+    
+    if shadow["violations"]:
+        print(f"\n⚠️  Violations:")
+        for vtype, count in sorted(shadow["violations"].items(), key=lambda x: -x[1]):
+            print(f"  {vtype}: {count}")
+    
+    print(f"\n🎯 Phase C Validity:")
+    if phase_c["valid"]:
+        print("  ✅ Data is valid for Phase C decision")
+    else:
+        print("  ❌ Data is NOT valid for Phase C:")
+        for issue in phase_c["issues"]:
+            print(f"     - {issue}")
+    
+    if category_c > 0:
+        print(f"\n⚠️  WARNING: {category_c} uncovered paths (Category C)")
+    
+    return 0 if phase_c["valid"] or shadow["total"] < 200 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

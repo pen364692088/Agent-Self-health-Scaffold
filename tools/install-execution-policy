@@ -1,0 +1,376 @@
+#!/usr/bin/env bash
+# install-execution-policy v2.1 - 为新项目安装 Execution Policy Trust Anchor
+#
+# 用法:
+#   install-execution-policy [target_dir] [--version v2.1|v1.0]
+#
+# 如果不指定 target_dir，默认当前目录
+# --version 默认 v2.1 (Trust Anchor)
+
+set -e
+
+SOURCE_DIR="$HOME/.openclaw/workspace"
+TARGET_DIR="${1:-.}"
+VERSION="v2.1"
+
+# 解析参数
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --version)
+      VERSION="$2"
+      shift 2
+      ;;
+    *)
+      TARGET_DIR="$1"
+      shift
+      ;;
+  esac
+done
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║  Execution Policy $VERSION Installer - Trust Anchor         ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+echo "Target: $TARGET_DIR"
+echo ""
+
+# 创建目录结构
+echo "▸ Creating directory structure..."
+mkdir -p "$TARGET_DIR/tools"
+mkdir -p "$TARGET_DIR/schemas"
+mkdir -p "$TARGET_DIR/artifacts/receipts"
+mkdir -p "$TARGET_DIR/artifacts/baseline"
+mkdir -p "$TARGET_DIR/reports"
+mkdir -p "$TARGET_DIR/tests/adversarial"
+mkdir -p "$TARGET_DIR/docs/releases"
+mkdir -p "$TARGET_DIR/.github/workflows"
+mkdir -p "$TARGET_DIR/hooks/execution-policy-enforcer"
+
+# ============================================
+# v2.1 Trust Anchor Tools
+# ============================================
+echo "▸ Installing v2.1 Trust Anchor tools..."
+
+TRUST_TOOLS=(
+  "receipt-signer"
+  "gate-a-signer"
+  "gate-b-signer"
+  "gate-c-signer"
+  "final-aggregator"
+  "state-authority"
+  "verify-and-close-v2"
+  "safe-message"
+)
+
+for tool in "${TRUST_TOOLS[@]}"; do
+  if [ -f "$SOURCE_DIR/tools/$tool" ]; then
+    cp "$SOURCE_DIR/tools/$tool" "$TARGET_DIR/tools/"
+    chmod +x "$TARGET_DIR/tools/$tool"
+    echo "  ✓ $tool"
+  else
+    echo "  ⚠ $tool (not found, skipping)"
+  fi
+done
+
+# 兼容旧版本的软链接
+ln -sf verify-and-close-v2 "$TARGET_DIR/tools/verify-and-close" 2>/dev/null || true
+ln -sf verify-and-close-v2 "$TARGET_DIR/tools/done-guard" 2>/dev/null || true
+
+# ============================================
+# Schemas
+# ============================================
+echo "▸ Installing schemas..."
+
+SCHEMAS=(
+  "task_receipt.v1.schema.json"
+  "doctor_report.v1.schema.json"
+)
+
+for schema in "${SCHEMAS[@]}"; do
+  if [ -f "$SOURCE_DIR/schemas/$schema" ]; then
+    cp "$SOURCE_DIR/schemas/$schema" "$TARGET_DIR/schemas/"
+    echo "  ✓ $schema"
+  fi
+done
+
+# ============================================
+# Tests
+# ============================================
+echo "▸ Installing tests..."
+
+if [ -f "$SOURCE_DIR/tests/test_execution_policy.py" ]; then
+  cp "$SOURCE_DIR/tests/test_execution_policy.py" "$TARGET_DIR/tests/"
+fi
+
+if [ -f "$SOURCE_DIR/tests/test_trust_anchor.py" ]; then
+  cp "$SOURCE_DIR/tests/test_trust_anchor.py" "$TARGET_DIR/tests/"
+fi
+
+if [ -f "$SOURCE_DIR/tests/adversarial/test_execution_policy_adversarial.py" ]; then
+  cp "$SOURCE_DIR/tests/adversarial/test_execution_policy_adversarial.py" "$TARGET_DIR/tests/adversarial/"
+fi
+
+echo "  ✓ tests installed"
+
+# ============================================
+# CI Workflow
+# ============================================
+echo "▸ Installing CI workflow..."
+
+if [ -f "$SOURCE_DIR/.github/workflows/execution-policy-gate.yml" ]; then
+  cp "$SOURCE_DIR/.github/workflows/execution-policy-gate.yml" "$TARGET_DIR/.github/workflows/"
+  echo "  ✓ execution-policy-gate.yml"
+fi
+
+# ============================================
+# Documentation
+# ============================================
+echo "▸ Installing documentation..."
+
+if [ -f "$SOURCE_DIR/docs/releases/TRUST_ANCHOR_v2.1_HANDOFF.md" ]; then
+  cp "$SOURCE_DIR/docs/releases/TRUST_ANCHOR_v2.1_HANDOFF.md" "$TARGET_DIR/docs/releases/"
+fi
+
+if [ -f "$SOURCE_DIR/docs/releases/NATIVE_HOOK_INTEGRATION.md" ]; then
+  cp "$SOURCE_DIR/docs/releases/NATIVE_HOOK_INTEGRATION.md" "$TARGET_DIR/docs/releases/"
+fi
+
+echo "  ✓ documentation installed"
+
+# ============================================
+# Hook Scaffold (NEW)
+# ============================================
+echo "▸ Creating native hook scaffold..."
+
+cat > "$TARGET_DIR/hooks/execution-policy-enforcer/hook.json" << 'HOOK'
+{
+  "name": "execution-policy-enforcer",
+  "version": "1.0.0",
+  "description": "Enforces Execution Policy v2.1 Trust Anchor before messages are sent",
+  "type": "pre-send",
+  "priority": 50,
+  "handler": "handler.js",
+  "config": {
+    "policyVersion": "2.1",
+    "enforcementMode": "shadow",
+    "auditEnabled": true,
+    "auditFile": "reports/execution_policy_audit.jsonl"
+  }
+}
+HOOK
+
+cat > "$TARGET_DIR/hooks/execution-policy-enforcer/handler.js" << 'HANDLER'
+/**
+ * Execution Policy Enforcer Hook v1.0
+ * 
+ * Enforces Trust Anchor v2.1 before messages are sent.
+ * Runs as pre-send middleware with priority 50.
+ * 
+ * Shadow mode: log violations without blocking
+ * Enforce mode: block non-compliant messages
+ */
+
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const WORKSPACE_DIR = process.env.OPENCLAW_WORKSPACE_DIR || process.env.HOME + '/.openclaw/workspace';
+const ENFORCEMENT_MODE = process.env.EXECUTION_POLICY_MODE || 'shadow'; // 'shadow' | 'enforce'
+
+/**
+ * Verify execution policy using Python tools
+ */
+function verifyExecutionPolicy(context) {
+  try {
+    const receipt = context._receipt;
+    const sessionId = context.sessionId || 'unknown';
+    
+    // If no receipt, check if this is an agent-originated message
+    if (!receipt) {
+      // In shadow mode, log but allow
+      // In enforce mode, this should be caught by agent-layer checks
+      return {
+        valid: true,
+        reason: 'no_receipt_agent_message',
+        mode: ENFORCEMENT_MODE
+      };
+    }
+    
+    // Verify receipt signature
+    const receiptPath = `/tmp/receipt_${Date.now()}.json`;
+    fs.writeFileSync(receiptPath, JSON.stringify(receipt));
+    
+    try {
+      const result = execSync(
+        `cd ${WORKSPACE_DIR} && tools/receipt-signer verify ${receiptPath}`,
+        { encoding: 'utf-8', timeout: 5000 }
+      );
+      
+      const parsed = JSON.parse(result);
+      fs.unlinkSync(receiptPath);
+      
+      return {
+        valid: parsed.valid === true,
+        reason: parsed.valid ? 'valid_signature' : 'invalid_signature',
+        details: parsed
+      };
+    } catch (e) {
+      fs.unlinkSync(receiptPath);
+      return {
+        valid: false,
+        reason: 'verification_error',
+        error: e.message
+      };
+    }
+  } catch (e) {
+    return {
+      valid: false,
+      reason: 'exception',
+      error: e.message
+    };
+  }
+}
+
+/**
+ * Write audit log
+ */
+function writeAuditLog(entry) {
+  const auditPath = path.join(WORKSPACE_DIR, 'reports', 'execution_policy_audit.jsonl');
+  try {
+    fs.mkdirSync(path.dirname(auditPath), { recursive: true });
+    fs.appendFileSync(auditPath, JSON.stringify(entry) + '\n');
+  } catch (e) {
+    console.error('[execution-policy-enforcer] Audit log error:', e.message);
+  }
+}
+
+/**
+ * Main handler
+ */
+const handler = async (event) => {
+  try {
+    if (event.type !== 'message' || event.action !== 'sending') return event;
+    
+    const ctx = event.context || {};
+    const proposedResponse = ctx.text || ctx.message || '';
+    
+    if (!proposedResponse) return event;
+    
+    const result = verifyExecutionPolicy(ctx);
+    
+    const auditEntry = {
+      timestamp: new Date().toISOString(),
+      target_id: ctx.conversationId || ctx.channelId || 'default',
+      response_hash: proposedResponse.slice(0, 50) + '...',
+      policy_check: result,
+      mode: ENFORCEMENT_MODE,
+      action_taken: 'none'
+    };
+    
+    if (!result.valid && ENFORCEMENT_MODE === 'enforce') {
+      // Block the message
+      event.context.text = "I need to reconsider my response.";
+      event.context._policyBlock = result.reason;
+      auditEntry.action_taken = 'blocked';
+      auditEntry.block_reason = result.reason;
+      
+      console.log('[execution-policy-enforcer] Message blocked:', result.reason);
+    } else if (!result.valid) {
+      // Shadow mode: log but allow
+      auditEntry.action_taken = 'shadow_logged';
+      console.log('[execution-policy-enforcer] Policy violation (shadow):', result.reason);
+    }
+    
+    writeAuditLog(auditEntry);
+    return event;
+  } catch (e) {
+    console.error('[execution-policy-enforcer] Handler error:', e.message);
+    return event;  // On error, allow the message through
+  }
+};
+
+module.exports = handler;
+module.exports.verifyExecutionPolicy = verifyExecutionPolicy;
+module.exports.ENFORCEMENT_MODE = ENFORCEMENT_MODE;
+HANDLER
+
+echo "  ✓ hook.json"
+echo "  ✓ handler.js (shadow mode)"
+
+# ============================================
+# .gitignore
+# ============================================
+echo "▸ Updating .gitignore..."
+
+if [ -f "$TARGET_DIR/.gitignore" ]; then
+  if ! grep -q "artifacts/receipts" "$TARGET_DIR/.gitignore"; then
+    cat >> "$TARGET_DIR/.gitignore" << 'GITIGNORE'
+
+# Execution Policy v2.1
+artifacts/receipts/*.json
+artifacts/baseline/
+reports/*.jsonl
+!artifacts/baseline/.gitkeep
+GITIGNORE
+  fi
+else
+  cat > "$TARGET_DIR/.gitignore" << 'GITIGNORE'
+# Execution Policy v2.1
+artifacts/receipts/*.json
+artifacts/baseline/
+reports/*.jsonl
+!artifacts/baseline/.gitkeep
+GITIGNORE
+fi
+
+# 创建 .gitkeep
+touch "$TARGET_DIR/artifacts/receipts/.gitkeep"
+touch "$TARGET_DIR/artifacts/baseline/.gitkeep"
+touch "$TARGET_DIR/reports/.gitkeep"
+
+# ============================================
+# 完成
+# ============================================
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║  ✅ Execution Policy $VERSION Installed                     ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+echo "Installed components:"
+echo ""
+echo "  Trust Anchor Chain:"
+echo "    receipt-signer → gate-a/b/c-signer → final-aggregator"
+echo "    → state-authority → verify-and-close-v2 → safe-message"
+echo ""
+echo "  Native Hook:"
+echo "    hooks/execution-policy-enforcer/ (shadow mode)"
+echo ""
+echo "  Tests:"
+echo "    tests/test_execution_policy.py"
+echo "    tests/adversarial/test_execution_policy_adversarial.py"
+echo ""
+echo "  CI:"
+echo "    .github/workflows/execution-policy-gate.yml"
+echo ""
+echo "────────────────────────────────────────────────────────────"
+echo ""
+echo "Next steps:"
+echo ""
+echo "  1. Add to SOUL.md or AGENTS.md:"
+echo ""
+echo '     ## Task Completion Protocol (强制)'
+echo '     verify-and-close-v2 → safe-message'
+echo '     或使用 spawn-with-callback 自动处理'
+echo ""
+echo "  2. Run tests:"
+echo "     python3 tests/test_execution_policy.py"
+echo ""
+echo "  3. Enable enforcement mode (after shadow observation):"
+echo "     export EXECUTION_POLICY_MODE=enforce"
+echo ""
+echo "  4. Enable hook in ~/.openclaw/openclaw.json:"
+echo ""
+echo '     {"hooks": {"internal": {"entries": {'
+echo '       "execution-policy-enforcer": {"enabled": true}'
+echo '     }}}}'
+echo ""

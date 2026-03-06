@@ -1,0 +1,502 @@
+#!/usr/bin/env python3
+"""
+Subagent Inbox v1.1 - 硬化的邮箱模式
+
+v1.1 新增：
+- claimed 超时回收（TTL 5分钟）
+- 清理 processed 文件（retention 7天）
+
+Usage:
+  subagent-inbox write --task-id xxx --run-id xxx --status completed --summary "..."
+  subagent-inbox check [--once]
+  subagent-inbox process <task_id>
+  subagent-inbox recover-claimed  # 回收超时的 claimed
+  subagent-inbox cleanup           # 清理过期 processed
+"""
+
+import argparse
+import json
+import os
+import sys
+import time
+import fcntl
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+INBOX_DIR = WORKSPACE / "reports" / "subtasks"
+HANDLER = WORKSPACE / "tools" / "subagent-completion-handler"
+LOCK_FILE = WORKSPACE / "reports" / "subtasks" / ".inbox.lock"
+
+# 配置
+CLAIMED_TTL_SECONDS = 300  # 5 分钟
+PROCESSED_RETENTION_DAYS = 7
+FAILED_RETENTION_DAYS = 30
+
+# 状态
+STATUS_COMPLETED = "completed"
+STATUS_FAILED = "failed"
+STATUS_TIMEOUT = "timeout"
+
+# 后缀
+SUFFIX_PENDING = ".done.json"
+SUFFIX_CLAIMED = ".claimed.json"
+SUFFIX_PROCESSED = ".processed.json"
+SUFFIX_STALE = ".stale_claimed.json"
+SUFFIX_TMP = ".tmp"
+
+
+class InboxManager:
+    """邮箱管理器"""
+    
+    def __init__(self):
+        INBOX_DIR.mkdir(parents=True, exist_ok=True)
+        self._lock = None
+    
+    def acquire_lock(self, timeout: int = 10) -> bool:
+        """获取锁（全局互斥）"""
+        try:
+            LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+            self._lock = open(LOCK_FILE, 'w')
+            fcntl.flock(self._lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except (IOError, OSError):
+            return False
+    
+    def release_lock(self):
+        """释放锁"""
+        if self._lock:
+            fcntl.flock(self._lock.fileno(), fcntl.LOCK_UN)
+            self._lock.close()
+            self._lock = None
+    
+    def write_receipt(
+        self,
+        task_id: str,
+        run_id: str,
+        status: str,
+        summary: str,
+        session_key: str = "",
+        parent_session_key: str = "",
+        artifacts: List[str] = None,
+        error: Dict[str, Any] = None,
+        notify_user: bool = True,
+        **kwargs
+    ) -> bool:
+        """写入回执（原子写入）"""
+        receipt = {
+            "task_id": task_id,
+            "run_id": run_id,
+            "session_key": session_key,
+            "parent_session_key": parent_session_key,
+            "status": status,
+            "summary": summary,
+            "artifacts": artifacts or [],
+            "error": error,
+            "notify_user": notify_user,
+            "written_at": datetime.now().isoformat(),
+            "retry_count": kwargs.get("retry_count", 0),
+            "metadata": kwargs
+        }
+        
+        target_file = INBOX_DIR / f"{task_id}{SUFFIX_PENDING}"
+        tmp_file = INBOX_DIR / f"{task_id}{SUFFIX_TMP}"
+        
+        try:
+            with open(tmp_file, 'w') as f:
+                json.dump(receipt, f, indent=2, ensure_ascii=False)
+                f.flush()
+                os.fsync(f.fileno())
+            
+            os.rename(str(tmp_file), str(target_file))
+            return True
+        except Exception as e:
+            print(f"Error writing receipt: {e}", file=sys.stderr)
+            if tmp_file.exists():
+                tmp_file.unlink()
+            return False
+    
+    def check_pending(self) -> List[Dict]:
+        """检查待处理的回执"""
+        receipts = []
+        
+        for file in INBOX_DIR.glob(f"*{SUFFIX_PENDING}"):
+            task_id = file.stem
+            claimed_file = INBOX_DIR / f"{task_id}{SUFFIX_CLAIMED}"
+            processed_file = INBOX_DIR / f"{task_id}{SUFFIX_PROCESSED}"
+            
+            if processed_file.exists() or claimed_file.exists():
+                continue
+            
+            try:
+                with open(file, 'r') as f:
+                    receipt = json.load(f)
+                receipts.append({
+                    "task_id": task_id,
+                    "file": str(file),
+                    "receipt": receipt
+                })
+            except Exception as e:
+                print(f"Error reading {file}: {e}", file=sys.stderr)
+        
+        return receipts
+    
+    def claim_receipt(self, task_id: str) -> bool:
+        """认领回执"""
+        pending_file = INBOX_DIR / f"{task_id}{SUFFIX_PENDING}"
+        claimed_file = INBOX_DIR / f"{task_id}{SUFFIX_CLAIMED}"
+        
+        if not pending_file.exists():
+            return False
+        
+        try:
+            os.rename(str(pending_file), str(claimed_file))
+            return True
+        except Exception:
+            return False
+    
+    def mark_processed(self, task_id: str) -> bool:
+        """标记为已处理"""
+        claimed_file = INBOX_DIR / f"{task_id}{SUFFIX_CLAIMED}"
+        processed_file = INBOX_DIR / f"{task_id}{SUFFIX_PROCESSED}"
+        
+        if claimed_file.exists():
+            os.rename(str(claimed_file), str(processed_file))
+            return True
+        
+        pending_file = INBOX_DIR / f"{task_id}{SUFFIX_PENDING}"
+        if pending_file.exists():
+            os.rename(str(pending_file), str(processed_file))
+            return True
+        
+        return False
+    
+    def recover_claimed(self, ttl_seconds: int = None) -> List[Dict]:
+        """
+        回收超时的 claimed 文件
+        
+        超时规则：
+        - claimed 文件修改时间 + TTL < now
+        - 没有 processed 文件
+        
+        处理方式：
+        - 回退为 .done.json（重新处理）
+        - 或标记为 .stale_claimed.json（人工介入）
+        """
+        if ttl_seconds is None:
+            ttl_seconds = CLAIMED_TTL_SECONDS
+        
+        now = time.time()
+        recovered = []
+        
+        for claimed_file in INBOX_DIR.glob(f"*{SUFFIX_CLAIMED}"):
+            task_id = claimed_file.stem
+            processed_file = INBOX_DIR / f"{task_id}{SUFFIX_PROCESSED}"
+            
+            # 已处理，跳过
+            if processed_file.exists():
+                continue
+            
+            # 检查超时
+            stat = claimed_file.stat()
+            claimed_time = stat.st_mtime
+            age = now - claimed_time
+            
+            if age > ttl_seconds:
+                # 读取回执
+                try:
+                    with open(claimed_file) as f:
+                        receipt = json.load(f)
+                    
+                    # 增加重试计数
+                    retry_count = receipt.get("retry_count", 0) + 1
+                    
+                    # 决定处理方式
+                    if retry_count < 3:
+                        # 回退为 pending，重新处理
+                        pending_file = INBOX_DIR / f"{task_id}{SUFFIX_PENDING}"
+                        receipt["retry_count"] = retry_count
+                        receipt["recovered_at"] = datetime.now().isoformat()
+                        
+                        with open(pending_file, 'w') as f:
+                            json.dump(receipt, f, indent=2)
+                        
+                        claimed_file.unlink()
+                        
+                        recovered.append({
+                            "task_id": task_id,
+                            "action": "requeue",
+                            "retry_count": retry_count
+                        })
+                    else:
+                        # 重试次数过多，标记为 stale
+                        stale_file = INBOX_DIR / f"{task_id}{SUFFIX_STALE}"
+                        receipt["stale_at"] = datetime.now().isoformat()
+                        receipt["stale_reason"] = f"exceeded max retries ({retry_count})"
+                        
+                        with open(stale_file, 'w') as f:
+                            json.dump(receipt, f, indent=2)
+                        
+                        claimed_file.unlink()
+                        
+                        recovered.append({
+                            "task_id": task_id,
+                            "action": "stale",
+                            "retry_count": retry_count
+                        })
+                        
+                except Exception as e:
+                    print(f"Error recovering {claimed_file}: {e}", file=sys.stderr)
+        
+        return recovered
+    
+    def cleanup_processed(self, retention_days: int = None) -> Dict:
+        """
+        清理过期的 processed 文件
+        
+        规则：
+        - completed: 保留 7 天
+        - failed/timeout: 保留 30 天
+        """
+        if retention_days is None:
+            retention_days = PROCESSED_RETENTION_DAYS
+        
+        now = datetime.now()
+        cleaned = {"total": 0, "completed": 0, "failed": 0, "timeout": 0}
+        
+        for processed_file in INBOX_DIR.glob(f"*{SUFFIX_PROCESSED}"):
+            try:
+                # 读取状态
+                with open(processed_file) as f:
+                    receipt = json.load(f)
+                
+                status = receipt.get("status", "completed")
+                written_at_str = receipt.get("written_at", "")
+                
+                if written_at_str:
+                    written_at = datetime.fromisoformat(written_at_str)
+                    age_days = (now - written_at).days
+                    
+                    # 根据状态决定保留时间
+                    max_age = PROCESSED_RETENTION_DAYS
+                    if status in (STATUS_FAILED, STATUS_TIMEOUT):
+                        max_age = FAILED_RETENTION_DAYS
+                    
+                    if age_days > max_age:
+                        processed_file.unlink()
+                        cleaned["total"] += 1
+                        cleaned[status] = cleaned.get(status, 0) + 1
+                        
+            except Exception as e:
+                print(f"Error cleaning {processed_file}: {e}", file=sys.stderr)
+        
+        # 清理 stale 文件（保留 7 天）
+        for stale_file in INBOX_DIR.glob(f"*{SUFFIX_STALE}"):
+            stat = stale_file.stat()
+            age_days = (now.timestamp() - stat.st_mtime) / 86400
+            
+            if age_days > PROCESSED_RETENTION_DAYS:
+                stale_file.unlink()
+                cleaned["total"] += 1
+        
+        return cleaned
+    
+    def process_receipt(self, task_id: str) -> Dict:
+        """处理单个回执"""
+        pending_file = INBOX_DIR / f"{task_id}{SUFFIX_PENDING}"
+        if not pending_file.exists():
+            return {"error": "receipt_not_found", "task_id": task_id}
+        
+        with open(pending_file, 'r') as f:
+            receipt = json.load(f)
+        
+        if not self.claim_receipt(task_id):
+            return {"error": "claim_failed", "task_id": task_id}
+        
+        try:
+            payload = {
+                "type": "subagent_done",
+                "task_id": receipt.get("task_id"),
+                "run_id": receipt.get("run_id"),
+                "child_session_key": receipt.get("session_key", ""),
+                "status": receipt.get("status", "completed"),
+                "summary": receipt.get("summary", ""),
+                "artifacts": receipt.get("artifacts", [])
+            }
+            
+            import subprocess
+            result = subprocess.run(
+                [str(HANDLER), "--payload", json.dumps(payload)],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                handler_result = json.loads(result.stdout)
+                self.mark_processed(task_id)
+                return {
+                    "task_id": task_id,
+                    "status": "processed",
+                    "handler_result": handler_result
+                }
+            else:
+                # 回滚
+                claimed_file = INBOX_DIR / f"{task_id}{SUFFIX_CLAIMED}"
+                if claimed_file.exists():
+                    os.rename(str(claimed_file), str(pending_file))
+                return {
+                    "task_id": task_id,
+                    "status": "handler_failed",
+                    "error": result.stderr
+                }
+        except Exception as e:
+            return {"task_id": task_id, "status": "error", "error": str(e)}
+    
+    def run_worker(self, once: bool = False, interval: int = 5):
+        """
+        运行 worker
+        
+        单实例保证：通过文件锁确保全局只有一个 worker 在处理
+        
+        Args:
+            once: 只运行一次
+            interval: 轮询间隔（秒）
+        """
+        import time
+        
+        while True:
+            try:
+                # 获取锁（单实例保证）
+                if not self.acquire_lock(timeout=5):
+                    if once:
+                        print("Another worker is running")
+                        break
+                    time.sleep(interval)
+                    continue
+                
+                try:
+                    # 1. 先回收超时的 claimed
+                    recovered = self.recover_claimed()
+                    if recovered:
+                        print(f"🔄 Recovered {len(recovered)} stuck claims")
+                    
+                    # 2. 处理 pending
+                    pending = self.check_pending()
+                    
+                    if pending:
+                        print(f"📬 {len(pending)} pending")
+                        for item in pending:
+                            result = self.process_receipt(item["task_id"])
+                            status = "✅" if result.get("status") == "processed" else "❌"
+                            print(f"  {status} {item['task_id']}")
+                    elif once:
+                        print("📭 No pending receipts")
+                
+                finally:
+                    self.release_lock()
+                
+                if once:
+                    break
+                
+                time.sleep(interval)
+                
+            except KeyboardInterrupt:
+                print("\nWorker stopped")
+                break
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                if once:
+                    break
+                time.sleep(interval)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Subagent Inbox v1.1")
+    subparsers = parser.add_subparsers(dest="command")
+    
+    # write
+    write_parser = subparsers.add_parser("write")
+    write_parser.add_argument("--task-id", required=True)
+    write_parser.add_argument("--run-id", required=True)
+    write_parser.add_argument("--status", choices=["completed", "failed", "timeout"], default="completed")
+    write_parser.add_argument("--summary", default="")
+    write_parser.add_argument("--session-key", default="")
+    write_parser.add_argument("--parent-session-key", default="")
+    write_parser.add_argument("--artifacts", nargs="*", default=[])
+    
+    # check
+    check_parser = subparsers.add_parser("check")
+    check_parser.add_argument("--once", action="store_true")
+    check_parser.add_argument("--interval", type=int, default=5)
+    
+    # process
+    process_parser = subparsers.add_parser("process")
+    process_parser.add_argument("task_id")
+    
+    # recover-claimed
+    recover_parser = subparsers.add_parser("recover-claimed")
+    recover_parser.add_argument("--ttl", type=int, default=300)
+    
+    # cleanup
+    cleanup_parser = subparsers.add_parser("cleanup")
+    cleanup_parser.add_argument("--retention-days", type=int, default=7)
+    
+    # health
+    subparsers.add_parser("health")
+    
+    args = parser.parse_args()
+    
+    if args.command == "health":
+        print(json.dumps({"status": "healthy", "version": "1.1"}))
+        sys.exit(0)
+    
+    manager = InboxManager()
+    
+    if args.command == "write":
+        success = manager.write_receipt(
+            task_id=args.task_id,
+            run_id=args.run_id,
+            status=args.status,
+            summary=args.summary,
+            session_key=args.session_key,
+            parent_session_key=args.parent_session_key,
+            artifacts=args.artifacts
+        )
+        print(json.dumps({"success": success, "task_id": args.task_id}))
+        sys.exit(0 if success else 1)
+    
+    if args.command == "check":
+        if args.once:
+            pending = manager.check_pending()
+            if pending:
+                print(f"📬 {len(pending)} pending")
+                for item in pending:
+                    print(f"  - {item['task_id']}: {item['receipt'].get('status')}")
+            else:
+                print("📭 No pending")
+        else:
+            manager.run_worker(once=False, interval=args.interval)
+        sys.exit(0)
+    
+    if args.command == "process":
+        result = manager.process_receipt(args.task_id)
+        print(json.dumps(result, indent=2))
+        sys.exit(0 if result.get("status") == "processed" else 1)
+    
+    if args.command == "recover-claimed":
+        recovered = manager.recover_claimed(ttl_seconds=args.ttl)
+        print(json.dumps({"recovered": len(recovered), "details": recovered}, indent=2))
+        sys.exit(0)
+    
+    if args.command == "cleanup":
+        cleaned = manager.cleanup_processed(retention_days=args.retention_days)
+        print(json.dumps(cleaned, indent=2))
+        sys.exit(0)
+    
+    parser.print_help()
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,72 +1,5 @@
 {
-  "pending": {
-    "task_4cd0f4bf": {
-      "task_id": "task_4cd0f4bf",
-      "run_id": "run_97793bd0",
-      "child_session_key": "agent:main:subagent:9ec9bc94b8a642cda4655ee0939eeab6",
-      "description": "Shadow Trio Task 1: Add --out-one-liner to mvp11_hard_gate_eval.py - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
-      "status": "pending",
-      "deadline": "2026-03-05T13:54:50.030477",
-      "max_retries": 2,
-      "retries": 0,
-      "attempt": 0,
-      "created_at": "2026-03-05T12:54:50.030483",
-      "started_at": "2026-03-05T12:54:50.030486",
-      "completed_at": null,
-      "output_paths": [],
-      "artifacts": [],
-      "summary": "",
-      "error": null,
-      "result_data": null,
-      "metadata": {
-        "model": "baiduqianfancodingplan/qianfan-code-latest"
-      }
-    },
-    "task_121547cd": {
-      "task_id": "task_121547cd",
-      "run_id": "run_c2db22da",
-      "child_session_key": "agent:main:subagent:5b25e4b797134a7e90458e25396e1381",
-      "description": "Shadow Trio Task 2: Create summarize_shadow_results.py - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
-      "status": "pending",
-      "deadline": "2026-03-05T13:54:50.139537",
-      "max_retries": 2,
-      "retries": 0,
-      "attempt": 0,
-      "created_at": "2026-03-05T12:54:50.139543",
-      "started_at": "2026-03-05T12:54:50.139546",
-      "completed_at": null,
-      "output_paths": [],
-      "artifacts": [],
-      "summary": "",
-      "error": null,
-      "result_data": null,
-      "metadata": {
-        "model": "baiduqianfancodingplan/qianfan-code-latest"
-      }
-    },
-    "task_a4c561e9": {
-      "task_id": "task_a4c561e9",
-      "run_id": "run_98242a6d",
-      "child_session_key": "agent:main:subagent:0925b7057c8e4acbb459aa6785c67c4a",
-      "description": "Shadow Trio Task 3: Add PR comment on ERROR in testbot-e2e.yml - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
-      "status": "pending",
-      "deadline": "2026-03-05T13:54:50.252505",
-      "max_retries": 2,
-      "retries": 0,
-      "attempt": 0,
-      "created_at": "2026-03-05T12:54:50.252512",
-      "started_at": "2026-03-05T12:54:50.252515",
-      "completed_at": null,
-      "output_paths": [],
-      "artifacts": [],
-      "summary": "",
-      "error": null,
-      "result_data": null,
-      "metadata": {
-        "model": "baiduqianfancodingplan/qianfan-code-latest"
-      }
-    }
-  },
+  "pending": {},
   "completed": {
     "task_344feebc": {
       "task_id": "task_344feebc",
@@ -242,7 +175,132 @@
       "metadata": {
         "model": "baiduqianfancodingplan/qianfan-code-latest"
       }
+    },
+    "task_4cd0f4bf": {
+      "task_id": "task_4cd0f4bf",
+      "run_id": "run_97793bd0",
+      "child_session_key": "agent:main:subagent:9ec9bc94b8a642cda4655ee0939eeab6",
+      "description": "Shadow Trio Task 1: Add --out-one-liner to mvp11_hard_gate_eval.py - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T13:54:50.030477",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T12:54:50.030483",
+      "started_at": "2026-03-05T12:54:50.030486",
+      "completed_at": "2026-03-06T12:49:38.233729",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Cleared for MVP11.5"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_121547cd": {
+      "task_id": "task_121547cd",
+      "run_id": "run_c2db22da",
+      "child_session_key": "agent:main:subagent:5b25e4b797134a7e90458e25396e1381",
+      "description": "Shadow Trio Task 2: Create summarize_shadow_results.py - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T13:54:50.139537",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T12:54:50.139543",
+      "started_at": "2026-03-05T12:54:50.139546",
+      "completed_at": "2026-03-06T12:49:38.233729",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Cleared for MVP11.5"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_a4c561e9": {
+      "task_id": "task_a4c561e9",
+      "run_id": "run_98242a6d",
+      "child_session_key": "agent:main:subagent:0925b7057c8e4acbb459aa6785c67c4a",
+      "description": "Shadow Trio Task 3: Add PR comment on ERROR in testbot-e2e.yml - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T13:54:50.252505",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T12:54:50.252512",
+      "started_at": "2026-03-05T12:54:50.252515",
+      "completed_at": "2026-03-06T12:49:38.233729",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Cleared for MVP11.5"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_ea027b22": {
+      "task_id": "task_ea027b22",
+      "run_id": "run_bebac9fc",
+      "child_session_key": "agent:main:subagent:401992069d694591bae2157a8443bbf7",
+      "description": "E2E Test: Echo back E2E_TEST_SUCCESS",
+      "status": "timeout",
+      "deadline": "2026-03-06T05:58:51.394316",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-06T04:58:51.394320",
+      "started_at": "2026-03-06T04:58:51.394323",
+      "completed_at": "2026-03-06T12:49:38.233729",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Cleared for MVP11.5"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_69e1b68b": {
+      "task_id": "task_69e1b68b",
+      "run_id": "run_8bac4f4d",
+      "child_session_key": "agent:main:subagent:4b71ce206316482fa8c68b3dc8f9b012",
+      "description": "E2E Callback Test: Echo E2E_CALLBACK_SUCCESS",
+      "status": "timeout",
+      "deadline": "2026-03-06T06:01:04.808212",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-06T05:01:04.808214",
+      "started_at": "2026-03-06T05:01:04.808215",
+      "completed_at": "2026-03-06T12:49:38.233729",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Cleared for MVP11.5"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
     }
   },
-  "timestamp": "2026-03-05T12:55:59.094057"
+  "timestamp": "2026-03-06T05:01:04.808272"
 }

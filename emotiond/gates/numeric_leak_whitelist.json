@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-03-06T13:00:00.000Z",
+  "patterns": [
+    {
+      "pattern": "\\b\\d+\\s*(users?|accounts?|profiles?)\\b",
+      "reason": "User counts are business metrics",
+      "added_by": "system",
+      "enabled": true
+    },
+    {
+      "pattern": "\\b\\d+\\s*(messages?|conversations?)\\b",
+      "reason": "Message counts are metrics",
+      "added_by": "system",
+      "enabled": true
+    }
+  ]
+}

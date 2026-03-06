@@ -1,0 +1,14 @@
+{
+  "task_id": "task_20260306_072552_7bb943e2",
+  "run_id": "run_b20f7b3a",
+  "session_key": "",
+  "parent_session_key": "agent:main:telegram:direct:unknown",
+  "status": "completed",
+  "summary": "Numeric Leak Gate implemented successfully. Created gates.py module with SRAP gate definitions, GateExecutor class, and WhitelistManager. Added CI workflow (.github/workflows/srap-gates.yml) with numeric-leak-gate, gate-validation, whitelist-management, and nightly-gate-report jobs. Threshold configured at 0.01 (1%). False positive handling via whitelist patterns that respect emotion keyword context. Created runbook at docs/runbook-numeric-leak-gate.md. All 42 tests passing (20 new gate tests + 22 existing self_report_check tests). Validated against shadow_log.jsonl samples.",
+  "artifacts": [],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-06T07:35:38.777335",
+  "retry_count": 0,
+  "metadata": {}
+}

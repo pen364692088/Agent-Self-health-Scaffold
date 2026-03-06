@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+"""
+receipt-validator v1.0 - Receipt 同一性校验
+
+从"存在性校验"升级到"同一性校验"：
+
+1. task_id 一致性 - 所有 receipt 对应同一 task
+2. commit 绑定 - receipt 对应当前 workspace snapshot
+3. 时间窗口 - receipt 在合理时间范围内
+4. run_id 关联 - 同一执行上下文
+
+Usage:
+  receipt-validator --task-id <id>
+  receipt-validator --task-id <id> --commit <sha>
+  receipt-validator --task-id <id> --max-age 3600
+  
+Exit codes:
+  0 - VALID
+  1 - INVALID
+  2 - ERROR
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
+VALIDATION_LOG = WORKSPACE / "reports" / "receipt_validation.jsonl"
+
+# 默认最大年龄（秒）
+DEFAULT_MAX_AGE = 86400  # 24 小时
+
+
+def load_receipt(task_id: str, rtype: str) -> Optional[Dict]:
+    """加载 receipt 文件"""
+    path = ARTIFACTS_DIR / f"{task_id}_{rtype}_receipt.json"
+    if path.exists():
+        with open(path) as f:
+            return json.load(f)
+    return None
+
+
+def get_current_commit() -> Optional[str]:
+    """获取当前 git commit"""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=WORKSPACE,
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()[:8]
+    except:
+        pass
+    return None
+
+
+def parse_timestamp(ts_str: str) -> Optional[datetime]:
+    """解析 ISO8601 时间戳"""
+    formats = [
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%S.%f%z",
+        "%Y-%m-%dT%H:%M:%S%Z",
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(ts_str, fmt)
+        except:
+            continue
+    
+    # 尝试去除时区后缀
+    for suffix in ["+00:00", "Z", "+0000"]:
+        if ts_str.endswith(suffix):
+            ts_str = ts_str[:-len(suffix)]
+            try:
+                return datetime.fromisoformat(ts_str)
+            except:
+                pass
+    
+    return None
+
+
+def validate_task_id_consistency(task_id: str, receipts: Dict[str, Dict]) -> Tuple[bool, List[str]]:
+    """验证所有 receipt 的 task_id 一致"""
+    issues = []
+    
+    for rtype, receipt in receipts.items():
+        if not receipt:
+            issues.append(f"Missing {rtype} receipt")
+            continue
+        
+        receipt_task_id = receipt.get("task_id")
+        if receipt_task_id != task_id:
+            issues.append(f"{rtype} receipt task_id mismatch: expected {task_id}, got {receipt_task_id}")
+    
+    return len(issues) == 0, issues
+
+
+def validate_temporal_consistency(receipts: Dict[str, Dict], max_age: int = DEFAULT_MAX_AGE) -> Tuple[bool, List[str]]:
+    """验证时间一致性"""
+    issues = []
+    now = datetime.now()
+    timestamps = {}
+    
+    for rtype in ["contract", "e2e", "preflight", "final"]:
+        receipt = receipts.get(rtype)
+        if not receipt:
+            continue
+        
+        ts_str = receipt.get("generated_at")
+        if not ts_str:
+            issues.append(f"{rtype} receipt missing generated_at")
+            continue
+        
+        ts = parse_timestamp(ts_str)
+        if not ts:
+            issues.append(f"{rtype} receipt invalid timestamp: {ts_str}")
+            continue
+        
+        timestamps[rtype] = ts
+        
+        # 检查是否过期
+        age = (now - ts).total_seconds()
+        if age > max_age:
+            issues.append(f"{rtype} receipt too old: {age:.0f}s > {max_age}s")
+    
+    # 检查时间顺序
+    if len(timestamps) >= 2:
+        # contract 应该最早，final 应该最晚
+        if "contract" in timestamps and "final" in timestamps:
+            if timestamps["contract"] > timestamps["final"]:
+                issues.append(f"Temporal order violation: contract > final")
+    
+    return len(issues) == 0, issues
+
+
+def validate_state_transitions(task_id: str, receipts: Dict[str, Dict]) -> Tuple[bool, List[str]]:
+    """验证状态迁移一致性"""
+    issues = []
+    
+    # 检查 final receipt 的状态链
+    final = receipts.get("final")
+    if final:
+        state_before = final.get("state_before")
+        state_after = final.get("state_after")
+        
+        # 应该是合法迁移
+        if state_before and state_after:
+            if state_after not in ["ready_to_close", "blocked"]:
+                issues.append(f"final receipt state_after invalid: {state_after}")
+    
+    return len(issues) == 0, issues
+
+
+def validate_gate_consistency(receipts: Dict[str, Dict]) -> Tuple[bool, List[str]]:
+    """验证 Gate 结果一致性"""
+    issues = []
+    
+    final = receipts.get("final")
+    if not final:
+        return True, ["No final receipt to check"]
+    
+    gate_results = final.get("gate_results", {})
+    
+    # 如果 final 状态是 pass，所有 gate 应该都是 pass
+    if final.get("status") == "pass":
+        for gate in ["gate_a", "gate_b", "gate_c"]:
+            if gate_results.get(gate) != "pass":
+                issues.append(f"Final status is pass but {gate} = {gate_results.get(gate)}")
+    
+    return len(issues) == 0, issues
+
+
+def validate_all(task_id: str, max_age: int = DEFAULT_MAX_AGE, expected_commit: str = None) -> Dict:
+    """执行所有校验"""
+    result = {
+        "task_id": task_id,
+        "valid": True,
+        "checks": {},
+        "issues": []
+    }
+    
+    # 加载所有 receipts
+    receipts = {
+        "contract": load_receipt(task_id, "contract"),
+        "e2e": load_receipt(task_id, "e2e"),
+        "preflight": load_receipt(task_id, "preflight"),
+        "final": load_receipt(task_id, "final")
+    }
+    
+    result["receipts_found"] = {k: v is not None for k, v in receipts.items()}
+    
+    # 1. 存在性检查
+    all_exist = all(receipts.values())
+    result["checks"]["existence"] = {
+        "passed": all_exist,
+        "missing": [k for k, v in receipts.items() if not v]
+    }
+    if not all_exist:
+        result["valid"] = False
+        result["issues"].extend([f"Missing {k} receipt" for k, v in receipts.items() if not v])
+    
+    # 2. task_id 一致性
+    passed, issues = validate_task_id_consistency(task_id, receipts)
+    result["checks"]["task_id_consistency"] = {"passed": passed, "issues": issues}
+    if not passed:
+        result["valid"] = False
+        result["issues"].extend(issues)
+    
+    # 3. 时间一致性
+    passed, issues = validate_temporal_consistency(receipts, max_age)
+    result["checks"]["temporal_consistency"] = {"passed": passed, "issues": issues}
+    if not passed:
+        result["valid"] = False
+        result["issues"].extend(issues)
+    
+    # 4. 状态迁移一致性
+    passed, issues = validate_state_transitions(task_id, receipts)
+    result["checks"]["state_transitions"] = {"passed": passed, "issues": issues}
+    if not passed:
+        result["valid"] = False
+        result["issues"].extend(issues)
+    
+    # 5. Gate 一致性
+    passed, issues = validate_gate_consistency(receipts)
+    result["checks"]["gate_consistency"] = {"passed": passed, "issues": issues}
+    if not passed:
+        result["valid"] = False
+        result["issues"].extend(issues)
+    
+    return result
+
+
+def log_validation(result: Dict):
+    """记录校验日志"""
+    VALIDATION_LOG.parent.mkdir(parents=True, exist_ok=True)
+    
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        **result
+    }
+    
+    with open(VALIDATION_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="receipt-validator v1.0")
+    parser.add_argument("--task-id", required=True, help="Task identifier")
+    parser.add_argument("--max-age", type=int, default=DEFAULT_MAX_AGE, help="Max receipt age in seconds")
+    parser.add_argument("--commit", help="Expected commit SHA")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    
+    args = parser.parse_args()
+    
+    result = validate_all(args.task_id, args.max_age, args.commit)
+    log_validation(result)
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print("=" * 60)
+        print(f"Receipt Validation: {args.task_id}")
+        print("=" * 60)
+        
+        status = "✅ VALID" if result["valid"] else "❌ INVALID"
+        print(f"\nResult: {status}")
+        
+        print("\nChecks:")
+        for check_name, check_result in result["checks"].items():
+            symbol = "✅" if check_result.get("passed") else "❌"
+            print(f"  {symbol} {check_name}")
+            if not check_result.get("passed"):
+                for issue in check_result.get("issues", []):
+                    print(f"      - {issue}")
+        
+        if result["issues"]:
+            print(f"\nIssues ({len(result['issues'])}):")
+            for issue in result["issues"]:
+                print(f"  - {issue}")
+        
+        print("=" * 60)
+    
+    return 0 if result["valid"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

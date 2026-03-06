@@ -1,0 +1,516 @@
+#!/usr/bin/env python3
+"""
+project-check-status v1.0 - Query project check status
+
+Reads status.json from phase directories and aggregates status across all phases.
+Supports querying a single phase or all phases.
+
+Usage:
+    project-check-status <check_id> [--phase <phase_id>] [--json]
+    project-check-status --health
+    project-check-status --e2e-test
+
+Options:
+    --phase <id>     Show status for specific phase only
+    --json           Output as JSON (default: human-readable)
+    --health         Health check endpoint
+    --e2e-test       Run E2E self-test
+
+Tool Delivery Gates:
+    Gate A: Schema validation
+    Gate B: E2E testing (--e2e-test flag)
+    Gate C: Health check (--health flag)
+"""
+
+import argparse
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Tuple
+
+# Workspace paths
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACT_ROOT = WORKSPACE / "artifacts" / "project_check"
+MANIFEST_SCHEMA_FILE = WORKSPACE / "schemas" / "project_check_manifest.v1.schema.json"
+STATUS_SCHEMA_FILE = WORKSPACE / "schemas" / "project_check_status.v1.schema.json"
+
+# Phase states
+STATE_PENDING = "pending"
+STATE_RUNNING = "running"
+STATE_DONE = "done"
+STATE_FAILED = "failed"
+STATE_SKIPPED = "skipped"
+
+# Valid phase IDs
+VALID_PHASES = ["phase_a_repo", "phase_b_tests", "phase_c_testbot", "phase_d_gate"]
+
+# Error codes
+ERROR_NOT_FOUND = "NOT_FOUND"
+ERROR_VALIDATION = "VALIDATION_ERROR"
+ERROR_INTERNAL = "INTERNAL_ERROR"
+
+
+def error_response(code: str, message: str, details: dict = None) -> dict:
+    """Standardized error format per Tool Delivery Gates."""
+    return {
+        "error": {
+            "type": code.lower().replace("_", " ").title(),
+            "message": message,
+            "code": code,
+            "details": details or {}
+        }
+    }
+
+
+def find_phase_dirs(check_dir: Path) -> List[Path]:
+    """Find all phase directories in a check run."""
+    phase_dirs = []
+    for item in check_dir.iterdir():
+        if item.is_dir() and item.name.startswith("phase_"):
+            status_file = item / "status.json"
+            if status_file.exists():
+                phase_dirs.append(item)
+    return sorted(phase_dirs)
+
+
+def load_json_file(path: Path) -> Tuple[Optional[dict], Optional[dict]]:
+    """Load JSON file with error handling."""
+    if not path.exists():
+        return None, error_response(ERROR_NOT_FOUND, f"File not found: {path}")
+    
+    try:
+        with open(path, 'r') as f:
+            return json.load(f), None
+    except json.JSONDecodeError as e:
+        return None, error_response(ERROR_VALIDATION, f"Invalid JSON in {path}: {e}")
+
+
+def load_manifest(check_id: str, check_dir: Path) -> Tuple[Optional[dict], Optional[dict]]:
+    """Load manifest.json for a check run."""
+    manifest_path = check_dir / "manifest.json"
+    return load_json_file(manifest_path)
+
+
+def load_phase_status(phase_dir: Path) -> Tuple[Optional[dict], Optional[dict]]:
+    """Load status.json from a phase directory."""
+    status_path = phase_dir / "status.json"
+    return load_json_file(status_path)
+
+
+def aggregate_status(phases: List[dict]) -> dict:
+    """Aggregate status across all phases."""
+    total = len(phases)
+    completed = 0
+    failed = 0
+    skipped = 0
+    running = 0
+    pending = 0
+    
+    for phase in phases:
+        state = phase.get("state", "pending")
+        ok = phase.get("ok", False)
+        
+        if state == STATE_DONE:
+            completed += 1
+        elif state == STATE_FAILED:
+            failed += 1
+        elif state == STATE_SKIPPED:
+            skipped += 1
+        elif state == STATE_RUNNING:
+            running += 1
+        else:
+            pending += 1
+    
+    # Determine overall status
+    if failed > 0:
+        overall_status = "failed"
+    elif running > 0:
+        overall_status = "running"
+    elif pending > 0:
+        overall_status = "incomplete"
+    elif skipped == total:
+        overall_status = "skipped"
+    else:
+        overall_status = "success"
+    
+    return {
+        "total_phases": total,
+        "completed": completed,
+        "failed": failed,
+        "skipped": skipped,
+        "running": running,
+        "pending": pending,
+        "overall_status": overall_status,
+        "all_passed": failed == 0 and completed == total
+    }
+
+
+def get_check_status(check_id: str, phase_filter: str = None) -> Tuple[Optional[dict], Optional[dict]]:
+    """Get status for a check run, optionally filtered by phase."""
+    check_dir = ARTIFACT_ROOT / check_id
+    
+    if not check_dir.exists():
+        return None, error_response(
+            ERROR_NOT_FOUND,
+            f"Check not found: {check_id}",
+            {"check_id": check_id, "expected_path": str(check_dir)}
+        )
+    
+    # Load manifest
+    manifest, err = load_manifest(check_id, check_dir)
+    if err:
+        return None, err
+    
+    # Find all phase directories
+    phase_dirs = find_phase_dirs(check_dir)
+    
+    if not phase_dirs:
+        return None, error_response(
+            ERROR_NOT_FOUND,
+            f"No phase status files found for check: {check_id}",
+            {"check_id": check_id, "check_dir": str(check_dir)}
+        )
+    
+    # Load phase statuses
+    phases = []
+    for phase_dir in phase_dirs:
+        status, err = load_phase_status(phase_dir)
+        if err:
+            # Include error but continue
+            phases.append({
+                "phase": phase_dir.name,
+                "state": STATE_FAILED,
+                "ok": False,
+                "error": {
+                    "code": ERROR_INTERNAL,
+                    "message": f"Failed to load status: {err.get('error', {}).get('message', 'Unknown error')}"
+                }
+            })
+        else:
+            phases.append(status)
+    
+    # Filter by phase if specified
+    if phase_filter:
+        phase_filter_normalized = phase_filter
+        if not phase_filter.startswith("phase_"):
+            # Allow short form like "A" or "a" to mean "phase_a_repo"
+            phase_map = {
+                "a": "phase_a_repo",
+                "b": "phase_b_tests",
+                "c": "phase_c_testbot",
+                "d": "phase_d_gate"
+            }
+            phase_filter_normalized = phase_map.get(phase_filter.lower(), phase_filter)
+        
+        phases = [p for p in phases if p.get("phase") == phase_filter_normalized]
+        
+        if not phases:
+            return None, error_response(
+                ERROR_NOT_FOUND,
+                f"Phase not found: {phase_filter}",
+                {"phase_filter": phase_filter, "valid_phases": VALID_PHASES}
+            )
+    
+    # Aggregate status
+    summary = aggregate_status(phases)
+    
+    result = {
+        "check_id": check_id,
+        "project_path": manifest.get("project_path") if manifest else None,
+        "created_at": manifest.get("created_at") if manifest else None,
+        "summary": summary,
+        "phases": phases
+    }
+    
+    return result, None
+
+
+def format_human_readable(status: dict) -> str:
+    """Format status as human-readable text."""
+    lines = []
+    
+    lines.append(f"Check ID: {status['check_id']}")
+    if status.get('project_path'):
+        lines.append(f"Project: {status['project_path']}")
+    if status.get('created_at'):
+        lines.append(f"Created: {status['created_at']}")
+    
+    lines.append("")
+    
+    # Summary
+    summary = status['summary']
+    overall = summary['overall_status'].upper()
+    
+    status_emoji = {
+        "SUCCESS": "✅",
+        "FAILED": "❌",
+        "RUNNING": "🔄",
+        "INCOMPLETE": "⏳",
+        "SKIPPED": "⏭️"
+    }.get(overall, "❓")
+    
+    lines.append(f"Overall: {status_emoji} {overall}")
+    lines.append(f"  Completed: {summary['completed']}/{summary['total_phases']}")
+    if summary['failed'] > 0:
+        lines.append(f"  Failed: {summary['failed']}")
+    if summary['running'] > 0:
+        lines.append(f"  Running: {summary['running']}")
+    if summary['pending'] > 0:
+        lines.append(f"  Pending: {summary['pending']}")
+    if summary['skipped'] > 0:
+        lines.append(f"  Skipped: {summary['skipped']}")
+    
+    lines.append("")
+    lines.append("Phases:")
+    
+    for phase in status['phases']:
+        phase_id = phase.get('phase', 'unknown')
+        state = phase.get('state', 'unknown')
+        ok = phase.get('ok', False)
+        
+        state_emoji = {
+            STATE_DONE: "✅" if ok else "❌",
+            STATE_FAILED: "❌",
+            STATE_RUNNING: "🔄",
+            STATE_PENDING: "⏳",
+            STATE_SKIPPED: "⏭️"
+        }.get(state, "❓")
+        
+        duration = phase.get('duration_seconds')
+        duration_str = f" ({duration:.1f}s)" if duration else ""
+        
+        line = f"  {state_emoji} {phase_id}: {state}{duration_str}"
+        
+        if state == STATE_FAILED and phase.get('error'):
+            error = phase['error']
+            line += f" - {error.get('code', 'ERROR')}: {error.get('message', 'Unknown error')}"
+        
+        lines.append(line)
+        
+        # Show metrics if available
+        metrics = phase.get('metrics', {})
+        if metrics:
+            metric_parts = []
+            for k, v in metrics.items():
+                if isinstance(v, float):
+                    metric_parts.append(f"{k}={v:.1f}")
+                else:
+                    metric_parts.append(f"{k}={v}")
+            if metric_parts:
+                lines.append(f"      Metrics: {', '.join(metric_parts)}")
+    
+    return "\n".join(lines)
+
+
+def health_check() -> dict:
+    """Health check endpoint for Gate C."""
+    checks = []
+    
+    # Check artifact root exists
+    artifact_exists = ARTIFACT_ROOT.exists()
+    checks.append({
+        "name": "artifact_root",
+        "status": "pass" if artifact_exists else "fail",
+        "message": f"Artifact root {'exists' if artifact_exists else 'not found'}: {ARTIFACT_ROOT}"
+    })
+    
+    # Check schema files exist
+    manifest_schema_exists = MANIFEST_SCHEMA_FILE.exists()
+    checks.append({
+        "name": "manifest_schema",
+        "status": "pass" if manifest_schema_exists else "warn",
+        "message": f"Manifest schema {'found' if manifest_schema_exists else 'not found'}"
+    })
+    
+    status_schema_exists = STATUS_SCHEMA_FILE.exists()
+    checks.append({
+        "name": "status_schema",
+        "status": "pass" if status_schema_exists else "warn",
+        "message": f"Status schema {'found' if status_schema_exists else 'not found'}"
+    })
+    
+    # Sample call - try to list existing checks
+    try:
+        existing_checks = [d.name for d in ARTIFACT_ROOT.iterdir() if d.is_dir() and d.name.startswith("check_")]
+        checks.append({
+            "name": "sample_call",
+            "status": "pass",
+            "message": f"Found {len(existing_checks)} existing check runs"
+        })
+    except Exception as e:
+        checks.append({
+            "name": "sample_call",
+            "status": "fail",
+            "message": f"Failed to list checks: {e}"
+        })
+    
+    # Determine overall status
+    failed = sum(1 for c in checks if c["status"] == "fail")
+    warnings = sum(1 for c in checks if c["status"] == "warn")
+    
+    overall_status = "healthy" if failed == 0 else ("degraded" if warnings > 0 else "unhealthy")
+    
+    return {
+        "tool": "project-check-status",
+        "version": "1.0.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": overall_status,
+        "checks": checks,
+        "summary": {
+            "passed": sum(1 for c in checks if c["status"] == "pass"),
+            "failed": failed,
+            "warnings": warnings
+        }
+    }
+
+
+def find_check_with_phases() -> Optional[str]:
+    """Find a check ID that has phase status files."""
+    for check_dir in ARTIFACT_ROOT.iterdir():
+        if check_dir.is_dir() and check_dir.name.startswith("check_"):
+            # Check if any phase_* directory has status.json
+            for phase_dir in check_dir.iterdir():
+                if phase_dir.is_dir() and phase_dir.name.startswith("phase_"):
+                    if (phase_dir / "status.json").exists():
+                        return check_dir.name
+    return None
+
+
+def e2e_test() -> dict:
+    """E2E self-test for Gate B."""
+    results = {
+        "tool": "project-check-status",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "tests": []
+    }
+    
+    # Test 1: Find an existing check with phase status files
+    test_check_id = find_check_with_phases()
+    
+    if test_check_id:
+        
+        # Test happy path - get status
+        status, err = get_check_status(test_check_id)
+        test1 = {
+            "name": "happy_path_get_status",
+            "status": "pass" if status and not err else "fail",
+            "check_id": test_check_id
+        }
+        if err:
+            test1["error"] = err
+        if status:
+            test1["overall_status"] = status.get("summary", {}).get("overall_status")
+        results["tests"].append(test1)
+        
+        # Test happy path - get single phase
+        status2, err2 = get_check_status(test_check_id, phase_filter="phase_a_repo")
+        test2 = {
+            "name": "happy_path_get_phase",
+            "status": "pass" if status2 and not err2 else "fail",
+            "phase_filter": "phase_a_repo"
+        }
+        if err2:
+            test2["error"] = err2
+        if status2:
+            test2["phases_count"] = len(status2.get("phases", []))
+        results["tests"].append(test2)
+        
+        # Test bad args - invalid phase
+        status3, err3 = get_check_status(test_check_id, phase_filter="invalid_phase_xyz")
+        test3 = {
+            "name": "bad_args_invalid_phase",
+            "status": "pass" if err3 and not status3 else "fail",
+            "expected": "error response for invalid phase"
+        }
+        if err3:
+            test3["error_code"] = err3.get("error", {}).get("code")
+        results["tests"].append(test3)
+    else:
+        results["tests"].append({
+            "name": "happy_path_get_status",
+            "status": "skip",
+            "reason": "No existing check runs found"
+        })
+    
+    # Test bad args - non-existent check
+    status4, err4 = get_check_status("check_99999999_999999_nonexist")
+    test4 = {
+        "name": "bad_args_nonexistent_check",
+        "status": "pass" if err4 and not status4 else "fail",
+        "expected": "error response for non-existent check"
+    }
+    if err4:
+        test4["error_code"] = err4.get("error", {}).get("code")
+    results["tests"].append(test4)
+    
+    # Summary
+    passed = sum(1 for t in results["tests"] if t["status"] == "pass")
+    failed = sum(1 for t in results["tests"] if t["status"] == "fail")
+    skipped = sum(1 for t in results["tests"] if t["status"] == "skip")
+    
+    results["summary"] = {
+        "passed": passed,
+        "failed": failed,
+        "skipped": skipped,
+        "total": len(results["tests"])
+    }
+    
+    return results
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Query project check status",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__
+    )
+    
+    parser.add_argument("check_id", nargs="?", help="Check ID to query")
+    parser.add_argument("--phase", "-p", help="Show specific phase only (e.g., 'phase_a_repo' or 'A')")
+    parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
+    parser.add_argument("--health", action="store_true", help="Health check endpoint")
+    parser.add_argument("--e2e-test", action="store_true", help="Run E2E self-test")
+    
+    args = parser.parse_args()
+    
+    # Gate C: Health check
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] != "unhealthy" else 1
+    
+    # Gate B: E2E test
+    if args.e2e_test:
+        result = e2e_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["summary"]["failed"] == 0 else 1
+    
+    # Validate required arguments
+    if not args.check_id:
+        print("Error: check_id is required", file=sys.stderr)
+        parser.print_help()
+        return 1
+    
+    # Get status
+    status, err = get_check_status(args.check_id, args.phase)
+    
+    if err:
+        if args.json:
+            print(json.dumps(err, indent=2))
+        else:
+            print(f"Error: {err['error']['message']}", file=sys.stderr)
+        return 1
+    
+    # Output
+    if args.json:
+        print(json.dumps(status, indent=2))
+    else:
+        print(format_human_readable(status))
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

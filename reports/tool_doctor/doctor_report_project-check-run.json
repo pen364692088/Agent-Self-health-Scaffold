@@ -1,0 +1,48 @@
+{
+  "tool": "/home/moonlight/.openclaw/workspace/tools/project-check-run",
+  "timestamp": "2026-03-06T04:59:53.928279",
+  "mode": "local",
+  "transport": "local",
+  "status": "healthy",
+  "checks": [
+    {
+      "name": "config",
+      "status": "pass",
+      "message": "Configuration check"
+    },
+    {
+      "name": "port",
+      "status": "pass",
+      "message": "Auto-assigned port: 47145",
+      "details": {
+        "chosen_port": 47145,
+        "mode": "auto"
+      }
+    },
+    {
+      "name": "health",
+      "status": "pass",
+      "message": "Health check passed (local --health)",
+      "details": {
+        "output": "{\n  \"tool\": \"project-check-run\",\n  \"timestamp\": \"2026-03-06T10:59:53.999937+00:00\",\n  \"status\": \"healthy\",\n  \"checks\": [\n    {\n      \"name\": \"schema_files\",\n      \"status\": \"pass\",\n      \"message\": \"A"
+      }
+    },
+    {
+      "name": "sample_call",
+      "status": "warn",
+      "message": "No --sample flag; fallback --help probe passed",
+      "details": {
+        "fallback": "--help",
+        "recommendation": "Add --sample for stronger preflight checks"
+      }
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "warnings": 1
+  },
+  "chosen_port": 47145,
+  "health_ok": true,
+  "sample_call_ok": true
+}

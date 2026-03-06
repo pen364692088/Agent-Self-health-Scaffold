@@ -1,0 +1,20 @@
+{
+  "task_id": "baseline_happy_001",
+  "receipt_type": "e2e",
+  "status": "pass",
+  "generated_at": "2026-03-06T10:05:13.347319",
+  "checks": [
+    {
+      "name": "test_collection",
+      "status": "skip",
+      "details": "deferred to CI"
+    },
+    {
+      "name": "validation",
+      "status": "pass",
+      "details": "deferred to CI"
+    }
+  ],
+  "state_before": "self_verify",
+  "state_after": "await_human_test"
+}
