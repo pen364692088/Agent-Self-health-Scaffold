@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""
+Task Ledger - 任务状态持久化
+
+记录父子代理任务的状态，支持断点恢复和审计。
+
+Usage:
+  task-ledger init <task_id> <parent_session_key> <description>
+  task-ledger spawn <task_id> <child_session_key> <run_id>
+  task-ledger complete <task_id> <status> <summary>
+  task-ledger list [--pending|--completed|--all]
+  task-ledger show <task_id>
+  task-ledger gc [--days 7]
+"""
+
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+LEDGER_FILE = WORKSPACE / "TASK_LEDGER.jsonl"
+
+
+def init_ledger():
+    """确保 ledger 文件存在"""
+    if not LEDGER_FILE.exists():
+        LEDGER_FILE.touch()
+
+
+def add_entry(entry: dict):
+    """添加一条记录"""
+    init_ledger()
+    entry['ts'] = datetime.now().isoformat()
+    with open(LEDGER_FILE, 'a') as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+
+
+def read_entries() -> list:
+    """读取所有记录"""
+    if not LEDGER_FILE.exists():
+        return []
+    entries = []
+    with open(LEDGER_FILE, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except:
+                    pass
+    return entries
+
+
+def get_latest_by_task_id(task_id: str) -> dict:
+    """获取某个任务的最新状态"""
+    entries = read_entries()
+    for entry in reversed(entries):
+        if entry.get('task_id') == task_id:
+            return entry
+    return None
+
+
+def cmd_init(task_id: str, parent_session_key: str, description: str):
+    """初始化任务"""
+    entry = {
+        'event': 'init',
+        'task_id': task_id,
+        'parent_session_key': parent_session_key,
+        'description': description,
+        'state': 'pending',
+        'started_at': datetime.now().isoformat()
+    }
+    add_entry(entry)
+    print(json.dumps({"status": "ok", "task_id": task_id}, ensure_ascii=False))
+
+
+def cmd_spawn(task_id: str, child_session_key: str, run_id: str):
+    """记录 spawn 事件"""
+    entry = {
+        'event': 'spawn',
+        'task_id': task_id,
+        'child_session_key': child_session_key,
+        'run_id': run_id,
+        'state': 'running'
+    }
+    add_entry(entry)
+    print(json.dumps({"status": "ok", "task_id": task_id, "state": "running"}, ensure_ascii=False))
+
+
+def cmd_complete(task_id: str, status: str, summary: str):
+    """记录完成事件"""
+    entry = {
+        'event': 'complete',
+        'task_id': task_id,
+        'status': status,
+        'summary': summary,
+        'state': 'completed' if status == 'completed' else 'failed',
+        'completed_at': datetime.now().isoformat()
+    }
+    add_entry(entry)
+    print(json.dumps({"status": "ok", "task_id": task_id, "state": entry['state']}, ensure_ascii=False))
+
+
+def cmd_list(filter_type: str = 'all'):
+    """列出任务"""
+    entries = read_entries()
+    
+    # 按 task_id 聚合最新状态
+    tasks = {}
+    for entry in entries:
+        task_id = entry.get('task_id')
+        if task_id:
+            tasks[task_id] = entry
+    
+    # 过滤
+    if filter_type == 'pending':
+        tasks = {k: v for k, v in tasks.items() if v.get('state') in ('pending', 'running')}
+    elif filter_type == 'completed':
+        tasks = {k: v for k, v in tasks.items() if v.get('state') in ('completed', 'failed')}
+    
+    for task_id, entry in tasks.items():
+        state = entry.get('state', 'unknown')
+        desc = entry.get('description', '')[:50]
+        print(f"[{state:10}] {task_id}: {desc}")
+
+
+def cmd_show(task_id: str):
+    """显示任务详情"""
+    entry = get_latest_by_task_id(task_id)
+    if entry:
+        print(json.dumps(entry, indent=2, ensure_ascii=False))
+    else:
+        print(f"Task not found: {task_id}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_gc(days: int = 7):
+    """清理旧记录"""
+    from datetime import timedelta
+    cutoff = datetime.now() - timedelta(days=days)
+    
+    entries = read_entries()
+    kept = []
+    for entry in entries:
+        ts = entry.get('ts', '')
+        try:
+            entry_ts = datetime.fromisoformat(ts)
+            if entry_ts > cutoff:
+                kept.append(entry)
+        except:
+            kept.append(entry)
+    
+    # 重写文件
+    with open(LEDGER_FILE, 'w') as f:
+        for entry in kept:
+            f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    
+    print(f"Kept {len(kept)} entries, removed {len(entries) - len(kept)} old entries")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+    
+    cmd = sys.argv[1]
+    
+    if cmd == '--health':
+        print(json.dumps({"status": "healthy"}))
+        sys.exit(0)
+    
+    if cmd == 'init' and len(sys.argv) >= 5:
+        cmd_init(sys.argv[2], sys.argv[3], ' '.join(sys.argv[4:]))
+    elif cmd == 'spawn' and len(sys.argv) >= 5:
+        cmd_spawn(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif cmd == 'complete' and len(sys.argv) >= 5:
+        cmd_complete(sys.argv[2], sys.argv[3], ' '.join(sys.argv[4:]))
+    elif cmd == 'list':
+        filter_type = sys.argv[2] if len(sys.argv) > 2 else 'all'
+        cmd_list(filter_type.lstrip('--'))
+    elif cmd == 'show' and len(sys.argv) >= 3:
+        cmd_show(sys.argv[2])
+    elif cmd == 'gc':
+        days = int(sys.argv[2].lstrip('--days=')) if len(sys.argv) > 2 else 7
+        cmd_gc(days)
+    else:
+        print(__doc__)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

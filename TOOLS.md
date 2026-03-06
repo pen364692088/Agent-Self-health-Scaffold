@@ -115,13 +115,13 @@ Workflows are self-advancing via per-agent cron jobs. No manual orchestration ne
   "channel": "telegram",
   "from": "telegram:8420019401",
   "conversation_id": "telegram:8420019401",
-  "message_id": "6449",
-  "ts": 1772734742000,
+  "message_id": "6725",
+  "ts": 1772784792000,
   "dt_seconds": 300,
-  "request_id_base": "telegram:6449",
+  "request_id_base": "telegram:6725",
   "pre_decision": {
-    "action": "boundary",
-    "decision_id": 419
+    "action": "repair_offer",
+    "decision_id": 685
   },
   "allowed_subtypes_infer": [
     "care",
@@ -520,3 +520,37 @@ Added: 2026-03-05 08:30 CST
 
 ---
 Added: 2026-03-05 09:50 CST
+
+---
+
+## Session Archive Tool
+
+**位置**: `tools/session-archive`
+
+**用途**: 标准化会话归档流程 (调用 hardened pipeline)
+
+**用法**:
+```bash
+# 标准归档
+tools/session-archive
+
+# dry-run 模式
+tools/session-archive --dry-run
+```
+
+**底层调用**:
+- `scripts/openviking_archive_entry.py` - hardened pipeline
+- 自动分块，避免 embedding 超长
+- 更新 `memory.md`
+
+**前置条件**:
+1. 创建 `memory/YYYY-MM-DD.md`
+2. OpenViking 服务运行
+
+**归档内容要求**:
+- `## Summary` - 会话摘要
+- `## Decisions` - 关键决策
+- `## Keywords` - 检索关键词
+
+---
+Added: 2026-03-05 17:40 CST

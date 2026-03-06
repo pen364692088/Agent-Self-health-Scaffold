@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""
+SRAP Daily Report Generator
+Lightweight cron job for Phase B shadow monitoring.
+"""
+
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime, timedelta
+from collections import defaultdict
+
+# Correct paths
+PROJECT_ROOT = Path.home() / "Project/Github/MyProject/Emotion/OpenEmotion"
+DEFAULT_LOG = PROJECT_ROOT / "artifacts/self_report/shadow_log.jsonl"
+DEFAULT_OUTPUT = PROJECT_ROOT / "artifacts/self_report/SRAP_SHADOW_REPORT.md"
+
+# ... rest of the code same as before ...

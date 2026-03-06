@@ -1,0 +1,23 @@
+#!/bin/bash
+# Testbot 情绪状态监控
+
+DB_PATH="$HOME/Project/Github/MyProject/Emotion/OpenEmotion/emotiond.db"
+TARGET="${1:-telegram:8420019401}"
+
+echo "=== Testbot 情绪监控 ==="
+echo "Target: $TARGET"
+echo "按 Ctrl+C 退出"
+echo ""
+
+watch -n 2 "
+echo '📊 关系状态:'
+sqlite3 $DB_PATH \"SELECT printf('  bond=%.3f, trust=%.3f, grudge=%.3f, repair=%.3f', bond, trust, grudge, repair_bank) FROM relationships WHERE target='$TARGET'\"
+
+echo ''
+echo '😊 全局情绪:'
+sqlite3 $DB_PATH \"SELECT printf('  joy=%.3f, sadness=%.3f, anger=%.3f, anxiety=%.3f, loneliness=%.3f', joy, sadness, anger, anxiety, loneliness) FROM mood_state LIMIT 1\"
+
+echo ''
+echo '📝 最近 5 条事件:'
+sqlite3 $DB_PATH \"SELECT printf('  [%s] %s: %s', datetime(ts/1000, 'unixepoch', 'localtime'), type, COALESCE(text, '')) FROM events WHERE meta LIKE '%$TARGET%' ORDER BY ts DESC LIMIT 5\"
+"

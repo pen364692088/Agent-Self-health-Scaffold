@@ -1,0 +1,91 @@
+#!/bin/bash
+# SRAP Shadow Mode 启动脚本
+
+set -e
+
+echo "=== SRAP Shadow Mode 启动检查 ==="
+echo ""
+
+# 1. 加载配置
+if [ -f ~/.openclaw/workspace/config/srap.env ]; then
+    source ~/.openclaw/workspace/config/srap.env
+    echo "✅ 配置已加载"
+else
+    echo "❌ 配置文件不存在: ~/.openclaw/workspace/config/srap.env"
+    exit 1
+fi
+
+# 2. 检查必需变量
+echo ""
+echo "=== 环境变量检查 ==="
+echo "SRAP_ENABLED: ${SRAP_ENABLED:-未设置}"
+echo "SRAP_MODE: ${SRAP_MODE:-未设置}"
+
+if [ "$SRAP_ENABLED" != "1" ]; then
+    echo "⚠️  SRAP_ENABLED 不是 1，SRAP 将不会运行"
+fi
+
+if [ "$SRAP_MODE" != "shadow" ]; then
+    echo "⚠️  SRAP_MODE 不是 shadow，可能会阻断消息"
+fi
+
+# 3. 检查 emotiond 服务
+echo ""
+echo "=== emotiond 服务检查 ==="
+if systemctl --user is-active emotiond &>/dev/null; then
+    echo "✅ emotiond 服务运行中"
+else
+    echo "⚠️  emotiond 服务未运行，尝试启动..."
+    systemctl --user start emotiond
+fi
+
+# 4. 检查 shadow log 路径
+echo ""
+echo "=== Shadow Log 检查 ==="
+PROJECT_ROOT=~/Project/Github/MyProject/Emotion/OpenEmotion
+SHADOW_LOG="$PROJECT_ROOT/artifacts/self_report/shadow_log.jsonl"
+
+if [ -f "$SHADOW_LOG" ]; then
+    LINES=$(wc -l < "$SHADOW_LOG")
+    echo "✅ Shadow log 存在: $SHADOW_LOG"
+    echo "   当前记录数: $LINES"
+else
+    echo "⚠️  Shadow log 不存在，创建中..."
+    mkdir -p "$(dirname $SHADOW_LOG)"
+    touch "$SHADOW_LOG"
+    echo "✅ 已创建: $SHADOW_LOG"
+fi
+
+# 5. 检查测试数据归档
+echo ""
+echo "=== 测试数据归档检查 ==="
+ARCHIVE_DIR="$PROJECT_ROOT/artifacts/self_report/test_data_archive"
+if [ -d "$ARCHIVE_DIR" ] && [ "$(ls -A $ARCHIVE_DIR 2>/dev/null)" ]; then
+    echo "✅ 测试数据已归档到: $ARCHIVE_DIR"
+    ls -lh "$ARCHIVE_DIR" | tail -3
+else
+    echo "ℹ️  无归档数据"
+fi
+
+# 6. 启动提示
+echo ""
+echo "=== Shadow 模式已启动 ==="
+echo ""
+echo "监控命令:"
+echo "  # 查看 shadow log"
+echo "  tail -f $SHADOW_LOG"
+echo ""
+echo "  # 生成每日报告"
+echo "  ~/.openclaw/workspace/tools/srap-daily-report --days 1"
+echo ""
+echo "  # 检查 violation 统计"
+echo "  jq -s '[.[] | select(.violation==true)] | length' $SHADOW_LOG"
+echo ""
+echo "Phase C 准入标准:"
+echo "  - violation_rate < 5%"
+echo "  - false_positive < 2%"
+echo "  - false_negative < 3%"
+echo "  - numeric_leak = 0"
+echo "  - 样本量 >= 200"
+echo ""
+echo "🚀 开始收集真实数据..."

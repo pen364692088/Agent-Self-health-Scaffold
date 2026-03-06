@@ -254,3 +254,67 @@ Stage2 usage rate: 28.6%
 ============================================================
 
 Report saved: /home/moonlight/.openclaw/workspace/memory/regression_report.json
+============================================================
+Retrieval Regression Test Runner
+============================================================
+
+[canary_runbook_pinned] Running: canary runbook deployment procedure...
+  ✓ must_include: ✓ | budget: ✓
+
+[rollback_safety_pinned] Running: rollback safety check deployment...
+  ✓ must_include: ✓ | budget: ✓
+
+[subagent_protocol_pinned] Running: subagent protocol callback handling...
+  ✓ must_include: ✓ | budget: ✓
+
+[mvp8_openemotion_pinned] Running: MVP-8 OpenEmotion integration...
+  ✓ must_include: ✓ | budget: ✓
+
+[tombstone_filter_deprecated] Running: deprecated session memory cleanup...
+  ✓ must_not: ✓ | budget: ✓
+
+[multi_trigger_pinned_limit] Running: deployment canary rollback procedure...
+  ✓ budget: ✓
+
+[semantic_fallback_stage2] Running: orchestration workflow management...
+  ✓ budget: ✓
+
+============================================================
+RESULTS: 7/7 passed
+Pinned hit rate: 71.4%
+Stage2 usage rate: 28.6%
+============================================================
+
+Report saved: /home/moonlight/.openclaw/workspace/memory/regression_report.json
+============================================================
+Retrieval Regression Test Runner
+============================================================
+
+[canary_runbook_pinned] Running: canary runbook deployment procedure...
+  ✓ must_include: ✓ | budget: ✓
+
+[rollback_safety_pinned] Running: rollback safety check deployment...
+  ✓ must_include: ✓ | budget: ✓
+
+[subagent_protocol_pinned] Running: subagent protocol callback handling...
+  ✓ must_include: ✓ | budget: ✓
+
+[mvp8_openemotion_pinned] Running: MVP-8 OpenEmotion integration...
+  ✓ must_include: ✓ | budget: ✓
+
+[tombstone_filter_deprecated] Running: deprecated session memory cleanup...
+  ✓ must_not: ✓ | budget: ✓
+
+[multi_trigger_pinned_limit] Running: deployment canary rollback procedure...
+  ✓ budget: ✓
+
+[semantic_fallback_stage2] Running: orchestration workflow management...
+  ✓ budget: ✓
+
+============================================================
+RESULTS: 7/7 passed
+Pinned hit rate: 71.4%
+Stage2 usage rate: 28.6%
+============================================================
+
+Report saved: /home/moonlight/.openclaw/workspace/memory/regression_report.json

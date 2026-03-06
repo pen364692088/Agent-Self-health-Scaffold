@@ -1,0 +1,66 @@
+{
+  "task_id": "gate4_hook_alignment",
+  "status": "ok",
+  "completed_at": "2026-03-06T03:18:00.000Z",
+  "summary": "Gate 4: Extended emotiond-bridge hook v1.6 with self_report_contract injection",
+  "changes": [
+    {
+      "file": "/home/moonlight/.openclaw/hooks/emotiond-bridge/handler.js",
+      "version": "1.6",
+      "changes": [
+        "Added spawn import from child_process",
+        "Added SELF_REPORT_MODE env var (default: interpreted)",
+        "Added INTERPRETER_PATH env var",
+        "Added INTERPRETER_TIMEOUT_MS env var (default: 2000)",
+        "Added buildRawState() function to transform decision to interpreter format",
+        "Added callInterpreter() function to call Python interpreter via spawn",
+        "Added generateSelfReportContract() function with fallback handling",
+        "Extended context.json output with self_report_contract field"
+      ]
+    }
+  ],
+  "acceptance_criteria": {
+    "run_chain_connected": true,
+    "context_json_has_self_report_contract": true,
+    "default_no_numeric_exposure": true,
+    "replay_compatible": true
+  },
+  "evidence": {
+    "test_results": [
+      {
+        "test": "buildRawState",
+        "status": "pass",
+        "output": "Correctly transforms decision.explanation.emotion.all and relationships to raw_state format"
+      },
+      {
+        "test": "callInterpreter",
+        "status": "pass",
+        "output": "Successfully calls Python interpreter and returns contract with allowed_claims and forbidden_claims"
+      },
+      {
+        "test": "generateSelfReportContract",
+        "status": "pass",
+        "output": "Returns structured contract with mode, raw_state, report_policy, metadata"
+      },
+      {
+        "test": "numeric_mode",
+        "status": "pass",
+        "output": "numeric mode adds numeric_state to report_policy and claims include numeric values"
+      },
+      {
+        "test": "full_handler",
+        "status": "pass",
+        "output": "context.json contains self_report_contract with all expected fields"
+      }
+    ],
+    "context_file": "/home/moonlight/.openclaw/workspace/emotiond/context.json",
+    "sample_output": {
+      "mode": "interpreted",
+      "allowed_claims_count": 8,
+      "forbidden_claims_count": 9
+    }
+  },
+  "modes_supported": ["interpreted", "numeric", "style_only"],
+  "default_mode": "interpreted",
+  "debug_mode": "numeric (via EMOTIOND_SELF_REPORT_MODE env var)"
+}

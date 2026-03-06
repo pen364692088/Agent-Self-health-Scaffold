@@ -1,39 +1,11 @@
 {
   "advances": [
     {
-      "workflow_id": "smoke_test_001",
-      "step_id": "smoke_step_b",
+      "workflow_id": "unknown",
+      "step_id": "phase_a3",
       "success": true,
-      "latency_ms": 0.1957416534423828,
-      "timestamp": "2026-03-05T11:42:25.925517"
-    },
-    {
-      "workflow_id": "fallback_test_001",
-      "step_id": "fallback_step_b",
-      "success": true,
-      "latency_ms": 0.19121170043945312,
-      "timestamp": "2026-03-05T11:43:23.288681"
-    },
-    {
-      "workflow_id": "e2e_latency_test",
-      "step_id": "step_b",
-      "success": true,
-      "latency_ms": 0.14400482177734375,
-      "timestamp": "2026-03-05T11:57:14.509242"
-    },
-    {
-      "workflow_id": "kill_switch_test",
-      "step_id": "step_b",
-      "success": true,
-      "latency_ms": 0.15211105346679688,
-      "timestamp": "2026-03-05T11:57:25.087737"
-    },
-    {
-      "workflow_id": "e2e_latency_v2",
-      "step_id": "step_b",
-      "success": true,
-      "latency_ms": 0.14090538024902344,
-      "timestamp": "2026-03-05T11:58:00.150714"
+      "latency_ms": 0.11467933654785156,
+      "timestamp": "2026-03-05T22:22:53.068395"
     }
   ],
   "global_inflight": 0

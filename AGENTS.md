@@ -1,41 +1,81 @@
 # Manager Agent (Orchestrator)
 
-## ⚠️ 最高优先级 1：子代理回调处理 (强制执行 - 2026-03-05 更新)
+## ⚠️ 最高优先级 1：子代理回调处理 (强制执行 - 2026-03-06 重大更新)
 
-**触发条件**: 收到任何包含 `✅ Subagent` 或 `Subagent main finished` 的消息
+### 新架构：显式 sessions_send 回调
 
-**必须立即执行**:
+**问题背景**: OpenClaw 默认的子代理完成 announce 是 `role: assistant` 消息，不会自然唤醒父代理继续编排。
+
+**解决方案**: 子代理必须显式使用 `sessions_send` 回传结果给父代理。
+
+### Spawn 子代理时必须包含
+
+```text
+**元信息**：
+- parentSessionKey: <当前 session key>
+- taskId: <唯一任务 ID>
+
+**完成要求**：
+1. 完成任务后，构造结构化完成消息
+2. 使用 sessions_send 发送给 parentSessionKey
+3. 输出 ANNOUNCE_SKIP: true
+```
+
+### 结构化完成消息格式
+
+```json
+{
+  "type": "subagent_done",
+  "task_id": "xxx",
+  "child_session_key": "当前 session key",
+  "status": "completed|failed",
+  "summary": "任务摘要",
+  "artifacts": ["产出文件路径"],
+  "next_hint": "ready_for_review|needs_followup|blocked"
+}
+```
+
+### 父代理处理流程
+
+当收到包含 `"type": "subagent_done"` 的消息时：
+
 ```bash
-~/.openclaw/workspace/tools/subagent-completion-handler <run_id>
+~/.openclaw/workspace/tools/subagent-completion-handler --payload '<json>'
 ```
 
-**处理流程**:
-1. 从消息中提取 `run_id`（检查 session_key, Run ID, 或 run_id 字段）
-2. 运行 `subagent-completion-handler <run_id>`
-3. 解析返回的 JSON
-4. 根据 `action` 字段执行:
-   - `spawn_next` → spawn 下一个子代理，**不回复用户**
-   - `notify_user` → 发送 `message` 内容给用户
-   - `ignore` → 正常响应用户（无活动工作流）
-   - `wait_for_dependencies` → 等待依赖完成，不回复
+返回的 `action` 字段：
+- `spawn_next` → spawn 下一个子代理，**不回复用户**
+- `notify_user` → 发送 `message` 内容给用户
+- `ignore` → 正常响应用户
 
-**状态文件**: `WORKFLOW_STATE.json`（扁平 steps 结构，不是 SESSION-STATE.md）
+### 禁止行为
 
-**禁止行为**:
-- ❌ 跳过运行 `subagent-completion-handler`
+- ❌ 依赖"看到 ✅ Subagent 消息"来触发处理（不可靠）
+- ❌ 子代理直接向用户发送最终总结（除非是唯一目标）
+- ❌ 跳过 sessions_send 回调
 - ❌ 在 `should_silence: true` 时回复用户
-- ❌ 手动更新 `WORKFLOW_STATE.json`
-- ❌ 直接说"任务完成"或"继续"
 
-**正确示例**:
-```
-收到: "✅ Subagent main finished..."
-动作: subagent-completion-handler <run_id> → {"action": "spawn_next", "should_silence": true}
-响应: spawn 下一个子代理，不回复用户
+### 模板文件
 
-收到: "✅ Subagent main finished..." (最后一步)
-动作: subagent-completion-handler <run_id> → {"action": "notify_user", "message": "✅ 完成"}
-响应: 发送 "✅ 完成" 给用户
+详细模板见：`~/.openclaw/workspace/templates/subagent_callback_task.md`
+
+### Task Ledger
+
+任务状态记录在 `~/.openclaw/workspace/TASK_LEDGER.jsonl`
+
+```bash
+# 初始化任务
+task-ledger init <task_id> <parent_session_key> "<description>"
+
+# 记录 spawn
+task-ledger spawn <task_id> <child_session_key> <run_id>
+
+# 记录完成
+task-ledger complete <task_id> <status> "<summary>"
+
+# 查看任务
+task-ledger list --pending
+task-ledger show <task_id>
 ```
 
 ---

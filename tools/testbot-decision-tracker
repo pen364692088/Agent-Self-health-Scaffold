@@ -1,0 +1,59 @@
+#!/bin/bash
+# Testbot 决策路径追踪
+
+EMOTIOND_URL="http://127.0.0.1:18080"
+TARGET="telegram:8420019401"
+LAST_DECISION_ID=0
+
+echo "=== Testbot 决策路径追踪 ==="
+echo "Target: $TARGET"
+echo "等待新决策..."
+echo ""
+
+while true; do
+    # 获取最新决策
+    RESPONSE=$(curl -s "$EMOTIOND_URL/decision/target/$TARGET?agent_id=testbot")
+    
+    DECISION_ID=$(echo "$RESPONSE" | jq -r '.decision_id // 0')
+    ACTION=$(echo "$RESPONSE" | jq -r '.action // "unknown"')
+    
+    # 检查是否有新决策
+    if [ "$DECISION_ID" != "null" ] && [ "$DECISION_ID" != "$LAST_DECISION_ID" ]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📊 新决策 #$DECISION_ID"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        # 情绪状态
+        echo ""
+        echo "😊 情绪状态:"
+        echo "$RESPONSE" | jq -r '.explanation.emotion.all | to_entries[] | "  \(.key): \(.value | tostring | .[0:5])"' 2>/dev/null
+        
+        # 关系状态
+        echo ""
+        echo "💕 关系状态:"
+        echo "$RESPONSE" | jq -r '.explanation.relationships | "  bond: \(.bond | tostring | .[0:5]), trust: \(.trust | tostring | .[0:5]), grudge: \(.grudge | tostring | .[0:5])"' 2>/dev/null
+        
+        # 候选动作
+        echo ""
+        echo "🎯 候选动作 (按得分排序):"
+        echo "$RESPONSE" | jq -r '.explanation.candidates[] | "  \(.action): \(.score | tostring | .[0:6]) - \(.reasons | join(", "))"' 2>/dev/null
+        
+        # 最终选择
+        echo ""
+        echo "✅ 选择: $ACTION"
+        echo "$RESPONSE" | jq -r '.explanation.selection_reasons[] | "  → \(.)"' 2>/dev/null
+        
+        # 持久化策略
+        PERSISTENCE=$(echo "$RESPONSE" | jq -r '.explanation.persistence.strategy // "normal"')
+        if [ "$PERSISTENCE" != "normal" ]; then
+            echo ""
+            echo "⚠️  持久化策略: $PERSISTENCE"
+        fi
+        
+        echo ""
+        
+        LAST_DECISION_ID=$DECISION_ID
+    fi
+    
+    sleep 2
+done

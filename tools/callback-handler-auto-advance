@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""
+自动推进检测器 - 在子代理回调时自动调用
+
+使用方式：
+1. 在 AGENTS.md 中添加到子代理回调处理流程
+2. 或者在收到 "✅ Subagent" 消息时自动调用
+
+import subprocess
+result = subprocess.run(["callback-handler-auto-advance", run_id], capture_output=True, text=True)
+action = json.loads(result.stdout)
+"""
+
+import json
+import sys
+import subprocess
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+CALLBACK_HANDLER = WORKSPACE / "tools" / "callback-handler"
+WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+
+def auto_advance(run_id: str) -> dict:
+    """
+    检测并推进工作流
+    
+    Returns:
+        {
+            "action": "spawn_next" | "notify_user" | "ignore",
+            "should_silence": bool,
+            ...
+        }
+    """
+    # 1. 调用 callback-handler 获取动作
+    result = subprocess.run(
+        [str(CALLBACK_HANDLER), run_id],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode != 0:
+        return {"action": "ignore", "should_silence": False, "error": result.stderr}
+    
+    try:
+        action = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return {"action": "ignore", "should_silence": False, "error": "invalid_json"}
+    
+    # 2. 如果需要 spawn 下一个，自动执行
+    if action.get("action") == "spawn_next":
+        next_step = action.get("next_step", {})
+        # 返回给调用者，让调用者决定是否 spawn
+        # 或者在这里直接 spawn（需要 sessions_spawn 权限）
+        action["auto_spawn_ready"] = True
+        action["next_step_task"] = next_step.get("task")
+        action["next_step_model"] = next_step.get("model")
+    
+    return action
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps({"action": "ignore", "error": "no_run_id"}))
+        sys.exit(1)
+    
+    run_id = sys.argv[1]
+    result = auto_advance(run_id)
+    print(json.dumps(result, indent=2, ensure_ascii=False))

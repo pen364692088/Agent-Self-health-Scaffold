@@ -210,46 +210,39 @@ callback-handler --clear
 
 ---
 
-## ⚠️ 子代理完成消息处理（强制执行 - 2026-03-05 修复）
+## ⚠️ 子代理回调处理（强制执行 - 2026-03-06 重大更新）
 
-**触发条件**: 收到任何包含 `✅ Subagent` 或 `Subagent main finished` 的消息
+### 新架构：显式 sessions_send 回调
 
-**必须立即执行**（不可跳过）:
+**问题**: OpenClaw 默认的子代理完成 announce 是 `role: assistant` 消息，不会自然唤醒父代理。
+
+**解决**: 子代理必须显式使用 `sessions_send` 回传结果。
+
+### 父代理收到 subagent_done 消息时
+
 ```bash
-~/.openclaw/workspace/tools/subagent-completion-handler <run_id>
+~/.openclaw/workspace/tools/subagent-completion-handler --payload '<json>'
 ```
 
-**处理流程**:
-1. 从消息中提取 `run_id`（通常在 session_key 或 Run ID 字段）
-2. 运行 `subagent-completion-handler <run_id>`
-3. 解析返回的 JSON
-4. 根据 `action` 执行:
-   - `spawn_next` + `should_silence: true` → spawn 下一个子代理，**不回复用户**
-   - `notify_user` + `should_silence: false` → 发送消息给用户
-   - `ignore` → 正常响应（无活动工作流）
-   - `wait_for_dependencies` → 等待依赖完成，不回复
+**payload 格式**:
+```json
+{
+  "type": "subagent_done",
+  "task_id": "xxx",
+  "status": "completed|failed",
+  "summary": "..."
+}
+```
 
-**禁止行为**:
-- ❌ 跳过运行 `subagent-completion-handler`
+### 禁止行为
+
+- ❌ 依赖"看到 ✅ Subagent 消息"触发处理（不可靠）
 - ❌ 在 `should_silence: true` 时回复用户
-- ❌ 直接说"任务完成"或"继续"
-- ❌ 手动更新 `WORKFLOW_STATE.json`（必须通过工具）
+- ❌ 跳过 sessions_send 回调
 
-**正确示例**:
-```
-收到: "✅ Subagent main finished..."
-步骤1: 提取 run_id
-步骤2: 运行 subagent-completion-handler <run_id>
-步骤3: 解析返回 {"action": "spawn_next", "should_silence": true}
-步骤4: spawn 下一个子代理
-步骤5: 不发送用户消息
+### 模板
 
-收到: "✅ Subagent main finished..." (最后一步)
-步骤1: 提取 run_id
-步骤2: 运行 subagent-completion-handler <run_id>
-步骤3: 解析返回 {"action": "notify_user", "message": "✅ 完成"}
-步骤4: 发送消息给用户
-```
+`~/.openclaw/workspace/templates/subagent_callback_task.md`
 
 ---
-Added: 2026-03-05 09:45 CST
+Added: 2026-03-06 02:10 CST

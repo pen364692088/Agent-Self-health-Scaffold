@@ -1,17 +1,61 @@
 {
   "pending": {
-    "task_5a809a51": {
-      "task_id": "task_5a809a51",
-      "run_id": "run_fd8fb577",
-      "child_session_key": "agent:main:subagent:30301c945f6a4c239cc88c14f4398ffc",
-      "description": "Phase 1: Bot Harness - see TASK_TESTBOT_HARNESS.md",
+    "task_4cd0f4bf": {
+      "task_id": "task_4cd0f4bf",
+      "run_id": "run_97793bd0",
+      "child_session_key": "agent:main:subagent:9ec9bc94b8a642cda4655ee0939eeab6",
+      "description": "Shadow Trio Task 1: Add --out-one-liner to mvp11_hard_gate_eval.py - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
       "status": "pending",
-      "deadline": "2026-03-05T10:56:32.912184",
+      "deadline": "2026-03-05T13:54:50.030477",
       "max_retries": 2,
       "retries": 0,
       "attempt": 0,
-      "created_at": "2026-03-05T09:56:32.912186",
-      "started_at": "2026-03-05T09:56:32.912188",
+      "created_at": "2026-03-05T12:54:50.030483",
+      "started_at": "2026-03-05T12:54:50.030486",
+      "completed_at": null,
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": null,
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_121547cd": {
+      "task_id": "task_121547cd",
+      "run_id": "run_c2db22da",
+      "child_session_key": "agent:main:subagent:5b25e4b797134a7e90458e25396e1381",
+      "description": "Shadow Trio Task 2: Create summarize_shadow_results.py - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
+      "status": "pending",
+      "deadline": "2026-03-05T13:54:50.139537",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T12:54:50.139543",
+      "started_at": "2026-03-05T12:54:50.139546",
+      "completed_at": null,
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": null,
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
+    },
+    "task_a4c561e9": {
+      "task_id": "task_a4c561e9",
+      "run_id": "run_98242a6d",
+      "child_session_key": "agent:main:subagent:0925b7057c8e4acbb459aa6785c67c4a",
+      "description": "Shadow Trio Task 3: Add PR comment on ERROR in testbot-e2e.yml - see ~/Project/Github/MyProject/Emotion/OpenEmotion/TASK_SHADOW_TRIO.md",
+      "status": "pending",
+      "deadline": "2026-03-05T13:54:50.252505",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T12:54:50.252512",
+      "started_at": "2026-03-05T12:54:50.252515",
       "completed_at": null,
       "output_paths": [],
       "artifacts": [],
@@ -173,7 +217,32 @@
       "metadata": {
         "model": "baiduqianfancodingplan/qianfan-code-latest"
       }
+    },
+    "task_5a809a51": {
+      "task_id": "task_5a809a51",
+      "run_id": "run_fd8fb577",
+      "child_session_key": "agent:main:subagent:30301c945f6a4c239cc88c14f4398ffc",
+      "description": "Phase 1: Bot Harness - see TASK_TESTBOT_HARNESS.md",
+      "status": "timeout",
+      "deadline": "2026-03-05T10:56:32.912184",
+      "max_retries": 2,
+      "retries": 0,
+      "attempt": 0,
+      "created_at": "2026-03-05T09:56:32.912186",
+      "started_at": "2026-03-05T09:56:32.912188",
+      "completed_at": "2026-03-05T12:55:59.093717",
+      "output_paths": [],
+      "artifacts": [],
+      "summary": "",
+      "error": {
+        "type": "zombie_cleanup",
+        "message": "Task exceeded deadline without completion"
+      },
+      "result_data": null,
+      "metadata": {
+        "model": "baiduqianfancodingplan/qianfan-code-latest"
+      }
     }
   },
-  "timestamp": "2026-03-05T09:57:28.876560"
+  "timestamp": "2026-03-05T12:55:59.094057"
 }

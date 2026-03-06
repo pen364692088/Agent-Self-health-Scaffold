@@ -1,0 +1,6 @@
+{"event": "complete", "task_id": "test_001", "status": "completed", "summary": "测试", "state": "completed", "completed_at": "2026-03-06T02:16:38.286985", "ts": "2026-03-06T02:16:38.287087"}
+{"event": "init", "task_id": "test_002", "parent_session_key": "agent:main:test", "description": "测试任务", "state": "pending", "started_at": "2026-03-06T02:16:38.328684", "ts": "2026-03-06T02:16:38.328711"}
+{"event": "complete", "task_id": "test_payload_001", "status": "completed", "summary": "测试完成", "state": "completed", "completed_at": "2026-03-06T02:17:39.330992", "ts": "2026-03-06T02:17:39.331022"}
+{"event": "init", "task_id": "test_ledger_e2e", "parent_session_key": "agent:main:test", "description": "E2E测试任务", "state": "pending", "started_at": "2026-03-06T02:17:39.353226", "ts": "2026-03-06T02:17:39.353254"}
+{"event": "spawn", "task_id": "test_ledger_e2e", "child_session_key": "agent:main:subagent:test", "run_id": "run_e2e", "state": "running", "ts": "2026-03-06T02:17:39.372619"}
+{"event": "complete", "task_id": "test_ledger_e2e", "status": "completed", "summary": "E2E测试完成", "state": "completed", "completed_at": "2026-03-06T02:17:39.392230", "ts": "2026-03-06T02:17:39.392258"}

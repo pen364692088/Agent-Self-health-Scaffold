@@ -1,0 +1,78 @@
+{
+  "task_id": "gate5_audit",
+  "run_id": "gate5-20260305-212500",
+  "session_key": "agent:main:subagent:b1328afe-efea-42aa-9471-df3c591d4372",
+  "status": "ok",
+  "summary": "Gate 5: 审计与 Gate 接入完成",
+  "artifacts": [
+    "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/self_report_consistency_checker.py",
+    "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/tests/test_self_report_consistency.py",
+    "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/self_report_audit/.gitkeep"
+  ],
+  "deliverables": {
+    "consistency_checker": {
+      "path": "emotiond/self_report_consistency_checker.py",
+      "classes": ["SelfReportConsistencyChecker", "ConsistencyResult", "ConsistencyViolation"],
+      "functions": ["check_consistency", "run_audit"],
+      "lines": 540
+    },
+    "tests": {
+      "path": "tests/test_self_report_consistency.py",
+      "test_classes": 11,
+      "test_cases": 34,
+      "all_passed": true
+    },
+    "audit_dir": {
+      "path": "artifacts/self_report_audit/",
+      "purpose": "Store audit reports"
+    }
+  },
+  "violation_detection": {
+    "fabricated_numeric_state": {
+      "severity": "ERROR",
+      "detection": "Gate 2 validator patterns + numeric regex",
+      "test_coverage": "5 test cases"
+    },
+    "fabricated_qualitative_state": {
+      "severity": "ERROR", 
+      "detection": "Gate 2 validator qualitative patterns",
+      "test_coverage": "4 test cases"
+    },
+    "claim_outside_allowed_claims": {
+      "severity": "WARN",
+      "detection": "Additional claim patterns + allowed_claims comparison",
+      "test_coverage": "3 test cases"
+    },
+    "style_contract_violation": {
+      "severity": "WARN",
+      "detection": "Strict style patterns for style_only mode",
+      "test_coverage": "2 test cases"
+    }
+  },
+  "modes": {
+    "shadow": {
+      "description": "Detect and log violations, do not block",
+      "should_block": false,
+      "default": true
+    },
+    "enforced": {
+      "description": "Block on ERROR violations",
+      "should_block": true,
+      "trigger": "HARD_GATE_ENFORCE=1"
+    }
+  },
+  "integration": {
+    "gate2_validator": "Reused SelfReportValidator for pattern matching",
+    "contract_schema": "Aligned with schemas/self_report_contract.v1.schema.json",
+    "audit_reports": "JSON format with full violation context"
+  },
+  "acceptance_criteria": {
+    "detect_fabricated_numeric_state": true,
+    "detect_fabricated_qualitative_state": true,
+    "detect_claim_outside_allowed_claims": true,
+    "report_format_complete": true,
+    "shadow_mode_running": true,
+    "minimum_10_test_cases": true
+  },
+  "ts": "2026-03-05T21:25:00-06:00"
+}

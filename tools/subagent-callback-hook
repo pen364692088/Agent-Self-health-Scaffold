@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""
+子代理回调钩子 - 在收到 "✅ Subagent" 消息时自动触发
+
+集成点：
+1. OpenClaw 消息处理器（理想方案）
+2. Agent 主循环开始时检查（备选方案）
+
+工作流：
+1. 检测到 "✅ Subagent" 回调
+2. 提取 run_id
+3. 调用 callback-handler
+4. 根据返回动作执行
+"""
+
+import json
+import sys
+import re
+import subprocess
+from pathlib import Path
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+CALLBACK_HANDLER = WORKSPACE / "tools" / "callback-handler"
+
+def extract_run_id(message: str) -> str | None:
+    """从回调消息中提取 run_id"""
+    # 格式: "✅ Subagent main finished..." 或包含 run_id
+    # 尝试匹配 UUID 格式
+    match = re.search(r'([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})', message)
+    if match:
+        return match.group(1)
+    return None
+
+def is_subagent_callback(message: str) -> bool:
+    """检测是否是子代理回调消息"""
+    return message.strip().startswith("✅ Subagent") or "[Internal task completion event]" in message
+
+def process_callback(message: str) -> dict:
+    """
+    处理子代理回调
+    
+    Returns:
+        {
+            "is_callback": bool,
+            "run_id": str | None,
+            "action": dict | None,
+            "error": str | None
+        }
+    """
+    if not is_subagent_callback(message):
+        return {"is_callback": False}
+    
+    run_id = extract_run_id(message)
+    if not run_id:
+        return {"is_callback": True, "error": "no_run_id_found"}
+    
+    # 调用 callback-handler
+    result = subprocess.run(
+        [str(CALLBACK_HANDLER), run_id],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode != 0:
+        return {"is_callback": True, "run_id": run_id, "error": result.stderr}
+    
+    try:
+        action = json.loads(result.stdout)
+        return {"is_callback": True, "run_id": run_id, "action": action}
+    except json.JSONDecodeError:
+        return {"is_callback": True, "run_id": run_id, "error": "invalid_json"}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps({"is_callback": False}))
+        sys.exit(0)
+    
+    message = sys.argv[1]
+    result = process_callback(message)
+    print(json.dumps(result, indent=2, ensure_ascii=False))

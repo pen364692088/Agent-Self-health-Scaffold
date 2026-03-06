@@ -98,3 +98,7 @@
 {"ts": "2026-03-05T08:01:42.542323", "task_id": "task_8db0f53f", "state_from": "none", "state_to": "pending", "run_id": "run_3f053c73", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
 {"ts": "2026-03-05T09:56:32.913536", "task_id": "task_5a809a51", "state_from": "none", "state_to": "pending", "run_id": "run_fd8fb577", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
 {"ts": "2026-03-05T09:57:28.876443", "task_id": "task_8db0f53f", "state_from": "pending", "state_to": "timeout", "run_id": "run_3f053c73", "attempt": 0, "elapsed_ms": 0, "reason": "zombie_cleanup"}
+{"ts": "2026-03-05T12:54:50.032991", "task_id": "task_4cd0f4bf", "state_from": "none", "state_to": "pending", "run_id": "run_97793bd0", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
+{"ts": "2026-03-05T12:54:50.142306", "task_id": "task_121547cd", "state_from": "none", "state_to": "pending", "run_id": "run_c2db22da", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
+{"ts": "2026-03-05T12:54:50.255043", "task_id": "task_a4c561e9", "state_from": "none", "state_to": "pending", "run_id": "run_98242a6d", "attempt": 0, "elapsed_ms": 0, "reason": "spawned"}
+{"ts": "2026-03-05T12:55:59.093813", "task_id": "task_5a809a51", "state_from": "pending", "state_to": "timeout", "run_id": "run_fd8fb577", "attempt": 0, "elapsed_ms": 0, "reason": "zombie_cleanup"}
