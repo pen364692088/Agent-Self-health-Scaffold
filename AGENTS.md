@@ -1,6 +1,6 @@
 # Manager Agent (Orchestrator)
 
-## ⚠️ 最高优先级：子代理回调处理 (强制执行 - 2026-03-05 更新)
+## ⚠️ 最高优先级 1：子代理回调处理 (强制执行 - 2026-03-05 更新)
 
 **触发条件**: 收到任何包含 `✅ Subagent` 或 `Subagent main finished` 的消息
 
@@ -36,6 +36,45 @@
 收到: "✅ Subagent main finished..." (最后一步)
 动作: subagent-completion-handler <run_id> → {"action": "notify_user", "message": "✅ 完成"}
 响应: 发送 "✅ 完成" 给用户
+```
+
+---
+
+## ⚠️ 最高优先级 2：会话归档触发 (强制执行 - 2026-03-05 新增)
+
+**触发条件**: 用户说 "归档"、"会话归档"、"wrap up"、"session wrap up"
+
+**必须立即执行** (不可跳过任何步骤):
+```bash
+~/.openclaw/workspace/tools/session-archive
+```
+
+**5 步强制流程**:
+| 步骤 | 操作 | 验证 |
+|------|------|------|
+| 1 | 更新 `memory/YYYY-MM-DD.md` | 检查文件存在 + >100 bytes |
+| 2 | 更新 `memory.md` | 检查文件存在 |
+| 3 | 运行 `session-indexer --days 1` | 索引今日 session |
+| 4 | 运行 `openviking_archive_entry.py` | 向量数据库归档 |
+| 5 | Git commit + push | 推送到备份仓库 |
+
+**禁止行为**:
+- ❌ 跳过任何步骤
+- ❌ 只更新文件不索引
+- ❌ 手动执行部分步骤
+
+**正确示例**:
+```
+用户: "会话归档"
+动作: 运行 session-archive
+输出: 
+  Step 1: ✅ memory/2026-03-05.md (3.8K)
+  Step 2: ✅ memory.md (15K)
+  Step 3: ✅ Indexed 508 sessions
+  Step 4: ✅ Archived 8 resources
+  Step 5: ✅ commit: archive: session 2026-03-05
+
+响应: ✅ 归档完成
 ```
 
 ---
@@ -892,3 +931,59 @@ emit_use_event("mem:domains/infra:runbook:20260303:canary", recall_id="2026-03-0
 - avoidable_failure_count
 
 Rule: 优化以“成功率提升 + 可恢复性提升”为主，不以“思考更重”作为目标本身。
+
+---
+
+## Session Archive Protocol (强制) ⭐
+
+**每次会话结束前必须执行归档流程。**
+
+### 标准流程
+
+```bash
+# 1. 确保 memory/YYYY-MM-DD.md 已创建
+# 2. 运行归档工具
+~/.openclaw/workspace/tools/session-archive
+
+# 可选: dry-run 模式
+~/.openclaw/workspace/tools/session-archive --dry-run
+```
+
+### 工具功能
+
+`session-archive` 自动完成:
+1. 调用 `openviking_archive_entry.py` (hardened pipeline)
+2. 分块处理，避免 embedding 超长
+3. 更新 `memory.md` 追加关键学习
+4. 生成归档报告
+
+### 前置条件
+
+```bash
+# 检查 OpenViking 服务
+systemctl --user status openviking.service
+
+# 如果未运行
+systemctl --user start openviking.service
+```
+
+### 归档内容要求
+
+**memory/YYYY-MM-DD.md 必须包含**:
+- `## Summary` - 会话摘要
+- `## Decisions` - 关键决策
+- `## Keywords` - 检索关键词
+
+**可选**:
+- `## Key Artifacts` - 关键文件
+- `## Open Questions` - 未解决问题
+- `## Next Actions` - 下一步行动
+
+### 禁止行为
+
+- ❌ 直接 curl 存储 (绕过分块逻辑)
+- ❌ 跳过 session-archive 工具
+- ❌ 不创建 memory/YYYY-MM-DD.md 就归档
+
+---
+Added: 2026-03-05 17:40 CST
