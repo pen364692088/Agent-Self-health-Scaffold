@@ -226,7 +226,7 @@ def phase_testbot_e2e(phase_dir, repo_path, timeout=600):
     # Run testbot PR subset
     raw_log.append("=== Testbot E2E (PR subset) ===")
     result = run_command(
-        ["python", "scripts/run_testbot_scenarios.py", "--subset", "pr"],
+        ["python3", "scripts/run_testbot_scenarios.py", "--subset", "pr"],
         cwd=repo_path,
         timeout=timeout
     )
@@ -290,7 +290,7 @@ def phase_hard_gate(phase_dir, repo_path, timeout=300):
     # Run hard gate eval
     raw_log.append("=== Hard Gate Evaluation ===")
     result = run_command(
-        ["python", "scripts/mvp11_hard_gate_eval.py"],
+        ["python3", "scripts/mvp11_hard_gate_eval.py"],
         cwd=repo_path,
         timeout=timeout
     )
