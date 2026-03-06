@@ -161,6 +161,49 @@ See `POLICIES/TOOL_DELIVERY.md` for full protocol.
 
 ---
 
+## Standard Task Types
+
+CC-Godmode supports pre-defined task types with standardized workflows:
+
+### 1. project-check
+
+**Description**: Standardized project health check with artifact-first, phase-based execution.
+
+**Principles**:
+- Main session only orchestrates
+- One phase per session
+- Artifacts only (status.json + summary.md + raw.log)
+- Progress queries read status files only
+
+**Usage**:
+```bash
+# Initialize
+project-check init /path/to/repo
+
+# Auto-advance all phases
+project-check-advance <check_id> --auto-spawn
+
+# Query progress
+project-check status <check_id>
+```
+
+**Phases**:
+| Phase | Name | Timeout |
+|-------|------|---------|
+| A | Repo Snapshot | 60s |
+| B | Fast Tests | 300s |
+| C | Testbot E2E | 600s |
+| D | Hard Gate | 300s |
+| E | Aggregation | 60s |
+
+**Output**:
+- `artifacts/project_check/<check_id>/final/FINAL_CHECK_REPORT.md`
+- `artifacts/project_check/<check_id>/final/one_liner.txt`
+
+**See**: `templates/cc-godmode/project_check_task.md` for full specification.
+
+---
+
 ## Warnings
 
 This is a powerful autonomous system. Start with simple goals and gradually increase complexity as you gain confidence in the system's capabilities.
