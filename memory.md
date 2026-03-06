@@ -845,3 +845,141 @@ inflight → spawn → processed
 └── templates/
 ```
 
+
+---
+
+## GitHub Actions YAML/Shell 冲突模式 (2026-03-05)
+
+### 问题
+GitHub Actions `run: |` 块中的 Python 多行字符串导致语法错误。
+
+### 根因
+1. **`python -c "..."`**: `-c` 参数只接受单行字符串，多行会报错
+2. **heredoc `<< 'PY'`**: 结束标记必须顶格，但 YAML 要求统一缩进 → 冲突
+
+### 解决方案
+**提取到独立脚本文件**，避免 YAML/shell 嵌套冲突：
+```
+scripts/ci/
+├── mvp11_print_pointers.py
+├── mvp9_analyze_failures.py
+└── mvp9_check_threshold.py
+```
+
+### 规则
+- ❌ 不要在 YAML `run: |` 块中使用 `python -c "..."` 多行
+- ❌ 不要在 YAML `run: |` 块中使用 heredoc
+- ✅ 提取到 `scripts/ci/` 目录下的独立 Python 文件
+
+---
+Added: 2026-03-05 16:25 CST
+
+---
+
+## 2026-03-05: Testbot 高杀伤场景包 + CI 集成
+
+### 核心成果
+
+1. **5 个高杀伤场景**
+   - `governor_override_jailbreak` - Governor 不可绕过测试
+   - `nondeterminism_injection_random_path` - 随机路径可回放测试
+   - `tool_loop_bait_and_budget` - 工具循环与资源预算测试
+   - `long_drift_identity_invariants` - 长对话漂移测试 (20+ turns)
+   - `goodhart_collapse_pressure` - 反塌缩压力测试
+
+2. **断言分层架构**
+   - HARD assertions: 不可退让（P0）
+   - SOFT assertions: Intent-based matching
+
+3. **CI 集成**
+   - PR subset: 2 个短场景
+   - Nightly subset: 完整 5 个
+   - P0 风险检测 + 告警
+
+### 关键文件
+
+- `tests/testbot/scenarios/*.json`
+- `emotiond/testbot/assertions.py`
+- `scripts/run_highvalue_scenarios.py`
+- `docs/runbooks/TESTBOT_FAILURE_RUNBOOK.md`
+
+### 失败分级
+
+| 级别 | 触发条件 | 处置 |
+|------|---------|------|
+| P0 | replay mismatch, governor override, 断言器回归 | 立即阻断 |
+| P1 | tool-loop 不收敛, 长对话漂移 | 24h 内修复 |
+| P2 | 指标轻微抖动 | 观察 |
+
+---
+Added: 2026-03-05 17:20 CST
+
+---
+
+## GitHub Actions YAML Syntax Fixes (2026-03-05)
+
+### 常见 YAML 语法雷区
+
+| 问题 | 症状 | 修复 |
+|------|------|------|
+| `**` glob 未引用 | parse error | `path: "artifacts/**"` |
+| heredoc 无缩进 | 被解析为新键 | 提取到独立脚本 |
+| 多行 `python3 -c "..."` | 引号/转义冲突 | 用脚本或 heredoc + 缩进 |
+
+### 最佳实践
+1. 多行 Python 代码 → 提取到 `scripts/` 目录
+2. Glob patterns → 始终用引号包裹
+3. 本地验证：`python3 -c "import yaml; yaml.safe_load(open('workflow.yml'))"`
+
+---
+Added: 2026-03-05 18:29 CST
+
+---
+
+## 2026-03-06: SRAP Phase A+B 完成 + Shadow Mode 启动
+
+### 核心成果
+
+**协议实施完成**:
+- Phase A 验证质量: 149 tests (敌对 + E2E + FP/FN)
+- Phase B Shadow Mode: 50 tests
+- SRAP 集成到 emotiond-enforcer hook
+- Shadow Mode 正式启动
+
+### 关键决策
+
+1. **统计口径修正**: Phase A = 149 tests (非 101)
+2. **测试数据隔离**: 17 条测试数据已归档
+3. **环境变量配置**: 通过 systemd 配置，避免 .bashrc 污染
+4. **默认 mode 安全**: interpreted (非 numeric)
+
+### 集成验证
+
+```
+[emotiond-bridge] Self-report contract generated: mode=interpreted, allowed_claims=8
+```
+
+### Phase C 准入标准
+
+| 指标 | 目标 |
+|------|------|
+| violation_rate | <5% |
+| false_positive | <2% |
+| false_negative | <3% |
+| numeric_leak | 0 |
+| 样本量 | ≥200 |
+
+### 关键文件
+
+- `emotiond/self_report_check.py` - CLI wrapper
+- `emotiond-enforcer/handler.js` - Hook 集成
+- `artifacts/self_report/shadow_log.jsonl` - Shadow 日志
+- `SRAP_MONITORING_GUIDE.md` - 监控指南
+
+### 工具
+
+- `~/.openclaw/workspace/tools/srap-daily-report` - 每日报告
+- `~/.openclaw/workspace/tools/srap-start-shadow` - 启动脚本
+
+---
+Added: 2026-03-06 01:24 CST

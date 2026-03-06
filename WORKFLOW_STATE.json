@@ -1,29 +1,25 @@
 {
-  "active": true,
+  "active": false,
   "workflow_type": "serial",
-  "workflow_id": "e2e_latency_v2",
-  "rev": 3,
+  "created_at": "2026-03-06T00:12:00",
+  "completed_at": "2026-03-06T01:05:00",
+  "phase": "B",
   "steps": [
     {
-      "id": "step_a",
-      "task": "E2E test step",
-      "model": "test-model",
-      "run_id": "e2e_v2_run",
+      "id": "phase_b_shadow",
+      "task": "Shadow Mode Implementation",
+      "model": "baiduqianfancodingplan/qianfan-code-latest",
       "status": "done",
-      "completed_at": "2026-03-05T11:58:00.147077",
-      "advance_processed": true,
-      "attempts": 1,
-      "advance_inflight": null
+      "run_id": "da478cdb-cfbd-472d-adfe-e6d287fd7373",
+      "result": "50 tests passed"
     },
     {
-      "id": "step_b",
-      "task": "Next step",
-      "model": "test-model",
-      "run_id": "auto_6dba9adc",
-      "status": "running",
-      "attempts": 1,
-      "spawned_at": "2026-03-05T11:58:00.149049"
+      "id": "srap_integration",
+      "task": "SRAP Integration into emotiond-enforcer",
+      "model": "baiduqianfancodingplan/qianfan-code-latest",
+      "status": "done",
+      "run_id": "b9af0d6d-0f8f-484d-9277-7d2be9f091e3",
+      "result": "CLI wrapper + hook integration + shadow logging"
     }
-  ],
-  "updated_at": "2026-03-05T11:58:00.149752"
+  ]
 }
