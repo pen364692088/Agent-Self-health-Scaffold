@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "phase_status.v1",
+  "title": "Phase Status",
+  "description": "Status output from a single phase execution",
+  "type": "object",
+  "required": ["phase", "state", "ok", "started_at"],
+  "properties": {
+    "phase": { "type": "string" },
+    "state": { "type": "string", "enum": ["pending", "running", "done", "failed", "skipped"] },
+    "ok": { "type": "boolean" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "properties": {
+        "summary": { "type": "string" },
+        "raw_log": { "type": "string" }
+      }
+    },
+    "next_action": { "type": "string" },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

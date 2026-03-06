@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "project_check_manifest.v1",
+  "title": "Project Check Manifest",
+  "description": "Manifest for project check pipeline",
+  "type": "object",
+  "required": ["check_id", "phases", "repo", "created_at"],
+  "properties": {
+    "check_id": {
+      "type": "string",
+      "description": "Unique identifier for this check run"
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "entrypoint"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "entrypoint": { "type": "string" },
+          "timeout": { "type": "integer", "default": 300 },
+          "depends_on": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "repo": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "branch": { "type": "string" },
+        "commit": { "type": "string" }
+      }
+    },
+    "artifacts_dir": {
+      "type": "string",
+      "description": "Directory for phase outputs"
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "stop_on_failure": { "type": "boolean", "default": true }
+  }
+}

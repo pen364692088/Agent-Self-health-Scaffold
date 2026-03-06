@@ -1,0 +1,46 @@
+{
+  "check_id": "check_YYYYMMDD_HHMMSS_xxxxxxxx",
+  "phases": [
+    {
+      "id": "phase_a_repo",
+      "name": "Repo Snapshot",
+      "entrypoint": "project-check-phase repo-snapshot",
+      "timeout": 60
+    },
+    {
+      "id": "phase_b_tests",
+      "name": "Fast Tests",
+      "entrypoint": "project-check-phase fast-tests",
+      "timeout": 300
+    },
+    {
+      "id": "phase_c_testbot",
+      "name": "Conversation E2E",
+      "entrypoint": "project-check-phase testbot-e2e",
+      "timeout": 600,
+      "depends_on": ["phase_b_tests"]
+    },
+    {
+      "id": "phase_d_gate",
+      "name": "Replay + Hard Gate",
+      "entrypoint": "project-check-phase hard-gate",
+      "timeout": 300,
+      "depends_on": ["phase_c_testbot"]
+    },
+    {
+      "id": "phase_e_final",
+      "name": "Final Aggregation",
+      "entrypoint": "project-check-phase aggregate",
+      "timeout": 60,
+      "depends_on": ["phase_d_gate"]
+    }
+  ],
+  "repo": {
+    "path": "/path/to/repo",
+    "branch": "feature-branch",
+    "commit": "abc123def456"
+  },
+  "artifacts_dir": "~/.openclaw/workspace/artifacts/project_check/check_YYYYMMDD_HHMMSS_xxxxxxxx",
+  "created_at": "2026-03-06T06:00:00Z",
+  "stop_on_failure": true
+}

@@ -1,0 +1,497 @@
+#!/usr/bin/env python3
+"""
+Project Check Phase Worker
+
+Executes a single phase and produces artifacts:
+- status.json
+- summary.md  
+- raw.log
+
+Usage:
+  project-check-phase <check_id> <phase_id>
+  project-check-phase repo-snapshot    # Standalone phase
+  project-check-phase --health
+"""
+
+import sys
+import json
+import subprocess
+import argparse
+from datetime import datetime
+from pathlib import Path
+
+ARTIFACTS_BASE = Path.home() / ".openclaw" / "workspace" / "artifacts" / "project_check"
+
+
+def run_command(cmd, cwd=None, timeout=300):
+    """Run command and capture output."""
+    result = {
+        "returncode": None,
+        "stdout": "",
+        "stderr": "",
+        "timed_out": False
+    }
+    
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        result["returncode"] = proc.returncode
+        result["stdout"] = proc.stdout
+        result["stderr"] = proc.stderr
+    except subprocess.TimeoutExpired:
+        result["timed_out"] = True
+    
+    return result
+
+
+def phase_repo_snapshot(phase_dir, repo_path, timeout=60):
+    """Phase A: Repo Snapshot."""
+    started = datetime.utcnow()
+    raw_log = []
+    metrics = {}
+    
+    # Check git status
+    raw_log.append("=== Git Status ===")
+    result = run_command(["git", "status", "--short"], cwd=repo_path, timeout=30)
+    raw_log.append(result["stdout"])
+    raw_log.append(result["stderr"])
+    metrics["dirty_files"] = len([l for l in result["stdout"].strip().split("\n") if l])
+    
+    # Check branch/commit
+    raw_log.append("\n=== Branch/Commit ===")
+    result = run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_path)
+    branch = result["stdout"].strip()
+    raw_log.append(f"Branch: {branch}")
+    
+    result = run_command(["git", "rev-parse", "HEAD"], cwd=repo_path)
+    commit = result["stdout"].strip()[:12]
+    raw_log.append(f"Commit: {commit}")
+    
+    # Check critical paths
+    raw_log.append("\n=== Critical Paths ===")
+    critical_paths = [".github/workflows", "tests", "scripts"]
+    missing = []
+    for p in critical_paths:
+        path = Path(repo_path) / p
+        exists = path.exists()
+        raw_log.append(f"{p}: {'✅' if exists else '❌'}")
+        if not exists:
+            missing.append(p)
+    metrics["missing_paths"] = missing
+    
+    # Determine OK
+    ok = len(missing) == 0 and metrics["dirty_files"] < 100  # Allow some dirty files
+    
+    # Write artifacts
+    finished = datetime.utcnow()
+    
+    status = {
+        "phase": "phase_a_repo",
+        "state": "done",
+        "ok": ok,
+        "started_at": started.isoformat() + "Z",
+        "finished_at": finished.isoformat() + "Z",
+        "inputs": {"repo_path": repo_path},
+        "metrics": metrics,
+        "artifacts": {"summary": "summary.md", "raw_log": "raw.log"},
+        "next_action": "phase_b_tests" if ok else "STOP: repo issues"
+    }
+    
+    if not ok:
+        status["error"] = {
+            "code": "REPO_ISSUES",
+            "message": f"Missing paths: {missing}, dirty files: {metrics['dirty_files']}"
+        }
+    
+    summary = f"""# Repo Snapshot
+
+**Status**: {'✅ OK' if ok else '❌ ISSUES FOUND'}
+
+## Details
+
+- Branch: `{branch}`
+- Commit: `{commit}`
+- Dirty files: {metrics['dirty_files']}
+- Missing paths: {missing or 'None'}
+
+## Raw Log
+
+See `raw.log`
+"""
+    
+    with open(phase_dir / "raw.log", "w") as f:
+        f.write("\n".join(raw_log))
+    
+    with open(phase_dir / "summary.md", "w") as f:
+        f.write(summary)
+    
+    with open(phase_dir / "status.json", "w") as f:
+        json.dump(status, f, indent=2)
+    
+    return status
+
+
+def phase_fast_tests(phase_dir, repo_path, timeout=300):
+    """Phase B: Fast Tests."""
+    started = datetime.utcnow()
+    raw_log = []
+    metrics = {}
+    
+    # Run pytest
+    raw_log.append("=== Fast Tests ===")
+    result = run_command(
+        ["pytest", "-q", "tests/mvp11", "tests/testbot", "--tb=no", "-q"],
+        cwd=repo_path,
+        timeout=timeout
+    )
+    raw_log.append(result["stdout"])
+    raw_log.append(result["stderr"])
+    
+    # Parse results
+    stdout = result["stdout"]
+    if "passed" in stdout:
+        # Extract counts
+        import re
+        match = re.search(r"(\d+) passed", stdout)
+        metrics["tests_passed"] = int(match.group(1)) if match else 0
+        match = re.search(r"(\d+) failed", stdout)
+        metrics["tests_failed"] = int(match.group(1)) if match else 0
+        match = re.search(r"(\d+) error", stdout)
+        metrics["tests_error"] = int(match.group(1)) if match else 0
+    else:
+        metrics["tests_passed"] = 0
+        metrics["tests_failed"] = 0
+        metrics["tests_error"] = 0 if result["returncode"] == 0 else 1
+    
+    ok = metrics["tests_failed"] == 0 and metrics["tests_error"] == 0 and result["returncode"] == 0
+    
+    finished = datetime.utcnow()
+    
+    status = {
+        "phase": "phase_b_tests",
+        "state": "done",
+        "ok": ok,
+        "started_at": started.isoformat() + "Z",
+        "finished_at": finished.isoformat() + "Z",
+        "inputs": {"repo_path": repo_path},
+        "metrics": metrics,
+        "artifacts": {"summary": "summary.md", "raw_log": "raw.log"},
+        "next_action": "phase_c_testbot" if ok else "STOP: tests failed"
+    }
+    
+    if not ok:
+        status["error"] = {
+            "code": "TEST_FAILURE",
+            "message": f"Failed: {metrics['tests_failed']}, Errors: {metrics['tests_error']}"
+        }
+    
+    summary = f"""# Fast Tests
+
+**Status**: {'✅ PASS' if ok else '❌ FAIL'}
+
+## Results
+
+- Passed: {metrics.get('tests_passed', 0)}
+- Failed: {metrics.get('tests_failed', 0)}
+- Errors: {metrics.get('tests_error', 0)}
+
+## Raw Log
+
+See `raw.log`
+"""
+    
+    with open(phase_dir / "raw.log", "w") as f:
+        f.write("\n".join(raw_log))
+    
+    with open(phase_dir / "summary.md", "w") as f:
+        f.write(summary)
+    
+    with open(phase_dir / "status.json", "w") as f:
+        json.dump(status, f, indent=2)
+    
+    return status
+
+
+def phase_testbot_e2e(phase_dir, repo_path, timeout=600):
+    """Phase C: Testbot E2E."""
+    started = datetime.utcnow()
+    raw_log = []
+    metrics = {}
+    
+    # Run testbot PR subset
+    raw_log.append("=== Testbot E2E (PR subset) ===")
+    result = run_command(
+        ["python", "scripts/run_testbot_scenarios.py", "--subset", "pr"],
+        cwd=repo_path,
+        timeout=timeout
+    )
+    raw_log.append(result["stdout"])
+    raw_log.append(result["stderr"])
+    
+    ok = result["returncode"] == 0
+    metrics["exit_code"] = result["returncode"]
+    
+    finished = datetime.utcnow()
+    
+    status = {
+        "phase": "phase_c_testbot",
+        "state": "done",
+        "ok": ok,
+        "started_at": started.isoformat() + "Z",
+        "finished_at": finished.isoformat() + "Z",
+        "inputs": {"repo_path": repo_path, "subset": "pr"},
+        "metrics": metrics,
+        "artifacts": {"summary": "summary.md", "raw_log": "raw.log"},
+        "next_action": "phase_d_gate" if ok else "STOP: testbot failed"
+    }
+    
+    if not ok:
+        status["error"] = {
+            "code": "TESTBOT_FAILURE",
+            "message": f"Exit code: {result['returncode']}"
+        }
+    
+    summary = f"""# Testbot E2E
+
+**Status**: {'✅ PASS' if ok else '❌ FAIL'}
+
+## Subset
+
+PR subset (2 scenarios)
+
+## Raw Log
+
+See `raw.log`
+"""
+    
+    with open(phase_dir / "raw.log", "w") as f:
+        f.write("\n".join(raw_log))
+    
+    with open(phase_dir / "summary.md", "w") as f:
+        f.write(summary)
+    
+    with open(phase_dir / "status.json", "w") as f:
+        json.dump(status, f, indent=2)
+    
+    return status
+
+
+def phase_hard_gate(phase_dir, repo_path, timeout=300):
+    """Phase D: Hard Gate Evaluation."""
+    started = datetime.utcnow()
+    raw_log = []
+    metrics = {}
+    
+    # Run hard gate eval
+    raw_log.append("=== Hard Gate Evaluation ===")
+    result = run_command(
+        ["python", "scripts/mvp11_hard_gate_eval.py"],
+        cwd=repo_path,
+        timeout=timeout
+    )
+    raw_log.append(result["stdout"])
+    raw_log.append(result["stderr"])
+    
+    ok = result["returncode"] == 0
+    metrics["exit_code"] = result["returncode"]
+    
+    finished = datetime.utcnow()
+    
+    status = {
+        "phase": "phase_d_gate",
+        "state": "done",
+        "ok": ok,
+        "started_at": started.isoformat() + "Z",
+        "finished_at": finished.isoformat() + "Z",
+        "inputs": {"repo_path": repo_path},
+        "metrics": metrics,
+        "artifacts": {"summary": "summary.md", "raw_log": "raw.log"},
+        "next_action": "phase_e_final" if ok else "STOP: gate failed"
+    }
+    
+    if not ok:
+        status["error"] = {
+            "code": "GATE_FAILURE",
+            "message": f"Exit code: {result['returncode']}"
+        }
+    
+    summary = f"""# Hard Gate Evaluation
+
+**Status**: {'✅ PASS' if ok else '❌ FAIL'}
+
+## Raw Log
+
+See `raw.log`
+"""
+    
+    with open(phase_dir / "raw.log", "w") as f:
+        f.write("\n".join(raw_log))
+    
+    with open(phase_dir / "summary.md", "w") as f:
+        f.write(summary)
+    
+    with open(phase_dir / "status.json", "w") as f:
+        json.dump(status, f, indent=2)
+    
+    return status
+
+
+def phase_aggregate(phase_dir, artifacts_dir, repo_path, timeout=60):
+    """Phase E: Final Aggregation."""
+    import json
+    from pathlib import Path
+    
+    started = datetime.utcnow()
+    raw_log = []
+    
+    # Read all phase statuses
+    manifest_path = artifacts_dir / "manifest.json"
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    
+    phase_statuses = {}
+    for phase in manifest["phases"]:
+        phase_id = phase["id"]
+        status_path = artifacts_dir / phase_id / "status.json"
+        if status_path.exists():
+            with open(status_path) as f:
+                phase_statuses[phase_id] = json.load(f)
+    
+    raw_log.append("=== Phase Statuses ===")
+    raw_log.append(json.dumps(phase_statuses, indent=2))
+    
+    # Determine overall OK
+    all_ok = all(s.get("ok", False) for s in phase_statuses.values())
+    
+    # Generate final report
+    final_dir = artifacts_dir / "final"
+    final_dir.mkdir(parents=True, exist_ok=True)
+    
+    final_status = {
+        "check_id": manifest["check_id"],
+        "ok": all_ok,
+        "repo": manifest["repo"],
+        "phases": phase_statuses,
+        "started_at": started.isoformat() + "Z",
+        "finished_at": datetime.utcnow().isoformat() + "Z"
+    }
+    
+    one_liner = "✅ ALL CHECKS PASSED" if all_ok else "❌ CHECKS FAILED"
+    
+    report = f"""# Project Check Report
+
+**Status**: {one_liner}
+
+**Check ID**: {manifest['check_id']}
+
+**Repo**: {manifest['repo'].get('path', 'N/A')}
+**Branch**: {manifest['repo'].get('branch', 'N/A')}
+**Commit**: {manifest['repo'].get('commit', 'N/A')}
+
+## Phase Results
+
+"""
+    for phase_id, status in phase_statuses.items():
+        icon = "✅" if status.get("ok") else "❌"
+        report += f"- {icon} **{phase_id}**: {status.get('state', 'unknown')}\n"
+    
+    # Write final artifacts
+    with open(final_dir / "FINAL_CHECK_STATUS.json", "w") as f:
+        json.dump(final_status, f, indent=2)
+    
+    with open(final_dir / "FINAL_CHECK_REPORT.md", "w") as f:
+        f.write(report)
+    
+    with open(final_dir / "one_liner.txt", "w") as f:
+        f.write(one_liner)
+    
+    with open(phase_dir / "raw.log", "w") as f:
+        f.write("\n".join(raw_log))
+    
+    with open(phase_dir / "summary.md", "w") as f:
+        f.write(report)
+    
+    status = {
+        "phase": "phase_e_final",
+        "state": "done",
+        "ok": True,
+        "started_at": started.isoformat() + "Z",
+        "finished_at": datetime.utcnow().isoformat() + "Z",
+        "artifacts": {
+            "final_status": "final/FINAL_CHECK_STATUS.json",
+            "report": "final/FINAL_CHECK_REPORT.md",
+            "one_liner": "final/one_liner.txt"
+        }
+    }
+    
+    with open(phase_dir / "status.json", "w") as f:
+        json.dump(status, f, indent=2)
+    
+    return status
+
+
+def cmd_health(args):
+    """Health check."""
+    print(json.dumps({"status": "healthy", "version": "1.0.0"}))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Project Check Phase Worker")
+    parser.add_argument("--health", action="store_true", help="Health check")
+    parser.add_argument("check_id", nargs="?", help="Check ID")
+    parser.add_argument("phase_id", nargs="?", help="Phase ID")
+    
+    args = parser.parse_args()
+    
+    if args.health:
+        cmd_health(args)
+        return
+    
+    if not args.check_id or not args.phase_id:
+        print("ERROR: check_id and phase_id required", file=sys.stderr)
+        sys.exit(1)
+    
+    # Load manifest
+    manifest_path = ARTIFACTS_BASE / args.check_id / "manifest.json"
+    if not manifest_path.exists():
+        print(f"ERROR: Check not found: {args.check_id}", file=sys.stderr)
+        sys.exit(1)
+    
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    
+    artifacts_dir = Path(manifest["artifacts_dir"])
+    phase_dir = artifacts_dir / args.phase_id
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    repo_path = manifest["repo"]["path"]
+    
+    # Execute phase
+    phase_handlers = {
+        "phase_a_repo": lambda: phase_repo_snapshot(phase_dir, repo_path),
+        "phase_b_tests": lambda: phase_fast_tests(phase_dir, repo_path),
+        "phase_c_testbot": lambda: phase_testbot_e2e(phase_dir, repo_path),
+        "phase_d_gate": lambda: phase_hard_gate(phase_dir, repo_path),
+        "phase_e_final": lambda: phase_aggregate(phase_dir, artifacts_dir, repo_path),
+    }
+    
+    handler = phase_handlers.get(args.phase_id)
+    if not handler:
+        print(f"ERROR: Unknown phase: {args.phase_id}", file=sys.stderr)
+        sys.exit(1)
+    
+    print(f"Running phase: {args.phase_id}")
+    status = handler()
+    
+    print(f"Phase complete: {status['state']}")
+    print(f"OK: {status['ok']}")
+    
+    if not status["ok"]:
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

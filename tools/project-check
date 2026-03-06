@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+"""
+Project Check - Main Entry Point
+
+Usage:
+  project-check init <repo_path>           # Create new manifest
+  project-check next <check_id>            # Get next phase to run
+  project-check spawn <check_id> [phase]   # Spawn phase worker
+  project-check status <check_id>          # Query status
+  project-check report <check_id>          # Generate final report
+  project-check list                       # List all checks
+  project-check --health                   # Health check
+"""
+
+import sys
+import json
+import os
+import subprocess
+import uuid
+import argparse
+from datetime import datetime
+from pathlib import Path
+
+ARTIFACTS_BASE = Path.home() / ".openclaw" / "workspace" / "artifacts" / "project_check"
+
+DEFAULT_PHASES = [
+    {
+        "id": "phase_a_repo",
+        "name": "Repo Snapshot",
+        "entrypoint": "project-check-phase repo-snapshot",
+        "timeout": 60
+    },
+    {
+        "id": "phase_b_tests",
+        "name": "Fast Tests",
+        "entrypoint": "project-check-phase fast-tests",
+        "timeout": 300
+    },
+    {
+        "id": "phase_c_testbot",
+        "name": "Conversation E2E",
+        "entrypoint": "project-check-phase testbot-e2e",
+        "timeout": 600,
+        "depends_on": ["phase_b_tests"]
+    },
+    {
+        "id": "phase_d_gate",
+        "name": "Replay + Hard Gate",
+        "entrypoint": "project-check-phase hard-gate",
+        "timeout": 300,
+        "depends_on": ["phase_c_testbot"]
+    },
+    {
+        "id": "phase_e_final",
+        "name": "Final Aggregation",
+        "entrypoint": "project-check-phase aggregate",
+        "timeout": 60,
+        "depends_on": ["phase_d_gate"]
+    }
+]
+
+
+def generate_check_id():
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    short_uuid = uuid.uuid4().hex[:8]
+    return f"check_{ts}_{short_uuid}"
+
+
+def create_manifest(repo_path, phases=None, check_id=None, stop_on_failure=True):
+    if phases is None:
+        phases = DEFAULT_PHASES
+    if check_id is None:
+        check_id = generate_check_id()
+    
+    repo = {"path": repo_path}
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=repo_path, capture_output=True, text=True, check=True
+        )
+        repo["branch"] = result.stdout.strip()
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_path, capture_output=True, text=True, check=True
+        )
+        repo["commit"] = result.stdout.strip()[:12]
+    except Exception:
+        pass
+    
+    artifacts_dir = str(ARTIFACTS_BASE / check_id)
+    
+    return {
+        "check_id": check_id,
+        "phases": phases,
+        "repo": repo,
+        "artifacts_dir": artifacts_dir,
+        "created_at": datetime.utcnow().isoformat() + "Z",
+        "stop_on_failure": stop_on_failure
+    }
+
+
+def save_manifest(manifest):
+    artifacts_dir = Path(manifest["artifacts_dir"])
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = artifacts_dir / "manifest.json"
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2)
+    return manifest_path
+
+
+def read_phase_status(artifacts_dir, phase_id):
+    status_path = artifacts_dir / phase_id / "status.json"
+    if status_path.exists():
+        with open(status_path) as f:
+            return json.load(f)
+    return None
+
+
+def get_all_phase_statuses(artifacts_dir, manifest):
+    statuses = {}
+    for phase in manifest["phases"]:
+        phase_id = phase["id"]
+        status = read_phase_status(artifacts_dir, phase_id)
+        statuses[phase_id] = status
+    return statuses
+
+
+def get_next_pending_phase(manifest, artifacts_dir):
+    statuses = get_all_phase_statuses(artifacts_dir, manifest)
+    
+    for phase in manifest["phases"]:
+        phase_id = phase["id"]
+        status = statuses.get(phase_id)
+        
+        if status and status.get("state") in ["done", "failed", "skipped"]:
+            if status.get("state") == "failed" and manifest.get("stop_on_failure"):
+                return None
+            continue
+        
+        deps = phase.get("depends_on", [])
+        all_deps_done = all(
+            statuses.get(dep, {}).get("state") == "done"
+            for dep in deps
+        )
+        
+        if all_deps_done:
+            if status is None or status.get("state") == "pending":
+                return phase
+    
+    return None
+
+
+def is_check_complete(manifest, artifacts_dir):
+    statuses = get_all_phase_statuses(artifacts_dir, manifest)
+    for phase in manifest["phases"]:
+        status = statuses.get(phase["id"])
+        if status is None:
+            return False
+        if status.get("state") not in ["done", "failed", "skipped"]:
+            return False
+    return True
+
+
+def get_check_result(manifest, artifacts_dir):
+    statuses = get_all_phase_statuses(artifacts_dir, manifest)
+    all_ok = all(s.get("ok", False) for s in statuses.values() if s)
+    failed_phases = [pid for pid, s in statuses.items() if s and s.get("state") == "failed"]
+    return {
+        "check_id": manifest["check_id"],
+        "ok": all_ok,
+        "all_done": is_check_complete(manifest, artifacts_dir),
+        "failed_phases": failed_phases,
+        "phases": statuses
+    }
+
+
+def cmd_init(args):
+    manifest = create_manifest(
+        repo_path=args.repo_path,
+        stop_on_failure=not args.no_stop
+    )
+    manifest_path = save_manifest(manifest)
+    
+    print(f"✅ Created check: {manifest['check_id']}")
+    print(f"   Repo: {manifest['repo'].get('path', 'N/A')}")
+    print(f"   Branch: {manifest['repo'].get('branch', 'N/A')}")
+    print(f"   Commit: {manifest['repo'].get('commit', 'N/A')}")
+    print(f"   Phases: {len(manifest['phases'])}")
+    print()
+    print("Next step:")
+    print(f"  project-check spawn {manifest['check_id']}")
+
+
+def cmd_next(args):
+    manifest_path = ARTIFACTS_BASE / args.check_id / "manifest.json"
+    if not manifest_path.exists():
+        print(f"ERROR: Check not found: {args.check_id}", file=sys.stderr)
+        sys.exit(1)
+    
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    
+    artifacts_dir = Path(manifest["artifacts_dir"])
+    
+    if is_check_complete(manifest, artifacts_dir):
+        print("All phases complete. Generate report:")
+        print(f"  project-check report {args.check_id}")
+        return
+    
+    next_phase = get_next_pending_phase(manifest, artifacts_dir)
+    if next_phase:
+        print(f"Next phase: {next_phase['id']} - {next_phase['name']}")
+        print(f"Entrypoint: {next_phase['entrypoint']}")
+        print(f"Timeout: {next_phase.get('timeout', 300)}s")
+        print()
+        print("Spawn command:")
+        print(f"  project-check spawn {args.check_id} {next_phase['id']}")
+    else:
+        print("No more phases to run (blocked by failure or all done)")
+
+
+def cmd_spawn(args):
+    manifest_path = ARTIFACTS_BASE / args.check_id / "manifest.json"
+    if not manifest_path.exists():
+        print(f"ERROR: Check not found: {args.check_id}", file=sys.stderr)
+        sys.exit(1)
+    
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    
+    artifacts_dir = Path(manifest["artifacts_dir"])
+    
+    if args.phase:
+        phase_id = args.phase
+        phase = next((p for p in manifest["phases"] if p["id"] == phase_id), None)
+        if not phase:
+            print(f"ERROR: Phase not found: {phase_id}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        phase = get_next_pending_phase(manifest, artifacts_dir)
+        if not phase:
+            print("No phase to spawn", file=sys.stderr)
+            sys.exit(1)
+        phase_id = phase["id"]
+    
+    # Create phase directory with pending status
+    phase_dir = artifacts_dir / phase_id
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    
+    status = {
+        "phase": phase_id,
+        "state": "pending",
+        "ok": False,
+        "started_at": datetime.utcnow().isoformat() + "Z"
+    }
+    with open(phase_dir / "status.json", "w") as f:
+        json.dump(status, f, indent=2)
+    
+    # Print spawn command
+    task = f"Execute project check phase: {phase_id} - {phase['name']}. Read manifest at {manifest_path}, output to {phase_dir}"
+    
+    print("Execute this command to spawn the phase worker:")
+    print("-" * 60)
+    print(f"sessions_spawn runtime=subagent model=baiduqianfancodingplan/qianfan-code-latest task='{task}'")
+    print("-" * 60)
+    print()
+    print(f"Phase ID: {phase_id}")
+    print(f"Entrypoint: {phase['entrypoint']}")
+    print(f"Output dir: {phase_dir}")
+
+
+def cmd_status(args):
+    manifest_path = ARTIFACTS_BASE / args.check_id / "manifest.json"
+    if not manifest_path.exists():
+        print(f"ERROR: Check not found: {args.check_id}", file=sys.stderr)
+        sys.exit(1)
+    
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    
+    artifacts_dir = Path(manifest["artifacts_dir"])
+    result = get_check_result(manifest, artifacts_dir)
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(f"Check: {result['check_id']}")
+        print(f"Status: {'✅ PASS' if result['ok'] else '❌ FAIL'}")
+        print(f"Complete: {result['all_done']}")
+        print()
+        print("Phases:")
+        for phase in manifest["phases"]:
+            phase_id = phase["id"]
+            status = result["phases"].get(phase_id)
+            if status:
+                state = status.get("state", "unknown")
+                ok = "✅" if status.get("ok") else "❌" if state == "failed" else "⏳"
+                print(f"  {ok} {phase_id}: {state}")
+            else:
+                print(f"  ⏸️  {phase_id}: not started")
+
+
+def cmd_list(args):
+    if not ARTIFACTS_BASE.exists():
+        print("No checks found")
+        return
+    
+    checks = sorted(ARTIFACTS_BASE.iterdir(), key=lambda p: p.name, reverse=True)
+    
+    for check_dir in checks[:args.limit]:
+        manifest_path = check_dir / "manifest.json"
+        if manifest_path.exists():
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+            
+            result = get_check_result(manifest, check_dir)
+            status = "✅" if result["ok"] else ("❌" if result["all_done"] else "⏳")
+            
+            print(f"{status} {check_dir.name}: {manifest['repo'].get('branch', 'N/A')} @ {manifest['repo'].get('commit', 'N/A')}")
+
+
+def cmd_health(args):
+    print(json.dumps({"status": "healthy", "version": "1.0.0"}))
+
+
+def main():
+    # Handle --health before argparse
+    if "--health" in sys.argv:
+        print(json.dumps({"status": "healthy", "version": "1.0.0"}))
+        return
+    
+    parser = argparse.ArgumentParser(description="Project Check Pipeline")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    
+    p_init = subparsers.add_parser("init", help="Create new check")
+    p_init.add_argument("repo_path", help="Path to repository")
+    p_init.add_argument("--no-stop", action="store_true", help="Continue on failure")
+    p_init.set_defaults(func=cmd_init)
+    
+    p_next = subparsers.add_parser("next", help="Get next phase")
+    p_next.add_argument("check_id", help="Check ID")
+    p_next.set_defaults(func=cmd_next)
+    
+    p_spawn = subparsers.add_parser("spawn", help="Spawn phase worker")
+    p_spawn.add_argument("check_id", help="Check ID")
+    p_spawn.add_argument("phase", nargs="?", help="Phase ID (optional)")
+    p_spawn.set_defaults(func=cmd_spawn)
+    
+    p_status = subparsers.add_parser("status", help="Query status")
+    p_status.add_argument("check_id", help="Check ID")
+    p_status.add_argument("--json", action="store_true", help="JSON output")
+    p_status.set_defaults(func=cmd_status)
+    
+    p_report = subparsers.add_parser("report", help="Generate report")
+    p_report.add_argument("check_id", help="Check ID")
+    p_report.set_defaults(func=lambda args: print("TODO: implement report"))
+    
+    p_list = subparsers.add_parser("list", help="List checks")
+    p_list.add_argument("--limit", type=int, default=10, help="Max results")
+    p_list.set_defaults(func=cmd_list)
+    
+    parser.add_argument("--health", action="store_true", help="Health check")
+    
+    args = parser.parse_args()
+    
+    if args.health:
+        cmd_health(args)
+        return
+    
+    if hasattr(args, "func"):
+        args.func(args)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
