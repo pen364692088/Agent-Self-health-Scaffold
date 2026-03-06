@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""
+Gate 1 Checker - S1 Capsule Shadow Ready
+
+一次性脚本输出 Gate 1 判定结果。
+
+Usage:
+  gate1-check
+  gate1-check --json
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "context_compression"
+SHADOW_LOG = ARTIFACTS_DIR / "shadow_log.jsonl"
+BASELINE = ARTIFACTS_DIR / "S1_BASELINE_MANIFEST.json"
+
+class Gate1Checker:
+    """Gate 1 判定器"""
+    
+    def __init__(self):
+        self.total_samples = 0
+        self.buckets = {
+            "old_topic_recall": {"count": 0, "min": 15},
+            "multi_topic_switch": {"count": 0, "min": 12},
+            "with_open_loops": {"count": 0, "min": 12},
+            "post_tool_chat": {"count": 0, "min": 10},
+            "user_correction": {"count": 0, "min": 10},
+            "long_technical": {"count": 0, "min": 8}
+        }
+        self.recent_window = []
+        self.recent_window_size = 30
+        self.samples = []
+    
+    def load_data(self):
+        """加载数据"""
+        if SHADOW_LOG.exists():
+            with open(SHADOW_LOG, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        entry = json.loads(line)
+                        self.samples.append(entry)
+                        self.total_samples += 1
+                        
+                        if "bucket" in entry:
+                            bucket = entry["bucket"]
+                            if bucket in self.buckets:
+                                self.buckets[bucket]["count"] += 1
+                        
+                        self.recent_window.append(entry)
+                        if len(self.recent_window) > self.recent_window_size:
+                            self.recent_window.pop(0)
+    
+    def check_conditions(self):
+        """检查所有条件"""
+        conditions = {
+            "total_samples": {
+                "required": 80,
+                "actual": self.total_samples,
+                "passed": self.total_samples >= 80
+            },
+            "bucket_coverage": {
+                "required": "all buckets covered",
+                "actual": {b: f"{self.buckets[b]['count']}/{self.buckets[b]['min']}" for b in self.buckets},
+                "passed": all(self.buckets[b]["count"] >= self.buckets[b]["min"] for b in self.buckets),
+                "failed_buckets": [b for b in self.buckets if self.buckets[b]["count"] < self.buckets[b]["min"]]
+            },
+            "recent_window_size": {
+                "required": 30,
+                "actual": len(self.recent_window),
+                "passed": len(self.recent_window) >= 30
+            },
+            "recent_window_metrics": {
+                "required": "metrics passed",
+                "actual": "insufficient samples" if len(self.recent_window) < 30 else "N/A",
+                "passed": False if len(self.recent_window) < 30 else None
+            }
+        }
+        
+        return conditions
+    
+    def check_gate1(self):
+        """检查 Gate 1"""
+        conditions = self.check_conditions()
+        
+        all_passed = all(c["passed"] for c in conditions.values())
+        blockers = [k for k, v in conditions.items() if not v["passed"]]
+        
+        return {
+            "gate": "Gate 1 - Capsule Shadow Ready",
+            "status": "PASS" if all_passed else "FAIL",
+            "all_conditions_met": all_passed,
+            "conditions": conditions,
+            "blockers": blockers,
+            "checked_at": datetime.now().isoformat()
+        }
+    
+    def render(self, json_output=False):
+        """渲染结果"""
+        self.load_data()
+        result = self.check_gate1()
+        
+        if json_output:
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        else:
+            self._render_text(result)
+    
+    def _render_text(self, result):
+        """文本渲染"""
+        status_icon = "✅" if result["status"] == "PASS" else "❌"
+        
+        print("╔════════════════════════════════════════════════════════════╗")
+        print(f"║  Gate 1 Check: {result['gate']}")
+        print("╚════════════════════════════════════════════════════════════╝")
+        print()
+        print(f"Status: {status_icon} {result['status']}")
+        print()
+        
+        print("CONDITIONS")
+        print("─" * 50)
+        
+        for name, cond in result["conditions"].items():
+            icon = "✅" if cond["passed"] else "❌"
+            print(f"  {icon} {name}")
+            print(f"      Required: {cond['required']}")
+            print(f"      Actual: {cond['actual']}")
+        
+        print()
+        
+        if result["blockers"]:
+            print("BLOCKERS")
+            print("─" * 50)
+            for blocker in result["blockers"]:
+                print(f"  • {blocker}")
+            
+            # 详细说明
+            if "bucket_coverage" in result["blockers"]:
+                failed = result["conditions"]["bucket_coverage"]["failed_buckets"]
+                if failed:
+                    print(f"    Failed buckets: {', '.join(failed)}")
+        else:
+            print("✅ Gate 1 PASSED - Ready for Light Enforced Step A")
+        
+        print()
+        print(f"Checked at: {result['checked_at']}")
+
+def main():
+    parser = argparse.ArgumentParser(description="Gate 1 Checker")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    
+    args = parser.parse_args()
+    
+    checker = Gate1Checker()
+    checker.render(json_output=args.json)
+    
+    # Exit code
+    result = checker.check_gate1()
+    sys.exit(0 if result["status"] == "PASS" else 1)
+
+if __name__ == "__main__":
+    main()
