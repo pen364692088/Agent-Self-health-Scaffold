@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""
+write-policy-check - 检查写入操作是否符合策略
+
+策略：
+- ~/.openclaw/** 下的文件必须通过 safe-write/safe-replace 写入
+- 禁止使用 edit 工具直接修改受保护路径
+
+Usage:
+  write-policy-check --path <path> --method <method>
+  write-policy-check --report <file>
+
+检查结果：
+- ALLOW: 允许的写入方式
+- BLOCK: 禁止的写入方式
+"""
+
+import sys
+import json
+from pathlib import Path
+from datetime import datetime
+
+OPENCLAW_ROOT = Path.home() / ".openclaw"
+
+ALLOWED_METHODS = [
+    "safe-write",
+    "safe-replace",
+    "exec+heredoc",
+    "exec+sed",
+    "exec+python",
+    "python_rewrite",
+]
+
+BLOCKED_METHODS = [
+    "edit",
+    "edit_tool",
+    "write_tool",  # 对受保护路径禁用
+]
+
+def is_protected_path(path: Path) -> bool:
+    """检查是否是受保护路径"""
+    try:
+        resolved = path.resolve()
+        return str(resolved).startswith(str(OPENCLAW_ROOT.resolve()))
+    except:
+        return False
+
+def check_policy(path: str, method: str) -> dict:
+    """检查写入策略"""
+    path = Path(path).expanduser().resolve()
+    protected = is_protected_path(path)
+    
+    if not protected:
+        return {
+            "status": "ALLOW",
+            "reason": "not_protected_path",
+            "path": str(path),
+            "method": method
+        }
+    
+    method_lower = method.lower()
+    
+    # 检查是否是禁止的方法
+    for blocked in BLOCKED_METHODS:
+        if blocked in method_lower:
+            return {
+                "status": "BLOCK",
+                "reason": f"blocked_method:{method}",
+                "path": str(path),
+                "method": method,
+                "suggestion": "Use safe-write or safe-replace instead"
+            }
+    
+    # 检查是否是允许的方法
+    for allowed in ALLOWED_METHODS:
+        if allowed in method_lower:
+            return {
+                "status": "ALLOW",
+                "reason": f"allowed_method:{method}",
+                "path": str(path),
+                "method": method
+            }
+    
+    # 未知方法，警告但不阻止
+    return {
+        "status": "WARN",
+        "reason": f"unknown_method:{method}",
+        "path": str(path),
+        "method": method,
+        "suggestion": "Consider using safe-write or safe-replace"
+    }
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(0)
+    
+    # 解析参数
+    path = None
+    method = None
+    report_file = None
+    
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == "--path":
+            path = sys.argv[i + 1]
+            i += 2
+        elif arg == "--method":
+            method = sys.argv[i + 1]
+            i += 2
+        elif arg == "--report":
+            report_file = sys.argv[i + 1]
+            i += 2
+        else:
+            i += 1
+    
+    if path and method:
+        result = check_policy(path, method)
+        print(json.dumps(result, indent=2))
+        sys.exit(0 if result["status"] != "BLOCK" else 1)
+    
+    if report_file:
+        # 读取报告文件并检查
+        with open(report_file, 'r') as f:
+            report = json.load(f)
+        
+        violations = []
+        for op in report.get("operations", []):
+            result = check_policy(op.get("path", ""), op.get("method", ""))
+            if result["status"] == "BLOCK":
+                violations.append(result)
+        
+        if violations:
+            print(f"❌ {len(violations)} policy violation(s) found:")
+            for v in violations:
+                print(f"  - {v['path']}: {v['reason']}")
+            sys.exit(1)
+        else:
+            print("✅ All operations comply with write policy")
+            sys.exit(0)
+    
+    print(__doc__)
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()

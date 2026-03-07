@@ -147,3 +147,55 @@ safe-message --task-id <id> --to user --message "实现完成"
 journalctl --user -u callback-worker --since "5 min ago"
 ```
 
+### 9) ~/.openclaw/ 写入策略 (强制) ⭐⭐⭐⭐⭐
+
+**核心约束**：凡是 `~/.openclaw/**` 的写入，不允许 agent 自由选择编辑策略。必须走受控写入通道。
+
+**禁止的方法**：
+- ❌ `edit` 工具（直接文本替换）
+- ❌ `write` 工具（对受保护路径）
+
+**允许的方法**：
+- ✅ `safe-write` - 完整文件写入
+- ✅ `safe-replace` - 精确内容替换
+- ✅ `exec + heredoc` - shell 写入
+- ✅ `exec + sed` - 流式替换
+- ✅ `exec + python` - Python 脚本重写
+
+**工具位置**：
+```
+tools/safe-write        # 写入整个文件
+tools/safe-replace      # 替换指定内容
+tools/write-policy-check # 策略检查
+```
+
+**使用示例**：
+
+```bash
+# 写入整个文件
+safe-write ~/.openclaw/workspace/SOUL.md "new content"
+
+# 替换内容
+safe-replace ~/.openclaw/workspace/TOOLS.md "| old |" "| new |"
+
+# heredoc 写入
+cat > ~/.openclaw/config.json << 'EOF'
+{"key": "value"}
+EOF
+
+# sed 替换
+sed -i 's/old/new/g' ~/.openclaw/workspace/TOOLS.md
+```
+
+**为什么必须这样做**：
+1. `edit` 工具依赖精确字符串匹配，稍有变化就失败
+2. 表格、缩进、空格变化会导致替换失败
+3. 多次提醒仍然复发，说明口头约定无效
+4. 必须把规则变成系统约束
+
+**验收要求**：
+每次修改 `~/.openclaw/` 下的文件后，必须汇报：
+- 修改路径
+- 使用的方法（safe-write/safe-replace/exec）
+- 是否命中受保护路径
+
