@@ -1,0 +1,355 @@
+{
+  "metadata": {
+    "sample_id": "sample_real_main_agent_old_topic_recall_7b8bcc44",
+    "session_id": "telegram:8420019401:2026-03-06",
+    "source_type": "real_main_agent",
+    "bucket_tags": [
+      "old_topic_recall"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "turn_count": 20,
+    "created_at": "2026-03-06T12:47:21.188068"
+  },
+  "events": [
+    {
+      "timestamp": "2026-03-06T15:16:22.954Z",
+      "inbound": {
+        "messageId": "7013",
+        "ts": 1772810182000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7013:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T15:23:40.354Z",
+      "inbound": {
+        "messageId": "7016",
+        "ts": 1772810620000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7016:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T15:24:25.061Z",
+      "inbound": {
+        "messageId": "7018",
+        "ts": 1772810664000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7018:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T15:33:31.040Z",
+      "inbound": {
+        "messageId": "2400",
+        "ts": 1772811210000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:2400:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T15:34:28.099Z",
+      "inbound": {
+        "messageId": "7022",
+        "ts": 1772811267000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7022:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T15:34:33.428Z",
+      "inbound": {
+        "messageId": "7024",
+        "ts": 1772811273000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [],
+      "errors": [
+        {
+          "operation": "send_time_passed",
+          "error": "socket hang up"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-03-06T15:49:23.143Z",
+      "inbound": {
+        "messageId": "7025",
+        "ts": 1772812162000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7025:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T15:49:32.054Z",
+      "inbound": {
+        "messageId": "7026",
+        "ts": 1772812171000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7026:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T15:58:09.989Z",
+      "inbound": {
+        "messageId": "7029",
+        "ts": 1772812689000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7029:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:18:16.333Z",
+      "inbound": {
+        "messageId": "7030",
+        "ts": 1772813421000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7030:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:19:23.143Z",
+      "inbound": {
+        "messageId": "7032",
+        "ts": 1772813962000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7032:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:19:52.661Z",
+      "inbound": {
+        "messageId": "7034",
+        "ts": 1772813992000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7034:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:22:37.946Z",
+      "inbound": {
+        "messageId": "7036",
+        "ts": 1772814157000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7036:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:24:01.095Z",
+      "inbound": {
+        "messageId": "7039",
+        "ts": 1772814240000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7039:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:27:55.506Z",
+      "inbound": {
+        "messageId": "7040",
+        "ts": 1772814268000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7040:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:31:06.088Z",
+      "inbound": {
+        "messageId": "7046",
+        "ts": 1772814581000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7046:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:39:49.886Z",
+      "inbound": {
+        "messageId": "7048",
+        "ts": 1772814693000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7048:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:47:26.433Z",
+      "inbound": {
+        "messageId": "7052",
+        "ts": 1772815645000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7052:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:48:42.751Z",
+      "inbound": {
+        "messageId": "7054",
+        "ts": 1772815722000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7054:tp"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "timestamp": "2026-03-06T16:49:31.905Z",
+      "inbound": {
+        "messageId": "7057",
+        "ts": 1772815770000,
+        "text_hash": null,
+        "dt_seconds": 300
+      },
+      "sent_events": [
+        {
+          "type": "time_passed",
+          "seconds": 300,
+          "request_id": "telegram:7057:tp"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

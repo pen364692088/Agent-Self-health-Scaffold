@@ -54,13 +54,13 @@
   "channel": "telegram",
   "from": "telegram:8420019401",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7046",
-  "ts": 1772814581000,
+  "message_id": "7421",
+  "ts": 1772865831000,
   "dt_seconds": 300,
-  "request_id_base": "telegram:7046",
+  "request_id_base": "telegram:7421",
   "pre_decision": {
-    "action": "attack",
-    "decision_id": 90
+    "action": "repair_offer",
+    "decision_id": 192
   },
   "allowed_subtypes_infer": [
     "care",
@@ -164,7 +164,7 @@ Added: 2026-03-06 09:05 CST
 **工具集成状态**:
 | 工具 | 状态 | 原因 |
 |------|------|------|
-| callback-worker | ❌ | 不直接发送消息，返回 JSON |
+| callback-worker | ✅ | v8.0 直接发送通知（openclaw message send --account manager） |
 | callback-handler-auto | ❌ | 不直接发送消息，返回 action |
 | spawn-with-callback | ❌ | Spawn 子代理，非输出点 |
 

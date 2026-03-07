@@ -1,0 +1,10 @@
+{
+  "snapshot_id": "snap_20260306_110232",
+  "session_id": "test_session_123",
+  "estimated_tokens": 181,
+  "max_tokens": 100000,
+  "ratio": 0.0018,
+  "pressure_level": "normal",
+  "threshold_type": "none",
+  "created_at": "2026-03-06T11:02:32.875624"
+}

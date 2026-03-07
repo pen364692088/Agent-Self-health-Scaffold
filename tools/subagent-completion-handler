@@ -72,8 +72,8 @@ def find_step_by_run_id(state: dict, run_id: str, exclude_done: bool = False) ->
     for i, step in enumerate(steps):
         if exclude_done and step.get('status') == 'done':
             continue
-        step_run_id = step.get('run_id', '')
-        if step_run_id == run_id or run_id in step_run_id or step_run_id in run_id:
+        step_run_id = step.get('run_id') or ''
+        if step_run_id and (step_run_id == run_id or run_id in step_run_id or step_run_id in run_id):
             return step, i
     return None, -1
 
@@ -99,14 +99,8 @@ def try_match_step(state: dict, payload: dict, exclude_done: bool = True) -> tup
         (step, index, match_method) 或 (None, -1, None)
     """
     task_id = payload.get('task_id', '')
+    run_id = payload.get('run_id', '')  # 直接从 payload 获取
     child_session_key = payload.get('child_session_key', '')
-    
-    # 提取 run_id
-    run_id = ''
-    if child_session_key:
-        parts = child_session_key.split(':')
-        if len(parts) >= 4:
-            run_id = parts[-1]
     
     # 方法 1: task_id 匹配
     step, idx = find_step_by_task_id(state, task_id, exclude_done)

@@ -1,49 +1,23 @@
 {
-  "active": true,
-  "workflow_type": "parallel",
-  "current_task": "MVP11.6 - Phase 1.5 Coverage Closure",
-  "version": "v1.2",
-  "parallel_tracks": {
-    "track_a": {
-      "name": "Coverage Closure",
-      "priority": "P0",
-      "status": "in_progress",
-      "steps": [
-        {"id": "task1.5a", "task": "Migrate subagent_response to SRAP", "status": "done", "coverage_before": "Category C", "coverage_after": "Category B (50%)"},
-        {"id": "task1.5b", "task": "Coverage-aware daily metrics", "status": "done", "tool": "tools/mvp11-6-daily-check"},
-        {"id": "task1.5c", "task": "Phase C coverage validity rule", "status": "done", "policy": "POLICIES/PHASE_C_VALIDITY_RULES.md"}
-      ]
-    },
-    "track_b": {
-      "name": "Shadow Collection",
-      "priority": "P1",
-      "status": "running",
-      "samples": 0,
-      "target": 200
+  "active": false,
+  "workflow_type": "serial",
+  "steps": [
+    {
+      "id": "verify_notify",
+      "task": "Echo: VERIFY_NOTIFY_TEST",
+      "model": "baiduqianfancodingplan/qianfan-code-latest",
+      "run_id": "run_d5cfd369",
+      "status": "done",
+      "created_at": "2026-03-07T00:00:10.491138",
+      "started_at": "2026-03-07T00:00:51.373310",
+      "completed_at": "2026-03-07T00:02:07.990680",
+      "summary": "Auto-detected subagent completion",
+      "artifacts": [],
+      "match_method": "run_id"
     }
-  },
-  "phase_c_gate": {
-    "min_samples": 200,
-    "min_coverage": 0.75,
-    "current_coverage": 0.25,
-    "category_c_paths": 0,
-    "valid": false,
-    "blockers": ["sample_count < 200", "coverage_rate < 75%"]
-  },
-  "completed": [
-    {"id": "task3", "task": "Enforcement Matrix", "status": "done"},
-    {"id": "task5", "task": "Response Path Coverage Gate", "status": "done"},
-    {"id": "task6", "task": "Gate接入 A/B/C", "status": "done"},
-    {"id": "task7", "task": "Rollout Plan", "status": "done"},
-    {"id": "task1.5a", "task": "subagent_response migration", "status": "done"},
-    {"id": "task1.5b", "task": "Coverage-aware metrics", "status": "done"},
-    {"id": "task1.5c", "task": "Phase C validity rules", "status": "done"}
   ],
-  "pending": [
-    {"id": "task1", "task": "Shadow Hardening Window", "status": "running", "data_dependent": true},
-    {"id": "task2", "task": "Violation Taxonomy", "status": "pending", "data_dependent": true},
-    {"id": "task4", "task": "Phase C Decision", "status": "pending", "data_dependent": true},
-    {"id": "task8", "task": "Testbot Consistency Check", "status": "pending", "data_dependent": true}
-  ],
-  "updated_at": "2026-03-06T08:48:00CST"
+  "notify_on_done": "✅ 通知验证成功：你应该收到这条消息",
+  "created_at": "2026-03-07T00:00:10.491151",
+  "updated_at": "2026-03-07T00:02:07.990692",
+  "completed_at": "2026-03-07T00:02:07.990691"
 }

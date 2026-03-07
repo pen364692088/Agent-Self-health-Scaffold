@@ -2,24 +2,24 @@
   "advances": [
     {
       "workflow_id": "unknown",
-      "step_id": "3",
+      "step_id": "test_b",
       "success": true,
-      "latency_ms": 0.293731689453125,
-      "timestamp": "2026-03-06T07:14:31.535430"
+      "latency_ms": 0.1308917999267578,
+      "timestamp": "2026-03-06T17:32:52.485071"
     },
     {
       "workflow_id": "unknown",
-      "step_id": "4",
+      "step_id": "test_b",
       "success": true,
-      "latency_ms": 0.09608268737792969,
-      "timestamp": "2026-03-06T07:15:31.603138"
+      "latency_ms": 0.15234947204589844,
+      "timestamp": "2026-03-06T17:33:22.610089"
     },
     {
       "workflow_id": "unknown",
-      "step_id": "6",
+      "step_id": "step_2",
       "success": true,
-      "latency_ms": 0.09894371032714844,
-      "timestamp": "2026-03-06T07:32:33.570337"
+      "latency_ms": 0.1773834228515625,
+      "timestamp": "2026-03-06T18:12:58.345432"
     }
   ],
   "global_inflight": 0

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Spawn with Callback v2.2 - 硬化的邮箱模式
+Spawn with Callback v3.0 - 双通道回调
 
-子代理完成后使用 subagent-inbox 写入回执：
-- 原子写入（.tmp → rename）
-- 完整状态字段
-- 支持 completed/failed/timeout
+v3.0 新增：
+- sessions_send 实时回调（主通道）
+- subagent-inbox 回执（备份通道）
+- 自动识别 parent_session_key
 
 Usage:
   spawn-with-callback "<task>" --model <model> [--timeout 300]
@@ -13,13 +13,13 @@ Usage:
 """
 
 import json
+import os
 import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
 
 WORKSPACE = Path.home() / ".openclaw" / "workspace"
-INBOX_TOOL = WORKSPACE / "tools" / "subagent-inbox"
 
 CALLBACK_TEMPLATE = '''
 **元信息**：
@@ -27,39 +27,42 @@ CALLBACK_TEMPLATE = '''
 - run_id: {run_id}
 - parent_session_key: {parent_session_key}
 
-**完成要求（邮箱模式 v2.2）**：
+**完成要求（双通道回调 v3.0）**：
 
-成功时：
+完成时，你必须执行以下两步：
+
+**Step 1: 写入回执（备份通道）**
 ```bash
 ~/.openclaw/workspace/tools/subagent-inbox write \\
   --task-id {task_id} \\
   --run-id {run_id} \\
   --status completed \\
   --summary "任务摘要" \\
-  --session-key "$SESSION_KEY" \\
-  --parent-session-key "{parent_session_key}"
-```
-
-失败时：
-```bash
-~/.openclaw/workspace/tools/subagent-inbox write \\
-  --task-id {task_id} \\
-  --run-id {run_id} \\
-  --status failed \\
-  --summary "错误描述" \\
   --session-key "$SESSION_KEY"
 ```
 
-超时时：
-```bash
-~/.openclaw/workspace/tools/subagent-inbox write \\
-  --task-id {task_id} \\
-  --run-id {run_id} \\
-  --status timeout \\
-  --summary "任务超时"
+**Step 2: 发送实时回调（主通道）**
+使用 sessions_send 工具，发送以下 JSON 给父代理：
+```json
+{{
+  "type": "subagent_done",
+  "task_id": "{task_id}",
+  "run_id": "{run_id}",
+  "child_session_key": "$SESSION_KEY",
+  "status": "completed",
+  "summary": "任务摘要（1-2句话）",
+  "artifacts": []
+}}
 ```
 
-最后输出：
+发送命令：
+```
+sessions_send(sessionKey="{parent_session_key}", message=<上述JSON>)
+```
+
+**失败时**：status 改为 "failed"，添加 error 字段。
+
+**最后输出**：
 ```
 ANNOUNCE_SKIP: true
 ```
@@ -67,6 +70,29 @@ ANNOUNCE_SKIP: true
 **任务内容**：
 {task_content}
 '''
+
+
+def get_parent_session_key():
+    """从环境变量获取 parent session key"""
+    # 尝试从环境变量获取
+    parent_key = os.environ.get("PARENT_SESSION_KEY", "")
+    if parent_key:
+        return parent_key
+    
+    # 尝试从 SESSION_STATE 获取
+    state_file = WORKSPACE / "SESSION_STATE.md"
+    if state_file.exists():
+        try:
+            import re
+            content = state_file.read_text()
+            match = re.search(r'parent_session_key:\s*(\S+)', content)
+            if match:
+                return match.group(1)
+        except:
+            pass
+    
+    # 默认值
+    return "agent:main:telegram:direct:unknown"
 
 
 def generate_task_id():
@@ -85,14 +111,14 @@ def main():
         sys.exit(1)
     
     if sys.argv[1] == "--health":
-        print(json.dumps({"status": "healthy", "version": "2.2", "mode": "inbox"}))
+        print(json.dumps({"status": "healthy", "version": "3.0", "mode": "dual_channel"}))
         sys.exit(0)
     
     # 解析参数
     task = ""
     model = "baiduqianfancodingplan/qianfan-code-latest"
     timeout = 300
-    parent_session_key = "agent:main:telegram:direct:unknown"
+    parent_session_key = get_parent_session_key()
     
     i = 1
     while i < len(sys.argv):
@@ -134,7 +160,7 @@ def main():
         "run_id": run_id,
         "model": model,
         "timeout": timeout,
-        "mode": "inbox",
+        "mode": "dual_channel",
         "parent_session_key": parent_session_key,
         "spawn_args": {
             "runtime": "subagent",
@@ -142,7 +168,10 @@ def main():
             "task": task_content,
             "timeoutSeconds": timeout
         },
-        "check_command": f"~/.openclaw/workspace/tools/subagent-inbox check --once"
+        "callback": {
+            "inbox_command": f"~/.openclaw/workspace/tools/subagent-inbox check --once",
+            "sessions_send": f"sessions_send(sessionKey=\"{parent_session_key}\", message=<subagent_done JSON>)"
+        }
     }
     
     print(json.dumps(output, indent=2))

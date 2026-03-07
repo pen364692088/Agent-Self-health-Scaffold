@@ -855,6 +855,42 @@
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
       "indexed_at": "2026-03-06T16:20:35.658691+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Execution_Policy_v21_冻结_494401ba.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Execution_Policy_v21_冻结_494401ba.md",
+      "doc_content_hash": "ee6e5a7a574961f24e28f3c80faf0d7f77691138f5a56d97a6d0126cb3481c7c",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T16:47:57.896736+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Phase_15_Coverage_Closure__2more.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Phase_15_Coverage_Closure__2more.md",
+      "doc_content_hash": "43f01c47b56d8de6ef06538017340f668f3b0b9aee219a99d364b35eab53fece",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T16:47:58.803240+00:00"
+    },
+    "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Summary_8more.md": {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Summary_8more.md",
+      "doc_content_hash": "d7ce873d28286c6033cc47683c1149bbe130a99176468f21f9a1b9ea540b6935",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T16:47:59.815904+00:00"
+    },
+    "viking://resources/user/memory/memory_25/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_25/memory.md",
+      "doc_content_hash": "c199d617b5fc3fd3ae1b7f9e3d514db04c52e4a850d1f170e42136cae8f87fe0",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-06T16:48:02.838519+00:00"
     }
   }
 }

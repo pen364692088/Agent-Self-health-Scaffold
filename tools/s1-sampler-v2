@@ -1,0 +1,658 @@
+#!/usr/bin/env python3
+"""
+S1 Auto Sampler v2 - 三路采样策略
+
+采样来源：
+1. real_main_agent (25%): 主 agent 真实会话高价值片段
+2. historical_replay (35%): 历史 session logs 回放
+3. synthetic_stress (40%): 合成压力样本
+
+Usage:
+  s1-sampler-v2 --target 80
+  s1-sampler-v2 --balance  # 平衡三路比例
+  s1-sampler-v2 --priority-weakest --limit 20
+"""
+
+import argparse
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime, timedelta
+import hashlib
+import random
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SESSION_INDEX = WORKSPACE / ".session-index" / "sessions"
+TRACE_DIR = WORKSPACE / "integrations" / "openclaw" / "traces"
+VALIDATION_DIR = WORKSPACE / "artifacts" / "context_compression" / "validation"
+SAMPLES_DIR = VALIDATION_DIR / "samples"
+BASELINE_COMMIT = "31a604a"
+
+# 桶定义
+BUCKETS = {
+    "old_topic_recall": {"min": 15, "priority": 1},
+    "multi_topic_switch": {"min": 12, "priority": 5},
+    "with_open_loops": {"min": 12, "priority": 2},
+    "post_tool_chat": {"min": 10, "priority": 4},
+    "user_correction": {"min": 10, "priority": 3},
+    "long_technical": {"min": 8, "priority": 6}
+}
+
+# 目标比例
+TARGET_RATIOS = {
+    "real_main_agent": 0.25,
+    "historical_replay": 0.35,
+    "synthetic_stress": 0.40
+}
+
+# 合成模板
+SYNTHETIC_TEMPLATES = {
+    "old_topic_recall": [
+        {
+            "id": "OTR_001",
+            "description": "A:30 -> B:20 -> A:1",
+            "has_commitment": True,
+            "has_open_loop": True
+        },
+        {
+            "id": "OTR_002",
+            "description": "A:50 -> B:50 -> A:1",
+            "has_commitment": True,
+            "has_open_loop": False
+        }
+    ],
+    "multi_topic_switch": [
+        {
+            "id": "MTS_001",
+            "description": "A:10 -> B:10 -> A:10 -> C:10 -> A:5"
+        }
+    ],
+    "with_open_loops": [
+        {
+            "id": "WOL_001",
+            "description": "3 open loops with priorities"
+        }
+    ],
+    "post_tool_chat": [
+        {
+            "id": "PTC_001",
+            "description": "Tool error -> followup",
+            "tool_error": True
+        },
+        {
+            "id": "PTC_002",
+            "description": "Tool success -> continue",
+            "tool_error": False
+        }
+    ],
+    "user_correction": [
+        {
+            "id": "UC_001",
+            "description": "Constraint change"
+        }
+    ],
+    "long_technical": [
+        {
+            "id": "LT_001",
+            "description": "Technical entities"
+        }
+    ]
+}
+
+
+class S1SamplerV2:
+    """三路采样器 v2"""
+    
+    def __init__(self):
+        self.samples = []
+        self.bucket_counts = {b: 0 for b in BUCKETS}
+        self.source_counts = {
+            "real_main_agent": 0,
+            "historical_replay": 0,
+            "synthetic_stress": 0
+        }
+        self.weakest_bucket = None
+        
+        # 加载已有样本
+        self._load_existing_samples()
+    
+    def _load_existing_samples(self):
+        """加载已有样本统计"""
+        if not SAMPLES_DIR.exists():
+            return
+        
+        for sample_file in SAMPLES_DIR.glob("sample_*.json"):
+            with open(sample_file, 'r') as f:
+                sample = json.load(f)
+            
+            metadata = sample.get("metadata", {})
+            source_type = metadata.get("source_type", "")
+            bucket_tags = metadata.get("bucket_tags", [])
+            
+            if source_type in self.source_counts:
+                self.source_counts[source_type] += 1
+            
+            for bucket in bucket_tags:
+                if bucket in self.bucket_counts:
+                    self.bucket_counts[bucket] += 1
+    
+    def find_weakest_bucket(self):
+        """找到最弱桶"""
+        min_ratio = float('inf')
+        weakest = None
+        
+        for bucket, config in BUCKETS.items():
+            ratio = self.bucket_counts[bucket] / config["min"]
+            if ratio < min_ratio:
+                min_ratio = ratio
+                weakest = bucket
+        
+        self.weakest_bucket = weakest
+        return weakest
+    
+    def get_bucket_priority(self, bucket):
+        """获取桶优先级 (P0-P3)"""
+        count = self.bucket_counts[bucket]
+        min_required = BUCKETS[bucket]["min"]
+        ratio = count / min_required
+        
+        if ratio < 0.5:
+            return "P0"  # 未达 50%
+        elif count < min_required:
+            return "P1"  # 未达最低线
+        else:
+            return "P2"  # 已达最低线
+    
+    def balance_sources(self, target_total=80):
+        """平衡三路来源"""
+        current_total = sum(self.source_counts.values())
+        needed = target_total - current_total
+        
+        if needed <= 0:
+            return []
+        
+        samples = []
+        
+        # 计算每路需要的样本数
+        target_real = int(target_total * TARGET_RATIOS["real_main_agent"])
+        target_historical = int(target_total * TARGET_RATIOS["historical_replay"])
+        target_synthetic = target_total - target_real - target_historical
+        
+        needed_real = max(0, target_real - self.source_counts["real_main_agent"])
+        needed_historical = max(0, target_historical - self.source_counts["historical_replay"])
+        needed_synthetic = max(0, target_synthetic - self.source_counts["synthetic_stress"])
+        
+        print(f"Balance plan: real={needed_real}, historical={needed_historical}, synthetic={needed_synthetic}")
+        
+        # 按优先级补桶
+        self.find_weakest_bucket()
+        
+        # 采样
+        if needed_historical > 0:
+            historical_samples = self.sample_historical_replay(needed_historical)
+            samples.extend(historical_samples)
+        
+        if needed_synthetic > 0:
+            synthetic_samples = self.sample_synthetic_stress(needed_synthetic)
+            samples.extend(synthetic_samples)
+        
+        if needed_real > 0:
+            real_samples = self.sample_real_main_agent(needed_real)
+            samples.extend(real_samples)
+        
+        return samples
+    
+    def sample_real_main_agent(self, limit=10):
+        """从主 agent 真实会话中采样"""
+        samples = []
+        
+        # 扫描今天的 trace
+        today = datetime.now().strftime("%Y-%m-%d")
+        trace_file = TRACE_DIR / f"telegram:8420019401-{today}.jsonl"
+        
+        if not trace_file.exists():
+            print(f"Warning: No trace file for today: {trace_file}")
+            return samples
+        
+        # 提取高价值片段
+        with open(trace_file, 'r') as f:
+            events = [json.loads(line) for line in f if line.strip()]
+        
+        # 检测符合桶的片段
+        for i in range(0, len(events) - 10, 10):
+            chunk = events[i:i+20]
+            bucket_tags = self._detect_buckets_from_events(chunk)
+            
+            if bucket_tags:
+                sample_id = self._generate_sample_id("real_main_agent", bucket_tags[0])
+                session_id = f"telegram:8420019401:{today}"
+                
+                metadata = {
+                    "sample_id": sample_id,
+                    "session_id": session_id,
+                    "source_type": "real_main_agent",
+                    "bucket_tags": bucket_tags,
+                    "baseline_commit": BASELINE_COMMIT,
+                    "retrieve_mode": "capsule_only",
+                    "turn_count": len(chunk),
+                    "created_at": datetime.now().isoformat()
+                }
+                
+                samples.append({
+                    "metadata": metadata,
+                    "events": chunk
+                })
+                
+                for bucket in bucket_tags:
+                    self.bucket_counts[bucket] += 1
+                self.source_counts["real_main_agent"] += 1
+                
+                if len(samples) >= limit:
+                    break
+        
+        print(f"Collected {len(samples)} real_main_agent samples")
+        return samples
+    
+    def sample_historical_replay(self, limit=20):
+        """从历史 session 中回放采样"""
+        samples = []
+        
+        if not SESSION_INDEX.exists():
+            print("Warning: Session index not found")
+            return samples
+        
+        # 扫描历史 session
+        session_files = sorted(
+            SESSION_INDEX.glob("*.jsonl"),
+            key=lambda x: x.stat().st_mtime,
+            reverse=True
+        )[:limit * 5]
+        
+        for session_file in session_files:
+            if len(samples) >= limit:
+                break
+            
+            session_id = session_file.stem
+            
+            with open(session_file, 'r') as f:
+                events = [json.loads(line) for line in f if line.strip()]
+            
+            if len(events) < 10:
+                continue
+            
+            # 检测桶
+            bucket_tags = self._detect_buckets_from_events(events[:50])
+            
+            # 优先补最弱桶
+            if self.weakest_bucket and self.weakest_bucket not in bucket_tags:
+                continue
+            
+            if bucket_tags:
+                sample_id = self._generate_sample_id("historical_replay", bucket_tags[0])
+                replay_copy_id = f"replay_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                
+                metadata = {
+                    "sample_id": sample_id,
+                    "session_id": session_id,
+                    "source_type": "historical_replay",
+                    "bucket_tags": bucket_tags,
+                    "baseline_commit": BASELINE_COMMIT,
+                    "retrieve_mode": "capsule_only",
+                    "original_turn_range": [0, min(50, len(events))],
+                    "replay_copy_id": replay_copy_id,
+                    "turn_count": len(events),
+                    "created_at": datetime.now().isoformat()
+                }
+                
+                samples.append({
+                    "metadata": metadata,
+                    "events": events[:50]
+                })
+                
+                for bucket in bucket_tags:
+                    self.bucket_counts[bucket] += 1
+                self.source_counts["historical_replay"] += 1
+        
+        print(f"Collected {len(samples)} historical_replay samples")
+        return samples
+    
+    def sample_synthetic_stress(self, limit=30, priority_weakest=True):
+        """生成合成压力样本"""
+        samples = []
+        
+        for _ in range(limit):
+            # 选择桶
+            if priority_weakest and self.weakest_bucket:
+                bucket = self.weakest_bucket
+            else:
+                # 按优先级排序
+                sorted_buckets = sorted(
+                    BUCKETS.keys(),
+                    key=lambda b: (self.bucket_counts[b] / BUCKETS[b]["min"], BUCKETS[b]["priority"])
+                )
+                bucket = sorted_buckets[0]
+            
+            # 获取模板
+            templates = SYNTHETIC_TEMPLATES.get(bucket, [])
+            if not templates:
+                continue
+            
+            template = templates[len(samples) % len(templates)]
+            
+            # 生成样本
+            sample_id = self._generate_sample_id("synthetic_stress", bucket)
+            session_id = f"synthetic_{bucket}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            metadata = {
+                "sample_id": sample_id,
+                "session_id": session_id,
+                "source_type": "synthetic_stress",
+                "bucket_tags": [bucket],
+                "baseline_commit": BASELINE_COMMIT,
+                "retrieve_mode": "capsule_only",
+                "scenario_template_id": template["id"],
+                "turn_count": 50,  # 默认
+                "created_at": datetime.now().isoformat()
+            }
+            
+            # 生成事件
+            events = self._generate_synthetic_events(bucket, template, session_id)
+            
+            samples.append({
+                "metadata": metadata,
+                "events": events,
+                "template": template
+            })
+            
+            self.bucket_counts[bucket] += 1
+            self.source_counts["synthetic_stress"] += 1
+            
+            # 更新最弱桶
+            self.find_weakest_bucket()
+        
+        print(f"Generated {len(samples)} synthetic_stress samples")
+        return samples
+    
+    def _detect_buckets_from_events(self, events):
+        """从事件中检测桶标签"""
+        buckets = []
+        
+        topics = set()
+        has_open_loops = False
+        has_tool_error = False
+        has_user_correction = False
+        has_technical_terms = False
+        has_topic_return = False
+        
+        prev_topic = None
+        topic_switches = 0
+        
+        for event in events:
+            content = str(event.get("content", "") or event.get("content_preview", ""))
+            topic = event.get("topic", "")
+            
+            if topic:
+                if prev_topic and topic != prev_topic:
+                    topic_switches += 1
+                prev_topic = topic
+                topics.add(topic)
+            
+            if "open_loop" in content.lower() or "未完成" in content or "TODO" in content:
+                has_open_loops = True
+            
+            if event.get("status") == "error" or "error" in content.lower():
+                has_tool_error = True
+            
+            if "不对" in content or "改一下" in content or "不是" in content or "修正" in content:
+                has_user_correction = True
+            
+            if any(term in content for term in ["tools/", "schemas/", "POLICIES/", ".py", ".json", "context-"]):
+                has_technical_terms = True
+        
+        # 分类
+        if topic_switches >= 3 or len(topics) >= 3:
+            buckets.append("multi_topic_switch")
+        
+        if has_open_loops:
+            buckets.append("with_open_loops")
+        
+        if has_tool_error:
+            buckets.append("post_tool_chat")
+        
+        if has_user_correction:
+            buckets.append("user_correction")
+        
+        if has_technical_terms:
+            buckets.append("long_technical")
+        
+        # 如果有多个主题且会话较长，可能是 old_topic_recall
+        if len(topics) >= 2 and len(events) >= 30:
+            buckets.append("old_topic_recall")
+        
+        # 默认
+        if not buckets:
+            buckets.append("old_topic_recall")
+        
+        return list(set(buckets))
+    
+    def _generate_synthetic_events(self, bucket, template, session_id):
+        """生成合成事件"""
+        events = []
+        
+        if bucket == "old_topic_recall":
+            # A:30 -> B:20 -> A:1
+            for i in range(30):
+                events.append({
+                    "turn": i + 1,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"讨论主题 A: 压缩设计 第 {i+1} 轮",
+                    "topic": "compression_design"
+                })
+            
+            events.append({
+                "turn": 30,
+                "role": "assistant",
+                "content": "决定：使用三层模型",
+                "decision": True
+            })
+            
+            if template.get("has_open_loop"):
+                events.append({
+                    "turn": 31,
+                    "role": "user",
+                    "content": "下一步：完成 S1 验证",
+                    "open_loop": True,
+                    "priority": "high"
+                })
+            
+            for i in range(32, 52):
+                events.append({
+                    "turn": i,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"讨论主题 B: 检索设计 第 {i-31} 轮",
+                    "topic": "retrieval_design"
+                })
+            
+            events.append({
+                "turn": 52,
+                "role": "user",
+                "content": "回到压缩设计，我们决定了什么？",
+                "topic": "compression_design",
+                "is_recall": True
+            })
+        
+        elif bucket == "with_open_loops":
+            for i in range(20):
+                events.append({
+                    "turn": i + 1,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"讨论内容 {i+1}"
+                })
+            
+            for j, priority in enumerate(["high", "medium", "low"]):
+                events.append({
+                    "turn": 21 + j,
+                    "role": "user",
+                    "content": f"TODO: 完成任务 {j+1}",
+                    "open_loop": True,
+                    "priority": priority
+                })
+        
+        elif bucket == "post_tool_chat":
+            events.append({
+                "turn": 1,
+                "role": "user",
+                "content": "运行 context-compress"
+            })
+            events.append({
+                "turn": 2,
+                "role": "tool",
+                "tool_name": "context-compress",
+                "status": "error" if template.get("tool_error") else "success",
+                "content": "Error: timeout" if template.get("tool_error") else "Success"
+            })
+            events.append({
+                "turn": 3,
+                "role": "user",
+                "content": "为什么失败？" if template.get("tool_error") else "结果是什么？"
+            })
+            events.append({
+                "turn": 4,
+                "role": "assistant",
+                "content": "超时了" if template.get("tool_error") else "压缩成功"
+            })
+        
+        elif bucket == "user_correction":
+            events.append({
+                "turn": 1,
+                "role": "user",
+                "content": "必须使用 OpenViking"
+            })
+            events.append({
+                "turn": 2,
+                "role": "assistant",
+                "content": "好的，使用 OpenViking"
+            })
+            events.append({
+                "turn": 3,
+                "role": "user",
+                "content": "不对，改成 capsule fallback 优先"
+            })
+        
+        elif bucket == "multi_topic_switch":
+            topics = ["compression", "retrieval", "compression", "metrics", "compression"]
+            turn = 1
+            for topic in topics:
+                for i in range(10 if topic != topics[-1] else 5):
+                    events.append({
+                        "turn": turn,
+                        "role": "user" if turn % 2 == 0 else "assistant",
+                        "content": f"讨论 {topic} 第 {i+1} 轮",
+                        "topic": topic
+                    })
+                    turn += 1
+        
+        elif bucket == "long_technical":
+            technical_paths = [
+                "tools/context-budget-check",
+                "schemas/session_capsule.v1.schema.json",
+                "POLICIES/CONTEXT_COMPRESSION.md",
+                "tests/context/test_old_topic_recall.py"
+            ]
+            for i, path in enumerate(technical_paths):
+                events.append({
+                    "turn": i + 1,
+                    "role": "user" if i % 2 == 0 else "assistant",
+                    "content": f"创建 {path}",
+                    "technical_entity": path
+                })
+        
+        return events
+    
+    def _generate_sample_id(self, source_type, bucket):
+        """生成样本 ID"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique = hashlib.md5(f"{timestamp}{bucket}{random.random()}".encode()).hexdigest()[:8]
+        return f"sample_{source_type}_{bucket}_{unique}"
+    
+    def save_samples(self, samples):
+        """保存样本"""
+        SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
+        
+        for sample in samples:
+            sample_id = sample["metadata"]["sample_id"]
+            output_file = SAMPLES_DIR / f"{sample_id}.json"
+            
+            with open(output_file, 'w') as f:
+                json.dump(sample, f, indent=2, ensure_ascii=False)
+        
+        print(f"Saved {len(samples)} samples")
+    
+    def print_status(self):
+        """打印状态"""
+        print("\n" + "=" * 60)
+        print("S1 SAMPLER V2 STATUS")
+        print("=" * 60)
+        
+        print("\n[Source Distribution]")
+        total = sum(self.source_counts.values())
+        for source, count in self.source_counts.items():
+            pct = (count / total * 100) if total > 0 else 0
+            target = TARGET_RATIOS[source] * 100
+            print(f"  {source:25s}: {count:3d} ({pct:5.1f}%) [target: {target:.0f}%]")
+        
+        print("\n[Bucket Coverage]")
+        for bucket, config in sorted(BUCKETS.items(), key=lambda x: x[1]["priority"]):
+            count = self.bucket_counts[bucket]
+            min_req = config["min"]
+            pct = (count / min_req * 100) if min_req > 0 else 0
+            status = "✅" if count >= min_req else "❌"
+            priority = self.get_bucket_priority(bucket)
+            print(f"  {status} {bucket:20s}: {count:2d}/{min_req:2d} ({pct:5.1f}%) [{priority}]")
+        
+        print(f"\n[Weakest Bucket]: {self.weakest_bucket}")
+        print(f"[Total Samples]: {total}/80")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="S1 Auto Sampler v2")
+    parser.add_argument("--target", type=int, default=80, help="Target total samples")
+    parser.add_argument("--balance", action="store_true", help="Balance three sources")
+    parser.add_argument("--limit", type=int, default=20, help="Limit per run")
+    parser.add_argument("--priority-weakest", action="store_true", default=True)
+    parser.add_argument("--source", choices=["real", "historical", "synthetic", "all"], default="all")
+    parser.add_argument("--json", action="store_true")
+    
+    args = parser.parse_args()
+    
+    sampler = S1SamplerV2()
+    
+    if args.balance:
+        samples = sampler.balance_sources(args.target)
+    else:
+        samples = []
+        
+        if args.source in ["real", "all"]:
+            samples.extend(sampler.sample_real_main_agent(args.limit // 3))
+        
+        if args.source in ["historical", "all"]:
+            samples.extend(sampler.sample_historical_replay(args.limit // 3))
+        
+        if args.source in ["synthetic", "all"]:
+            samples.extend(sampler.sample_synthetic_stress(args.limit // 3))
+    
+    sampler.save_samples(samples)
+    sampler.print_status()
+    
+    if args.json:
+        print(json.dumps({
+            "total_samples": sum(sampler.source_counts.values()),
+            "source_counts": sampler.source_counts,
+            "bucket_counts": sampler.bucket_counts,
+            "weakest_bucket": sampler.weakest_bucket
+        }, indent=2))
+
+
+if __name__ == "__main__":
+    main()

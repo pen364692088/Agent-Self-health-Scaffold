@@ -1,0 +1,14 @@
+{
+  "task_id": "task_20260307_001620_964add27",
+  "run_id": "run_82bc1c5f",
+  "session_key": "agent:main:subagent:1a222c46-5664-450e-af1f-475cdedc6847",
+  "parent_session_key": "",
+  "status": "completed",
+  "summary": "Echo 测试通过 - callback-worker v8.0 正常运行",
+  "artifacts": [],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-07T00:16:48.072969",
+  "retry_count": 0,
+  "metadata": {}
+}

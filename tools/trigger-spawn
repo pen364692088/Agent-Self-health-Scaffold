@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""
+Trigger Spawn - 检查并执行待 spawn 任务
+
+主代理调用此工具来执行 pending 的 spawn 任务。
+
+Usage:
+  trigger-spawn [--consume]
+"""
+
+import json
+import sys
+from pathlib import Path
+
+TRIGGER_FILE = Path.home() / ".openclaw" / "workspace" / "reports" / "pending_spawns.jsonl"
+NOTIFY_FLAG = Path.home() / ".openclaw" / "workspace" / "reports" / "spawn_needed.flag"
+WORKFLOW_FILE = Path.home() / ".openclaw" / "workspace" / "WORKFLOW_STATE.json"
+
+
+def get_pending_spawns(consume=False):
+    """获取待 spawn 任务"""
+    pending = []
+    
+    # 从触发文件读取
+    if TRIGGER_FILE.exists():
+        with open(TRIGGER_FILE, 'r') as f:
+            lines = f.readlines()
+        
+        for line in lines:
+            line = line.strip()
+            if line:
+                try:
+                    pending.append(json.loads(line))
+                except:
+                    pass
+        
+        if consume and pending:
+            with open(TRIGGER_FILE, 'w') as f:
+                pass
+    
+    # 从通知文件读取
+    if NOTIFY_FLAG.exists() and not pending:
+        try:
+            with open(NOTIFY_FLAG) as f:
+                data = json.load(f)
+            if data.get("action") == "spawn_next":
+                pending.append({
+                    "step_id": data.get("step_id"),
+                    "task": data.get("task"),
+                    "model": data.get("model")
+                })
+                if consume:
+                    NOTIFY_FLAG.unlink()
+        except:
+            pass
+    
+    # 从 WORKFLOW_STATE 读取 pending 步骤
+    if not pending and WORKFLOW_FILE.exists():
+        try:
+            with open(WORKFLOW_FILE) as f:
+                state = json.load(f)
+            
+            if state.get('active'):
+                for step in state.get('steps', []):
+                    if step.get('status') == 'pending':
+                        pending.append({
+                            "step_id": step.get('id'),
+                            "task": step.get('task'),
+                            "model": step.get('model')
+                        })
+                        break
+        except:
+            pass
+    
+    return pending
+
+
+def main():
+    consume = "--consume" in sys.argv
+    pending = get_pending_spawns(consume=consume)
+    
+    if pending:
+        print(json.dumps({"pending": pending, "count": len(pending)}, indent=2))
+    else:
+        print(json.dumps({"pending": [], "count": 0}))
+
+
+if __name__ == "__main__":
+    main()

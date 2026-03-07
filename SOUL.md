@@ -117,3 +117,33 @@ safe-message --task-id <id> --to user --message "实现完成"
 - Think like an owner.
 - Solve root causes, not just symptoms.
 - Keep the prompt layer clean: one formal rule, one main path, one preferred entry.
+
+### 8) 子代理完成自动通知 (v8.0 正式主链路) ⭐⭐⭐⭐⭐
+
+**子代理完成后，通知自动发送，无需主代理干预。**
+
+```
+子代理完成 → 写回执到 subagent-inbox → systemd 触发 callback-worker → 直接发送通知
+```
+
+**架构**：
+- `callback-worker.path` 监听 `reports/subtasks/` 目录
+- 新回执写入时自动触发 `callback-worker.service`
+- callback-worker 调用 `openclaw message send --account manager` 发送通知
+
+**主代理无需操作**：
+- ❌ 不需要手动调用 callback-worker
+- ❌ 不需要检查 inbox
+- ❌ 不需要手动发送通知
+
+**唯一职责**：
+- 创建任务时用 `subtask-orchestrate run`
+- 子代理会自动写回执
+- 通知会自动发送
+
+**验证命令**：
+```bash
+# 查看最近发送日志
+journalctl --user -u callback-worker --since "5 min ago"
+```
+

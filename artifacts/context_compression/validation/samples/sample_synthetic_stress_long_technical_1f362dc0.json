@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "sample_id": "sample_synthetic_stress_long_technical_1f362dc0",
+    "session_id": "synthetic_long_technical_20260306124936",
+    "source_type": "synthetic_stress",
+    "bucket_tags": [
+      "long_technical"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "scenario_template_id": "LT_001",
+    "turn_count": 50,
+    "created_at": "2026-03-06T12:49:36.635127"
+  },
+  "events": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "创建 tools/context-budget-check",
+      "technical_entity": "tools/context-budget-check"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "content": "创建 schemas/session_capsule.v1.schema.json",
+      "technical_entity": "schemas/session_capsule.v1.schema.json"
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "创建 POLICIES/CONTEXT_COMPRESSION.md",
+      "technical_entity": "POLICIES/CONTEXT_COMPRESSION.md"
+    },
+    {
+      "turn": 4,
+      "role": "assistant",
+      "content": "创建 tests/context/test_old_topic_recall.py",
+      "technical_entity": "tests/context/test_old_topic_recall.py"
+    }
+  ],
+  "template": {
+    "id": "LT_001",
+    "description": "Technical entities"
+  }
+}

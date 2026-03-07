@@ -38,3 +38,10 @@
 [2026-03-06T07:32:33.568728] [INFO] Spawning step 6 via CLI
 [2026-03-06T07:32:33.571059] [INFO] ✅ Step 6 spawned: run_id=auto_4f4c9a27
 [2026-03-06T08:09:38.274468] [INFO] ✅ Workflow complete: unknown
+[2026-03-06T17:32:52.482195] [INFO] Spawning step test_b via CLI
+[2026-03-06T17:32:52.486191] [INFO] ✅ Step test_b spawned: run_id=auto_7ef26d62
+[2026-03-06T17:33:22.603374] [INFO] Spawning step test_b via CLI
+[2026-03-06T17:33:22.611218] [INFO] ✅ Step test_b spawned: run_id=auto_a686b56e
+[2026-03-06T17:33:52.666881] [INFO] ✅ Workflow complete: unknown
+[2026-03-06T18:12:58.342869] [INFO] Spawning step step_2 via CLI
+[2026-03-06T18:12:58.346626] [INFO] ✅ Step step_2 spawned: run_id=auto_2bc53b32

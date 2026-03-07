@@ -1,0 +1,14 @@
+{
+  "task_id": "task_20260307_002244_4da451f6",
+  "run_id": "run_99c7bc11",
+  "session_key": "agent:main:subagent:779d953b-41bb-4cc2-9932-b35d71faaf4f",
+  "parent_session_key": "",
+  "status": "completed",
+  "summary": "Echo测试任务完成 - 通知机制正常",
+  "artifacts": [],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-07T00:23:15.320448",
+  "retry_count": 0,
+  "metadata": {}
+}

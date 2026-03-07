@@ -10,3 +10,25 @@
 {"event_id":"evt_20260305_002","session_id":"sess_bcd890","trigger":"threshold_92","pressure_level":"high","before":{"estimated_tokens":98000,"turn_count":90,"ratio":0.98},"after":{"estimated_tokens":52000,"turn_count":45,"ratio":0.52},"resident_kept":[78,79,80,81,82,83,84,85,86,87,88,89,90],"capsules_created":["cap_022","cap_023","cap_024","cap_025","cap_026"],"evicted_turn_ranges":[{"start":1,"end":55},{"start":60,"end":75}],"vector_indexed":true,"mode":"aggressive","duration_ms":320,"created_at":"2026-03-05T17:10:00Z"}
 {"event_id":"evt_20260306_001","session_id":"sess_efg123","trigger":"threshold_70","pressure_level":"low","before":{"estimated_tokens":75000,"turn_count":52,"ratio":0.75},"after":{"estimated_tokens":45000,"turn_count":32,"ratio":0.45},"resident_kept":[42,43,44,45,46,47,48,49,50,51,52],"capsules_created":["cap_027","cap_028"],"evicted_turn_ranges":[{"start":1,"end":30}],"vector_indexed":true,"mode":"gradual","duration_ms":125,"created_at":"2026-03-06T08:30:00Z"}
 {"event_id":"evt_20260306_002","session_id":"sess_hij456","trigger":"threshold_85","pressure_level":"medium","before":{"estimated_tokens":86000,"turn_count":60,"ratio":0.86},"after":{"estimated_tokens":49000,"turn_count":35,"ratio":0.49},"resident_kept":[50,51,52,53,54,55,56,57,58,59,60],"capsules_created":["cap_029","cap_030","cap_031"],"evicted_turn_ranges":[{"start":1,"end":38}],"vector_indexed":true,"mode":"gradual","duration_ms":155,"created_at":"2026-03-06T11:00:00Z"}
+{
+  "event_id": "shadow_20260306_001",
+  "session_id": "telegram:8420019401:2026-03-06",
+  "trigger": "manual_demo",
+  "pressure_level": "normal",
+  "mode": "shadow",
+  "compression_triggered": false,
+  "reason": "Context pressure below threshold (9% < 70%)",
+  "budget": {
+    "estimated_tokens": 9000,
+    "max_tokens": 100000,
+    "ratio": 0.09
+  },
+  "would_compress": {
+    "turns_range": [1, 30],
+    "capsule_decisions": 4,
+    "capsule_open_loops": 1,
+    "preserved_resident": ["task_goal", "open_loops", "hard_constraints"],
+    "preserved_active": [31, 50]
+  },
+  "created_at": "2026-03-06T12:24:06-06:00"
+}

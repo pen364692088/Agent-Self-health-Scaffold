@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "sample_id": "sample_synthetic_stress_post_tool_chat_18c678b9",
+    "session_id": "synthetic_post_tool_chat_20260306124721",
+    "source_type": "synthetic_stress",
+    "bucket_tags": [
+      "post_tool_chat"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "scenario_template_id": "PTC_002",
+    "turn_count": 50,
+    "created_at": "2026-03-06T12:47:21.187073"
+  },
+  "events": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "运行 context-compress"
+    },
+    {
+      "turn": 2,
+      "role": "tool",
+      "tool_name": "context-compress",
+      "status": "success",
+      "content": "Success"
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "结果是什么？"
+    },
+    {
+      "turn": 4,
+      "role": "assistant",
+      "content": "压缩成功"
+    }
+  ],
+  "template": {
+    "id": "PTC_002",
+    "description": "Tool success -> continue",
+    "tool_error": false
+  }
+}

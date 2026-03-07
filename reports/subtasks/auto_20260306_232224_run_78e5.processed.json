@@ -1,0 +1,14 @@
+{
+  "task_id": "auto_20260306_232224_run_78e5",
+  "run_id": "run_78e52b05",
+  "session_key": "",
+  "parent_session_key": "",
+  "status": "completed",
+  "summary": "Auto-detected subagent completion",
+  "artifacts": [],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-06T23:22:25.004025",
+  "retry_count": 0,
+  "metadata": {}
+}

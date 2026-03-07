@@ -1,0 +1,58 @@
+{
+  "version": "openviking_metrics.v1",
+  "generated_at": "2026-03-06T16:47:59.818065+00:00",
+  "source": "backfill",
+  "doc_count": 3,
+  "coverage": {
+    "min": 1.0,
+    "p50": 1.0,
+    "p95": 1.0
+  },
+  "skipped_chunks_count": 0,
+  "fallback_trigger_count": 11408,
+  "dual_guard_trim_count": 11337,
+  "offenders_topN": [
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Summary_8more.md",
+      "doc_hash": "d7ce873d28286c6033cc47683c1149bbe130a99176468f21f9a1b9ea540b6935",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 800,
+      "max_chunk_chars_seen": 761,
+      "max_chunk_bytes_seen": 800,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 7331,
+      "dual_guard_trim_count": 7297
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Phase_15_Coverage_Closure__2more.md",
+      "doc_hash": "43f01c47b56d8de6ef06538017340f668f3b0b9aee219a99d364b35eab53fece",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 800,
+      "max_chunk_chars_seen": 677,
+      "max_chunk_bytes_seen": 800,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 2413,
+      "dual_guard_trim_count": 2391
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-06_8/2026-03-06_Session_Log/Execution_Policy_v21_冻结_494401ba.md",
+      "doc_hash": "ee6e5a7a574961f24e28f3c80faf0d7f77691138f5a56d97a6d0126cb3481c7c",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 799,
+      "max_chunk_chars_seen": 661,
+      "max_chunk_bytes_seen": 799,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 1664,
+      "dual_guard_trim_count": 1649
+    }
+  ]
+}

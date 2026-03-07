@@ -1,0 +1,14 @@
+{
+  "task_id": "task_20260307_002854_21ee2801",
+  "run_id": "run_1205967f",
+  "session_key": "agent:main:subagent:3462ed69-08a9-405c-9bdf-5a3b59aae5b9",
+  "parent_session_key": "",
+  "status": "completed",
+  "summary": "Echo 验证测试成功 - callback-worker 双通道回调已完全修复",
+  "artifacts": [],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-07T00:29:22.259666",
+  "retry_count": 0,
+  "metadata": {}
+}

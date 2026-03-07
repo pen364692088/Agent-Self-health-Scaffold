@@ -1,0 +1,336 @@
+{
+  "metadata": {
+    "sample_id": "sample_synthetic_stress_old_topic_recall_12408b95",
+    "session_id": "synthetic_old_topic_recall_20260306124721",
+    "source_type": "synthetic_stress",
+    "bucket_tags": [
+      "old_topic_recall"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "scenario_template_id": "OTR_002",
+    "turn_count": 50,
+    "created_at": "2026-03-06T12:47:21.186833"
+  },
+  "events": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 1 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 2 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 3 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 4,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 4 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 5,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 5 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 6,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 6 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 7,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 7 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 8,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 8 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 9,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 9 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 10,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 10 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 11,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 11 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 12,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 12 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 13,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 13 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 14,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 14 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 15,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 15 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 16,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 16 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 17,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 17 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 18,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 18 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 19,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 19 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 20,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 20 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 21,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 21 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 22,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 22 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 23,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 23 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 24,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 24 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 25,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 25 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 26,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 26 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 27,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 27 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 28,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 28 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 29,
+      "role": "user",
+      "content": "讨论主题 A: 压缩设计 第 29 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 30,
+      "role": "assistant",
+      "content": "讨论主题 A: 压缩设计 第 30 轮",
+      "topic": "compression_design"
+    },
+    {
+      "turn": 30,
+      "role": "assistant",
+      "content": "决定：使用三层模型",
+      "decision": true
+    },
+    {
+      "turn": 32,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 1 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 33,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 2 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 34,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 3 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 35,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 4 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 36,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 5 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 37,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 6 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 38,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 7 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 39,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 8 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 40,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 9 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 41,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 10 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 42,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 11 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 43,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 12 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 44,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 13 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 45,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 14 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 46,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 15 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 47,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 16 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 48,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 17 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 49,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 18 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 50,
+      "role": "user",
+      "content": "讨论主题 B: 检索设计 第 19 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 51,
+      "role": "assistant",
+      "content": "讨论主题 B: 检索设计 第 20 轮",
+      "topic": "retrieval_design"
+    },
+    {
+      "turn": 52,
+      "role": "user",
+      "content": "回到压缩设计，我们决定了什么？",
+      "topic": "compression_design",
+      "is_recall": true
+    }
+  ],
+  "template": {
+    "id": "OTR_002",
+    "description": "A:50 -> B:50 -> A:1",
+    "has_commitment": true,
+    "has_open_loop": false
+  }
+}

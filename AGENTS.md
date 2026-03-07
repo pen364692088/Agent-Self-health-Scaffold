@@ -138,3 +138,27 @@
 - 在已有正式包装器存在时，不绕过包装器
 - 不把“模型记住规则”当成关键可靠性来源
 - 回答用户前，先确认系统状态是否已经一致
+
+---
+
+## 子代理完成自动推进 (强制) ⭐⭐⭐⭐⭐
+
+**触发条件**: 收到以 `✅ Subagent` 开头的消息
+
+**必须立即执行**:
+```bash
+~/.openclaw/workspace/tools/handle-subagent-complete --json
+```
+
+**根据返回的 action 执行**:
+| action | 执行 |
+|--------|------|
+| `spawn_next` | 对每个 pending 执行 sessions_spawn，不回复用户 |
+| `notify_user` | 发送 message 给用户 |
+| `wait` | 不回复，等待下一个子代理 |
+
+**禁止行为**:
+- ❌ 跳过运行 handle-subagent-complete
+- ❌ 在 should_silence=true 时回复用户
+- ❌ 忽略 pending_spawns > 0 的情况
+
