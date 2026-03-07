@@ -1,0 +1,433 @@
+#!/usr/bin/env python3
+"""
+S1 Validator Worker - 独立采样验证 worker
+
+只读访问，不影响主链路。
+
+优先级：
+1. historical_replay（最高）
+2. real_main_agent
+3. synthetic_stress（最低，仅补桶）
+
+目标：
+- historical_replay_reports >= 10
+- scorable_old_topic_samples >= 30
+- old_topic_recovery_on_scorable_samples >= 0.70
+
+Usage:
+  s1-validator --scan              # 扫描可采样 session
+  s1-validator --run               # 执行一轮采样验证
+  s1-validator --status            # 显示当前状态
+  s1-validator --report            # 生成日报
+"""
+
+import argparse
+import json
+import os
+import sys
+import subprocess
+import sqlite3
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional
+import hashlib
+import random
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "context_compression"
+VALIDATION_DIR = ARTIFACTS_DIR / "validation"
+SAMPLES_DIR = VALIDATION_DIR / "samples"
+REPORTS_DIR = VALIDATION_DIR / "reports"
+SESSION_INDEX = WORKSPACE / ".session-index" / "sessions.db"
+TRACES_DIR = WORKSPACE / "integrations" / "openclaw" / "traces"
+BASELINE_COMMIT = "31a604a"
+
+# 桶优先级
+PRIORITY_BUCKETS = ["old_topic_recall", "with_open_loops", "user_correction"]
+ALL_BUCKETS = ["old_topic_recall", "multi_topic_switch", "with_open_loops", 
+               "post_tool_chat", "user_correction", "long_technical"]
+
+# Gate 1 前提
+GATE1_TARGETS = {
+    "historical_replay_reports": 10,
+    "scorable_old_topic_samples": 30,
+    "replay_real_scorable_old_topic": 15,
+    "old_topic_recovery_on_scorable": 0.70
+}
+
+
+class S1ValidatorWorker:
+    """S1 验证 Worker"""
+    
+    def __init__(self):
+        self.samples_created = 0
+        self.reports_created = 0
+        self.hard_fails = []
+        
+    def scan_sessions(self) -> Dict[str, Any]:
+        """扫描可采样的 session"""
+        result = {
+            "historical_replay": [],
+            "real_main_agent": [],
+            "stats": {}
+        }
+        
+        # 1. 从 events 表获取历史 session
+        if SESSION_INDEX.exists():
+            try:
+                conn = sqlite3.connect(str(SESSION_INDEX))
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT session_id, COUNT(*) as cnt, MAX(ts) as last_ts 
+                    FROM events 
+                    GROUP BY session_id 
+                    ORDER BY cnt DESC 
+                    LIMIT 50
+                """)
+                for row in cursor.fetchall():
+                    result["historical_replay"].append({
+                        "session_id": row[0],
+                        "event_count": row[1],
+                        "last_timestamp": row[2]
+                    })
+                conn.close()
+            except Exception as e:
+                print(f"  ⚠️  Session index error: {e}")
+        
+        # 2. 检查 traces 目录
+        if TRACES_DIR.exists():
+            for trace_file in TRACES_DIR.glob("*.jsonl"):
+                result["real_main_agent"].append({
+                    "file": str(trace_file),
+                    "size": trace_file.stat().st_size
+                })
+        
+        result["stats"] = {
+            "historical_replay_count": len(result["historical_replay"]),
+            "real_main_agent_count": len(result["real_main_agent"])
+        }
+        
+        return result
+    
+    def get_current_bucket_status(self) -> Dict[str, int]:
+        """获取当前桶状态"""
+        bucket_counts = {b: 0 for b in ALL_BUCKETS}
+        
+        for report_file in REPORTS_DIR.glob("*.json"):
+            try:
+                with open(report_file, 'r') as f:
+                    report = json.load(f)
+                for bucket in report.get("bucket_tags", []):
+                    if bucket in bucket_counts:
+                        bucket_counts[bucket] += 1
+            except:
+                pass
+        
+        return bucket_counts
+    
+    def get_weakest_buckets(self) -> List[str]:
+        """获取最弱的桶"""
+        bucket_counts = self.get_current_bucket_status()
+        sorted_buckets = sorted(bucket_counts.items(), key=lambda x: x[1])
+        return [b for b, c in sorted_buckets[:3]]
+    
+    def extract_events_from_session(self, session_id: str, limit: int = 50) -> List[Dict]:
+        """从 session 中提取事件"""
+        events = []
+        
+        try:
+            conn = sqlite3.connect(str(SESSION_INDEX))
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT event_type, tool_name, content_preview, ts
+                FROM events
+                WHERE session_id = ?
+                ORDER BY ts DESC
+                LIMIT ?
+            """, (session_id, limit))
+            
+            for row in cursor.fetchall():
+                events.append({
+                    "event_type": row[0],
+                    "tool_name": row[1] or "",
+                    "content": row[2] or "",
+                    "timestamp": row[3]
+                })
+            conn.close()
+        except Exception as e:
+            print(f"    ⚠️  Failed to extract events: {e}")
+        
+        return events
+    
+    def create_historical_sample(self, session_id: str, bucket: str) -> Optional[Dict]:
+        """创建历史回放样本"""
+        events = self.extract_events_from_session(session_id)
+        
+        if len(events) < 5:
+            return None
+        
+        sample_id = f"sample_historical_{bucket}_{hashlib.md5((session_id + bucket).encode()).hexdigest()[:8]}"
+        
+        return {
+            "sample_id": sample_id,
+            "source_type": "historical_replay",
+            "bucket_tags": [bucket],
+            "baseline_commit": BASELINE_COMMIT,
+            "retrieve_mode": "capsule_only",
+            "scorable": True,
+            "session_id": session_id,
+            "metadata": {
+                "sample_id": sample_id,
+                "source_type": "historical_replay",
+                "bucket_tags": [bucket],
+                "baseline_commit": BASELINE_COMMIT,
+                "retrieve_mode": "capsule_only",
+                "session_id": session_id,
+                "bucket": bucket
+            },
+            "events": events,
+            "created_at": datetime.now().isoformat()
+        }
+    
+    def run_validation(self, sample: Dict) -> Dict:
+        """执行验证流程"""
+        sample_id = sample["sample_id"]
+        sample_file = SAMPLES_DIR / f"{sample_id}.json"
+        
+        # 保存样本
+        with open(sample_file, 'w') as f:
+            json.dump(sample, f, indent=2)
+        
+        # 执行验证
+        try:
+            result = subprocess.run(
+                [str(WORKSPACE / "tools" / "s1-validator-run"), "--sample", str(sample_file)],
+                capture_output=True, text=True, timeout=120
+            )
+        except subprocess.TimeoutExpired:
+            self.hard_fails.append({
+                "sample_id": sample_id,
+                "failures": [{"type": "timeout"}]
+            })
+            return {"status": "timeout", "sample_id": sample_id}
+        
+        # 检查报告是否生成
+        report_file = REPORTS_DIR / f"{sample_id}_report.json"
+        if report_file.exists():
+            with open(report_file, 'r') as f:
+                report = json.load(f)
+            
+            if report.get("hard_fail"):
+                self.hard_fails.append({
+                    "sample_id": sample_id,
+                    "failures": report["hard_fail"].get("failures", [])
+                })
+                return {"status": "hard_fail", "sample_id": sample_id}
+            else:
+                self.reports_created += 1
+                return {"status": "success", "sample_id": sample_id, "report": report}
+        else:
+            self.hard_fails.append({
+                "sample_id": sample_id,
+                "failures": [{"type": "report_not_generated"}]
+            })
+            return {"status": "error", "sample_id": sample_id}
+    
+    def run_batch(self, target_historical: int = 10) -> Dict:
+        """执行采样批次"""
+        print("=== S1 Validator Worker: Batch Run ===\n")
+        
+        # 扫描 session
+        sessions = self.scan_sessions()
+        print(f"  Found {sessions['stats']['historical_replay_count']} historical sessions")
+        print(f"  Found {sessions['stats']['real_main_agent_count']} trace files")
+        
+        results = {
+            "historical_replay_created": 0,
+            "real_main_agent_created": 0,
+            "synthetic_created": 0,
+            "hard_fails": [],
+            "bucket_updates": {},
+            "sessions_processed": []
+        }
+        
+        # 目标：historical_replay_reports >= target
+        current_historical = len(list(REPORTS_DIR.glob("sample_historical_*_report.json")))
+        needed = max(0, target_historical - current_historical)
+        
+        print(f"\n  Current historical_replay_reports: {current_historical}")
+        print(f"  Target: {target_historical}")
+        print(f"  Needed: {needed}")
+        
+        if needed > 0 and sessions["historical_replay"]:
+            print(f"\n  Processing up to {len(sessions['historical_replay'])} sessions until target met...")
+            
+            for i, session in enumerate(sessions["historical_replay"]):
+                session_id = session["session_id"]
+                bucket = PRIORITY_BUCKETS[i % len(PRIORITY_BUCKETS)]
+                
+                print(f"    [{i+1}/{needed}] {session_id[:20]}... -> {bucket}")
+                
+                sample = self.create_historical_sample(session_id, bucket)
+                if sample:
+                    # skip existing report
+                    report_file = REPORTS_DIR / f"{sample['sample_id']}_report.json"
+                    if report_file.exists():
+                        print(f"      ↩️  skip existing {sample['sample_id']}")
+                        continue
+                    result = self.run_validation(sample)
+                    if result["status"] == "success":
+                        results["historical_replay_created"] += 1
+                        results["bucket_updates"][bucket] = results["bucket_updates"].get(bucket, 0) + 1
+                        results["sessions_processed"].append(session_id)
+                        print(f"      ✅ {sample['sample_id']}")
+                    else:
+                        print(f"      ❌ {result['status']}")
+                
+                if results["historical_replay_created"] >= needed:
+                    break
+        
+        results["hard_fails"] = self.hard_fails
+        
+        print(f"\n  Batch complete: {results['historical_replay_created']} historical samples created")
+        
+        return results
+    
+    def get_gate1_status(self) -> Dict:
+        """获取 Gate 1 状态"""
+        reports = list(REPORTS_DIR.glob("*.json"))
+        
+        historical_replay = len([r for r in reports if "historical" in r.name])
+        real_main_agent = len([r for r in reports if "real_main_agent" in r.name])
+        synthetic = len([r for r in reports if "synthetic" in r.name])
+        
+        scorable_samples = historical_replay + real_main_agent
+        
+        # 计算 old_topic_recovery on scorable samples
+        old_topic_reports = []
+        for report_file in reports:
+            try:
+                with open(report_file, 'r') as f:
+                    report = json.load(f)
+                if "old_topic_recall" in report.get("bucket_tags", []):
+                    source = report.get("source_type", "")
+                    if source in ["historical_replay", "real_main_agent"]:
+                        old_topic_reports.append(report)
+            except:
+                pass
+        
+        if old_topic_reports:
+            avg_recovery = sum(
+                r.get("scores", {}).get("old_topic_recovery", 0) 
+                for r in old_topic_reports
+            ) / len(old_topic_reports)
+        else:
+            avg_recovery = 0.0
+        
+        return {
+            "historical_replay_reports": historical_replay,
+            "real_main_agent_reports": real_main_agent,
+            "synthetic_reports": synthetic,
+            "scorable_old_topic_samples": len(old_topic_reports),
+            "replay_real_scorable_old_topic": len(old_topic_reports),
+            "old_topic_recovery_on_scorable": round(avg_recovery, 2),
+            "total_reports": len(reports),
+            "targets": GATE1_TARGETS,
+            "gate1_passed": (
+                historical_replay >= GATE1_TARGETS["historical_replay_reports"] and
+                len(old_topic_reports) >= GATE1_TARGETS["scorable_old_topic_samples"] and
+                len(old_topic_reports) >= GATE1_TARGETS["replay_real_scorable_old_topic"] and
+                avg_recovery >= GATE1_TARGETS["old_topic_recovery_on_scorable"]
+            )
+        }
+    
+    def print_status(self):
+        """打印状态"""
+        status = self.get_gate1_status()
+        
+        print("╔════════════════════════════════════════════════════════════════╗")
+        print("║        S1 Validator Worker - Gate 1 Status                    ║")
+        print("╚════════════════════════════════════════════════════════════════╝")
+        print()
+        print("GATE 1 PRECONDITIONS (v2)")
+        print("─" * 50)
+        
+        checks = [
+            ("historical_replay_reports", status["historical_replay_reports"], GATE1_TARGETS["historical_replay_reports"]),
+            ("scorable_old_topic_samples", status["scorable_old_topic_samples"], GATE1_TARGETS["scorable_old_topic_samples"]),
+            ("replay_real_scorable_old_topic", status["replay_real_scorable_old_topic"], GATE1_TARGETS["replay_real_scorable_old_topic"]),
+            ("old_topic_recovery_on_scorable", status["old_topic_recovery_on_scorable"], GATE1_TARGETS["old_topic_recovery_on_scorable"]),
+        ]
+        
+        all_passed = True
+        for name, current, target in checks:
+            if isinstance(target, float):
+                passed = current >= target
+            else:
+                passed = current >= target
+            icon = "✅" if passed else "❌"
+            print(f"  {icon} {name}: {current} / {target}")
+            if not passed:
+                all_passed = False
+        
+        print()
+        print(f"Gate 1 Status: {'✅ PASSED' if all_passed else '⏳ PENDING'}")
+        print()
+        print("SOURCE DISTRIBUTION")
+        print("─" * 50)
+        print(f"  historical_replay: {status['historical_replay_reports']}")
+        print(f"  real_main_agent:   {status['real_main_agent_reports']}")
+        print(f"  synthetic:         {status['synthetic_reports']}")
+        print(f"  total:             {status['total_reports']}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="S1 Validator Worker")
+    parser.add_argument("--scan", action="store_true", help="Scan available sessions")
+    parser.add_argument("--run", action="store_true", help="Run validation batch")
+    parser.add_argument("--status", action="store_true", help="Show current status")
+    parser.add_argument("--report", action="store_true", help="Generate daily report")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument("--target", type=int, default=10, help="Target historical samples")
+    
+    args = parser.parse_args()
+    
+    worker = S1ValidatorWorker()
+    
+    if args.scan:
+        sessions = worker.scan_sessions()
+        if args.json:
+            print(json.dumps(sessions, indent=2))
+        else:
+            print("=== Session Scan Results ===")
+            print(f"Historical sessions: {sessions['stats']['historical_replay_count']}")
+            print(f"Real main agent traces: {sessions['stats']['real_main_agent_count']}")
+    
+    elif args.run:
+        results = worker.run_batch(target_historical=args.target)
+        if args.json:
+            print(json.dumps(results, indent=2))
+    
+    elif args.status:
+        if args.json:
+            print(json.dumps(worker.get_gate1_status(), indent=2))
+        else:
+            worker.print_status()
+    
+    elif args.report:
+        status = worker.get_gate1_status()
+        report_path = VALIDATION_DIR / f"daily_report_{datetime.now().strftime('%Y%m%d')}.json"
+        with open(report_path, 'w') as f:
+            json.dump({
+                "generated_at": datetime.now().isoformat(),
+                "gate1_status": status,
+                "baseline_commit": BASELINE_COMMIT
+            }, f, indent=2)
+        print(f"✅ Report saved: {report_path}")
+    
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
