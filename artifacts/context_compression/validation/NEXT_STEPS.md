@@ -70,11 +70,31 @@
 
 ---
 
-## Gate 1 通过前提（最终版）
+## Gate 1 通过前提（最终版 v2）
 
-1. historical_replay > 0，而且不是象征性 1-2 个
-2. scorable_old_topic_samples 明显上升（>= 30）
-3. old_topic_recovery_on_scorable_samples 接近或超过阈值（>= 0.70）
+### 必须同时满足以下 4 条：
+
+1. **historical_replay_reports >= 10**
+   - 覆盖至少 2-3 个关键桶（优先 old_topic_recall、with_open_loops）
+   - 不允许 80% 都来自同一个历史 session
+
+2. **scorable_old_topic_samples >= 30**
+   - 来源：historical_replay + real_main_agent + 其他非 synthetic
+
+3. **historical_replay + real_main_agent scorable old_topic samples >= 15**
+   - 保证不是靠 observation-only synthetic 把分母堆出来
+
+4. **old_topic_recovery_on_scorable_samples >= 0.70**
+   - 基于 scorable 样本计算，排除 synthetic 默认分
+
+### 当前状态
+
+| 前提 | 当前 | 目标 | 状态 |
+|------|------|------|------|
+| historical_replay_reports | 0 | >= 10 | ❌ |
+| scorable_old_topic_samples | 23 | >= 30 | ❌ |
+| replay+real scorable old_topic | 18 | >= 15 | ✅ |
+| old_topic_recovery_on_scorable | 0.50 | >= 0.70 | ❌ |
 
 **核心原则**：
 > 不追求数量，追求证据质量。
@@ -95,4 +115,40 @@
 - samples - reports = execution_failures
 - reports 中 synthetic = observation-only
 - Gate 1 只看 primary 样本
+
+
+---
+
+## 执行顺序约束（强制）⭐⭐⭐
+
+### 规则：口径先于样本
+
+```
+P0 修 replay 之前，不要动 scoring
+P0.5 写死口径之后，再开始提纯样本
+```
+
+### 原因
+
+一旦边补 replay 边改 scoring，会回到"指标变化到底是口径还是能力"的问题。
+
+### 正确流程
+
+```
+1. P0: 修 session-index，打通 historical_replay
+   ↓
+2. P0.5: 写死 Scoring Scope 口径
+   ↓
+3. P1: 提纯 scorable 样本
+   ↓
+4. P2: 隔离 observation-only synthetic
+   ↓
+5. 再看 Gate 1 指标
+```
+
+### 禁止行为
+
+- ❌ 边补样本边改口径
+- ❌ 在 P0 完成前开始 P1
+- ❌ 在 P0.5 完成前解读指标变化
 

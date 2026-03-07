@@ -2,18 +2,18 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7462",
+  "message_id": "7465",
   "from": "telegram:8420019401",
-  "timestamp": 1772870228000,
+  "timestamp": 1772871242000,
   "decision": {
     "action": "withdraw",
-    "decision_id": 211,
+    "decision_id": 212,
     "explanation": {
       "emotion": {
         "top2": [
           [
             "loneliness",
-            0.2999802392066333
+            0.29999534503249725
           ]
         ],
         "all": {
@@ -21,7 +21,7 @@
           "sadness": 0,
           "anxiety": 0,
           "joy": 0,
-          "loneliness": 0.2999802392066333
+          "loneliness": 0.29999534503249725
         }
       },
       "interoception": {
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 3.4586264091721523e-7,
+        "bond": 2.9166774145359274e-7,
         "grudge": 0,
         "trust": 0.49900000000000033,
         "repair_bank": 0
@@ -38,7 +38,7 @@
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.07730010375879234,
+          "score": 0.0773000875003225,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.06980010375879235,
+          "score": 0.0698000875003225,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.03530010375879236,
+          "score": 0.03530008750032251,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -132,7 +132,7 @@
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-07T07:57:09.087Z",
+  "generated_at": "2026-03-07T08:14:03.682Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -141,12 +141,12 @@
         "sadness": 0,
         "anxiety": 0,
         "joy": 0,
-        "loneliness": 0.2999802392066333
+        "loneliness": 0.29999534503249725
       },
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 3.4586264091721523e-7,
+          "bond": 2.9166774145359274e-7,
           "trust": 0.49900000000000033,
           "grudge": 0,
           "repair_bank": 0
@@ -178,7 +178,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1772870229.0719826,
+      "generated_at": 1772871243.6693764,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,
