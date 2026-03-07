@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "sample_id": "sample_synthetic_stress_user_correction_9c10f8cc",
+    "session_id": "synthetic_user_correction_20260307012927",
+    "source_type": "synthetic_stress",
+    "bucket_tags": [
+      "user_correction"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "scenario_template_id": "UC_001",
+    "turn_count": 50,
+    "created_at": "2026-03-07T01:29:27.072659"
+  },
+  "events": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "必须使用 OpenViking"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "content": "好的，使用 OpenViking"
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "不对，改成 capsule fallback 优先"
+    }
+  ],
+  "template": {
+    "id": "UC_001",
+    "description": "Constraint change"
+  }
+}

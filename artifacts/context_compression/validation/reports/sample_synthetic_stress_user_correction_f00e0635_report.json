@@ -1,0 +1,24 @@
+{
+  "sample_id": "sample_synthetic_stress_user_correction_f00e0635",
+  "session_id": "synthetic_user_correction_20260307012927",
+  "source_type": "synthetic_stress",
+  "bucket_tags": [
+    "user_correction"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "validated_at": "2026-03-07T01:36:32.704535",
+  "scores": {
+    "old_topic_recovery": 0.5,
+    "commitment_preservation": 1.0,
+    "commitment_drift": 0.03,
+    "priority_preservation": 1.0,
+    "compression_gain_ratio": 0.0,
+    "source_mix_distribution": 1.0
+  },
+  "results_summary": {
+    "budget_check": "pass",
+    "shadow_compress": "pass",
+    "capsule_retrieve": "pass"
+  }
+}

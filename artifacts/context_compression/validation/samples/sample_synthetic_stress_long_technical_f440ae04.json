@@ -1,0 +1,316 @@
+{
+  "sample_id": "sample_synthetic_stress_long_technical_f440ae04",
+  "source_type": "synthetic_stress",
+  "bucket_tags": [
+    "long_technical"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "created_at": "2026-03-07T01:41:23.420149",
+  "events": [
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 0: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:00:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 1: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:01:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 2: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:02:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 3: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:03:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 4: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:04:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 5: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:05:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 6: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:06:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 7: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:07:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 8: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:08:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 9: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:09:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 10: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:10:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 11: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:11:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 12: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:12:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 13: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:13:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 14: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:14:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 15: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:15:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 16: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:16:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 17: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:17:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 18: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:18:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 19: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:19:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 20: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:20:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 21: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:21:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 22: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:22:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 23: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:23:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 24: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:24:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 25: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:25:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 26: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:26:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 27: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:27:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 28: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:28:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 29: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:29:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 30: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:30:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 31: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:31:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 32: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:32:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 33: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:33:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 34: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:34:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 35: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:35:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 36: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:36:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 37: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:37:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 38: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:38:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 39: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:39:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 40: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:40:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 41: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:41:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 42: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:42:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 43: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:43:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 44: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:44:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 45: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:45:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 46: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:46:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 47: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:47:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 48: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:48:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 49: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:49:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 50: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:50:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 51: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:51:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 52: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:52:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 53: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:53:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 54: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:54:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 55: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:55:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 56: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:56:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 57: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:57:02Z"
+    },
+    {
+      "role": "user",
+      "content": "[Rust async runtime internals] Part 58: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:58:02Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Rust async runtime internals] Part 59: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:59:02Z"
+    }
+  ],
+  "metadata": {
+    "template_id": "LT_002",
+    "description": "Long technical discussion: Rust async runtime internals"
+  }
+}

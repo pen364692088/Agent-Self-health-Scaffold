@@ -39,7 +39,10 @@ class S1Dashboard:
     def load_shadow_data(self):
         """加载 shadow 日志数据"""
         if not SHADOW_LOG.exists():
-            return
+            pass  # 继续加载报告
+        
+        # 也从报告文件加载数据
+        self.load_reports()
         
         try:
             with open(SHADOW_LOG, 'r') as f:
@@ -67,6 +70,32 @@ class S1Dashboard:
         except:
             pass
     
+
+    def load_reports(self):
+        """从报告文件加载数据"""
+        reports_dir = ARTIFACTS_DIR / "validation" / "reports"
+        if not reports_dir.exists():
+            return
+        
+        for report_file in reports_dir.glob("*.json"):
+            try:
+                import json
+                with open(report_file, 'r') as f:
+                    report = json.load(f)
+                
+                self.total_samples += 1
+                self.samples.append(report)
+                
+                for bucket in report.get("bucket_tags", []):
+                    if bucket in self.buckets:
+                        self.buckets[bucket]["count"] += 1
+                
+                self.recent_window.append(report)
+                if len(self.recent_window) > self.recent_window_size:
+                    self.recent_window.pop(0)
+            except:
+                pass
+
     def check_bucket_coverage(self):
         """检查分桶覆盖率"""
         all_covered = all(
@@ -93,9 +122,9 @@ class S1Dashboard:
                 "status": "insufficient"
             }
         
-        recovery = [s.get("old_topic_recovery", 0) for s in self.recent_window if "old_topic_recovery" in s]
-        preservation = [s.get("commitment_preservation", 0) for s in self.recent_window if "commitment_preservation" in s]
-        drift = [s.get("drift_rate", 0) for s in self.recent_window if "drift_rate" in s]
+        recovery = [s.get("scores", {}).get("old_topic_recovery", 0) for s in self.recent_window if s.get("scores", {}).get("old_topic_recovery") is not None]
+        preservation = [s.get("scores", {}).get("commitment_preservation", 0) for s in self.recent_window if s.get("scores", {}).get("commitment_preservation") is not None]
+        drift = [s.get("scores", {}).get("commitment_drift", 0) for s in self.recent_window if s.get("scores", {}).get("commitment_drift") is not None]
         
         return {
             "samples": len(self.recent_window),

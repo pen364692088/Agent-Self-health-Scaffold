@@ -1,0 +1,216 @@
+{
+  "sample_id": "sample_synthetic_stress_long_technical_f98f5f8d",
+  "source_type": "synthetic_stress",
+  "bucket_tags": [
+    "long_technical"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "created_at": "2026-03-07T01:41:23.419345",
+  "events": [
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 0: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:00:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 1: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:01:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 2: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:02:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 3: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:03:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 4: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:04:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 5: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:05:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 6: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:06:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 7: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:07:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 8: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:08:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 9: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:09:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 10: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:10:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 11: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:11:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 12: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:12:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 13: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:13:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 14: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:14:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 15: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:15:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 16: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:16:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 17: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:17:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 18: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:18:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 19: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:19:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 20: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:20:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 21: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:21:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 22: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:22:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 23: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:23:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 24: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:24:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 25: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:25:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 26: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:26:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 27: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:27:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 28: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:28:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 29: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:29:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 30: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:30:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 31: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:31:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 32: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:32:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 33: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:33:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 34: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:34:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 35: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:35:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 36: Debugging the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:36:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 37: Implementing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:37:00Z"
+    },
+    {
+      "role": "user",
+      "content": "[Kubernetes operator development patterns] Part 38: Analyzing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:38:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "[Kubernetes operator development patterns] Part 39: Optimizing the core components with focus on performance and reliability...",
+      "timestamp": "2026-03-07T01:39:00Z"
+    }
+  ],
+  "metadata": {
+    "template_id": "LT_000",
+    "description": "Long technical discussion: Kubernetes operator development patterns"
+  }
+}

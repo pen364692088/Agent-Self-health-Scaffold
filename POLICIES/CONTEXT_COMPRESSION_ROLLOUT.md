@@ -71,10 +71,10 @@ metrics:
 
 **当前状态**：
 ```yaml
-total_samples: 12 / 80
-bucket_coverage: "NOT ALL COVERED"
-recent_window: "N/A (< 30 samples)"
-metrics: "N/A"
+total_samples: 105 / 80 ✅
+bucket_coverage: "ALL COVERED" ✅
+recent_window: "30 samples, old_topic_recovery=0.50"
+metrics: "old_topic_recovery=0.50 (need >=0.70)"
 gate_1_status: PENDING
 ```
 
@@ -117,7 +117,7 @@ blocker: OpenViking unavailable
 window_size: 30
 current_window:
   samples: 12  # < 30, not enough
-  metrics: "N/A"
+  metrics: "old_topic_recovery=0.50 (need >=0.70)"
   trend: "N/A"
 ```
 

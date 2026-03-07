@@ -91,8 +91,21 @@ class S1ValidatorRun:
             for event in self.events[:20]:  # 只用前 20 个事件
                 f.write(json.dumps(event) + '\n')
         
+        # 创建初始 state 文件
+        initial_state = {
+            "session_id": self.metadata.get("session_id", "unknown"),
+            "open_loops": [],
+            "active_commitments": [],
+            "priority_topics": [],
+            "recent_tool_calls": [],
+            "token_count": 0
+        }
+        with open(state_file, 'w') as f:
+            json.dump(initial_state, f, indent=2)
+        
         result = self._run_tool("context-budget-check", [
             "--history", str(history_file),
+            "--state", str(state_file),
             "--max-tokens", "100000",
             "--json"
         ])
@@ -110,6 +123,7 @@ class S1ValidatorRun:
         result = self._run_tool("context-compress", [
             "--session-id", self.metadata["session_id"],
             "--history", str(history_file),
+            "--state", str(state_file),
             "--mode", "shadow",
             "--max-tokens", "100000",
             "--json"

@@ -1,0 +1,24 @@
+{
+  "sample_id": "sample_real_main_agent_old_topic_recall_e90ff040",
+  "session_id": "telegram:8420019401:2026-03-06",
+  "source_type": "real_main_agent",
+  "bucket_tags": [
+    "old_topic_recall"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "validated_at": "2026-03-07T01:36:28.009634",
+  "scores": {
+    "old_topic_recovery": 0.5,
+    "commitment_preservation": 1.0,
+    "commitment_drift": 0.03,
+    "priority_preservation": 1.0,
+    "compression_gain_ratio": 0.0,
+    "source_mix_distribution": 1.0
+  },
+  "results_summary": {
+    "budget_check": "pass",
+    "shadow_compress": "pass",
+    "capsule_retrieve": "pass"
+  }
+}

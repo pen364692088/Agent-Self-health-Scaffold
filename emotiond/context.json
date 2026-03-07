@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7430",
+  "message_id": "7458",
   "from": "telegram:8420019401",
-  "timestamp": 1772867593000,
+  "timestamp": 1772869720000,
   "decision": {
-    "action": "boundary",
-    "decision_id": 195,
+    "action": "repair_offer",
+    "decision_id": 209,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 5.349283663804389e-7,
+        "bond": 3.7662685232794037e-7,
         "grudge": 0,
         "trust": 0.5000000000000003,
         "repair_bank": 0
@@ -38,7 +38,7 @@
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.07750016047850997,
+          "score": 0.07750011298805576,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.07000016047850999,
+          "score": 0.07000011298805578,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.03550016047851,
+          "score": 0.03550011298805579,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "boundary",
+      "selected": "repair_offer",
       "selection_reasons": [
-        "Selected via stochastic process (score: 0.030)",
+        "Highest score given current state",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "clear, firm",
-    "intent": "establish limits",
+    "tone": "gentle, conciliatory",
+    "intent": "rebuild trust",
     "phrases": [
-      "I need to be clear",
-      "not comfortable"
+      "I value our connection",
+      "let me make this right"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-07T07:13:14.371Z",
+  "generated_at": "2026-03-07T07:48:41.643Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 5.349283663804389e-7,
+          "bond": 3.7662685232794037e-7,
           "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
@@ -176,7 +176,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1772867594.3444865,
+      "generated_at": 1772869721.6305478,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

@@ -7,7 +7,7 @@
   ],
   "baseline_commit": "31a604a",
   "retrieve_mode": "capsule_only",
-  "validated_at": "2026-03-06T12:33:02.913152",
+  "validated_at": "2026-03-07T01:39:44.089355",
   "scores": {
     "old_topic_recovery": 0.5,
     "commitment_preservation": 1.0,
@@ -18,20 +18,7 @@
   },
   "results_summary": {
     "budget_check": "pass",
-    "shadow_compress": "fail",
+    "shadow_compress": "pass",
     "capsule_retrieve": "pass"
-  },
-  "hard_fail": {
-    "failures": [
-      {
-        "type": "tool_execution_failed",
-        "step": "shadow_compress",
-        "error": {
-          "error": true,
-          "returncode": 1,
-          "stderr": ""
-        }
-      }
-    ]
   }
 }

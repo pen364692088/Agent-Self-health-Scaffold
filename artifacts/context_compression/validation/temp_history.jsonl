@@ -1,20 +1,4 @@
-{"turn": 1, "role": "user", "content": "\u8ba8\u8bba compression \u7b2c 1 \u8f6e", "topic": "compression"}
-{"turn": 2, "role": "assistant", "content": "\u8ba8\u8bba compression \u7b2c 2 \u8f6e", "topic": "compression"}
-{"turn": 3, "role": "user", "content": "\u8ba8\u8bba compression \u7b2c 3 \u8f6e", "topic": "compression"}
-{"turn": 4, "role": "assistant", "content": "\u8ba8\u8bba compression \u7b2c 4 \u8f6e", "topic": "compression"}
-{"turn": 5, "role": "user", "content": "\u8ba8\u8bba compression \u7b2c 5 \u8f6e", "topic": "compression"}
-{"turn": 6, "role": "assistant", "content": "\u8ba8\u8bba compression \u7b2c 6 \u8f6e", "topic": "compression"}
-{"turn": 7, "role": "user", "content": "\u8ba8\u8bba compression \u7b2c 7 \u8f6e", "topic": "compression"}
-{"turn": 8, "role": "assistant", "content": "\u8ba8\u8bba compression \u7b2c 8 \u8f6e", "topic": "compression"}
-{"turn": 9, "role": "user", "content": "\u8ba8\u8bba compression \u7b2c 9 \u8f6e", "topic": "compression"}
-{"turn": 10, "role": "assistant", "content": "\u8ba8\u8bba compression \u7b2c 10 \u8f6e", "topic": "compression"}
-{"turn": 11, "role": "user", "content": "\u8ba8\u8bba retrieval \u7b2c 1 \u8f6e", "topic": "retrieval"}
-{"turn": 12, "role": "assistant", "content": "\u8ba8\u8bba retrieval \u7b2c 2 \u8f6e", "topic": "retrieval"}
-{"turn": 13, "role": "user", "content": "\u8ba8\u8bba retrieval \u7b2c 3 \u8f6e", "topic": "retrieval"}
-{"turn": 14, "role": "assistant", "content": "\u8ba8\u8bba retrieval \u7b2c 4 \u8f6e", "topic": "retrieval"}
-{"turn": 15, "role": "user", "content": "\u8ba8\u8bba retrieval \u7b2c 5 \u8f6e", "topic": "retrieval"}
-{"turn": 16, "role": "assistant", "content": "\u8ba8\u8bba retrieval \u7b2c 6 \u8f6e", "topic": "retrieval"}
-{"turn": 17, "role": "user", "content": "\u8ba8\u8bba retrieval \u7b2c 7 \u8f6e", "topic": "retrieval"}
-{"turn": 18, "role": "assistant", "content": "\u8ba8\u8bba retrieval \u7b2c 8 \u8f6e", "topic": "retrieval"}
-{"turn": 19, "role": "user", "content": "\u8ba8\u8bba retrieval \u7b2c 9 \u8f6e", "topic": "retrieval"}
-{"turn": 20, "role": "assistant", "content": "\u8ba8\u8bba retrieval \u7b2c 10 \u8f6e", "topic": "retrieval"}
+{"turn": 1, "role": "user", "content": "\u521b\u5efa tools/context-budget-check", "technical_entity": "tools/context-budget-check"}
+{"turn": 2, "role": "assistant", "content": "\u521b\u5efa schemas/session_capsule.v1.schema.json", "technical_entity": "schemas/session_capsule.v1.schema.json"}
+{"turn": 3, "role": "user", "content": "\u521b\u5efa POLICIES/CONTEXT_COMPRESSION.md", "technical_entity": "POLICIES/CONTEXT_COMPRESSION.md"}
+{"turn": 4, "role": "assistant", "content": "\u521b\u5efa tests/context/test_old_topic_recall.py", "technical_entity": "tests/context/test_old_topic_recall.py"}
