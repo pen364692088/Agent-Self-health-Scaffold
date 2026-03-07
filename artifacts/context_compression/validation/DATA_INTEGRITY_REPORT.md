@@ -83,3 +83,33 @@
 - 后续采样优先使用 real_main_agent 和 historical_replay
 - synthetic 仅作为补充，且需注入可评分事件
 
+
+---
+
+## 数据口径正式定义
+
+### 规则：samples vs reports 的语义
+
+```
+samples 目录 = 创建的样本（generated samples）
+reports 目录 = 完成评分的样本（validated samples）
+差值 = execution_failures（验证失败，不计入 gate scoring）
+```
+
+### 必须记录到 failure ledger
+
+所有验证失败的样本必须：
+1. 记录到 `failures.jsonl`
+2. 标注失败原因（如 KeyError, tool_error）
+3. 不计入 Gate 指标计算
+
+### Gate Scoring 口径
+
+**计入 Gate 指标**：
+- reports 目录中 `source_type != synthetic_stress` 的样本
+
+**仅作 observation**：
+- reports 目录中 `source_type == synthetic_stress` 的样本
+- 用于回归测试、压力测试、覆盖率补充
+- 不影响 Gate 1 主指标判定
+

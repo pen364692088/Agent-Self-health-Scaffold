@@ -71,12 +71,19 @@ metrics:
 
 **当前状态**：
 ```yaml
+phase: "S1 覆盖补齐已完成，进入证据提纯阶段"
 total_samples: 105 / 80 ✅
 bucket_coverage: "ALL COVERED" ✅
-recent_window: "30 samples, old_topic_recovery=0.50"
-metrics: "old_topic_recovery=0.50 (need >=0.70)"
+scorable_old_topic_samples: 23
+old_topic_recovery_on_scorable_samples: 0.50
+historical_replay: 0 ❌
 gate_1_status: PENDING
 ```
+
+**Gate 1 通过前提（更新）**：
+1. historical_replay > 0（非象征性）
+2. scorable_old_topic_samples >= 30
+3. old_topic_recovery_on_scorable_samples >= 0.70
 
 ### Gate 2: Full Retrieval Ready ❌ BLOCKED
 ```yaml
