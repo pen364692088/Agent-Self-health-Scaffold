@@ -1,0 +1,25 @@
+{
+  "sample_id": "sample_historical_old_topic_focus_556067aef0",
+  "session_id": "8c098f61-5824-47ee-969e-2a3b806cb5be",
+  "source_type": "historical_replay",
+  "bucket_tags": [
+    "old_topic_recall",
+    "user_correction"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "validated_at": "2026-03-07T02:39:49.342768",
+  "scores": {
+    "old_topic_recovery": 0.5,
+    "commitment_preservation": 1.0,
+    "commitment_drift": 0.03,
+    "priority_preservation": 1.0,
+    "compression_gain_ratio": 0.0,
+    "source_mix_distribution": 1.0
+  },
+  "results_summary": {
+    "budget_check": "pass",
+    "shadow_compress": "pass",
+    "capsule_retrieve": "pass"
+  }
+}

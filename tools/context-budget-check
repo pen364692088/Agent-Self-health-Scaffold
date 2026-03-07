@@ -58,17 +58,32 @@ def estimate_jsonl_tokens(path: Path) -> int:
                         data = json.loads(line)
                         # Extract content from various message formats
                         if isinstance(data, dict):
-                            # OpenAI/OpenClaw message format
-                            content = data.get('content', '')
-                            if isinstance(content, str):
-                                total += estimate_tokens(content)
-                            elif isinstance(content, list):
-                                for item in content:
-                                    if isinstance(item, dict):
-                                        total += estimate_tokens(item.get('text', ''))
+                            # Check for OpenClaw session format (type field)
+                            if data.get('type') == 'message':
+                                msg = data.get('message', {})
+                                content = msg.get('content', [])
+                                if isinstance(content, list):
+                                    for item in content:
+                                        if isinstance(item, dict):
+                                            # OpenClaw format: {"type": "text", "text": "..."}
+                                            total += estimate_tokens(item.get('text', ''))
+                                elif isinstance(content, str):
+                                    total += estimate_tokens(content)
+                            else:
+                                # OpenAI message format
+                                content = data.get('content', '')
+                                if isinstance(content, str):
+                                    total += estimate_tokens(content)
+                                elif isinstance(content, list):
+                                    for item in content:
+                                        if isinstance(item, dict):
+                                            total += estimate_tokens(item.get('text', ''))
+                                            total += estimate_tokens(item.get('content', ''))
                             # Also count role and other metadata
                             total += estimate_tokens(data.get('role', ''))
                             total += estimate_tokens(str(data.get('tool_calls', '')))
+                            total += estimate_tokens(str(data.get('tool_name', '')))
+                            total += estimate_tokens(str(data.get('result', '')))
                         else:
                             total += estimate_json_tokens(data)
                     except json.JSONDecodeError:

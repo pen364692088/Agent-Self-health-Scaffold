@@ -1,0 +1,536 @@
+{
+  "benchmark_name": "old-topic-micro-benchmark-12",
+  "run_at": "2026-03-07T02:57:03.168699",
+  "aggregate": {
+    "total_samples": 12,
+    "baseline": {
+      "avg_coverage": 0.083,
+      "top1_anchor_hit_rate": 0.083,
+      "samples_075_plus": 1,
+      "correct_topic_wrong_anchor": 0
+    },
+    "anchor_aware": {
+      "avg_coverage": 0.583,
+      "top1_anchor_hit_rate": 0.5,
+      "samples_075_plus": 7,
+      "correct_topic_wrong_anchor": 0
+    },
+    "delta": {
+      "avg_coverage": 0.5,
+      "top1_anchor_hit_rate": 0.417,
+      "samples_075_plus": 6,
+      "improved_count": 6,
+      "degraded_count": 0
+    }
+  },
+  "per_sample_results": [
+    {
+      "sample_id": "sample_historical_old_topic_focus_4b1c43c501",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "with_open_loops"
+      ],
+      "query": "what was the ## Task Completed: Monitoring Setup ✅",
+      "capsules_count": 4,
+      "query_anchors_count": 1,
+      "baseline": {
+        "top1_result": "sample_historical_old_topic_focus_4b1c43c501_seg0",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 1,
+            "found": 9,
+            "overlap": 1,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": true,
+        "total_expected": 1,
+        "total_overlap": 1,
+        "score": 0.857
+      },
+      "anchor_aware": {
+        "top1_result": "sample_historical_old_topic_focus_4b1c43c501_seg0",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 1,
+            "found": 9,
+            "overlap": 1,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": true,
+        "total_expected": 1,
+        "total_overlap": 1,
+        "score": 0.9,
+        "details": {
+          "keyword_score": 0.857,
+          "anchor_score": 1.0,
+          "combined_score": 0.9,
+          "anchor_matches": {
+            "entity_anchor": {
+              "query_count": 1,
+              "capsule_count": 9,
+              "overlap": [
+                "successfully"
+              ]
+            }
+          }
+        }
+      },
+      "comparison": {
+        "coverage_delta": 0.0,
+        "top1_hit_improved": false,
+        "score_delta": 0.04300000000000004
+      }
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_d1f1efede8",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "with_open_loops"
+      ],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 4,
+      "query_anchors_count": 3,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": "sample_historical_old_topic_focus_d1f1efede8_seg2",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 3,
+            "found": 3,
+            "overlap": 3,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": true,
+        "total_expected": 3,
+        "total_overlap": 3,
+        "score": 0.3,
+        "details": {
+          "keyword_score": 0.0,
+          "anchor_score": 1.0,
+          "combined_score": 0.3,
+          "anchor_matches": {
+            "entity_anchor": {
+              "query_count": 3,
+              "capsule_count": 3,
+              "overlap": [
+                "secondary inference",
+                "quarantine reasons",
+                "rolling window metrics"
+              ]
+            }
+          }
+        }
+      },
+      "comparison": {
+        "coverage_delta": 1.0,
+        "top1_hit_improved": true,
+        "score_delta": 0.3
+      }
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_c5ec44456c",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "with_open_loops"
+      ],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 4,
+      "query_anchors_count": 7,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": "sample_historical_old_topic_focus_c5ec44456c_seg2",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 2,
+            "found": 4,
+            "overlap": 2,
+            "coverage": 1.0
+          },
+          "tool_state_anchor": {
+            "expected": 1,
+            "found": 1,
+            "overlap": 1,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": true,
+        "total_expected": 3,
+        "total_overlap": 3,
+        "score": 0.3,
+        "details": {
+          "keyword_score": 0.0,
+          "anchor_score": 1.0,
+          "combined_score": 0.3,
+          "anchor_matches": {
+            "entity_anchor": {
+              "query_count": 2,
+              "capsule_count": 4,
+              "overlap": [
+                "changes",
+                "your"
+              ]
+            },
+            "tool_state_anchor": {
+              "query_count": 1,
+              "capsule_count": 1,
+              "overlap": [
+                "{'tool': 'read', 'event_type': 'message', 'timestamp': '2026-03-02t19:49:38.501z'}"
+              ]
+            }
+          }
+        }
+      },
+      "comparison": {
+        "coverage_delta": 1.0,
+        "top1_hit_improved": true,
+        "score_delta": 0.3
+      }
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_455a807d7d",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "user_correction"
+      ],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 4,
+      "query_anchors_count": 4,
+      "baseline": {
+        "top1_result": "sample_historical_old_topic_focus_455a807d7d_seg1",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 4,
+            "found": 3,
+            "overlap": 0,
+            "coverage": 0.0
+          }
+        },
+        "coverage": 0.0,
+        "top1_anchor_hit": false,
+        "total_expected": 4,
+        "total_overlap": 0,
+        "score": 0.143
+      },
+      "anchor_aware": {
+        "top1_result": "sample_historical_old_topic_focus_455a807d7d_seg2",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 4,
+            "found": 4,
+            "overlap": 4,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": true,
+        "total_expected": 4,
+        "total_overlap": 4,
+        "score": 0.3,
+        "details": {
+          "keyword_score": 0.0,
+          "anchor_score": 1.0,
+          "combined_score": 0.3,
+          "anchor_matches": {
+            "entity_anchor": {
+              "query_count": 4,
+              "capsule_count": 4,
+              "overlap": [
+                "soak",
+                "intervention",
+                "mvp",
+                "baseline"
+              ]
+            }
+          }
+        }
+      },
+      "comparison": {
+        "coverage_delta": 1.0,
+        "top1_hit_improved": true,
+        "score_delta": 0.157
+      }
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_4f39b50590",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "user_correction"
+      ],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 4,
+      "query_anchors_count": 10,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": "sample_historical_old_topic_focus_4f39b50590_seg2",
+        "anchor_overlaps": {
+          "tool_state_anchor": {
+            "expected": 1,
+            "found": 1,
+            "overlap": 1,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": false,
+        "total_expected": 1,
+        "total_overlap": 1,
+        "score": 0.3,
+        "details": {
+          "keyword_score": 0.0,
+          "anchor_score": 1.0,
+          "combined_score": 0.3,
+          "anchor_matches": {
+            "tool_state_anchor": {
+              "query_count": 1,
+              "capsule_count": 1,
+              "overlap": [
+                "{'tool': 'exec', 'event_type': 'message', 'timestamp': '2026-03-04t21:33:46.763z'}"
+              ]
+            }
+          }
+        }
+      },
+      "comparison": {
+        "coverage_delta": 1.0,
+        "top1_hit_improved": false,
+        "score_delta": 0.3
+      }
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_556067aef0",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "user_correction"
+      ],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 4,
+      "query_anchors_count": 5,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": "sample_historical_old_topic_focus_556067aef0_seg2",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 1,
+            "found": 2,
+            "overlap": 1,
+            "coverage": 1.0
+          },
+          "tool_state_anchor": {
+            "expected": 1,
+            "found": 1,
+            "overlap": 1,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": true,
+        "total_expected": 2,
+        "total_overlap": 2,
+        "score": 0.3,
+        "details": {
+          "keyword_score": 0.0,
+          "anchor_score": 1.0,
+          "combined_score": 0.3,
+          "anchor_matches": {
+            "entity_anchor": {
+              "query_count": 1,
+              "capsule_count": 2,
+              "overlap": [
+                "subagent orchestration wrapper"
+              ]
+            },
+            "tool_state_anchor": {
+              "query_count": 1,
+              "capsule_count": 1,
+              "overlap": [
+                "{'tool': 'read', 'event_type': 'message', 'timestamp': '2026-03-04t03:12:24.242z'}"
+              ]
+            }
+          }
+        }
+      },
+      "comparison": {
+        "coverage_delta": 1.0,
+        "top1_hit_improved": true,
+        "score_delta": 0.3
+      }
+    },
+    {
+      "sample_id": "sample_historical_old_topic_recall_a28c92e6",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 4,
+      "query_anchors_count": 5,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": "sample_historical_old_topic_recall_a28c92e6_seg2",
+        "anchor_overlaps": {
+          "entity_anchor": {
+            "expected": 1,
+            "found": 1,
+            "overlap": 1,
+            "coverage": 1.0
+          },
+          "tool_state_anchor": {
+            "expected": 1,
+            "found": 1,
+            "overlap": 1,
+            "coverage": 1.0
+          }
+        },
+        "coverage": 1.0,
+        "top1_anchor_hit": true,
+        "total_expected": 2,
+        "total_overlap": 2,
+        "score": 0.3,
+        "details": {
+          "keyword_score": 0.0,
+          "anchor_score": 1.0,
+          "combined_score": 0.3,
+          "anchor_matches": {
+            "entity_anchor": {
+              "query_count": 1,
+              "capsule_count": 1,
+              "overlap": [
+                "sub"
+              ]
+            },
+            "tool_state_anchor": {
+              "query_count": 1,
+              "capsule_count": 1,
+              "overlap": [
+                "{'tool': 'sessions_spawn', 'event_type': 'message', 'timestamp': '2026-03-03t08:35:54.097z'}"
+              ]
+            }
+          }
+        }
+      },
+      "comparison": {
+        "coverage_delta": 1.0,
+        "top1_hit_improved": true,
+        "score_delta": 0.3
+      }
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_4e781246",
+      "source_type": "",
+      "bucket_tags": [],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 1,
+      "query_anchors_count": 0,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": null
+      },
+      "comparison": {
+        "coverage_delta": 0,
+        "top1_hit_improved": false,
+        "score_delta": 0
+      }
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_2a926844",
+      "source_type": "",
+      "bucket_tags": [],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 1,
+      "query_anchors_count": 0,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": null
+      },
+      "comparison": {
+        "coverage_delta": 0,
+        "top1_hit_improved": false,
+        "score_delta": 0
+      }
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_e90ff040",
+      "source_type": "",
+      "bucket_tags": [],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 1,
+      "query_anchors_count": 0,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": null
+      },
+      "comparison": {
+        "coverage_delta": 0,
+        "top1_hit_improved": false,
+        "score_delta": 0
+      }
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_750683fa",
+      "source_type": "",
+      "bucket_tags": [],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 1,
+      "query_anchors_count": 0,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": null
+      },
+      "comparison": {
+        "coverage_delta": 0,
+        "top1_hit_improved": false,
+        "score_delta": 0
+      }
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_1301849c",
+      "source_type": "",
+      "bucket_tags": [],
+      "query": "what was discussed previously about the task",
+      "capsules_count": 1,
+      "query_anchors_count": 0,
+      "baseline": {
+        "top1_result": null
+      },
+      "anchor_aware": {
+        "top1_result": null
+      },
+      "comparison": {
+        "coverage_delta": 0,
+        "top1_hit_improved": false,
+        "score_delta": 0
+      }
+    }
+  ]
+}

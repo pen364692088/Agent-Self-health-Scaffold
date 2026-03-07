@@ -1,0 +1,387 @@
+{
+  "sample_id": "sample_historical_old_topic_focus_2b382ada01",
+  "source_type": "historical_replay",
+  "bucket_tags": [
+    "old_topic_recall",
+    "user_correction"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "scorable": true,
+  "session_id": "9c978ced-dab9-480b-9fff-e57fe6ba09d4",
+  "metadata": {
+    "sample_id": "sample_historical_old_topic_focus_2b382ada01",
+    "source_type": "historical_replay",
+    "bucket_tags": [
+      "old_topic_recall",
+      "user_correction"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "session_id": "9c978ced-dab9-480b-9fff-e57fe6ba09d4",
+    "focus_mode": "old_topic_refinement"
+  },
+  "events": [
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## ✅ API Authentication Fix Completed\n\n**Task**: Fix staging environment API authentication issues\n\n**What Was Done**:\n1. **Identified Root Cause**: Authentication decorators causing \"Field required: ...",
+      "timestamp": "2026-03-02T23:42:31.050Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/memory/2026-03-02.md.",
+      "timestamp": "2026-03-02T23:42:21.832Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:21.808Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 3382 bytes to /home/***/.openclaw/workspace/reports/api-authentication-fix-report.md",
+      "timestamp": "2026-03-02T23:42:06.924Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "write",
+      "content": "",
+      "timestamp": "2026-03-02T23:42:06.905Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:41:50.517Z"
+    }
+  ],
+  "created_at": "2026-03-07T02:39:50.053723"
+}

@@ -1,0 +1,21 @@
+{
+  "audit_version": "openviking_embedding_audit.v1",
+  "generated_at": "2026-03-07T08:50:43.867083+00:00",
+  "top_n": 10,
+  "offenders": [
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-07/2026-03-07.md",
+      "doc_hash": "4e69c7443f43c38262f1771f4de4bfbadb47427e21564008fa8691fab493cbe5",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 797,
+      "max_chunk_chars_seen": 588,
+      "max_chunk_bytes_seen": 797,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 472,
+      "dual_guard_trim_count": 464
+    }
+  ]
+}

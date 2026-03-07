@@ -1,0 +1,267 @@
+{
+  "generated_at": "2026-03-07T03:38:50.055850",
+  "total_sessions": 2946,
+  "good_sessions_count": 24,
+  "candidates": [
+    {
+      "file": "6f39e4a7-cc5d-4ca2-99ff-4b73c93abe86.jsonl",
+      "user_msgs": 35,
+      "asst_msgs": 164,
+      "text_len": 587608,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "3cc19cbd-9ce7-4502-9054-098763f4b130.jsonl",
+      "user_msgs": 6,
+      "asst_msgs": 5,
+      "text_len": 575506,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "f098c768-4e56-40d4-b4da-cbd7721c3967.jsonl",
+      "user_msgs": 18,
+      "asst_msgs": 102,
+      "text_len": 444853,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "ee7ad8b2-8435-4e35-9df9-0a104ecf6f97.jsonl",
+      "user_msgs": 13,
+      "asst_msgs": 23,
+      "text_len": 281580,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "f268e9be-bf85-4789-a625-6dcccee164d7.jsonl",
+      "user_msgs": 24,
+      "asst_msgs": 60,
+      "text_len": 216174,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "5ea9eb36-a207-44b8-b1a1-4292cbf4738c.jsonl",
+      "user_msgs": 22,
+      "asst_msgs": 56,
+      "text_len": 211648,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "d40794fa-59a6-40c9-8f0e-aab368b88220.jsonl",
+      "user_msgs": 15,
+      "asst_msgs": 23,
+      "text_len": 170935,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "8c098f61-5824-47ee-969e-2a3b806cb5be.jsonl",
+      "user_msgs": 10,
+      "asst_msgs": 24,
+      "text_len": 135365,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "a78c0e4b-9a3b-4e10-96d4-a3b929c1d0c6.jsonl",
+      "user_msgs": 3,
+      "asst_msgs": 9,
+      "text_len": 131849,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "875f5430-648b-4d16-bb83-78e5d3a1c7c5.jsonl",
+      "user_msgs": 7,
+      "asst_msgs": 16,
+      "text_len": 126126,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "746be8d4-8fc6-4691-a34b-a45b1a0372ac.jsonl",
+      "user_msgs": 2,
+      "asst_msgs": 2,
+      "text_len": 116037,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "ed7e5b14-a61a-4413-89a0-de3b616086f0.jsonl",
+      "user_msgs": 4,
+      "asst_msgs": 12,
+      "text_len": 110810,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "22df7921-a883-40a0-af7e-2ab6c7299eaf.jsonl",
+      "user_msgs": 29,
+      "asst_msgs": 29,
+      "text_len": 102207,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "15b3cf58-f77e-43fd-a85d-7e7d206a1a5d.jsonl",
+      "user_msgs": 5,
+      "asst_msgs": 11,
+      "text_len": 98949,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "b1b9fe4e-b6eb-4198-ba29-7bb9001be5cf.jsonl",
+      "user_msgs": 3,
+      "asst_msgs": 8,
+      "text_len": 84089,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "8d777a7a-b9b2-4f46-ae30-00df5298bbef.jsonl",
+      "user_msgs": 17,
+      "asst_msgs": 63,
+      "text_len": 73316,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "b26f6932-532a-4c56-a472-e571f03c3768.jsonl",
+      "user_msgs": 4,
+      "asst_msgs": 17,
+      "text_len": 63773,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "20ff70a1-9e44-41ec-9942-9bd856914c94.jsonl",
+      "user_msgs": 7,
+      "asst_msgs": 19,
+      "text_len": 58498,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "468663b9-8a0f-44e3-8895-180fd1808a57.jsonl",
+      "user_msgs": 10,
+      "asst_msgs": 12,
+      "text_len": 29076,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    },
+    {
+      "file": "cc13ee9d-36fd-43e1-9044-91f48e1f1dc2.jsonl",
+      "user_msgs": 3,
+      "asst_msgs": 7,
+      "text_len": 18031,
+      "old_topic": true,
+      "anchors": {
+        "decision": true,
+        "entity": true,
+        "open_loop": true
+      },
+      "anchor_count": 4
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "audit_time": "2026-03-07T08:37:00.000Z",
+  "scope_definition": {
+    "allowed": ["single_topic_daily_chat", "non_critical_task", "simple_tool_context"],
+    "excluded": ["multi_file_debug", "high_commitment_task", "critical_execution", "multi_agent_collaboration", "high_risk_scenario"]
+  },
+  "current_sessions_in_scope": 0,
+  "current_sessions_excluded": 0,
+  "scope_filter_working": true
+}

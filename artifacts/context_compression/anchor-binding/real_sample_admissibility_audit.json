@@ -1,0 +1,861 @@
+{
+  "generated_at": "2026-03-07T03:56:07.347315",
+  "policy_version": "1.0",
+  "policy_rules": {
+    "min_user_messages": 2,
+    "min_assistant_messages": 2,
+    "min_text_length": 500,
+    "min_anchor_types": 2,
+    "exclude_heartbeat_only": true
+  },
+  "samples": [
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_04d5a09d",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_078d205e",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_1301849c",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_2052f252",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_209ee19e",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_2a926844",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_32115ccb",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_3402db84",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_3cc19cbd",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 6,
+        "assistant_message_count": 5,
+        "tool_call_count": 0,
+        "total_text_length": 8202,
+        "anchor_types": 4,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": false,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_448d3ef4",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_44e7af1d",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_4aad1fa5",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_4b65cacc",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_4e781246",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5705810f",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5bb819de",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5ea9eb36",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 22,
+        "assistant_message_count": 48,
+        "tool_call_count": 0,
+        "total_text_length": 44800,
+        "anchor_types": 5,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": true,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_6f39e4a7",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 35,
+        "assistant_message_count": 138,
+        "tool_call_count": 0,
+        "total_text_length": 45015,
+        "anchor_types": 5,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": true,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_7198bc7a",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_750683fa",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_79deb39c",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_7b8bcc44",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_875f5430",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 7,
+        "assistant_message_count": 14,
+        "tool_call_count": 0,
+        "total_text_length": 10963,
+        "anchor_types": 3,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_8be4fe7e",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_8c098f61",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 10,
+        "assistant_message_count": 22,
+        "tool_call_count": 0,
+        "total_text_length": 6185,
+        "anchor_types": 4,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": true,
+          "constraint": false,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_96900353",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_9963dc45",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_9eb6f8fa",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_a38175f1",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_a78c0e4b",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 3,
+        "assistant_message_count": 9,
+        "tool_call_count": 0,
+        "total_text_length": 3149,
+        "anchor_types": 4,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": false,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_a7da3a49",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_b1003053",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_b49bc77f",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_c921cd9e",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_d40794fa",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 15,
+        "assistant_message_count": 21,
+        "tool_call_count": 0,
+        "total_text_length": 15359,
+        "anchor_types": 5,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": true,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_dbf7ee68",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_e90ff040",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_ee7ad8b2",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 13,
+        "assistant_message_count": 23,
+        "tool_call_count": 0,
+        "total_text_length": 16723,
+        "anchor_types": 4,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": false,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f098c768",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 18,
+        "assistant_message_count": 102,
+        "tool_call_count": 0,
+        "total_text_length": 34443,
+        "anchor_types": 5,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": true,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f268e9be",
+      "admissible": true,
+      "reason": "passed",
+      "metrics": {
+        "user_message_count": 24,
+        "assistant_message_count": 58,
+        "tool_call_count": 0,
+        "total_text_length": 17899,
+        "anchor_types": 5,
+        "anchor_breakdown": {
+          "decision": true,
+          "entity": true,
+          "open_loop": true,
+          "constraint": true,
+          "tool_state": true
+        }
+      },
+      "is_heartbeat": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f3b5f4bb",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_ffa55a7e",
+      "admissible": false,
+      "reason": "user_msgs=0<2; asst_msgs=0<2; text_len=0<500; anchor_types=0<2; heartbeat_only",
+      "metrics": {
+        "user_message_count": 0,
+        "assistant_message_count": 0,
+        "tool_call_count": 0,
+        "total_text_length": 0,
+        "anchor_types": 0,
+        "anchor_breakdown": {
+          "decision": false,
+          "entity": false,
+          "open_loop": false,
+          "constraint": false,
+          "tool_state": false
+        }
+      },
+      "is_heartbeat": true
+    }
+  ],
+  "summary": {
+    "total_scanned": 42,
+    "admissible": 10,
+    "not_admissible": 32,
+    "heartbeat_only": 32,
+    "insufficient_content": 0,
+    "no_anchor_potential": 0
+  }
+}

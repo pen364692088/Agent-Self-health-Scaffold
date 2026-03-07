@@ -1,0 +1,429 @@
+{
+  "name": "candidate-patch-validation-benchmark",
+  "purpose": "anchor-enhanced capsule + anchor-aware retrieve validation",
+  "generated_at": "2026-03-07T03:57:18.838165",
+  "constraints": [
+    "Do not modify old S1 baseline",
+    "Do not claim old Gate 1 passed",
+    "Do not integrate into main pipeline"
+  ],
+  "admission_policy_version": "1.0",
+  "items": [
+    {
+      "sample_id": "sample_historical_old_topic_focus_1fb6b1ae75",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "with_open_loops"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_2b382ada01",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "user_correction"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_455a807d7d",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "user_correction"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_4b1c43c501",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "with_open_loops"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_4f39b50590",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "user_correction"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_556067aef0",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "user_correction"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_c5ec44456c",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "with_open_loops"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_d1f1efede8",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall",
+        "with_open_loops"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_recall_93b294b2",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_recall_a28c92e6",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_recall_bc615b44",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_old_topic_recall_eb5e5b1c",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_user_correction_1f077dbd",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "user_correction"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_user_correction_8aef97e0",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "user_correction"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_user_correction_c424e487",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "user_correction"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_with_open_loops_023391b1",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "with_open_loops"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_with_open_loops_446b5328",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "with_open_loops"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_historical_with_open_loops_58c4cfbc",
+      "source_type": "historical_replay",
+      "bucket_tags": [
+        "with_open_loops"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "none",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_3cc19cbd",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5ea9eb36",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_6f39e4a7",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_875f5430",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_8c098f61",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_a78c0e4b",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_d40794fa",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_ee7ad8b2",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f098c768",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f268e9be",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f268e9be",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5ea9eb36",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_d40794fa",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_8d777a7a",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_468663b9",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_90bda5d7",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    }
+  ]
+}

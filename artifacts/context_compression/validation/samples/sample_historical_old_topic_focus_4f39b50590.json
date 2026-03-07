@@ -1,0 +1,387 @@
+{
+  "sample_id": "sample_historical_old_topic_focus_4f39b50590",
+  "source_type": "historical_replay",
+  "bucket_tags": [
+    "old_topic_recall",
+    "user_correction"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "scorable": true,
+  "session_id": "f098c768-4e56-40d4-b4da-cbd7721c3967",
+  "metadata": {
+    "sample_id": "sample_historical_old_topic_focus_4f39b50590",
+    "source_type": "historical_replay",
+    "bucket_tags": [
+      "old_topic_recall",
+      "user_correction"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "session_id": "f098c768-4e56-40d4-b4da-cbd7721c3967",
+    "focus_mode": "old_topic_refinement"
+  },
+  "events": [
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:47.543Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:openclaw:prompt-error",
+      "timestamp": "2026-03-04T21:33:47.530Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "class ResourceConfig:\n    \"\"\"Configuration for ResourceEnv.\"\"\"\n    # Resource limits\n    max_time: float = 100.0\n    max_energy: float = 100.0\n    initial_time: float = 100.0\n    initial_energy: float...",
+      "timestamp": "2026-03-04T21:33:46.831Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-04T21:33:46.763Z"
+    }
+  ],
+  "created_at": "2026-03-07T02:39:48.653745"
+}

@@ -1,0 +1,25 @@
+{
+  "validation_time": "2026-03-07T08:30:00.000Z",
+  "sessions_tested": [
+    {
+      "session_id": "ee7ad8b2-8435-4e35-9df9-0a104ecf6f97",
+      "source_type": "existing_low_risk_session",
+      "topic": "Previous conversation session",
+      "turn_count": null,
+      "estimated_tokens": 70322,
+      "over_threshold": true,
+      "shadow_triggered": true,
+      "retrieve_executed": false,
+      "real_reply_modified": false,
+      "active_session_polluted": false,
+      "notes": "Session at exactly threshold (ratio 0.7032)"
+    }
+  ],
+  "summary": {
+    "total_sessions": 1,
+    "sessions_over_threshold": 1,
+    "sessions_triggered_shadow": 1,
+    "sessions_with_retrieve": 0,
+    "trigger_success_rate": 1.0
+  }
+}

@@ -1,0 +1,4 @@
+{"timestamp":"2026-03-07T08:37:00.000Z","event":"light_enforced_started","manifest_version":"1.0"}
+{"timestamp":"2026-03-07T23:10:03.261Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-07T23:15:03.371Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-07T23:20:03.310Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}

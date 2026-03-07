@@ -1,0 +1,325 @@
+{
+  "sample_id": "sample_historical_old_topic_recall_eb5e5b1c",
+  "source_type": "historical_replay",
+  "bucket_tags": [
+    "old_topic_recall"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "scorable": true,
+  "session_id": "5ea9eb36-a207-44b8-b1a1-4292cbf4738c",
+  "metadata": {
+    "sample_id": "sample_historical_old_topic_recall_eb5e5b1c",
+    "source_type": "historical_replay",
+    "bucket_tags": [
+      "old_topic_recall"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "session_id": "5ea9eb36-a207-44b8-b1a1-4292cbf4738c",
+    "bucket": "old_topic_recall"
+  },
+  "events": [
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "\u2705 **Quarantine \u4f18\u5316\u5b8c\u6210**\n\n## \u5b9e\u73b0\u7684\u4e09\u4e2a\u4f18\u5316\n\n### 1. Quarantine Reasons\n\n```python\nquarantine_reasons:\n  - test_scope: scope='test' \u663e\u5f0f\u9694\u79bb\n  - missing_scope: \u7a7a\u5b57\u7b26\u4e32/null\n  - invalid_scope: unknown, default \u7b49\u5df2\u77e5\u65e0\u6548\u503c\n  ...",
+      "timestamp": "2026-03-03T17:34:38.089Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "memory.md \u5df2\u66f4\u65b0",
+      "timestamp": "2026-03-03T17:34:18.997Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "exec",
+      "content": "",
+      "timestamp": "2026-03-03T17:34:18.839Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[master b4d7899] feat: Quarantine Reasons + Secondary Inference + Rolling Window Metrics\n 4 files changed, 274 insertions(+), 190 deletions(-)",
+      "timestamp": "2026-03-03T17:33:58.906Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[master b4d7899] feat: Quarantine Reasons + Secondary Inference + Rolling Window Metrics\n 4 files changed, 274 insertions(+), 190 deletions(-)",
+      "timestamp": "2026-03-03T17:33:58.906Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[master b4d7899] feat: Quarantine Reasons + Secondary Inference + Rolling Window Metrics\n 4 files changed, 274 insertions(+), 190 deletions(-)",
+      "timestamp": "2026-03-03T17:33:58.906Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[master b4d7899] feat: Quarantine Reasons + Secondary Inference + Rolling Window Metrics\n 4 files changed, 274 insertions(+), 190 deletions(-)",
+      "timestamp": "2026-03-03T17:33:58.906Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[master b4d7899] feat: Quarantine Reasons + Secondary Inference + Rolling Window Metrics\n 4 files changed, 274 insertions(+), 190 deletions(-)",
+      "timestamp": "2026-03-03T17:33:58.906Z"
+    }
+  ],
+  "created_at": "2026-03-07T02:33:57.232220"
+}

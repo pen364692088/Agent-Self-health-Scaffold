@@ -1,0 +1,387 @@
+{
+  "sample_id": "sample_historical_old_topic_focus_4b1c43c501",
+  "source_type": "historical_replay",
+  "bucket_tags": [
+    "old_topic_recall",
+    "with_open_loops"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "scorable": true,
+  "session_id": "6e85d422-a847-40c4-a898-178937cc5039",
+  "metadata": {
+    "sample_id": "sample_historical_old_topic_focus_4b1c43c501",
+    "source_type": "historical_replay",
+    "bucket_tags": [
+      "old_topic_recall",
+      "with_open_loops"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only",
+    "session_id": "6e85d422-a847-40c4-a898-178937cc5039",
+    "focus_mode": "old_topic_refinement"
+  },
+  "events": [
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "## Task Completed: Monitoring Setup ✅\n\nI have successfully completed the **Monitoring Setup** phase for the Advanced Decision System API. Here's what was accomplished:\n\n### What Was Done\n\n1. **Deploye...",
+      "timestamp": "2026-03-02T23:13:25.686Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:12.510Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:12.486Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully replaced text in /home/***/.openclaw/workspace/TASK_STATE.md.",
+      "timestamp": "2026-03-02T23:13:06.688Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "edit",
+      "content": "",
+      "timestamp": "2026-03-02T23:13:06.669Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "Successfully wrote 7736 bytes to /home/***/.openclaw/workspace/reports/monitoring-setup-report.md",
+      "timestamp": "2026-03-02T23:12:58.830Z"
+    }
+  ],
+  "created_at": "2026-03-07T02:39:49.825960"
+}

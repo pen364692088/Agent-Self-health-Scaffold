@@ -44,13 +44,18 @@ class TwoTierRetriever:
         self.openviking_available = self._check_openviking()
     
     def _check_openviking(self) -> bool:
-        """Check if OpenViking is available."""
+        """Check if OpenViking is available and responding."""
         if not self.use_vector:
             return False
         try:
             result = subprocess.run(['openviking', 'health'], 
                                    capture_output=True, text=True, timeout=5)
-            return result.returncode == 0
+            # OpenViking health may return non-zero when healthy=false
+            # but we only care if it's responding (ok=true)
+            if result.stdout:
+                data = json.loads(result.stdout)
+                return data.get('ok', False)
+            return False
         except:
             return False
     
@@ -159,22 +164,63 @@ class TwoTierRetriever:
     
     # === L2: Vector Enhancement (Optional) ===
     
-    def search_openviking_l2(self, query: str, limit: int = 5) -> List[Dict]:
-        """L2: OpenViking semantic search (optional, degraded if unavailable)."""
+    def search_openviking_l2(self, query: str, limit: int = 5, 
+                               uri_scope: str = 'viking://resources/user/memory/') -> List[Dict]:
+        """L2: OpenViking semantic search (optional, degraded if unavailable).
+        
+        Args:
+            query: Search query string
+            limit: Maximum number of results
+            uri_scope: URI prefix for search scope (default: user memory)
+        """
         if not self.openviking_available:
             return []
         
+        # Health check before L2 call
         try:
-            result = subprocess.run(
-                ['openviking', 'find', query, '--limit', str(limit), '-o', 'json'],
-                capture_output=True, text=True, timeout=15
+            health_result = subprocess.run(
+                ['openviking', 'health'],
+                capture_output=True, text=True, timeout=5
             )
-            
-            if result.returncode != 0:
+            if health_result.returncode != 0:
                 return []
             
+            health_data = json.loads(health_result.stdout)
+            # Note: OpenViking may report unhealthy but still work
+            # We proceed anyway and let the actual search fail if needed
+            if not health_data.get('ok', False):
+                return []
+        except:
+            return []
+        
+        # L2 search with proper URI scope and retry
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            try:
+                result = subprocess.run(
+                    ['openviking', 'find', query, 
+                     '-u', uri_scope,
+                     '--limit', str(limit), 
+                     '-o', 'json'],
+                    capture_output=True, text=True, timeout=15
+                )
+                
+                if result.returncode != 0:
+                    if attempt < max_retries:
+                        continue  # Retry
+                    return []
+                
+                break  # Success
+            except subprocess.TimeoutExpired:
+                if attempt < max_retries:
+                    continue  # Retry
+                return []
+            except:
+                return []
+        
+        try:
             data = json.loads(result.stdout)
-            items = data.get('resources', []) or data.get('memories', []) or data.get('results', [])
+            items = data.get('result', {}).get('resources', []) or data.get('resources', []) or data.get('memories', []) or data.get('results', [])
             
             results = []
             for item in items:
@@ -392,7 +438,13 @@ def run_health_check() -> Dict:
     # Check OpenViking
     try:
         result = subprocess.run(['openviking', 'health'], capture_output=True, text=True, timeout=5)
-        checks['openviking_available'] = result.returncode == 0
+        # OpenViking health may return non-zero when healthy=false
+        # but we only care if it's responding (ok=true)
+        if result.stdout:
+            data = json.loads(result.stdout)
+            checks['openviking_available'] = data.get('ok', False)
+        else:
+            checks['openviking_available'] = False
     except:
         checks['openviking_available'] = False
     

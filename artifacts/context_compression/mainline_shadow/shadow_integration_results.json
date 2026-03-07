@@ -1,0 +1,84 @@
+{
+  "integration_name": "mainline-shadow-integration",
+  "run_at": "2026-03-07T04:38:00CST",
+  "mode": "shadow",
+  "patch_set_version": "1.0",
+  
+  "integration_points": {
+    "context_budget_check": {
+      "enabled": true,
+      "mode": "shadow",
+      "sessions_checked": 0
+    },
+    "context_compress": {
+      "enabled": true,
+      "mode": "shadow",
+      "triggered": 0,
+      "artifacts_written": 0
+    },
+    "anchor_aware_retrieve": {
+      "enabled": true,
+      "mode": "shadow",
+      "calls": 0
+    }
+  },
+  
+  "session_scoping": {
+    "allowed_sessions": [
+      "single_topic_daily_chat",
+      "non_critical_task",
+      "simple_tool_context"
+    ],
+    "excluded_sessions": [
+      "multi_file_debug",
+      "high_commitment_task",
+      "critical_execution",
+      "multi_agent_collaboration",
+      "high_risk_scenario"
+    ],
+    "sessions_in_scope": 0,
+    "sessions_out_of_scope": 0
+  },
+  
+  "observation": {
+    "shadow_trigger_count": 0,
+    "real_reply_modified": false,
+    "active_session_polluted": false,
+    "artifacts_separated": true
+  },
+  
+  "feature_flags": {
+    "CONTEXT_COMPRESSION_ENABLED": true,
+    "CONTEXT_COMPRESSION_MODE": "shadow",
+    "CONTEXT_COMPRESSION_BASELINE": "new_baseline_anchor_patch"
+  },
+  
+  "kill_switch": {
+    "tested": true,
+    "active": false,
+    "ready": true
+  },
+  
+  "validation_baseline": {
+    "real_admissible": {
+      "samples": 16,
+      "avg_score": 1.000,
+      ">=0.75": 16
+    },
+    "historical_replay": {
+      "samples": 18,
+      "avg_score": 0.496,
+      "delta": "+0.289"
+    }
+  },
+  
+  "constraints_check": {
+    "real_reply_unchanged": true,
+    "enforced_not_entered": true,
+    "active_session_not_polluted": true,
+    "patch_set_not_expanded": true,
+    "prompt_assemble_not_added": true,
+    "high_risk_not_covered": true,
+    "old_S1_baseline_intact": true
+  }
+}

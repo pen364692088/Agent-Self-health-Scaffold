@@ -1,0 +1,102 @@
+{
+  "benchmark_name": "old-topic-micro-benchmark-v3",
+  "run_at": "2026-03-07T03:40:54.735976",
+  "admission_rules_applied": true,
+  "samples": [
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_6f39e4a7",
+      "source_type": "real_main_agent",
+      "baseline_score": 0.362,
+      "anchor_score": 1.0,
+      "delta": 0.638,
+      "anchor_counts": {
+        "decision": 10,
+        "entity": 15,
+        "time": 10,
+        "open_loop": 10,
+        "constraint": 10,
+        "tool_state": 15
+      },
+      "improved": true,
+      ">=0.75": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_3cc19cbd",
+      "source_type": "real_main_agent",
+      "baseline_score": 0.294,
+      "anchor_score": 1.0,
+      "delta": 0.706,
+      "anchor_counts": {
+        "decision": 10,
+        "entity": 15,
+        "time": 10,
+        "open_loop": 1,
+        "constraint": 10,
+        "tool_state": 15
+      },
+      "improved": true,
+      ">=0.75": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f098c768",
+      "source_type": "real_main_agent",
+      "baseline_score": 0.194,
+      "anchor_score": 1.0,
+      "delta": 0.806,
+      "anchor_counts": {
+        "decision": 10,
+        "entity": 15,
+        "time": 10,
+        "open_loop": 10,
+        "constraint": 10,
+        "tool_state": 15
+      },
+      "improved": true,
+      ">=0.75": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_ee7ad8b2",
+      "source_type": "real_main_agent",
+      "baseline_score": 0.224,
+      "anchor_score": 1.0,
+      "delta": 0.776,
+      "anchor_counts": {
+        "decision": 10,
+        "entity": 15,
+        "time": 10,
+        "open_loop": 1,
+        "constraint": 10,
+        "tool_state": 15
+      },
+      "improved": true,
+      ">=0.75": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f268e9be",
+      "source_type": "real_main_agent",
+      "baseline_score": 0.421,
+      "anchor_score": 1.0,
+      "delta": 0.579,
+      "anchor_counts": {
+        "decision": 10,
+        "entity": 15,
+        "time": 10,
+        "open_loop": 10,
+        "constraint": 10,
+        "tool_state": 15
+      },
+      "improved": true,
+      ">=0.75": true
+    }
+  ],
+  "summary": {
+    "total_samples": 5,
+    "avg_baseline_score": 0.299,
+    "avg_anchor_score": 1.0,
+    "avg_delta": 0.701,
+    ">=0.75_baseline": 0,
+    ">=0.75_anchor": 5,
+    "improved_count": 5,
+    "regressed_count": 0
+  }
+}

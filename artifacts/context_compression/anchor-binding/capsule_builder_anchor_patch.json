@@ -1,0 +1,71 @@
+{
+  "patch_id": "capsule_builder_anchor_patch_v1",
+  "created_at": "2026-03-07T03:28:56Z",
+  "purpose": "Add anchor extraction to capsule builder for parallel hardening",
+  "target_branch": "anchor-binding-hardening",
+  
+  "anchor_types_added": [
+    "decision_anchor",
+    "entity_anchor", 
+    "time_anchor",
+    "open_loop_anchor",
+    "constraint_anchor",
+    "tool_state_anchor"
+  ],
+  
+  "extraction_methods": {
+    "decision_anchor": "pattern matching on decision indicators",
+    "entity_anchor": "regex extraction of files, tools, concepts",
+    "time_anchor": "timestamp extraction + time reference patterns",
+    "open_loop_anchor": "TODO/TBD/pending pattern matching",
+    "constraint_anchor": "must/cannot/required pattern matching",
+    "tool_state_anchor": "tool_name field + tool call events"
+  },
+  
+  "format_compatibility": [
+    "historical_replay format (event_type, content)",
+    "real_main_agent format (inbound, sent_events)"
+  ],
+  
+  "benchmark_results": {
+    "v2_run_at": "2026-03-07T03:28:56Z",
+    "total_samples": 12,
+    "avg_baseline": 0.241,
+    "avg_anchor": 0.531,
+    "delta": "+0.290",
+    "improved": 12,
+    "regressed": 0,
+    ">=0.75_samples": 3,
+    "historical_replay": {
+      "avg_baseline": 0.413,
+      "avg_anchor": 0.746,
+      "delta": "+0.333",
+      ">=0.75_samples": 3
+    },
+    "real_main_agent": {
+      "avg_baseline": 0.000,
+      "avg_anchor": 0.230,
+      "delta": "+0.230",
+      ">=0.75_samples": 0
+    }
+  },
+  
+  "recommendation": "WORTH_NEXT_ROUND",
+  "next_steps": [
+    "Consider prompt assemble anchor injection for real_main_agent improvement",
+    "May need stronger anchor signals for real_main_agent format"
+  ],
+  
+  "files_created": [
+    "anchor_enhanced_capsule_builder.py",
+    "run_benchmark_v2.py",
+    "ab_benchmark_v2_results.json",
+    "ab_benchmark_v2_report.md"
+  ],
+  
+  "constraints_respected": {
+    "s1_baseline_unchanged": true,
+    "scoring_metrics_schema_unchanged": true,
+    "parallel_branch_only": true
+  }
+}

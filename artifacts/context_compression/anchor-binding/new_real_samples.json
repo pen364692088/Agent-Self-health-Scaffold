@@ -1,0 +1,78 @@
+{
+  "generated_at": "2026-03-07T03:56:52.261717",
+  "new_samples_count": 6,
+  "samples": [
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f268e9be",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5ea9eb36",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_d40794fa",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_8d777a7a",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_468663b9",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": true,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_90bda5d7",
+      "source_type": "real_main_agent",
+      "bucket_tags": [
+        "old_topic_recall"
+      ],
+      "with_open_loops_overlap": false,
+      "user_correction_overlap": false,
+      "tool_context_overlap": "high",
+      "gap_length_proxy": "long",
+      "old_topic_recovery": 0.5
+    }
+  ]
+}

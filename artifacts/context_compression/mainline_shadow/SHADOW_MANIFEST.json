@@ -1,0 +1,126 @@
+{
+  "manifest_version": "1.0",
+  "integration_name": "mainline-shadow-integration",
+  "created_at": "2026-03-07T04:36:00CST",
+  "integration_mode": "mainline_shadow",
+  "enforced": false,
+  
+  "git": {
+    "commit_hash": "8f378b8",
+    "branch": "anchor-binding-hardening"
+  },
+  
+  "baseline_reference": {
+    "manifest": "artifacts/context_compression/new_baseline/BASELINE_MANIFEST.json",
+    "version": "1.0",
+    "validation_passed": true
+  },
+  
+  "patch_set": {
+    "version": "1.0",
+    "frozen_at": "2026-03-07T04:36:00CST",
+    "components": [
+      {
+        "name": "anchor-enhanced-capsule-builder",
+        "version": "1.0",
+        "file": "tools/capsule-builder",
+        "shadow_only": true
+      },
+      {
+        "name": "anchor-aware-retrieve",
+        "version": "1.0",
+        "file": "tools/context-retrieve",
+        "shadow_only": true
+      },
+      {
+        "name": "admissibility-policy",
+        "version": "1.0",
+        "file": "artifacts/context_compression/anchor-binding/ADMISSIBILITY_POLICY.md",
+        "purpose": "sample_quality_gate"
+      }
+    ]
+  },
+  
+  "feature_flags": {
+    "CONTEXT_COMPRESSION_ENABLED": {
+      "default": true,
+      "description": "Enable context compression feature"
+    },
+    "CONTEXT_COMPRESSION_MODE": {
+      "default": "shadow",
+      "allowed_values": ["shadow", "light_enforced", "enforced"],
+      "description": "Compression mode - shadow only for now"
+    },
+    "CONTEXT_COMPRESSION_BASELINE": {
+      "default": "new_baseline_anchor_patch",
+      "description": "Which baseline to use"
+    }
+  },
+  
+  "kill_switch": {
+    "enabled": true,
+    "file": "artifacts/context_compression/mainline_shadow/KILL_SWITCH.md",
+    "trigger_on": ["manual", "error_rate_high", "replay_regression"],
+    "log_file": "logs/compression_kill_switch.log"
+  },
+  
+  "scoping": {
+    "allowed_sessions": [
+      "single_topic_daily_chat",
+      "non_critical_task",
+      "simple_tool_context"
+    ],
+    "excluded_sessions": [
+      "multi_file_debug",
+      "high_commitment_task",
+      "critical_execution",
+      "multi_agent_collaboration",
+      "high_risk_scenario"
+    ]
+  },
+  
+  "integration_points": {
+    "pre_prompt_assemble": {
+      "action": "context-budget-check",
+      "shadow_only": true
+    },
+    "on_threshold_reached": {
+      "action": "context-compress --mode shadow",
+      "shadow_only": true,
+      "no_write_to_active_session": true
+    },
+    "recall_path": {
+      "action": "anchor-aware-retrieve",
+      "shadow_only": true
+    },
+    "artifact_output": {
+      "path": "artifacts/context_compression/shadow_sessions/",
+      "separate_from_main": true
+    }
+  },
+  
+  "constraints": {
+    "do_not_modify_real_reply": true,
+    "do_not_enter_enforced": true,
+    "do_not_pollute_active_session": true,
+    "do_not_expand_patch_set": true,
+    "do_not_add_prompt_assemble": true,
+    "do_not_cover_high_risk_sessions": true,
+    "do_not_modify_old_S1_baseline": true
+  },
+  
+  "observation": {
+    "separate_reporting": true,
+    "layers": ["total", "real_admissible", "historical_replay"],
+    "replay_guardrail": true,
+    "metrics": [
+      "avg_score",
+      ">=0.75_count",
+      "correct_topic_wrong_anchor",
+      "replay_average",
+      "anchor_coverage",
+      "shadow_trigger_count",
+      "admissible_stats"
+    ]
+  }
+}

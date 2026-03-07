@@ -1,66 +1,96 @@
-# Project Check Pipeline - Phase B: project-check-init Tool
+# Session State
 
-## Status: ✅ COMPLETED
+**Purpose**: 恢复主骨架 - 稳定且关键的信息
 
-## Implementation Summary
+**Updated**: 2026-03-07T17:35:00-06:00
 
-### Tool: tools/project-check-init
+---
 
-**Features implemented**:
-- ✅ Parse command line arguments (project_path, --phases, --artifact-root, --config)
-- ✅ Generate unique check_id with format `check_YYYYMMDD_HHMMSS_<short_hash>`
-- ✅ Create manifest.json according to schema
-- ✅ Create status.json (initial state)
-- ✅ Print check_id to stdout
-- ✅ --health endpoint
-- ✅ --dry-run mode
-- ✅ Proper exit codes (0/1/2/3)
-- ✅ Schema validation
+## Current Objective
+建立 OpenClaw 会话连续性最小保障机制
 
-**Usage**:
+## Current Phase
+✅ 实现阶段完成 - 等待验证
+
+## Current Branch / Workspace
+- Branch: main
+- Workspace: ~/.openclaw/workspace
+
+## Latest Verified Status
+- ✅ AGENTS.md 已更新，加入 Session Continuity Protocol
+- ✅ HEARTBEAT.md 已更新，加入 Session Recovery Check + State Flush Check
+- ✅ SESSION-STATE.md 已创建并明确职责
+- ✅ working-buffer.md 已创建并明确职责
+- ✅ handoff.md 已创建并明确职责
+- ✅ session-start-recovery 工具已创建
+- ✅ pre-reply-guard 工具已创建
+- ⏳ 需要验证 session-start recovery 流程
+- ⏳ 需要测试新 session 恢复
+
+## Next Actions
+1. 提交变更到 git
+2. 新 session 启动时验证恢复流程
+3. 监控 context 阈值行为
+4. 根据实际使用调整规则
+
+## Blockers
+无
+
+---
+
+## 验证说明
+
+### 新 Session 启动时如何恢复
+
+**方法 1: 手动恢复**
 ```bash
-# Initialize a check
-project-check-init <project_path> [--phases "A,B,C"]
-
-# Health check
-project-check-init --health
-
-# Dry run
-project-check-init <project_path> --dry-run
+~/.openclaw/workspace/tools/session-start-recovery --recover
 ```
 
-**Exit codes**:
-- 0: Success
-- 1: Invalid arguments
-- 2: Project path not found
-- 3: Permission denied
+**方法 2: HEARTBEAT 自动检查**
+- 每个 heartbeat 会执行 Session Recovery Check
+- 检测到新 session 时自动恢复
 
-## Tool Delivery Gates
+**方法 3: AGENTS.md 强制规则**
+- 新 session 启动时必须读取状态文件
+- 在发送任何实质性回复前完成恢复
 
-### Gate A: Schema Validation ✅
-- manifest.json validates against `schemas/project_check_manifest.v1.schema.json`
-- Tested with jsonschema library
+### 重要回复前如何确保状态已落盘
 
-### Gate B: E2E Testing ✅
-- `project-check-init ~/.openclaw/workspace --phases "A"` creates check directory
-- manifest.json and status.json created correctly
-- check_id printed to stdout
-
-### Gate C: Health Endpoint ✅
-```json
-{
-  "status": "healthy",
-  "tool": "project-check-init",
-  "version": "1.0.0",
-  "checks": {
-    "schema_exists": true,
-    "artifact_root_writable": true
-  }
-}
+**方法 1: 手动检查**
+```bash
+~/.openclaw/workspace/tools/pre-reply-guard --check "<你的消息>"
 ```
 
-## Artifacts
-- `tools/project-check-init` - Main implementation
+**方法 2: Context 阈值自动触发**
+- < 60%: 按事件触发
+- 60-80%: 每条实质性回复前检查
+- > 80%: 强制落盘
 
-## Next Steps
-Phase C: Implement `tools/project-check-run` to execute the pipeline
+**方法 3: HEARTBEAT 自动检查**
+- 每个 heartbeat 会执行 State Flush Check
+
+---
+
+## 职责定义
+
+**SESSION-STATE.md** (本文件) - 恢复主骨架
+- 当前总目标
+- 当前阶段
+- 当前分支/仓库
+- 已确认完成项
+- 当前 blocker
+- 下一步
+
+**working-buffer.md** - 恢复工作记忆
+- 当前正在处理的问题
+- 为什么这么做
+- 候选方案
+- 当前假设
+- 本轮待验证点
+
+**handoff.md** - 防中断保险丝
+- 会话做到哪里
+- 哪些结论已经确定
+- 哪些还没验证
+- 下一位 agent / 下个 session 该从哪开始

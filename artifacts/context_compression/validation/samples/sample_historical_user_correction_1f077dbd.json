@@ -1,0 +1,325 @@
+{
+  "sample_id": "sample_historical_user_correction_1f077dbd",
+  "source_type": "historical_replay",
+  "bucket_tags": [
+    "user_correction"
+  ],
+  "baseline_commit": "31a604a",
+  "retrieve_mode": "capsule_only",
+  "scorable": true,
+  "session_id": "ee7ad8b2-8435-4e35-9df9-0a104ecf6f97",
+  "metadata": {
+    "session_id": "ee7ad8b2-8435-4e35-9df9-0a104ecf6f97",
+    "bucket": "user_correction",
+    "sample_id": "sample_historical_user_correction_1f077dbd",
+    "source_type": "historical_replay",
+    "bucket_tags": [
+      "user_correction"
+    ],
+    "baseline_commit": "31a604a",
+    "retrieve_mode": "capsule_only"
+  },
+  "events": [
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]当前进度：\n\n### ✅ 已完成\n1. MVP11 bug 修复与加固（扰动一致性、counterfactual 冷却、EFE RNG 可复现）\n2. 两层 deterministic（seed 轨迹 + trace-driven replay）\n3. trace 回退护栏、RNG state 版本化、trace 纳入 hash 链\n4. 全量测试最新通过：...",
+      "timestamp": "2026-03-04T22:31:58.954Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[Queued messages while agent was busy]\n\n---\nQueued #1\nConversation info (untrusted metadata):\n```json\n{\n  \"message_id\": \"5968\",\n  \"sender_id\": \"8420019401\",\n  \"sender\": \"Moonlight\",\n  \"timestamp\": \"We...",
+      "timestamp": "2026-03-04T22:31:47.756Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "custom",
+      "tool_name": "",
+      "content": "custom:model-snapshot",
+      "timestamp": "2026-03-04T22:31:47.722Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]已跑完，给你报告 ⬇️\n\n---\n\n## 📊 MVP11 Soak 报告 (2k ticks)\n\n### 运行概要\n| 指标 | Baseline | Intervention |\n|------|----------|--------------|\n| run_id | `run_fc1ee9b3` | `run_4150c8c7` |\n| seed | ...",
+      "timestamp": "2026-03-04T22:31:47.236Z"
+    },
+    {
+      "event_type": "message",
+      "tool_name": "",
+      "content": "[[reply_to_current]]已跑完，给你报告 ⬇️\n\n---\n\n## 📊 MVP11 Soak 报告 (2k ticks)\n\n### 运行概要\n| 指标 | Baseline | Intervention |\n|------|----------|--------------|\n| run_id | `run_fc1ee9b3` | `run_4150c8c7` |\n| seed | ...",
+      "timestamp": "2026-03-04T22:31:47.236Z"
+    }
+  ],
+  "created_at": "2026-03-07T02:32:48.957839"
+}

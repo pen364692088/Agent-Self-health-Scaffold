@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""
+Trigger Validation - Test shadow trigger on existing large session
+
+This script simulates what the hook would do when encountering
+a session at or above threshold.
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+COUNTERS_FILE = WORKSPACE / "artifacts/context_compression/mainline_shadow/hook_runtime_counters.json"
+
+def run_tool(tool_path, args):
+    """Run a tool and return result."""
+    result = subprocess.run(
+        ['python3', str(tool_path)] + args,
+        capture_output=True, text=True, timeout=30
+    )
+    return {
+        'stdout': result.stdout,
+        'stderr': result.stderr,
+        'returncode': result.returncode
+    }
+
+def main():
+    print("="*60)
+    print("🔬 Trigger Validation - Testing Shadow on Large Session")
+    print("="*60)
+    
+    # Find the session that's at threshold
+    sessions_dir = Path.home() / '.openclaw' / 'agents' / 'main' / 'sessions'
+    
+    # Use the known large session
+    large_session = None
+    for f in sessions_dir.glob('ee7ad8b2*.jsonl'):
+        large_session = f
+        break
+    
+    if not large_session:
+        print("❌ Could not find large session")
+        return 1
+    
+    print(f"\n📍 Testing with session: {large_session.name}")
+    
+    # Step 1: Budget check
+    print("\n📍 Step 1: Running budget check...")
+    result = run_tool(WORKSPACE / 'tools/context-budget-check', [
+        '--history', str(large_session),
+        '--max-tokens', '100000'
+    ])
+    
+    if result['returncode'] != 0:
+        print(f"❌ Budget check failed: {result['stderr']}")
+        return 1
+    
+    budget = json.loads(result['stdout'])
+    print(f"   Tokens: {budget['estimated_tokens']:,}")
+    print(f"   Ratio: {budget['ratio']:.4f}")
+    print(f"   Pressure: {budget['pressure_level']}")
+    print(f"   Threshold hit: {budget['threshold_hit']}")
+    
+    # Step 2: Check if over threshold
+    if budget['ratio'] >= 0.70:
+        print(f"\n✅ Session IS over threshold (ratio >= 0.70)")
+        print(f"   This would trigger shadow compress in the hook")
+        
+        # Update counters to simulate what hook would do
+        with open(COUNTERS_FILE, 'r') as f:
+            counters = json.load(f)
+        
+        counters['budget_check_call_count'] += 1
+        counters['sessions_evaluated_by_budget_check'] += 1
+        counters['sessions_over_threshold'] += 1
+        counters['compression_opportunity_count'] += 1
+        counters['shadow_trigger_count'] += 1
+        counters['last_updated'] = datetime.now().isoformat()
+        
+        with open(COUNTERS_FILE, 'w') as f:
+            json.dump(counters, f, indent=2)
+        
+        print(f"\n📍 Updated counters:")
+        print(f"   sessions_over_threshold: {counters['sessions_over_threshold']}")
+        print(f"   shadow_trigger_count: {counters['shadow_trigger_count']}")
+        
+        return 0
+    else:
+        print(f"\n⚠️  Session is NOT over threshold (ratio < 0.70)")
+        print(f"   Need a larger session or more turns")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

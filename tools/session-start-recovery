@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""
+session-start-recovery v1.0 - Session State Recovery Tool
+
+Recovers session state from persisted files when a new session starts.
+
+Usage:
+  session-start-recovery --check
+  session-start-recovery --recover
+  session-start-recovery --json
+  session-start-recovery --health
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
+WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+HANDOFF = WORKSPACE / "handoff.md"
+LAST_SESSION_FILE = WORKSPACE / ".last_session_id"
+
+
+def get_current_session_id():
+    """Get current session ID from environment or generate."""
+    import os
+    return os.environ.get("OPENCLAW_SESSION_ID", "unknown")
+
+
+def read_markdown_section(filepath: Path, section: str) -> str:
+    """Extract a section from markdown file."""
+    if not filepath.exists():
+        return ""
+    
+    content = filepath.read_text()
+    lines = content.split("\n")
+    
+    in_section = False
+    section_content = []
+    
+    for line in lines:
+        if line.startswith("## "):
+            if in_section:
+                break
+            if section.lower() in line.lower():
+                in_section = True
+                continue
+        if in_section:
+            section_content.append(line)
+    
+    return "\n".join(section_content).strip()
+
+
+def check_state_files() -> dict:
+    """Check existence and freshness of state files."""
+    result = {
+        "session_state": {
+            "exists": SESSION_STATE.exists(),
+            "path": str(SESSION_STATE),
+            "modified": None
+        },
+        "working_buffer": {
+            "exists": WORKING_BUFFER.exists(),
+            "path": str(WORKING_BUFFER),
+            "modified": None
+        },
+        "handoff": {
+            "exists": HANDOFF.exists(),
+            "path": str(HANDOFF),
+            "modified": None
+        }
+    }
+    
+    for key, info in result.items():
+        if info["exists"]:
+            mtime = Path(info["path"]).stat().st_mtime
+            info["modified"] = datetime.fromtimestamp(mtime).isoformat()
+    
+    return result
+
+
+def is_new_session() -> bool:
+    """Check if this is a new session."""
+    current = get_current_session_id()
+    
+    if not LAST_SESSION_FILE.exists():
+        return True
+    
+    last = LAST_SESSION_FILE.read_text().strip()
+    return current != last
+
+
+def update_last_session():
+    """Update last session ID."""
+    current = get_current_session_id()
+    LAST_SESSION_FILE.write_text(current)
+
+
+def recover_state() -> dict:
+    """Recover state from files."""
+    result = {
+        "session_id": get_current_session_id(),
+        "is_new": is_new_session(),
+        "files": check_state_files(),
+        "recovered": False,
+        "objective": None,
+        "phase": None,
+        "next_actions": None,
+        "blockers": None
+    }
+    
+    if SESSION_STATE.exists():
+        result["objective"] = read_markdown_section(SESSION_STATE, "Current Objective")
+        result["phase"] = read_markdown_section(SESSION_STATE, "Current Phase")
+        result["next_actions"] = read_markdown_section(SESSION_STATE, "Next Actions")
+        result["blockers"] = read_markdown_section(SESSION_STATE, "Blockers")
+        result["recovered"] = True
+    
+    update_last_session()
+    
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Session State Recovery")
+    parser.add_argument("--check", action="store_true", help="Check state files")
+    parser.add_argument("--recover", action="store_true", help="Recover state")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--health", action="store_true", help="Health check")
+    args = parser.parse_args()
+    
+    if args.health:
+        files = check_state_files()
+        status = "healthy" if all(f["exists"] for f in files.values()) else "degraded"
+        print(json.dumps({"status": status, "files": files}, indent=2))
+        return
+    
+    if args.check:
+        result = check_state_files()
+    else:
+        result = recover_state()
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        if result.get("recovered"):
+            print("✅ Session state recovered:")
+            print(f"  Objective: {result.get('objective', 'N/A')[:50]}...")
+            print(f"  Phase: {result.get('phase', 'N/A')}")
+        else:
+            print("⚠️ No session state found")
+
+
+if __name__ == "__main__":
+    main()
