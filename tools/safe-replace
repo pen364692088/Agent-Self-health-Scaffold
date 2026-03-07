@@ -28,7 +28,7 @@ def is_protected_path(path: Path) -> bool:
         return False
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2 or "--help" in sys.argv or "-h" in sys.argv:
         print(__doc__)
         sys.exit(0)
     
