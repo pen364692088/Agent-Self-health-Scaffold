@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7872",
+  "message_id": "7879",
   "from": "telegram:8420019401",
-  "timestamp": 1772960095000,
+  "timestamp": 1772960507000,
   "decision": {
     "action": "boundary",
-    "decision_id": 348,
+    "decision_id": 351,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 1.6652673893081837e-13,
+        "bond": 1.5524124171933474e-13,
         "grudge": 0,
         "trust": 0.49900000000000033,
         "repair_bank": 0
@@ -38,7 +38,7 @@
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.07730000000005002,
+          "score": 0.07730000000004664,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.06980000000005003,
+          "score": 0.06980000000004664,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.03530000000005004,
+          "score": 0.035300000000046655,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -132,7 +132,7 @@
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-08T08:54:56.364Z",
+  "generated_at": "2026-03-08T09:01:47.900Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 1.6652673893081837e-13,
+          "bond": 1.5524124171933474e-13,
           "trust": 0.49900000000000033,
           "grudge": 0,
           "repair_bank": 0
@@ -178,7 +178,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1772960096.3504524,
+      "generated_at": 1772960507.8842602,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

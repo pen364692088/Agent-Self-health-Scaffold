@@ -182,8 +182,8 @@ cp budget.json budget_before.json
 
 | Milestone | Ratio | Status | Evidence |
 |-----------|-------|--------|----------|
-| Observe | 0.65 | ✅ CURRENT | trace.jsonl |
-| Candidate Entry | 0.75 | ⏳ PENDING | - |
+| Observe | 0.75 | ✅ PASSED | trace.jsonl |
+| Candidate Entry | 0.75 | ✅ CURRENT | state transition logged |
 | Threshold Breach | 0.85 | ⏳ PENDING | - |
 | Compression | 0.85+ | ⏳ PENDING | - |
 | Complete | <0.75 | ⏳ PENDING | - |
