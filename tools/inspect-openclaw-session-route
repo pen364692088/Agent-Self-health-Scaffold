@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+from pathlib import Path
+
+DIST = Path('/home/moonlight/.npm-global/lib/node_modules/openclaw/dist')
+FILES = [
+    DIST / 'pi-embedded-DoQsYfIY.js',
+    DIST / 'reply-C5LKjXcC.js',
+]
+NEEDLES = [
+    'function resolveInboundLastRouteSessionKey(params) {',
+    'function buildAgentSessionKey(params) {',
+    'function resolveAgentRoute(input) {',
+    'async function recordInboundSession(params) {',
+]
+
+for file in FILES:
+    if not file.exists():
+        continue
+    lines = file.read_text(errors='ignore').splitlines()
+    print(f'## {file}')
+    for needle in NEEDLES:
+        for i, line in enumerate(lines, 1):
+            if needle in line:
+                print(f'- {needle} @ line {i}')
+                break
+    print()
