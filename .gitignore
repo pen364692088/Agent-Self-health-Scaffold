@@ -1,0 +1,30 @@
+# Large/generated/local-only data
+.session-index/
+output/
+tmp/
+temp/
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Python virtualenvs
+venv/
+.venv/
+ENV/
+env/
+OpenEmotion/venv/
+OpenEmotion/.venv/
+OpenEmotion/venv2/
+
+# Local vector/index/cache data
+.openviking-data/
+.openviking-data-local-ollama/
+
+# Nested repos and local experiments
+searxng-docker/
+
+# OS/editor noise
+.DS_Store
