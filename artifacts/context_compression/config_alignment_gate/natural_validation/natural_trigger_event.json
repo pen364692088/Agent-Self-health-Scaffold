@@ -1,0 +1,46 @@
+{
+  "event_id": "natural_20260307_234818",
+  "phase": "D_natural_validation",
+  "session_id": "89cbc6ee-8dae-4a70-bb27-32fcf4fac44c",
+  "session_type": "natural",
+  "trigger_type": "threshold_92",
+  "trigger_threshold": 0.92,
+  "observed_trigger_ratio": 1.0209,
+  
+  "validation_status": "PARTIAL",
+  "validation_notes": "Natural trigger occurred at threshold_92 (strong), not threshold_85 (standard). Context ratio jumped from ~0.825 directly to >0.92, skipping the 0.85 trigger zone.",
+  
+  "before": {
+    "estimated_tokens": 61251,
+    "turn_count": 202,
+    "ratio": 1.0209,
+    "pressure_level": "strong"
+  },
+  "after": {
+    "estimated_tokens": 36750,
+    "turn_count": 101,
+    "ratio": 0.6125,
+    "pressure_level": "normal"
+  },
+  
+  "guardrail_hit": {
+    "guardrail_id": "2C",
+    "guardrail_name": "budget_threshold_strong",
+    "trigger_condition": "budget_ratio >= 0.92",
+    "action_taken": "forced_strong_compression"
+  },
+  
+  "phase_d_requirements_check": {
+    "natural_enforced_trigger": {"required": true, "actual": true, "status": "PASS"},
+    "guardrail_2a_hit": {"required": true, "actual": false, "note": "Hit 2C instead of 2A", "status": "FAIL"},
+    "action_forced_standard_compression": {"required": true, "actual": false, "note": "Action was forced_strong_compression", "status": "FAIL"},
+    "pre_assemble_compliant": {"required": true, "actual": null, "status": "UNKNOWN"},
+    "post_compression_ratio_lt_075": {"required": true, "actual": true, "post_ratio": 0.6125, "status": "PASS"},
+    "safety_counters_zero": {"required": true, "actual": true, "status": "PASS"}
+  },
+  
+  "phase_d_result": "BLOCKED",
+  "blocking_reason": "Natural trigger occurred at threshold_92 (strong compression), not threshold_85 (standard compression). The 0.85 pre-assemble standard compression cannot be validated with this natural evidence.",
+  
+  "created_at": "2026-03-08T10:02:00-06:00"
+}

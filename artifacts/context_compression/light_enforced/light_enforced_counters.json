@@ -4,24 +4,24 @@
   "started_at": "2026-03-07T08:37:00.000Z",
   "enforced_counters": {
     "enforced_sessions_total": 0,
-    "enforced_low_risk_sessions": 27,
+    "enforced_low_risk_sessions": 45,
     "bypass_sessions_total": 0,
     "sessions_skipped_by_scope_filter": 0,
-    "budget_check_call_count": 1640,
-    "sessions_evaluated_by_budget_check": 1640,
-    "sessions_over_threshold": 27,
-    "compression_opportunity_count": 27,
+    "budget_check_call_count": 2297,
+    "sessions_evaluated_by_budget_check": 2297,
+    "sessions_over_threshold": 45,
+    "compression_opportunity_count": 45,
     "enforced_trigger_count": 1,
     "retrieve_call_count": 0,
     "real_reply_corruption_count": 0,
     "active_session_pollution_count": 0,
-    "rollback_event_count": 27,
+    "rollback_event_count": 45,
     "hook_error_count": 0,
     "kill_switch_triggers": 0,
     "old_topic_continuity_signal": 1,
     "open_loop_preservation_signal": 1,
     "user_correction_stability_signal": 1,
-    "last_updated": "2026-03-08T09:11:01.393Z",
+    "last_updated": "2026-03-08T15:43:27.447Z",
     "first_enforced_trigger": {
       "timestamp": "2026-03-07T23:28:34Z",
       "ratio": 0.9357,
@@ -42,7 +42,7 @@
     "end_time_estimate": "2026-03-10T08:37:00.000Z",
     "min_sessions": 20,
     "max_sessions": 50,
-    "current_sessions": 27
+    "current_sessions": 45
   },
-  "last_updated": "2026-03-08T09:11:01.393Z"
+  "last_updated": "2026-03-08T15:43:27.447Z"
 }

@@ -1,0 +1,154 @@
+{
+  "ts": "2026-03-08T08:18:16-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T08:18:16.261507",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "Session Continuity v1.1.1 Stable 冻结完成",
+    "phase": "✅ FROZEN - STABLE DEFAULT BASELINE",
+    "recovery_id": "unknown:2026-03-08T08:18:16.261507"
+  }
+}
+{
+  "ts": "2026-03-08T08:18:16-05:00",
+  "event_type": "conflict_resolution_applied",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "conflict_resolution_applied:cf400c9079cb5ca4",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "field": "objective",
+    "chosen_source": "handoff_md",
+    "conflict_count": "1",
+    "conflict_id": "cf400c9079cb5ca4"
+  }
+}
+{
+  "ts": "2026-03-08T08:18:16-05:00",
+  "event_type": "conflict_resolution_applied",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "conflict_resolution_applied:481aee57dc4661d1",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "field": "phase",
+    "chosen_source": "handoff_md",
+    "conflict_count": "1",
+    "conflict_id": "481aee57dc4661d1"
+  }
+}
+{
+  "ts": "2026-03-08T08:18:16-05:00",
+  "event_type": "conflict_resolution_applied",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "conflict_resolution_applied:92e3afb06f9e476c",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "field": "branch",
+    "chosen_source": "repo_evidence",
+    "conflict_count": "2",
+    "conflict_id": "92e3afb06f9e476c"
+  }
+}
+{
+  "ts": "2026-03-08T08:18:16-05:00",
+  "event_type": "conflict_resolution_applied",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "conflict_resolution_applied:e76ac33ea344b979",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "field": "blocker",
+    "chosen_source": "handoff_md",
+    "conflict_count": "1",
+    "conflict_id": "e76ac33ea344b979"
+  }
+}
+{
+  "ts": "2026-03-08T08:18:52-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1772975932",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "session_reuse_v1_0",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1772975932",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-08T08:18:52-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:session_reuse_v1_0:2026-03-08",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "session_reuse_v1_0",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "d55bfbbd7d2c0ad4"
+  }
+}
+{
+  "ts": "2026-03-08T10:40:05-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1772984405",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "agent_self_health_v1",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1772984405",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-08T10:40:05-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:agent_self_health_v1:2026-03-08",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "agent_self_health_v1",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "870d5cf3ee3c50e8"
+  }
+}
+{
+  "ts": "2026-03-08T10:42:49-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T10:42:49.292280",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "✅ Phase 1 scaffold implemented: observation + structured incident + whitelist-only self-heal + propo",
+    "recovery_id": "unknown:2026-03-08T10:42:49.292280"
+  }
+}
+{
+  "ts": "2026-03-08T10:42:49-05:00",
+  "event_type": "conflict_resolution_applied",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "conflict_resolution_applied:7ce5e0a067fdb4ad",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "field": "branch",
+    "chosen_source": "repo_evidence",
+    "conflict_count": "1",
+    "conflict_id": "7ce5e0a067fdb4ad"
+  }
+}

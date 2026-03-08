@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-03-08T04:52:31-06:00",
+  "session_id": "controlled_validation_session_001",
+  "estimated_tokens": 124000,
+  "max_tokens": 200000,
+  "ratio": 0.62,
+  "pressure_level": "normal",
+  "threshold_hit": null,
+  "snapshot_id": "snap_20260308_045231_post_compression",
+  "compression_state": "completed",
+  "trace_mode": "HIGH",
+  "milestone": "COMPRESSION_COMPLETE",
+  "compression_gain_percent": 27.1,
+  "safe_zone_verified": true,
+  "safe_zone_target": "< 0.75",
+  "actual_ratio": 0.62
+}

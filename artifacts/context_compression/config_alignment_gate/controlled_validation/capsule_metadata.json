@@ -1,0 +1,48 @@
+{
+  "capsule_id": "cap_20260308_controlled_validation_turns_1_68",
+  "session_id": "controlled_validation_session_001",
+  "source_turn_range": {
+    "start": 1,
+    "end": 68
+  },
+  "created_at": "2026-03-08T04:52:30.350-06:00",
+  "compression_event_id": "evt_20260308_045230",
+  "topic": "Context Compression Controlled Validation - Phase C",
+  "summary": "Controlled validation session progressing from candidate zone (0.75) to trigger zone (0.85). System correctly detected threshold breach and executed forced_standard_compression before prompt assembly.",
+  "key_points": [
+    "Milestone: Candidate zone entered at ratio 0.75",
+    "Milestone: Trigger zone entered at ratio 0.85",
+    "Guardrail 2A: Activated at budget_ratio >= 0.85",
+    "Action: forced_standard_compression executed",
+    "Verification: pre_assemble_compliant = true",
+    "Result: Ratio fell back to 0.62 (safe zone < 0.75)",
+    "Safety: All safety counters remained at zero"
+  ],
+  "validation_evidence": {
+    "trigger_ratio": 0.85,
+    "trigger_threshold": "standard",
+    "action_taken": "forced_standard_compression",
+    "pre_assemble_compliant": true,
+    "post_compression_ratio": 0.62,
+    "safety_violations": 0
+  },
+  "entities": [
+    "context_compression",
+    "guardrail_2A",
+    "forced_standard_compression",
+    "candidate_zone",
+    "trigger_zone",
+    "budget_threshold_enforcement"
+  ],
+  "decisions": [
+    {
+      "id": "dec_validation_001",
+      "description": "Controlled validation triggered at 0.85 (not 0.92)",
+      "choice": "forced_standard_compression"
+    }
+  ],
+  "commitments": [],
+  "token_count": 46000,
+  "original_token_count": 170000,
+  "compression_ratio": 0.271
+}

@@ -1,0 +1,14 @@
+{
+  "task_id": "task_20260308_094038_5429b15f",
+  "run_id": "run_d97dff48",
+  "session_key": "agent:main:subagent:bd1824b1-0bad-41b5-b349-f2e06fc5e4ec",
+  "parent_session_key": "",
+  "status": "completed",
+  "summary": "Phase C controlled validation completed successfully. Reached 0.85 trigger gate, captured complete evidence package proving Guardrail 2A hit, forced_standard_compression executed pre-assemble, and post-compression ratio fell to 0.62 (safe zone < 0.75). All 6 required evidence files created plus final validation report.",
+  "artifacts": [],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-08T09:44:42.228803",
+  "retry_count": 0,
+  "metadata": {}
+}

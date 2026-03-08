@@ -1,0 +1,200 @@
+{
+  "session_id": "unknown",
+  "timestamp": "2026-03-08T10:42:49.292280",
+  "is_new_session": false,
+  "sources": {
+    "session_state": {
+      "exists": true,
+      "fresh": true,
+      "age_hours": 0.05,
+      "modified": "2026-03-08T10:39:57.299166"
+    },
+    "working_buffer": {
+      "exists": true,
+      "fresh": true,
+      "age_hours": 0.21,
+      "modified": "2026-03-08T10:30:24.983299"
+    },
+    "handoff": {
+      "exists": true,
+      "fresh": true,
+      "age_hours": 0.05,
+      "modified": "2026-03-08T10:39:57.300166"
+    },
+    "wal": {
+      "exists": true,
+      "fresh": true,
+      "age_hours": 14.27,
+      "modified": "2026-03-07T20:26:45.435508"
+    },
+    "repo": {
+      "branch": "openviking-l2-bugfix"
+    }
+  },
+  "field_values": {
+    "session_state_md": {
+      "objective": {
+        "status": "valid",
+        "raw": "\u6784\u5efa OpenClaw Agent \u81ea\u89c2\u6d4b / \u5f02\u5e38\u6c47\u62a5 / \u5206\u7ea7\u81ea\u6108\u673a\u5236\u7684\u7b2c\u4e00\u7248\u53ef\u8fd0\u884c\u9aa8\u67b6\uff0c\u4f18\u5148\u5b8c\u6210\u201c\u89c2\u5bdf + \u6c47\u62a5 + Level A \u767d\u540d\u5355 + Level B/C proposal scaff",
+        "value": "\u6784\u5efa OpenClaw Agent \u81ea\u89c2\u6d4b / \u5f02\u5e38\u6c47\u62a5 / \u5206\u7ea7\u81ea\u6108\u673a\u5236\u7684\u7b2c\u4e00\u7248\u53ef\u8fd0\u884c\u9aa8\u67b6\uff0c\u4f18\u5148\u5b8c\u6210\u201c\u89c2\u5bdf + \u6c47\u62a5 + Level A \u767d\u540d\u5355 + Level B/C proposal scaffold\u201d\u3002",
+        "source": "SESSION-STATE.md"
+      },
+      "phase": {
+        "status": "valid",
+        "raw": "\u2705 Phase 1 scaffold implemented: observation + structured incident + whitelist-only self-heal + propo",
+        "value": "\u2705 Phase 1 scaffold implemented: observation + structured incident + whitelist-only self-heal + proposal-only path",
+        "source": "SESSION-STATE.md"
+      },
+      "branch": {
+        "status": "valid",
+        "raw": "- Branch: openviking-l2-bugfix\n- Workspace: ~/.openclaw/workspace\n\n---",
+        "value": "- Branch: openviking-l2-bugfix - Workspace: ~/.openclaw/workspace ---",
+        "source": "SESSION-STATE.md"
+      },
+      "blocker": {
+        "status": "valid",
+        "raw": "- v1 is scaffold quality, not full production-grade immunity layer\n- some Level A actions are curren",
+        "value": "- v1 is scaffold quality, not full production-grade immunity layer - some Level A actions are currently scaffold/skip implementations, not fully wired execution paths",
+        "source": "SESSION-STATE.md"
+      },
+      "next_step": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "SESSION-STATE.md"
+      },
+      "next_actions": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "SESSION-STATE.md"
+      }
+    },
+    "working_buffer_md": {
+      "objective": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "working-buffer.md"
+      },
+      "phase": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "working-buffer.md"
+      },
+      "branch": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "working-buffer.md"
+      },
+      "blocker": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "working-buffer.md"
+      },
+      "next_step": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "working-buffer.md"
+      },
+      "next_actions": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "working-buffer.md"
+      }
+    },
+    "handoff_md": {
+      "objective": {
+        "status": "valid",
+        "raw": "\u6784\u5efa OpenClaw Agent \u81ea\u89c2\u6d4b / \u5f02\u5e38\u6c47\u62a5 / \u5206\u7ea7\u81ea\u6108\u673a\u5236\u3002",
+        "value": "\u6784\u5efa OpenClaw Agent \u81ea\u89c2\u6d4b / \u5f02\u5e38\u6c47\u62a5 / \u5206\u7ea7\u81ea\u6108\u673a\u5236\u3002",
+        "source": "handoff.md"
+      },
+      "phase": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "handoff.md"
+      },
+      "branch": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "handoff.md"
+      },
+      "blocker": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "handoff.md"
+      },
+      "next_step": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "handoff.md"
+      },
+      "next_actions": {
+        "status": "missing",
+        "raw": "",
+        "value": "",
+        "source": "handoff.md"
+      }
+    },
+    "repo_evidence": {
+      "branch": {
+        "status": "valid",
+        "value": "openviking-l2-bugfix"
+      }
+    }
+  },
+  "field_resolution": {
+    "objective": {
+      "status": "valid",
+      "value": "\u6784\u5efa OpenClaw Agent \u81ea\u89c2\u6d4b / \u5f02\u5e38\u6c47\u62a5 / \u5206\u7ea7\u81ea\u6108\u673a\u5236\u3002",
+      "chosen_source": "handoff_md",
+      "reason": "Highest priority source (handoff_md, priority=80)",
+      "conflicts": [
+        {
+          "source": "session_state_md",
+          "value": "\u6784\u5efa OpenClaw Agent \u81ea\u89c2\u6d4b / \u5f02\u5e38\u6c47\u62a5 / \u5206\u7ea7\u81ea\u6108\u673a\u5236\u7684\u7b2c\u4e00\u7248\u53ef\u8fd0\u884c\u9aa8\u67b6\uff0c\u4f18\u5148\u5b8c\u6210\u201c\u89c2\u5bdf + \u6c47\u62a5 + Level A \u767d\u540d\u5355 + Level B/C proposal scaffold\u201d\u3002",
+          "priority": 70
+        }
+      ]
+    },
+    "phase": {
+      "status": "valid",
+      "value": "\u2705 Phase 1 scaffold implemented: observation + structured incident + whitelist-only self-heal + proposal-only path",
+      "chosen_source": "session_state_md",
+      "reason": "Highest priority source (session_state_md, priority=70)",
+      "conflicts": null
+    },
+    "branch": {
+      "status": "valid",
+      "value": "openviking-l2-bugfix",
+      "chosen_source": "repo_evidence",
+      "reason": "Highest priority source (repo_evidence, priority=100)",
+      "conflicts": [
+        {
+          "source": "session_state_md",
+          "value": "- Branch: openviking-l2-bugfix - Workspace: ~/.openclaw/workspace ---",
+          "priority": 70
+        }
+      ]
+    },
+    "blocker": {
+      "status": "valid",
+      "value": "- v1 is scaffold quality, not full production-grade immunity layer - some Level A actions are currently scaffold/skip implementations, not fully wired execution paths",
+      "chosen_source": "session_state_md",
+      "reason": "Highest priority source (session_state_md, priority=70)",
+      "conflicts": null
+    }
+  },
+  "recovered": true,
+  "uncertainty_flag": false
+}

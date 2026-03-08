@@ -23,3 +23,5 @@
 {"timestamp": "2026-03-06T10:03:31.958520", "task_id": "baseline_happy_001", "allowed": false, "reason": "missing_receipts", "details": {"missing": ["contract", "e2e", "preflight"]}}
 {"timestamp": "2026-03-06T10:05:13.387029", "task_id": "baseline_happy_001", "allowed": true, "reason": "all_checks_passed"}
 {"timestamp": "2026-03-06T10:05:13.532466", "task_id": "baseline_happy_001", "allowed": true, "reason": "all_checks_passed"}
+{"timestamp": "2026-03-08T08:18:52.372638", "task_id": "session_reuse_v1_0", "allowed": true, "reason": "all_checks_passed"}
+{"timestamp": "2026-03-08T10:40:05.385799", "task_id": "agent_self_health_v1", "allowed": true, "reason": "all_checks_passed"}
