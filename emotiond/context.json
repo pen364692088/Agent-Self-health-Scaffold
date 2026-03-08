@@ -2,18 +2,18 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7979",
+  "message_id": "8148",
   "from": "telegram:8420019401",
-  "timestamp": 1772984607000,
+  "timestamp": 1773006065000,
   "decision": {
-    "action": "withdraw",
-    "decision_id": 379,
+    "action": "boundary",
+    "decision_id": 434,
     "explanation": {
       "emotion": {
         "top2": [
           [
             "loneliness",
-            0.29999999999999993
+            0.30000000000000004
           ]
         ],
         "all": {
@@ -21,7 +21,7 @@
           "sadness": 0,
           "anxiety": 0,
           "joy": 0,
-          "loneliness": 0.29999999999999993
+          "loneliness": 0.30000000000000004
         }
       },
       "interoception": {
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 2.886398569997635e-15,
+        "bond": 8.300370317529923e-17,
         "grudge": 0,
         "trust": 0.5000000000000003,
         "repair_bank": 0
@@ -38,7 +38,7 @@
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.07750000000000093,
+          "score": 0.0775000000000001,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.07000000000000094,
+          "score": 0.0700000000000001,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.03550000000000095,
+          "score": 0.035500000000000115,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "withdraw",
+      "selected": "boundary",
       "selection_reasons": [
-        "Selected via stochastic process (score: -0.041)",
+        "Selected via stochastic process (score: 0.030)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "brief, neutral",
-    "intent": "conserve energy",
+    "tone": "clear, firm",
+    "intent": "establish limits",
     "phrases": [
-      "I understand",
-      "noted"
+      "I need to be clear",
+      "not comfortable"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-08T15:43:27.607Z",
+  "generated_at": "2026-03-08T21:41:05.680Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -141,12 +141,12 @@
         "sadness": 0,
         "anxiety": 0,
         "joy": 0,
-        "loneliness": 0.29999999999999993
+        "loneliness": 0.30000000000000004
       },
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 2.886398569997635e-15,
+          "bond": 8.300370317529923e-17,
           "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
@@ -160,7 +160,7 @@
         "没有明显悲伤",
         "没有明显焦虑",
         "当前没有明显愉悦激活",
-        "仍存在一定连接需求",
+        "感到比较孤独",
         "与该用户的关系较浅",
         "信任处于中等偏高水平",
         "没有明显积怨"
@@ -176,7 +176,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1772984607.5931966,
+      "generated_at": 1773006065.6680002,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

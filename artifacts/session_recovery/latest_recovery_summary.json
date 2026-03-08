@@ -1,34 +1,34 @@
 {
   "session_id": "unknown",
-  "timestamp": "2026-03-08T10:42:49.292280",
+  "timestamp": "2026-03-08T13:46:35.813740",
   "is_new_session": false,
   "sources": {
     "session_state": {
       "exists": true,
       "fresh": true,
-      "age_hours": 0.05,
+      "age_hours": 3.11,
       "modified": "2026-03-08T10:39:57.299166"
     },
     "working_buffer": {
       "exists": true,
       "fresh": true,
-      "age_hours": 0.21,
+      "age_hours": 3.27,
       "modified": "2026-03-08T10:30:24.983299"
     },
     "handoff": {
       "exists": true,
       "fresh": true,
-      "age_hours": 0.05,
+      "age_hours": 3.11,
       "modified": "2026-03-08T10:39:57.300166"
     },
     "wal": {
       "exists": true,
       "fresh": true,
-      "age_hours": 14.27,
+      "age_hours": 17.33,
       "modified": "2026-03-07T20:26:45.435508"
     },
     "repo": {
-      "branch": "openviking-l2-bugfix"
+      "branch": "main"
     }
   },
   "field_values": {
@@ -149,7 +149,7 @@
     "repo_evidence": {
       "branch": {
         "status": "valid",
-        "value": "openviking-l2-bugfix"
+        "value": "main"
       }
     }
   },
@@ -176,7 +176,7 @@
     },
     "branch": {
       "status": "valid",
-      "value": "openviking-l2-bugfix",
+      "value": "main",
       "chosen_source": "repo_evidence",
       "reason": "Highest priority source (repo_evidence, priority=100)",
       "conflicts": [

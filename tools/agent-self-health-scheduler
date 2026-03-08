@@ -99,16 +99,30 @@ def component_snapshot(mode, health_result=None, gate_result=None):
     write_json(RUNTIME / 'heartbeat_status.json', hb)
 
     code, out, err = run(['python3', str(WORKSPACE / 'tools' / 'callback-worker-doctor')], timeout=20)
+    
+    # Parse service state from doctor output (事件驱动服务语义映射)
+    service_state = 'unknown'
+    if '✅ Service state: OK (idle, no pending work)' in out:
+        service_state = 'idle_expected'
+    elif '✅ Service state: OK (service running)' in out:
+        service_state = 'active'
+    elif '❌ Service state: Inactive with' in out:
+        service_state = 'degraded'
+    
+    # 映射 worker_status: idle_expected 也是 healthy
+    worker_status = 'healthy' if code == 0 or service_state == 'idle_expected' else 'degraded'
+    
     cb.update({
         'worker_name': 'callback-worker',
-        'alive': '✅ Service running' in out,
+        'alive': service_state in ('active', 'idle_expected'),
         'last_progress_at': ts if ('可以上线' in out or '不能上线' in out) else cb.get('last_progress_at'),
         'last_output_at': ts,
         'pending_count': None,
-        'stuck_suspected': code != 0,
-        'last_error_at': ts if code != 0 else cb.get('last_error_at'),
-        'last_error_type': 'doctor_failed' if code != 0 else None,
-        'worker_status': 'healthy' if code == 0 else 'degraded',
+        'stuck_suspected': service_state == 'degraded',
+        'last_error_at': ts if service_state == 'degraded' else cb.get('last_error_at'),
+        'last_error_type': 'doctor_failed' if service_state == 'degraded' else None,
+        'worker_status': worker_status,
+        'service_state': service_state,  # 新增: 详细状态
         'doctor_excerpt': '\n'.join(out.splitlines()[:8])[:500]
     })
     write_json(RUNTIME / 'callback_worker_status.json', cb)

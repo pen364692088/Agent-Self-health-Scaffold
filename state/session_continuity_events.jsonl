@@ -152,3 +152,16 @@
     "conflict_id": "7ce5e0a067fdb4ad"
   }
 }
+{
+  "ts": "2026-03-08T13:46:35-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T13:46:35.813740",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "✅ Phase 1 scaffold implemented: observation + structured incident + whitelist-only self-heal + propo",
+    "recovery_id": "unknown:2026-03-08T13:46:35.813740"
+  }
+}

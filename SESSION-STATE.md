@@ -3,7 +3,7 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)
-**Updated**: 2026-03-08T14:15:45-05:00
+**Updated**: 2026-03-08T16:33:30-05:00
 
 ---
 
@@ -11,7 +11,8 @@
 按顺序实施 OpenClaw self-health always-on integration：先固化 always-on policy，再完成 quick/full/gate 默认链路接线、runtime telemetry 持续落盘、安全控制与回退、自动流转、Gate 常驻化，最后做 soak 与 final verdict。
 
 ## Current Phase
-🚧 OAI-5/OAI-3/OAI-4 baseline landed: scheduler safety controls are observable, auto-flow skeleton is connected, Gate history is continuously written. Next phase is richer telemetry truth + short soak.
+✅ OAI-5/OAI-3/OAI-4 baseline landed
+🧪 SOAK_IN_PROGRESS - 2h 21m continuous PASS, targeting 24h milestone
 
 ## Current Branch / Workspace
 - Branch: openviking-l2-bugfix
@@ -42,25 +43,20 @@
 - heartbeat quick-mode hook appended to 'HEARTBEAT.md'
 - user systemd timers enabled: 'agent-self-health-full.timer', 'agent-self-health-gate.timer'
 
-## Validation Status
-- 'pytest -q tests/test_agent_self_health.py'
-- 'pytest -q tests/test_main_system_always_on_wiring.py'
-- manual smoke:
-  - 'tools/agent-self-health-scheduler --mode quick --force --json'
-  - 'tools/agent-self-health-scheduler --mode full --force --json'
-  - 'tools/agent-self-health-scheduler --mode gate --force --json'
-  - 'python3 tools/gate-self-health-check --json'
-  - 'systemctl --user status agent-self-health-full.timer'
-  - 'systemctl --user status agent-self-health-gate.timer'
+## Soak Evidence (2h 21m)
+- 41 runs (31 gate, 6 full, 4 quick)
+- 100% Gate PASS rate
+- 0 lock contention, 0 budget hit
+- Telemetry continuously written
+- Details: artifacts/self_health/always_on/ALWAYS_ON_PROGRESS.md
 
 ## Next Actions
-1. Improve callback-worker/mailbox telemetry truth to reduce heuristic gaps
-2. Expand Gate A/B/C explanations and component-level semantics
-3. Run short always-on soak and collect evidence for intermediate status
-4. Only then judge whether state can move to 'WIRING_ACTIVE_BUT_SOAK_PENDING'
+1. ✅ Run short always-on soak and collect evidence - DONE (2h+)
+2. ⏳ Continue soak to 24h milestone
+3. ⏳ Improve callback-worker telemetry semantics (event-driven vs process-alive)
+4. ⏳ Expand Gate A/B/C explanations
 
 ## Blockers / Limits
-- callback-worker telemetry currently exposes a real degraded signal while service is inactive
-- mailbox-worker telemetry is still file/flow heuristic rather than process-backed
-- proposal auto-flow path is wired but not yet validated under a sustained degraded scenario
-- final verdict must remain evidence-based; always-on is not yet declared active
+- callback-worker telemetry: semantic mismatch (inactive ≠ degraded for event-driven)
+- mailbox-worker telemetry: file heuristic, not process-backed
+- final verdict pending 24h soak completion

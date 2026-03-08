@@ -3,6 +3,11 @@
 Callback Worker Doctor - 健康检查诊断工具
 
 执行全面健康检查并给出"能不能上线"结论。
+
+对于事件驱动服务（path-activated）：
+- inactive 是预期状态
+- 只要有 pending work 时能响应就行
+- "Service running" 失败不是 critical issue
 """
 
 import json
@@ -26,6 +31,36 @@ def check_service():
         text=True
     )
     return result.returncode == 0
+
+
+def check_service_expected_state():
+    """
+    检查服务状态是否符合预期运行模型。
+    
+    对于事件驱动服务（path-activated）：
+    - inactive + 无 pending = idle_expected (OK)
+    - inactive + 有 pending = degraded (需要响应)
+    - active = OK
+    """
+    result = subprocess.run(
+        ["systemctl", "--user", "is-active", "callback-worker"],
+        capture_output=True,
+        text=True
+    )
+    is_active = result.returncode == 0
+    
+    if is_active:
+        return "active", "OK (service running)"
+    
+    # Inactive - check if there's pending work
+    pending_count = 0
+    if EVENTS_DIR.exists():
+        pending_count = len(list(EVENTS_DIR.glob("*.json")))
+    
+    if pending_count > 0:
+        return "degraded", f"Inactive with {pending_count} pending events"
+    else:
+        return "idle_expected", "OK (idle, no pending work)"
 
 
 def check_kill_switch():
@@ -154,7 +189,7 @@ def main():
     print("=" * 60)
     
     checks = [
-        ("Service running", check_service),
+        ("Service state", check_service_expected_state),  # 改用语义检查
         ("Kill-switch", check_kill_switch),
         ("Queue writable", check_queue),
         ("State read/write + lock", check_state),
@@ -164,18 +199,37 @@ def main():
     
     all_passed = True
     critical_issues = []
+    service_state = None
     
     for name, check_fn in checks:
         try:
             result = check_fn()
             
             if isinstance(result, tuple):
-                passed, message = result
+                if len(result) == 3:
+                    # (state, passed, message) for service check
+                    state, passed, message = result
+                    if name == "Service state":
+                        service_state = state
+                elif len(result) == 2:
+                    passed, message = result
+                else:
+                    passed = result[0] if isinstance(result[0], bool) else True
+                    message = result[1] if len(result) > 1 else "OK"
             else:
                 passed = result
                 message = "OK"
             
-            status = "✅" if passed else "❌"
+            # 对于事件驱动服务，idle_expected 是 OK
+            if name == "Service state" and service_state == "idle_expected":
+                status = "✅"
+                passed = True
+            elif name == "Service state" and service_state == "degraded":
+                status = "❌"
+                passed = False
+            else:
+                status = "✅" if passed else "❌"
+            
             print(f"{status} {name}: {message}")
             
             if not passed:

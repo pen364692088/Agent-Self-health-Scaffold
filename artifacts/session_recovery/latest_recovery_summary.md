@@ -1,6 +1,6 @@
 # Recovery Summary
 
-**Timestamp**: 2026-03-08T10:42:49.292280
+**Timestamp**: 2026-03-08T13:46:35.813740
 **Session ID**: unknown
 **Recovered**: True
 **Uncertainty Flag**: False
@@ -17,7 +17,7 @@
 - **Source**: session_state_md
 
 ### branch: ✅
-- **Value**: openviking-l2-bugfix
+- **Value**: main
 - **Source**: repo_evidence
 - **Conflicts**: 1 alternative values
 
