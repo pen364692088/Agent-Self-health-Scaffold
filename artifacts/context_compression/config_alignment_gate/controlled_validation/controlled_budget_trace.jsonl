@@ -4,3 +4,4 @@
 {"timestamp":"2026-03-08T03:03:00-06:00","phase":"C_step4","context_ratio":0.52,"estimated_tokens":104000,"max_tokens":200000,"compression_state":"idle","action":"observe","turn":3,"session_file":"a82dafd7-2691-4322-91dc-ef847d1cf9f7.jsonl"}
 {"timestamp":"2026-03-08T03:09:00-06:00","phase":"C_ramp","context_ratio":0.57,"estimated_tokens":114000,"max_tokens":200000,"compression_state":"idle","action":"observe","turn":4}
 {"timestamp":"2026-03-08T03:14:00-06:00","phase":"C_ramp","context_ratio":0.62,"estimated_tokens":125000,"max_tokens":200000,"compression_state":"idle","action":"observe","turn":5}
+{"timestamp":"2026-03-08T03:32:00-06:00","phase":"C_approaching_candidate","context_ratio":0.66,"estimated_tokens":132000,"max_tokens":200000,"compression_state":"idle","mode":"observe_trace","next_milestone":"0.75_candidate_entry","distance_to_candidate":"0.09","tokens_to_candidate":18000}

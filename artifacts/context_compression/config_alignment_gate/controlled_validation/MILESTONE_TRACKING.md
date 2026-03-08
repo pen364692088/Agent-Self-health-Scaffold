@@ -97,8 +97,12 @@ Distance: 0.10 ratio points (~19k tokens)
 
 **Expected State Transition**: executing → completed
 
+**Critical Verification**:
+- **post_compression_ratio** 应明显回落到安全区
+- 理想目标: **< 0.75** (回到 observe zone)
+- 压缩增益: 应有明显的 token 减少
+
 **Actions**:
-- Verify post_compression_ratio < 0.75
 - Capture counter_after.json
 - Capture budget_after.json
 - Capture guardrail_event.json
@@ -110,7 +114,8 @@ Distance: 0.10 ratio points (~19k tokens)
 {
   "milestone": "compression_complete",
   "state_transition": "executing → completed",
-  "post_compression_ratio": "TBD",
+  "post_compression_ratio": "< 0.75 (理想)",
+  "compression_gain_percent": "TBD",
   "safety_counters_zero": true,
   "evidence_package_complete": true
 }
@@ -121,18 +126,22 @@ Distance: 0.10 ratio points (~19k tokens)
 **Trigger Condition**: All milestones completed
 
 **Pass Criteria**:
-1. ✅ Trigger at 0.85 (not 0.92)
-2. ⏳ pre_assemble_compliant = yes
-3. ⏳ Compression succeeded
-4. ⏳ Safety counters = 0
-5. ⏳ Evidence package complete
+1. ✅ Guardrail 2A 命中 at 0.85
+2. ⏳ action_taken = forced_standard_compression
+3. ⏳ 触发发生在 assemble 前
+4. ⏳ Compression succeeded
+5. ⏳ post_compression_ratio 回落到 < 0.75
+6. ⏳ Safety counters = 0
+7. ⏳ Evidence package complete
 
 **Final Report Fields**:
 ```json
 {
   "trigger_ratio": 0.85,
+  "guardrail_2a_hit": "yes",
+  "action_taken": "forced_standard_compression",
   "pre_assemble_compliant": "yes",
-  "post_compression_ratio": "TBD",
+  "post_compression_ratio": "< 0.75",
   "safety_counters_remained_zero": "yes",
   "phase_c_result": "PASS"
 }
