@@ -41,3 +41,16 @@ tools/capture-wake-session-diff --chat-id telegram:8420019401 --account-id manag
 
 ## Test Status
 - 13 tests passing
+
+## Latest External Decision
+- Phase C accepted
+- Phase D unblocked
+- Resume from Phase D; do not reopen Phase C unless new contradictory evidence appears.
+
+
+## Context Compression Status
+
+- Config Alignment Gate: PASS
+- Phase C / Controlled Validation: PASS
+- Phase D / Natural Validation: BLOCKED
+- See: `PHASE_D_BLOCKED_STATUS.md`

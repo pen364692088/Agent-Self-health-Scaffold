@@ -3,7 +3,7 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)  
-**Updated**: 2026-03-08T09:07:00-06:00
+**Updated**: 2026-03-08T09:45:00-05:00
 
 ---
 
@@ -84,6 +84,42 @@ Command executed against current Telegram direct chat with explicit baseline `no
 - `pytest -q tests/session_reuse/test_capture_wake_session_diff.py tests/session_reuse/test_session_route_probe.py tests/session_reuse/test_session_reuse_v1.py`
 - ✅ 13 passed
 
+## Phase C Execution Rule
+
+**Fixed runtime observation rule:**
+
+1. When `budget_ratio >= 0.75`:
+   - switch trace mode: `observe -> candidate`
+   - emit `candidate_entry` event
+   - begin strict state tracking:
+     `idle -> candidate -> pending -> executing -> completed/failed`
+
+2. When `budget_ratio >= 0.85`:
+   - switch to `trigger_capture_mode`
+   - in the same pre-assemble cycle, force capture:
+     - `guardrail_event`
+     - `budget_before`
+     - `counter_before`
+     - `budget_after`
+     - `counter_after`
+     - `capsule_metadata`
+
+3. Validation at `>= 0.85` must prove all of:
+   - `guardrail 2A hit`
+   - `action_taken = forced_standard_compression`
+   - trigger happened `pre-assemble`
+
+4. Post-compression:
+   - verify `post_compression_ratio` fell back to safe zone
+   - ideal target: `< 0.75`
+
+**Phase definition**: Phase C is now approaching the candidate gate; critical evidence begins at `0.75`, and core validation completes at `0.85`.
+
+## Phase Status Update
+- ✅ Phase C accepted
+- ✅ Phase D unblocked
+- Next execution should proceed on Phase D, using the Phase C capture/validation rule as accepted baseline.
+
 ## Observation Policy
 Session Reuse / Thread Affinity v1.0 is now in **observation mode**.
 Next action is not more abstraction; it is to wait for the next real wake-like symptom and run `tools/capture-wake-session-diff` immediately.
@@ -107,3 +143,13 @@ Next action is not more abstraction; it is to wait for the next real wake-like s
 **Mode**: Observation  
 **Evidence path**: Ready  
 **Intervention path**: Deliberately disabled
+
+
+## Context Compression Current Status
+
+- Config Alignment Gate: **PASS**
+- Phase C / Controlled Validation: **PASS**
+- Phase D / Natural Validation: **BLOCKED**
+- Blocked reason: missing real, auditable natural `0.85` trigger sample
+
+Reference: `PHASE_D_BLOCKED_STATUS.md`
