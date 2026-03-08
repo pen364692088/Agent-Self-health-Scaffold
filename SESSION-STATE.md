@@ -24,7 +24,10 @@ Context Compression - Milestone B1 完成，B2 待 Config Alignment
 | Sub-milestone | Status | Evidence |
 |---------------|--------|----------|
 | B1: Runtime Truth | ✅ DONE | `config_alignment/` |
-| B2: Policy Compliance | ⏳ PENDING | Requires config gate |
+| B2: Policy Compliance | ⏸️ WAITING | Config Alignment Gate 未决策 |
+
+### Canonical Statement
+> **当前 Natural Validation 仅对 runtime truth（200k / 0.92）有效；目标策略（100k / 0.85）的合规性验证尚未开始，需等待 Config Alignment Gate。**
 
 ### Runtime Truth (B1)
 ```

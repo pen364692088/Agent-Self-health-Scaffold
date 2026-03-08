@@ -37,9 +37,11 @@
 
 ---
 
-### Milestone B2: Policy Compliance Validated ⏳ PENDING
+### Milestone B2: Policy Compliance Validated ⏸️ WAITING FOR CONFIG ALIGNMENT GATE
 
 **Purpose**: Prove target policy (`100k / 0.85`) is active in production.
+
+**Status**: 未启动，等待 Config Alignment Gate 决策后再启动
 
 **Pass Conditions**:
 - [ ] Config aligned to `100k / 0.85` OR
@@ -47,13 +49,14 @@
 - [ ] Natural trigger at `0.85` observed
 - [ ] Evidence preserved
 
-**Blockers**:
-- Current runtime does not enforce `0.85` threshold
-- Config alignment required (separate gate)
-
 **Dependencies**:
-- Config Alignment Gate
-- Re-run validation if config changed
+- Config Alignment Gate (必须先通过)
+- 如果配置变更，需要重新运行验证
+
+**重要**:
+- 不要把 B2 标记为"进行中验证"
+- B1 观察结果不能用于证明目标策略有效
+- 当前证据仅对 runtime truth（200k / 0.92）有效
 
 ---
 
