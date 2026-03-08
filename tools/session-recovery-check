@@ -1,0 +1,54 @@
+#!/bin/bash
+# Session Recovery Check - Called by heartbeat
+# Performs actual recovery and logs events
+
+set -e
+
+WORKSPACE="$HOME/.openclaw/workspace"
+RECOVERY_TOOL="$WORKSPACE/tools/session-start-recovery"
+EVENTS_FILE="$WORKSPACE/state/session_continuity_events.jsonl"
+SUMMARY_FILE="$WORKSPACE/artifacts/session_recovery/latest_recovery_summary.json"
+
+# Run recovery
+RECOVERY_RESULT=$($RECOVERY_TOOL --recover --json 2>/dev/null)
+RECOVERY_EXIT=$?
+
+# Check for failure
+if [ $RECOVERY_EXIT -ne 0 ]; then
+    echo "ALERT: RECOVERY_FAILED"
+    exit 1
+fi
+
+# Parse result
+RECOVERED=$(echo "$RECOVERY_RESULT" | jq -r '.recovered // false')
+IS_NEW_SESSION=$(echo "$RECOVERY_RESULT" | jq -r '.is_new_session // false')
+UNCERTAINTY=$(echo "$RECOVERY_RESULT" | jq -r '.uncertainty_flag // false')
+SESSION_ID=$(echo "$RECOVERY_RESULT" | jq -r '.session_id // "unknown"')
+
+# Log for debugging
+if [ "$IS_NEW_SESSION" = "true" ]; then
+    echo "$(date -Iseconds): New session detected, recovery=$RECOVERED, uncertainty=$UNCERTAINTY" >> /tmp/continuity.log
+fi
+
+# Check if recovery was performed
+if [ "$IS_NEW_SESSION" = "true" ] && [ "$RECOVERED" = "true" ]; then
+    # Verify event was logged
+    if [ -f "$EVENTS_FILE" ]; then
+        EVENT_COUNT=$(grep -c '"event_type":"recovery_success"' "$EVENTS_FILE" 2>/dev/null || echo "0")
+        echo "$(date -Iseconds): Recovery event logged, total events: $EVENT_COUNT" >> /tmp/continuity.log
+    fi
+    
+    # Verify summary was generated
+    if [ -f "$SUMMARY_FILE" ]; then
+        echo "$(date -Iseconds): Recovery summary generated" >> /tmp/continuity.log
+    fi
+fi
+
+# Handle uncertainty (don't fail, but note it)
+if [ "$UNCERTAINTY" = "true" ]; then
+    echo "$(date -Iseconds): Recovery completed with uncertainty" >> /tmp/continuity.log
+fi
+
+# Output success (for heartbeat to consume)
+echo "RECOVERY_OK"
+exit 0

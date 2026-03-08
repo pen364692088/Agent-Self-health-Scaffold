@@ -16,26 +16,53 @@
 
 ### 检查步骤
 
-1. **检测是否是新 session**
-   - 比较 session ID 与上次记录
-   - 如果是新 session，执行恢复流程
-
-2. **新 session 恢复流程**:
+1. **执行恢复检查**
    ```bash
-   # 读取状态文件
-   cat ~/.openclaw/workspace/SESSION-STATE.md
-   cat ~/.openclaw/workspace/memory/working-buffer.md
-   ls -t ~/.openclaw/workspace/handoff.md 2>/dev/null | head -1 | xargs cat
+   # 调用恢复工具（静默模式）
+   RECOVERY_RESULT=$(session-start-recovery --recover --json 2>/dev/null)
+   RECOVERY_EXIT=$?
+   
+   if [ $RECOVERY_EXIT -ne 0 ]; then
+       echo "ALERT: RECOVERY_FAILED"
+       exit 0
+   fi
+   
+   # 解析结果
+   RECOVERED=$(echo "$RECOVERY_RESULT" | jq -r '.recovered // false')
+   IS_NEW_SESSION=$(echo "$RECOVERY_RESULT" | jq -r '.is_new_session // false')
+   UNCERTAINTY=$(echo "$RECOVERY_RESULT" | jq -r '.uncertainty_flag // false')
    ```
 
-3. **验证恢复状态**
-   - 与当前 repo/task 状态比较
-   - 如有冲突，以文件/repo 为准
-   - 报告状态不确定
+2. **处理恢复结果**
+   
+   | 场景 | 动作 |
+   |------|------|
+   | 新 session 恢复成功 | 继续检查 |
+   | 新 session 恢复失败 | ALERT: RECOVERY_FAILED |
+   | 恢复带 uncertainty | 记录日志，继续 |
+   | 同 session 继续 | 跳过恢复处理 |
 
-4. **如果状态文件缺失或过期**
-   - 从 git log / session index 重建
-   - 报告 "SESSION_RECOVERY_NEEDED"
+3. **恢复摘要**
+   
+   如果是新 session 且恢复成功，生成恢复摘要：
+   ```bash
+   if [ "$IS_NEW_SESSION" = "true" ] && [ "$RECOVERED" = "true" ]; then
+       # 恢复摘要已由 session-start-recovery 生成到:
+       # artifacts/session_recovery/latest_recovery_summary.md
+       # 事件已记录到 state/session_continuity_events.jsonl
+       :
+   fi
+   ```
+
+4. **处理 uncertainty**
+   
+   ```bash
+   if [ "$UNCERTAINTY" = "true" ]; then
+       # uncertainty 已记录到事件日志
+       # 不阻断 heartbeat，但记录日志
+       echo "Recovery completed with uncertainty" >> /tmp/continuity.log
+   fi
+   ```
 
 ---
 
@@ -63,51 +90,39 @@
 session_status 2>/dev/null | grep -E "Context|Budget" || echo "unknown"
 ```
 
-### 落盘动作
+---
 
-如果需要落盘:
+## Session Continuity Daily Check (每日一次) ⭐⭐⭐
+
+### 触发条件
+- 每天首次 heartbeat 时执行
+- 通过 state/continuity_last_check 判断
+
+### 执行脚本
 ```bash
-# 更新 SESSION-STATE.md
-cat > ~/.openclaw/workspace/SESSION-STATE.md << 'STATE'
-# Session State
-
-**Updated**: $(date -Iseconds)
-
-## Current Objective
-[当前目标]
-
-## Current Phase
-[当前阶段]
-
-## Current Branch / Workspace
-[当前分支/仓库]
-
-## Latest Verified Status
-[已确认状态]
-
-## Next Actions
-[下一步]
-
-## Blockers
-[阻塞项]
-STATE
-
-# 更新 working-buffer.md
-cat > ~/.openclaw/workspace/memory/working-buffer.md << 'BUFFER'
-# Working Buffer
-
-**Updated**: $(date -Iseconds)
-
-## Active Focus
-[当前焦点]
-
-## Hypotheses
-[假设]
-
-## Pending Verification
-[待验证]
-BUFFER
+~/.openclaw/workspace/tools/session-continuity-daily-check
 ```
+
+### 记录指标
+| 指标 | 来源 | 更新时机 |
+|------|------|----------|
+| recovery_success_count | session-start-recovery | 每次恢复成功 |
+| handoff_count | handoff 生成 | 每次 handoff |
+| high_context_count | pre-reply-guard | context > 80% |
+| interruption_count | session-start-recovery | 恢复检测到中断 |
+| uncertainty_count | session-start-recovery | uncertainty flag |
+| conflict_count | session-start-recovery | conflict resolved |
+| failure_count | session-start-recovery | 恢复失败 |
+| wal_append_count | WAL 文件行数 | 每日检查 |
+
+### 输出位置
+- HEALTH_SUMMARY.md - 每日更新
+- ROLLOUT_OBSERVATION.md - 事件追加
+
+### 注意事项
+- 此检查不影响 heartbeat 输出
+- 仅在后台更新状态文件
+- 失败不阻断 heartbeat
 
 ---
 
@@ -149,6 +164,7 @@ BUFFER
 - 不在心跳中向用户输出长解释
 - 不跳过 Session Recovery Check
 - 不跳过 State Flush Check
+- 不跳过 Session Continuity Daily Check
 
 ---
 
@@ -162,6 +178,11 @@ HEARTBEAT_OK
 **需要恢复**:
 ```
 ALERT: SESSION_RECOVERY_NEEDED
+```
+
+**恢复失败**:
+```
+ALERT: RECOVERY_FAILED
 ```
 
 **需要落盘**:

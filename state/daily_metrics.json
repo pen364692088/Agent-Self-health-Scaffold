@@ -1,0 +1,11 @@
+{
+  "raw": {},
+  "unique_sessions": {},
+  "unique_handoff_ids": 0,
+  "unique_conflict_ids": 0,
+  "unique_recovery_ids": 0,
+  "unique_gate_ids": 0,
+  "total_events": 0,
+  "by_semantics_version": {},
+  "generated_at": "2026-03-07T22:46:20.941066"
+}

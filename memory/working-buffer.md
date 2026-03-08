@@ -1,54 +1,87 @@
 # Working Buffer
 
-**Purpose**: 恢复工作记忆 - 短期工作焦点
-
-**Updated**: 2026-03-07T17:32:00-06:00
+**Updated**: 2026-03-07T22:42:00-06:00
 
 ---
 
 ## Active Focus
-实现会话连续性最小保障机制
-
-## Current Problem
-新 session 导致工作上下文丢失，因为没有：
-1. 强制状态落盘
-2. 新 session 恢复流程
-3. context 阈值行为
-
-## Hypotheses
-- 问题根源：agent 先回复，没写状态
-- 解决方案：WAL 思路 - 先写，再说
-- 需要三层：文档层 + 状态层 + 执行层
-
-## Candidates
-| 方案 | 优点 | 缺点 |
-|------|------|------|
-| 只改 AGENTS.md | 简单 | 约束力弱 |
-| 只改 HEARTBEAT.md | 执行检查 | 缺少上位约束 |
-| 三层全改 | 最稳 | 工作量大 |
-
-## Pending Verification
-- [ ] hook/wrapper 机制是否存在
-- [ ] pre-reply guard 如何实现
-- [ ] session-start recovery 如何触发
-
-## This Turn
-- 更新 AGENTS.md ✅
-- 更新 HEARTBEAT.md ✅
-- 创建 SESSION-STATE.md ✅
-- 检查 hook 机制 ⏳
+Observation Freeze 生效，7 天正式数据收集
 
 ---
 
-## 职责说明
+## Observation Freeze Status
 
-**本文件 (working-buffer.md)**:
-- 放短期工作焦点
-- 当前正在处理的问题
-- 候选方案和假设
-- 本轮待验证点
-- 它是"恢复工作记忆"
+**Status**: FROZEN
+**Start**: 2026-03-07
+**End**: 2026-03-14
 
-**NOT for**:
-- 长期稳定信息 (→ SESSION-STATE.md)
-- 交接摘要 (→ handoff.md)
+### Frozen Items
+- ✅ Metric semantics (v1.1.1a)
+- ✅ Dedupe rules
+- ✅ Event names
+- ✅ Aggregation logic
+- ✅ Core flow
+
+### Allowed Only
+- Bug fixes (clearly broken)
+- Documentation clarifications
+- Additional monitoring (read-only)
+
+---
+
+## Daily Tasks (Every Day)
+
+1. **Run daily audit**
+   ```bash
+   ~/.openclaw/workspace/tools/session-daily-audit
+   ~/.openclaw/workspace/tools/session-deep-audit
+   ```
+
+2. **Update documents**
+   - ROLLOUT_OBSERVATION.md
+   - HEALTH_SUMMARY.md
+   - ANOMALY_LEDGER.md (if anomalies)
+
+3. **Check coverage progress**
+   - 10+ recoveries
+   - 5+ handoffs
+   - 3+ high-context
+   - 2+ interruptions
+
+---
+
+## Diagnostic Metrics (Beyond Success Rate)
+
+| Metric | Purpose |
+|--------|---------|
+| Recovery usable rate | 真正能继续任务的比例 |
+| Event/File consistency | 事件与文件对应 |
+| Dedup correctness | 去重正确性 |
+| Cross-entry consistency | 跨入口一致性 |
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| OBSERVATION_FREEZE.md | 冻结声明 |
+| ANOMALY_LEDGER.md | 异常台账 |
+| REVIEW_CRITERIA.md | 评审门槛 |
+| daily_snapshots/ | 每日快照 |
+
+---
+
+## Review Date
+
+**Scheduled**: 2026-03-14
+**Decision**: PASS / CONDITIONAL / FAIL
+
+---
+
+## Next Actions
+
+1. 每日审计
+2. 记录异常
+3. 2026-03-14 评审
+4. 决定 Layer 2 扩展

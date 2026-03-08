@@ -1,0 +1,208 @@
+{
+  "capsule_id": "cap_20260307_test_enf_1_92",
+  "session_id": "test_enforced_1772947714",
+  "source_turn_range": {
+    "start": 1,
+    "end": 92
+  },
+  "created_at": "2026-03-07T23:28:34.747461",
+  "topic": "对话片段摘要",
+  "summary": "Turn 1 到 92 的对话内容，共 92 条消息。",
+  "decisions": [
+    {
+      "decision": "执行方式：选择 1 + 2",
+      "rationale": ""
+    },
+    {
+      "decision": "当前目标：确保 v1.1.1 在 Layer 1 场景下稳定运行，完成 7 天观察，满足指标后决定是否扩大 rollout。",
+      "rationale": ""
+    },
+    {
+      "decision": "继续完成 increment 集成，但不要使用分散的裸 count 文件作为真相源。改为统一的 append-only 事件日志 + 每日聚合方案。",
+      "rationale": ""
+    },
+    {
+      "decision": "v1.1.1a 冻结采用双层视图：",
+      "rationale": ""
+    }
+  ],
+  "open_loops": [
+    {
+      "loop_id": "loop_1",
+      "description": "需要我先执行一次性确认项，还是按其他方式处理？",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_2",
+      "description": "Now I need to create the METRIC_SEMANTICS.md document that defines the dual-layer metrics model.",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_3",
+      "description": "Now I need to update the continuity-event-log tool to support the new event identity model. The key changes are:",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_4",
+      "description": "Now I need to update session-start-recovery to generate proper recovery_id and conflict_id. Let me read the current version again and make the necessary changes.",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_5",
+      "description": "I need to update the log_continuity_event function in session-start-recovery to generate proper identity fields. Let me modify the file.",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_6",
+      "description": "Now I need to update handoff-create to generate proper handoff_id. Let me read and update that file.",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_7",
+      "description": "Now I need to update session-continuity-daily-check to output both raw and unique metrics. Let me create a new version.",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_8",
+      "description": "Now I need to do Phase 3: Regression verification (Task 4) and documentation (Task 5). Let me run the verification tests.",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_9",
+      "description": "I see - the JSON is formatted with newlines, so grep isn't matching the full pattern on a single line. I need to fix the daily-check script to handle multi-line JSON.",
+      "status": "open"
+    },
+    {
+      "loop_id": "loop_10",
+      "description": "Now I need to update the pre-reply-guard to support both threshold bands (60_80 and 80_plus) according to the frozen semantics.",
+      "status": "open"
+    }
+  ],
+  "hard_constraints": [
+    "5. 不允许为追求好看数字而牺牲可追溯性",
+    "7. 必须使用现有 WAL / lock / atomic append 机制，不允许直接 echo 覆盖计数文件",
+    "daily-check 必须区分以下两层：",
+    "- 报表必须标明使用的 metric semantics version",
+    "3. 每条事件必须带：ts, event_type, session_id, source_tool, dedupe_key, meta",
+    "5. 每条事件必须带 ts / event_type / session_id / source_tool / dedupe_key / meta",
+    "4. 新旧口径差异必须可解释",
+    "在 2026-03-14 前，必须达到以下最小覆盖：",
+    "4. 输出必须可直接用于 review",
+    "5. 若发现缺口，必须给修复优先级：P0 / P1 / P2"
+  ],
+  "entities": [
+    {
+      "name": "md",
+      "type": "file",
+      "mentions": 1
+    },
+    {
+      "name": "js",
+      "type": "file",
+      "mentions": 1
+    },
+    {
+      "name": "py",
+      "type": "file",
+      "mentions": 1
+    },
+    {
+      "name": "needs",
+      "type": "tool",
+      "mentions": 1
+    },
+    {
+      "name": "Turn",
+      "type": "concept",
+      "mentions": 92
+    },
+    {
+      "name": "MEDIA",
+      "type": "concept",
+      "mentions": 12
+    },
+    {
+      "name": "Avoid",
+      "type": "concept",
+      "mentions": 4
+    },
+    {
+      "name": "Keep",
+      "type": "concept",
+      "mentions": 4
+    },
+    {
+      "name": "Conversation",
+      "type": "concept",
+      "mentions": 8
+    },
+    {
+      "name": "Moonlight",
+      "type": "concept",
+      "mentions": 24
+    },
+    {
+      "name": "Sender",
+      "type": "concept",
+      "mentions": 8
+    },
+    {
+      "name": "Telegram Moonlight",
+      "type": "concept",
+      "mentions": 4
+    },
+    {
+      "name": "Session Continuity",
+      "type": "concept",
+      "mentions": 24
+    },
+    {
+      "name": "Stable Rollout",
+      "type": "concept",
+      "mentions": 1
+    },
+    {
+      "name": "STABLE",
+      "type": "concept",
+      "mentions": 9
+    },
+    {
+      "name": "FROZEN",
+      "type": "concept",
+      "mentions": 7
+    },
+    {
+      "name": "GUARDED STABLE",
+      "type": "concept",
+      "mentions": 9
+    },
+    {
+      "name": "Rollout Scope",
+      "type": "concept",
+      "mentions": 1
+    },
+    {
+      "name": "Layer",
+      "type": "concept",
+      "mentions": 9
+    },
+    {
+      "name": "Recovery",
+      "type": "concept",
+      "mentions": 4
+    }
+  ],
+  "retrieval_keys": [
+    "context",
+    "tool",
+    "让我设计",
+    "题明显影响主流程",
+    "session",
+    "Context",
+    "json",
+    "对话片段摘要",
+    "schema",
+    "能位于特定的系统"
+  ],
+  "reconstructable": true
+}

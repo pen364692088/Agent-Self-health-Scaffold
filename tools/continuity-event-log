@@ -1,0 +1,284 @@
+#!/bin/bash
+# Continuity Event Logger v1.1.1a - Frozen Metrics Semantics
+# Append-only event log with deterministic deduplication
+#
+# Semantics Version: v1.1.1a (FROZEN)
+# 
+# Usage: continuity-event-log <event_type> [options]
+
+set -e
+
+WORKSPACE="$HOME/.openclaw/workspace"
+EVENTS_FILE="$WORKSPACE/state/session_continuity_events.jsonl"
+LOCK_DIR="$WORKSPACE/state/locks"
+CONTEXT_STATE="$WORKSPACE/state/session_context_state.json"
+
+# Frozen semantics version
+METRIC_SEMANTICS_VERSION="v1.1.1a"
+
+# Initialize
+mkdir -p "$(dirname "$EVENTS_FILE")"
+mkdir -p "$LOCK_DIR"
+
+# Parse arguments
+EVENT_TYPE="$1"
+shift
+
+SESSION_ID=""
+RECOVERY_TS=""
+HANDOFF_ID=""
+CONFLICT_ID=""
+FAILURE_TS=""
+ERROR_CLASS=""
+THRESHOLD_BAND=""
+GATE_ID=""
+METAS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --session-id|--session_id)
+            SESSION_ID="$2"
+            shift 2
+            ;;
+        --recovery-ts|--recovery_ts)
+            RECOVERY_TS="$2"
+            shift 2
+            ;;
+        --handoff-id|--handoff_id)
+            HANDOFF_ID="$2"
+            shift 2
+            ;;
+        --conflict-id|--conflict_id)
+            CONFLICT_ID="$2"
+            shift 2
+            ;;
+        --gate-id|--gate_id)
+            GATE_ID="$2"
+            shift 2
+            ;;
+        --failure-ts|--failure_ts)
+            FAILURE_TS="$2"
+            shift 2
+            ;;
+        --error-class|--error_class)
+            ERROR_CLASS="$2"
+            shift 2
+            ;;
+        --threshold-band|--threshold_band)
+            THRESHOLD_BAND="$2"
+            shift 2
+            ;;
+        --meta)
+            METAS+=("$2")
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+# Validate event type
+VALID_TYPES="recovery_success|interruption_recovery|handoff_created|high_context_trigger|recovery_uncertainty|conflict_resolution_applied|recovery_failure|fallback_used|gate_completed|task_ready_to_close|task_completed"
+if ! echo "$VALID_TYPES" | grep -qw "$EVENT_TYPE"; then
+    echo "ERROR: Invalid event type: $EVENT_TYPE" >&2
+    exit 1
+fi
+
+# Validate threshold_band for high_context_trigger
+if [ "$EVENT_TYPE" = "high_context_trigger" ]; then
+    if [ -z "$THRESHOLD_BAND" ]; then
+        THRESHOLD_BAND="80_plus"
+    fi
+    if [ "$THRESHOLD_BAND" != "60_80" ] && [ "$THRESHOLD_BAND" != "80_plus" ]; then
+        echo "ERROR: Invalid threshold_band: $THRESHOLD_BAND (must be 60_80 or 80_plus)" >&2
+        exit 1
+    fi
+fi
+
+# Generate timestamp
+TS=$(date -Iseconds)
+DATE=$(date +%Y-%m-%d)
+
+# Default session_id from environment
+if [ -z "$SESSION_ID" ]; then
+    SESSION_ID="${OPENCLAW_SESSION_ID:-${TELEGRAM_CHAT_ID:-unknown}}"
+fi
+
+# Determine source tool
+SOURCE_TOOL="${CONTINUITY_SOURCE_TOOL:-manual}"
+
+# Generate identity and dedupe_key based on FROZEN semantics
+case "$EVENT_TYPE" in
+    recovery_success)
+        if [ -z "$RECOVERY_TS" ]; then
+            RECOVERY_TS="$TS"
+        fi
+        RECOVERY_ID="${SESSION_ID}:${RECOVERY_TS}"
+        DEDUPE_KEY="recovery_success:${RECOVERY_ID}"
+        METAS+=("recovery_id=${RECOVERY_ID}")
+        ;;
+    
+    interruption_recovery)
+        if [ -z "$RECOVERY_TS" ]; then
+            RECOVERY_TS="$TS"
+        fi
+        INTERRUPTION_RECOVERY_ID="${SESSION_ID}:${RECOVERY_TS}"
+        DEDUPE_KEY="interruption_recovery:${INTERRUPTION_RECOVERY_ID}"
+        METAS+=("interruption_recovery_id=${INTERRUPTION_RECOVERY_ID}")
+        ;;
+    
+    handoff_created)
+        if [ -z "$HANDOFF_ID" ]; then
+            HANDOFF_ID="$(date +%s)"
+        fi
+        DEDUPE_KEY="handoff_created:${HANDOFF_ID}"
+        METAS+=("handoff_id=${HANDOFF_ID}")
+        ;;
+    
+    high_context_trigger)
+        DEDUPE_KEY="high_context_trigger:${SESSION_ID}:${THRESHOLD_BAND}"
+        
+        if [ -f "$CONTEXT_STATE" ]; then
+            TRIGGERED=$(jq -r --arg sid "$SESSION_ID" --arg band "$THRESHOLD_BAND" \
+                '.high_context_triggered[$sid + ":" + $band] // false' \
+                "$CONTEXT_STATE" 2>/dev/null || echo "false")
+            if [ "$TRIGGERED" = "true" ]; then
+                exit 0
+            fi
+        fi
+        
+        mkdir -p "$(dirname "$CONTEXT_STATE")"
+        if [ ! -f "$CONTEXT_STATE" ]; then
+            echo '{"high_context_triggered":{}}' > "$CONTEXT_STATE"
+        fi
+        TMP_FILE=$(mktemp)
+        jq --arg key "${SESSION_ID}:${THRESHOLD_BAND}" '.high_context_triggered[$key] = true' \
+            "$CONTEXT_STATE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONTEXT_STATE"
+        ;;
+    
+    recovery_uncertainty)
+        if [ -z "$RECOVERY_TS" ]; then
+            RECOVERY_TS="$TS"
+        fi
+        RECOVERY_ID="${SESSION_ID}:${RECOVERY_TS}"
+        DEDUPE_KEY="recovery_uncertainty:${RECOVERY_ID}"
+        METAS+=("recovery_id=${RECOVERY_ID}")
+        ;;
+    
+    conflict_resolution_applied)
+        if [ -z "$CONFLICT_ID" ]; then
+            echo "ERROR: conflict_id required for conflict_resolution_applied" >&2
+            exit 1
+        fi
+        DEDUPE_KEY="conflict_resolution_applied:${CONFLICT_ID}"
+        METAS+=("conflict_id=${CONFLICT_ID}")
+        ;;
+    
+    recovery_failure)
+        if [ -z "$FAILURE_TS" ]; then
+            FAILURE_TS="$TS"
+        fi
+        if [ -z "$ERROR_CLASS" ]; then
+            ERROR_CLASS="UnknownError"
+        fi
+        FAILURE_ID="${SESSION_ID}:${FAILURE_TS}:${ERROR_CLASS}"
+        DEDUPE_KEY="recovery_failure:${FAILURE_ID}"
+        METAS+=("failure_id=${FAILURE_ID}")
+        METAS+=("error_class=${ERROR_CLASS}")
+        ;;
+    
+    gate_completed)
+        # Use gate_id from meta or generate
+        if [ -z "$GATE_ID" ]; then
+            GATE_ID="$(date +%s)"
+        fi
+        DEDUPE_KEY="gate_completed:${GATE_ID}"
+        METAS+=("gate_id=${GATE_ID}")
+        ;;
+    
+    task_ready_to_close)
+        # One per task
+        TASK_ID=""
+        for META_ITEM in "${METAS[@]}"; do
+            if [[ "$META_ITEM" == task_id=* ]]; then
+                TASK_ID="${META_ITEM#task_id=}"
+            fi
+        done
+        if [ -z "$TASK_ID" ]; then
+            TASK_ID="unknown"
+        fi
+        DEDUPE_KEY="task_ready_to_close:${TASK_ID}:${DATE}"
+        ;;
+    
+    task_completed)
+        TASK_ID=""
+        for META_ITEM in "${METAS[@]}"; do
+            if [[ "$META_ITEM" == task_id=* ]]; then
+                TASK_ID="${META_ITEM#task_id=}"
+            fi
+        done
+        if [ -z "$TASK_ID" ]; then
+            TASK_ID="$(date +%s)"
+        fi
+        DEDUPE_KEY="task_completed:${TASK_ID}:${DATE}"
+        ;;
+    
+    fallback_used)
+        DEDUPE_KEY="fallback_used:${SESSION_ID}:$(date +%s)"
+        ;;
+    
+    *)
+        DEDUPE_KEY="${EVENT_TYPE}:${SESSION_ID}:${DATE}"
+        ;;
+esac
+
+# Acquire lock for atomic append
+LOCK_FILE="$LOCK_DIR/continuity_events.lock"
+exec 200>"$LOCK_FILE"
+flock -w 5 200
+
+# Check for duplicate
+if [ -f "$EVENTS_FILE" ]; then
+    if grep -qE "\"dedupe_key\"[[:space:]]*:[[:space:]]*\"$DEDUPE_KEY\"" "$EVENTS_FILE" 2>/dev/null; then
+        flock -u 200
+        exit 0
+    fi
+fi
+
+# Build meta object
+META_JSON="{}"
+for META_ITEM in "${METAS[@]}"; do
+    KEY="${META_ITEM%%=*}"
+    VALUE="${META_ITEM#*=}"
+    TMP=$(mktemp)
+    echo "$META_JSON" | jq --arg k "$KEY" --arg v "$VALUE" '.[$k] = $v' > "$TMP" && META_JSON=$(cat "$TMP") && rm "$TMP"
+done
+
+# Build event JSON
+EVENT=$(jq -n \
+    --arg ts "$TS" \
+    --arg event_type "$EVENT_TYPE" \
+    --arg session_id "$SESSION_ID" \
+    --arg source_tool "$SOURCE_TOOL" \
+    --arg dedupe_key "$DEDUPE_KEY" \
+    --arg metric_semantics_version "$METRIC_SEMANTICS_VERSION" \
+    --argjson meta "$META_JSON" \
+    '{
+        ts: $ts,
+        event_type: $event_type,
+        session_id: $session_id,
+        source_tool: $source_tool,
+        dedupe_key: $dedupe_key,
+        metric_semantics_version: $metric_semantics_version,
+        meta: $meta
+    }')
+
+# Append to log
+echo "$EVENT" >> "$EVENTS_FILE"
+
+# Release lock
+flock -u 200
+
+# Output for logging
+echo "Event logged: $EVENT_TYPE (semantics=$METRIC_SEMANTICS_VERSION)"

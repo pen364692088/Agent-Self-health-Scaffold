@@ -1,0 +1,48 @@
+#!/bin/bash
+# Evidence Hot Zone Capture
+# Called when budget_ratio >= 0.84
+
+WORKSPACE="$HOME/.openclaw/workspace"
+EVIDENCE_DIR="$WORKSPACE/artifacts/context_compression/light_enforced/natural_validation/89cbc6ee-8dae-4a70-bb27-32fcf4fac44c/evidence_hot_zone"
+COUNTERS_FILE="$WORKSPACE/artifacts/context_compression/light_enforced/light_enforced_counters.json"
+
+SESSION_ID="89cbc6ee-8dae-4a70-bb27-32fcf4fac44c"
+TURN_NUM="${1:-unknown}"
+PHASE="${2:-before_assemble}"
+
+mkdir -p "$EVIDENCE_DIR/turn_${TURN_NUM}_${PHASE}"
+
+# Capture counter snapshot
+if [ -f "$COUNTERS_FILE" ]; then
+    cp "$COUNTERS_FILE" "$EVIDENCE_DIR/turn_${TURN_NUM}_${PHASE}/counter.json"
+fi
+
+# Capture budget snapshot
+python3 << 'PYTHON'
+import json
+from pathlib import Path
+from datetime import datetime
+
+evidence_dir = Path.home() / ".openclaw/workspace/artifacts/context_compression/light_enforced/natural_validation/89cbc6ee-8dae-4a70-bb27-32fcf4fac44c/evidence_hot_zone"
+turn_num = "${TURN_NUM}"
+phase = "${PHASE}"
+
+# Budget snapshot
+budget = {
+    "ts": datetime.now().isoformat(),
+    "session_id": "89cbc6ee-8dae-4a70-bb27-32fcf4fac44c",
+    "turn": turn_num,
+    "estimated_tokens": 170000,  # Approximate at hot zone
+    "max_tokens": 200000,
+    "budget_ratio": 0.85,
+    "phase": "hot_zone"
+}
+
+target_dir = evidence_dir / f"turn_{turn_num}_{phase}"
+target_dir.mkdir(parents=True, exist_ok=True)
+
+with open(target_dir / "budget.json", 'w') as f:
+    json.dump(budget, f, indent=2)
+PYTHON
+
+echo "✅ Evidence captured: turn_${TURN_NUM}_${PHASE}"

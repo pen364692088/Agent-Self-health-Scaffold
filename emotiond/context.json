@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7700",
+  "message_id": "7805",
   "from": "telegram:8420019401",
-  "timestamp": 1772936486000,
+  "timestamp": 1772950069000,
   "decision": {
     "action": "attack",
-    "decision_id": 281,
+    "decision_id": 326,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,16 +29,16 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 8.266165124712199e-12,
+        "bond": 8.706975678255144e-13,
         "grudge": 0,
-        "trust": 0.5000000000000003,
+        "trust": 0.49900000000000033,
         "repair_bank": 0
       },
       "target_id": "telegram:8420019401",
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.07750000000247992,
+          "score": 0.07730000000026127,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.07000000000247993,
+          "score": 0.06980000000026128,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.03550000000247994,
+          "score": 0.03530000000026129,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -110,10 +110,10 @@
           "strategy": "normal",
           "reason": "normal_operation",
           "persistence_pressure": 0.202,
-          "risk": 0.15,
+          "risk": 0.1503,
           "ambiguity": 0,
           "expected_info_gain": 1,
-          "tradeoff_score": 0.1486,
+          "tradeoff_score": 0.1487,
           "dominant_drivers": [],
           "conservative_trigger": null,
           "repair_trigger": null,
@@ -132,7 +132,7 @@
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-08T02:21:29.312Z",
+  "generated_at": "2026-03-08T06:07:49.622Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,8 +146,8 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 8.266165124712199e-12,
-          "trust": 0.5000000000000003,
+          "bond": 8.706975678255144e-13,
+          "trust": 0.49900000000000033,
           "grudge": 0,
           "repair_bank": 0
         }
@@ -162,7 +162,7 @@
         "当前没有明显愉悦激活",
         "仍存在一定连接需求",
         "与该用户的关系较浅",
-        "信任处于中等偏高水平",
+        "信任处于中等偏低水平",
         "没有明显积怨"
       ],
       "forbidden_claims": [
@@ -171,12 +171,14 @@
         "不要声称愉悦感增加",
         "不要声称孤独感已经消失",
         "不要声称'我不再孤独'",
+        "不要声称信任上升",
+        "不要声称'我更信任你了'",
         "不要声称任何未在 allowed_claims 中列出的情绪状态",
         "不要声称具体数值"
       ]
     },
     "metadata": {
-      "generated_at": 1772936489.291372,
+      "generated_at": 1772950069.6085134,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

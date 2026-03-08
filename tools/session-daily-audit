@@ -1,0 +1,215 @@
+#!/bin/bash
+# Session Continuity Daily Audit
+# Performs deep validation of daily metrics
+
+set -e
+
+WORKSPACE="$HOME/.openclaw/workspace"
+EVENTS_FILE="$WORKSPACE/state/session_continuity_events.jsonl"
+SUMMARY_FILE="$WORKSPACE/artifacts/session_recovery/latest_recovery_summary.json"
+HANDOFF_FILE="$WORKSPACE/handoff.md"
+HEALTH_FILE="$WORKSPACE/artifacts/session_continuity/v1_1_1/HEALTH_SUMMARY.md"
+ANOMALY_LEDGER="$WORKSPACE/artifacts/session_continuity/v1_1_1/ANOMALY_LEDGER.md"
+DAILY_SNAPSHOT="$WORKSPACE/artifacts/session_continuity/v1_1_1/daily_snapshots"
+
+TODAY=$(date +%Y-%m-%d)
+SNAPSHOT_FILE="$DAILY_SNAPSHOT/snapshot_${TODAY}.md"
+
+mkdir -p "$DAILY_SNAPSHOT"
+
+echo "=== Session Continuity Daily Audit ==="
+echo "Date: $TODAY"
+echo ""
+
+# Parse events
+~/.openclaw/workspace/tools/parse-continuity-events 2>/dev/null
+
+# Read metrics
+METRICS_FILE="$WORKSPACE/state/daily_metrics.json"
+if [ -f "$METRICS_FILE" ]; then
+    # Raw counts
+    RAW_RECOVERY=$(jq -r '.raw.recovery_success // 0' "$METRICS_FILE")
+    RAW_HANDOFF=$(jq -r '.raw.handoff_created // 0' "$METRICS_FILE")
+    RAW_HIGH_CTX=$(jq -r '.raw.high_context_trigger // 0' "$METRICS_FILE")
+    RAW_INTERRUPTION=$(jq -r '.raw.interruption_recovery // 0' "$METRICS_FILE")
+    RAW_UNCERTAINTY=$(jq -r '.raw.recovery_uncertainty // 0' "$METRICS_FILE")
+    RAW_FAILURE=$(jq -r '.raw.recovery_failure // 0' "$METRICS_FILE")
+    RAW_GATE=$(jq -r '.raw.gate_completed // 0' "$METRICS_FILE")
+    
+    # Unique counts
+    UNIQUE_RECOVERY=$(jq -r '.unique_sessions.recovery_success // 0' "$METRICS_FILE")
+    UNIQUE_HANDOFF=$(jq -r '.unique_sessions.handoff_created // 0' "$METRICS_FILE")
+    UNIQUE_HIGH_CTX=$(jq -r '.unique_sessions.high_context_trigger // 0' "$METRICS_FILE")
+    
+    # Identity counts
+    UNIQUE_HANDOFF_IDS=$(jq -r '.unique_handoff_ids // 0' "$METRICS_FILE")
+    UNIQUE_GATE_IDS=$(jq -r '.unique_gate_ids // 0' "$METRICS_FILE")
+    
+    TOTAL_EVENTS=$(jq -r '.total_events // 0' "$METRICS_FILE")
+else
+    echo "ERROR: No metrics file"
+    exit 1
+fi
+
+# Calculate rates
+if [ $((RAW_RECOVERY + RAW_FAILURE)) -gt 0 ]; then
+    SUCCESS_RATE=$(awk "BEGIN {printf \"%.1f\", $RAW_RECOVERY * 100 / ($RAW_RECOVERY + $RAW_FAILURE)}")
+else
+    SUCCESS_RATE="N/A"
+fi
+
+if [ $RAW_RECOVERY -gt 0 ]; then
+    UNCERTAINTY_RATE=$(awk "BEGIN {printf \"%.1f\", $RAW_UNCERTAINTY * 100 / $RAW_RECOVERY}")
+else
+    UNCERTAINTY_RATE="N/A"
+fi
+
+# Event/File Consistency Checks
+ANOMALIES=""
+
+# Check: recovery events vs summaries
+RECOVERY_EVENTS=$RAW_RECOVERY
+SUMMARY_EXISTS=0
+if [ -f "$SUMMARY_FILE" ]; then
+    SUMMARY_EXISTS=1
+fi
+
+if [ $RECOVERY_EVENTS -gt 0 ] && [ $SUMMARY_EXISTS -eq 0 ]; then
+    ANOMALIES="${ANOMALIES}WARN: Recovery events exist but no summary file\n"
+fi
+
+# Check: handoff events vs file
+HANDOFF_EVENTS=$RAW_HANDOFF
+HANDOFF_EXISTS=0
+if [ -f "$HANDOFF_FILE" ]; then
+    HANDOFF_EXISTS=1
+fi
+
+if [ $HANDOFF_EVENTS -gt 0 ] && [ $HANDOFF_EXISTS -eq 0 ]; then
+    ANOMALIES="${ANOMALIES}WARN: Handoff events exist but no handoff file\n"
+fi
+
+# Check: raw vs unique consistency
+if [ $RAW_RECOVERY -gt 0 ] && [ $RAW_RECOVERY -lt $UNIQUE_RECOVERY ]; then
+    ANOMALIES="${ANOMALIES}ERROR: raw_recovery < unique_sessions (impossible)\n"
+fi
+
+# Check: handoff_ids vs sessions
+if [ $RAW_HANDOFF -gt 0 ] && [ $UNIQUE_HANDOFF_IDS -ne $RAW_HANDOFF ]; then
+    ANOMALIES="${ANOMALIES}INFO: handoff_ids ($UNIQUE_HANDOFF_IDS) != raw_handoff ($RAW_HANDOFF)\n"
+fi
+
+# Sample event log check
+echo "Checking event log samples..."
+SAMPLE_COUNT=0
+if [ -f "$EVENTS_FILE" ]; then
+    SAMPLE_COUNT=$(wc -l < "$EVENTS_FILE" | tr -d ' ')
+    
+    # Check for duplicate dedupe_keys
+    DUP_COUNT=$(grep -o '"dedupe_key": "[^"]*"' "$EVENTS_FILE" | sort | uniq -d | wc -l || echo "0")
+    if [ "$DUP_COUNT" -gt 0 ]; then
+        ANOMALIES="${ANOMALIES}ERROR: Found $DUP_COUNT duplicate dedupe_keys\n"
+    fi
+fi
+
+# Generate daily snapshot
+cat > "$SNAPSHOT_FILE" << EOF
+# Daily Snapshot: $TODAY
+
+**Generated**: $(date -Iseconds)
+
+---
+
+## Raw Event Counts
+
+| Event Type | Count |
+|------------|-------|
+| recovery_success | ${RAW_RECOVERY} |
+| handoff_created | ${RAW_HANDOFF} |
+| high_context_trigger | ${RAW_HIGH_CTX} |
+| interruption_recovery | ${RAW_INTERRUPTION} |
+| recovery_uncertainty | ${RAW_UNCERTAINTY} |
+| recovery_failure | ${RAW_FAILURE} |
+| gate_completed | ${RAW_GATE} |
+
+---
+
+## Unique / Coverage Counts
+
+| Metric | Count |
+|--------|-------|
+| unique_sessions_recovered | ${UNIQUE_RECOVERY} |
+| unique_sessions_with_handoff | ${UNIQUE_HANDOFF} |
+| unique_sessions_high_context | ${UNIQUE_HIGH_CTX} |
+| unique_handoff_ids | ${UNIQUE_HANDOFF_IDS} |
+| unique_gate_ids | ${UNIQUE_GATE_IDS} |
+
+---
+
+## Rates
+
+| Rate | Value |
+|------|-------|
+| Success Rate | ${SUCCESS_RATE}% |
+| Uncertainty Rate | ${UNCERTAINTY_RATE}% |
+
+---
+
+## Consistency Checks
+
+| Check | Status |
+|-------|--------|
+| Recovery events vs summary | $([ $RECOVERY_EVENTS -gt 0 ] && ([ $SUMMARY_EXISTS -eq 1 ] && echo "✅" || echo "⚠️") || echo "N/A") |
+| Handoff events vs file | $([ $HANDOFF_EVENTS -gt 0 ] && ([ $HANDOFF_EXISTS -eq 1 ] && echo "✅" || echo "⚠️") || echo "N/A") |
+| Raw >= Unique | $([ $RAW_RECOVERY -ge $UNIQUE_RECOVERY ] && echo "✅" || echo "❌") |
+| Duplicate dedupe_keys | $([ "$DUP_COUNT" -eq 0 ] && echo "✅ None" || echo "❌ $DUP_COUNT found") |
+
+---
+
+## Anomalies Detected
+
+$(if [ -n "$ANOMALIES" ]; then
+    echo '```\n'"$ANOMALIES"'```'
+else
+    echo "None"
+fi)
+
+---
+
+## Event Log Stats
+
+- Total events: ${TOTAL_EVENTS}
+- Total lines: ${SAMPLE_COUNT}
+
+---
+
+## Coverage Progress
+
+| Target | Current | Status |
+|--------|---------|--------|
+| 10 recoveries | ${UNIQUE_RECOVERY}/10 | $([ ${UNIQUE_RECOVERY} -ge 10 ] && echo "✅" || echo "⏳") |
+| 5 handoffs | ${RAW_HANDOFF}/5 | $([ ${RAW_HANDOFF} -ge 5 ] && echo "✅" || echo "⏳") |
+| 3 high-context | ${UNIQUE_HIGH_CTX}/3 | $([ ${UNIQUE_HIGH_CTX} -ge 3 ] && echo "✅" || echo "⏳") |
+| 2 interruptions | ${RAW_INTERRUPTION}/2 | $([ ${RAW_INTERRUPTION} -ge 2 ] && echo "✅" || echo "⏳") |
+
+---
+
+*End of Daily Snapshot*
+EOF
+
+echo ""
+echo "=== Audit Summary ==="
+echo "Total events: ${TOTAL_EVENTS}"
+echo "Recovery success: ${RAW_RECOVERY}"
+echo "Handoff created: ${RAW_HANDOFF}"
+echo "Gate completed: ${RAW_GATE}"
+echo "Success rate: ${SUCCESS_RATE}%"
+echo "Uncertainty rate: ${UNCERTAINTY_RATE}%"
+echo ""
+echo "Snapshot saved: $SNAPSHOT_FILE"
+
+if [ -n "$ANOMALIES" ]; then
+    echo ""
+    echo "⚠️ ANOMALIES DETECTED:"
+    echo -e "$ANOMALIES"
+fi

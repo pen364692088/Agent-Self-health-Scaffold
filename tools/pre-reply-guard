@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-pre-reply-guard v1.1.1 - State Persistence Guard
+pre-reply-guard v1.1.1a - State Persistence Guard
 
 Checks if state persistence is required before sending a reply.
-Improved context ratio handling with fallback.
+Supports frozen threshold bands: 60_80, 80_plus
 
 Usage:
   pre-reply-guard --check "<message>"
@@ -28,6 +28,12 @@ WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
 WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
 HANDOFF = WORKSPACE / "handoff.md"
+
+# Frozen threshold bands (v1.1.1a)
+THRESHOLD_BANDS = {
+    "60_80": (0.60, 0.80),   # > 60% and <= 80%
+    "80_plus": (0.80, 1.0),  # > 80%
+}
 
 # Changes that trigger state persistence
 TRIGGER_KEYWORDS = [
@@ -60,7 +66,7 @@ def get_context_ratio() -> Tuple[float, bool, str]:
         if match:
             percentage = int(match.group(2))
             return percentage / 100, False, "session_status"
-    except Exception as e:
+    except Exception:
         pass
     
     # Fallback 1: Estimate from file size
@@ -71,15 +77,49 @@ def get_context_ratio() -> Tuple[float, bool, str]:
             if session_files:
                 latest = max(session_files, key=lambda f: f.stat().st_mtime)
                 file_size = latest.stat().st_size
-                # Rough estimate: 1 token ≈ 4 bytes, max 200k tokens
                 estimated_tokens = file_size / 4
                 ratio = min(estimated_tokens / 200000, 1.0)
                 return ratio, True, "fallback_file_size"
-    except Exception as e:
+    except Exception:
         pass
     
     # Fallback 2: Default safe value
     return 0.5, True, "fallback_default"
+
+
+def get_threshold_band(ratio: float) -> str:
+    """
+    Get frozen threshold band for the given ratio.
+    Returns: "60_80", "80_plus", or "normal"
+    """
+    if ratio > THRESHOLD_BANDS["80_plus"][0]:
+        return "80_plus"
+    elif ratio > THRESHOLD_BANDS["60_80"][0]:
+        return "60_80"
+    return "normal"
+
+
+def log_high_context_trigger(ratio: float, threshold_band: str):
+    """Log high context trigger event with frozen band semantics."""
+    import subprocess
+    import os
+    
+    session_id = os.environ.get("OPENCLAW_SESSION_ID", 
+                                os.environ.get("TELEGRAM_CHAT_ID", "unknown"))
+    cmd = [
+        str(WORKSPACE / "tools" / "continuity-event-log"),
+        "high_context_trigger",
+        "--session-id", session_id,
+        "--threshold-band", threshold_band,
+        "--meta", f"ratio={ratio:.2f}"
+    ]
+    
+    try:
+        env = os.environ.copy()
+        env["CONTINUITY_SOURCE_TOOL"] = "pre-reply-guard"
+        subprocess.run(cmd, capture_output=True, timeout=5, env=env)
+    except Exception:
+        pass
 
 
 def check_needs_flush(message: str) -> Dict[str, Any]:
@@ -92,6 +132,7 @@ def check_needs_flush(message: str) -> Dict[str, Any]:
             triggers.append(keyword)
     
     ratio, degraded, source = get_context_ratio()
+    threshold_band = get_threshold_band(ratio)
     
     result = {
         "needs_flush": len(triggers) > 0 or ratio > 0.6,
@@ -99,14 +140,13 @@ def check_needs_flush(message: str) -> Dict[str, Any]:
         "context_ratio": ratio,
         "context_source": source,
         "degraded_mode": degraded,
-        "context_threshold": "normal"
+        "threshold_band": threshold_band
     }
     
-    if ratio > 0.8:
-        result["context_threshold"] = "critical"
+    # Log high context trigger based on frozen bands
+    if threshold_band in ["60_80", "80_plus"]:
         result["needs_flush"] = True
-    elif ratio > 0.6:
-        result["context_threshold"] = "warning"
+        log_high_context_trigger(ratio, threshold_band)
     
     return result
 
@@ -122,7 +162,6 @@ def flush_state(
     
     if SESSION_STATE.exists():
         content = SESSION_STATE.read_text()
-        # Update timestamp
         lines = content.split("\n")
         for i, line in enumerate(lines):
             if line.startswith("**Updated**:"):
@@ -150,7 +189,7 @@ def flush_state(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pre-Reply State Guard v1.1.1")
+    parser = argparse.ArgumentParser(description="Pre-Reply State Guard v1.1.1a")
     parser.add_argument("--check", type=str, help="Check message for triggers")
     parser.add_argument("--flush", action="store_true", help="Force flush state")
     parser.add_argument("--context-ratio", action="store_true", help="Get context ratio")
@@ -165,16 +204,20 @@ def main():
         print(json.dumps({
             "status": "healthy",
             "session_state_exists": SESSION_STATE.exists(),
-            "working_buffer_exists": WORKING_BUFFER.exists()
+            "working_buffer_exists": WORKING_BUFFER.exists(),
+            "metric_semantics_version": "v1.1.1a"
         }))
         return
     
     if args.context_ratio:
         ratio, degraded, source = get_context_ratio()
+        threshold_band = get_threshold_band(ratio)
         print(json.dumps({
             "ratio": ratio,
+            "threshold_band": threshold_band,
             "degraded_mode": degraded,
-            "source": source
+            "source": source,
+            "metric_semantics_version": "v1.1.1a"
         }))
         return
     
@@ -193,14 +236,15 @@ def main():
         print(json.dumps(result))
         return
     
-    # Default: show context ratio
+    # Default: show context ratio with frozen bands
     ratio, degraded, source = get_context_ratio()
-    threshold = "critical" if ratio > 0.8 else "warning" if ratio > 0.6 else "normal"
+    threshold_band = get_threshold_band(ratio)
     print(json.dumps({
         "ratio": ratio,
-        "threshold": threshold,
+        "threshold_band": threshold_band,
         "degraded_mode": degraded,
-        "source": source
+        "source": source,
+        "metric_semantics_version": "v1.1.1a"
     }, ensure_ascii=False))
 
 

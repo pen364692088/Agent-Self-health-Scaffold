@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""
+session-start-recovery v1.1.1 - Session State Recovery Tool
+
+Recovers session state from persisted files when a new session starts.
+MUST be called BEFORE any substantive reply.
+
+Changes in v1.1.1:
+- Fixed objective parser (no more false "missing" reports)
+- Added field-level conflict resolution
+- Improved context ratio handling
+
+Usage:
+  session-start-recovery --check
+  session-start-recovery --recover
+  session-start-recovery --json
+  session-start-recovery --summary
+  session-start-recovery --health
+  session-start-recovery --preflight
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
+WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+HANDOFF = WORKSPACE / "handoff.md"
+LAST_SESSION_FILE = WORKSPACE / ".last_session_id"
+RECOVERY_DIR = WORKSPACE / "artifacts" / "session_recovery"
+WAL_FILE = WORKSPACE / "state" / "wal" / "session_state_wal.jsonl"
+
+# State source priority (higher = more trusted)
+SOURCE_PRIORITY = {
+    "repo_evidence": 100,
+    "wal_entry": 90,
+    "handoff_md": 80,
+    "session_state_md": 70,
+    "working_buffer_md": 60,
+}
+
+# Fields to extract for conflict resolution
+TRACKED_FIELDS = ["objective", "phase", "branch", "blocker", "next_step", "next_actions"]
+
+# Placeholder values to treat as empty
+PLACEHOLDER_VALUES = {"", "tbd", "n/a", "无", "none", "-", "..."}
+
+
+def get_current_session_id() -> str:
+    return os.environ.get("OPENCLAW_SESSION_ID",
+                          os.environ.get("TELEGRAM_CHAT_ID", "unknown"))
+
+
+def get_current_branch() -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True, text=True, cwd=WORKSPACE, timeout=5
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except:
+        return None
+
+
+def normalize_value(value: str) -> str:
+    """Normalize a field value."""
+    if not value:
+        return ""
+    # Remove markdown formatting
+    value = re.sub(r'[*_#`]', '', value)
+    # Collapse whitespace
+    value = ' '.join(value.split())
+    # Truncate if too long
+    return value[:200].strip()
+
+
+def is_placeholder(value: str) -> bool:
+    """Check if value is a placeholder."""
+    return value.lower().strip() in PLACEHOLDER_VALUES
+
+
+def extract_field_value(content: str, field_name: str) -> tuple[str, str, str]:
+    """
+    Extract a field value from markdown content.
+    Returns: (status, raw_value, normalized_value)
+    
+    Status can be: 'valid', 'empty', 'missing'
+    """
+    if not content:
+        return "missing", "", ""
+    
+    lines = content.split("\n")
+    field_patterns = [
+        re.compile(rf'^##\s+{field_name}', re.IGNORECASE),
+        re.compile(rf'^##\s+\w*\s*{field_name}', re.IGNORECASE),
+        re.compile(rf'^\*\*{field_name}\*\*[:：]?', re.IGNORECASE),
+        re.compile(rf'^{field_name}[:：]', re.IGNORECASE),
+        re.compile(rf'^-\s*{field_name}[:：]', re.IGNORECASE),
+    ]
+    
+    # Find the field
+    field_line_idx = -1
+    matched_pattern = None
+    
+    for i, line in enumerate(lines):
+        for pattern in field_patterns:
+            if pattern.search(line):
+                field_line_idx = i
+                matched_pattern = pattern.pattern
+                break
+        if field_line_idx >= 0:
+            break
+    
+    if field_line_idx < 0:
+        return "missing", "", ""
+    
+    # Extract value
+    raw_value = ""
+    
+    # Check if value is on same line
+    line = lines[field_line_idx]
+    
+    # For ## headers, value starts on next line
+    if line.strip().startswith("##"):
+        # Collect content until next ## or end
+        value_lines = []
+        for j in range(field_line_idx + 1, len(lines)):
+            next_line = lines[j].strip()
+            if next_line.startswith("##"):
+                break
+            value_lines.append(lines[j])
+        raw_value = "\n".join(value_lines).strip()
+    else:
+        # Value might be on same line after :
+        if ":" in line:
+            parts = line.split(":", 1)
+            if len(parts) > 1:
+                raw_value = parts[1].strip()
+        elif "：" in line:
+            parts = line.split("：", 1)
+            if len(parts) > 1:
+                raw_value = parts[1].strip()
+    
+    # Normalize
+    normalized = normalize_value(raw_value)
+    
+    # Determine status
+    if not normalized or is_placeholder(normalized):
+        return "empty", raw_value, ""
+    
+    return "valid", raw_value, normalized
+
+
+def extract_all_fields(filepath: Path) -> Dict[str, Dict[str, Any]]:
+    """Extract all tracked fields from a markdown file."""
+    if not filepath.exists():
+        return {}
+    
+    content = filepath.read_text()
+    results = {}
+    
+    for field in TRACKED_FIELDS:
+        status, raw, normalized = extract_field_value(content, field)
+        results[field] = {
+            "status": status,
+            "raw": raw[:100] if raw else "",
+            "value": normalized,
+            "source": filepath.name
+        }
+    
+    return results
+
+
+def check_file_freshness(filepath: Path, max_age_hours: int = 72) -> Dict[str, Any]:
+    """Check if a file exists and how fresh it is."""
+    if not filepath.exists():
+        return {"exists": False, "fresh": False, "age_hours": None}
+    
+    mtime = datetime.fromtimestamp(filepath.stat().st_mtime)
+    age = datetime.now() - mtime
+    age_hours = age.total_seconds() / 3600
+    
+    return {
+        "exists": True,
+        "fresh": age_hours <= max_age_hours,
+        "age_hours": round(age_hours, 2),
+        "modified": mtime.isoformat()
+    }
+
+
+def resolve_field_conflicts(field_values: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Resolve conflicts for a single field across sources."""
+    candidates = []
+    
+    for source, info in field_values.items():
+        if info.get("status") == "valid" and info.get("value"):
+            priority = SOURCE_PRIORITY.get(source, 0)
+            candidates.append({
+                "source": source,
+                "value": info["value"],
+                "priority": priority
+            })
+    
+    if not candidates:
+        return {
+            "status": "missing",
+            "value": None,
+            "chosen_source": None,
+            "reason": "No valid values found"
+        }
+    
+    # Sort by priority
+    candidates.sort(key=lambda x: x["priority"], reverse=True)
+    winner = candidates[0]
+    
+    # Check for conflicts
+    conflicts = []
+    for c in candidates[1:]:
+        if c["value"] != winner["value"]:
+            conflicts.append({
+                "source": c["source"],
+                "value": c["value"],
+                "priority": c["priority"]
+            })
+    
+    return {
+        "status": "valid",
+        "value": winner["value"],
+        "chosen_source": winner["source"],
+        "reason": f"Highest priority source ({winner['source']}, priority={winner['priority']})",
+        "conflicts": conflicts if conflicts else None
+    }
+
+
+def perform_field_level_recovery() -> Dict[str, Any]:
+    """Perform recovery with field-level conflict resolution."""
+    current_session = get_current_session_id()
+    current_branch = get_current_branch()
+    
+    result = {
+        "session_id": current_session,
+        "timestamp": datetime.now().isoformat(),
+        "is_new_session": is_new_session(),
+        "sources": {},
+        "field_values": {},
+        "field_resolution": {},
+        "recovered": False,
+        "uncertainty_flag": False
+    }
+    
+    # Check file freshness
+    result["sources"]["session_state"] = check_file_freshness(SESSION_STATE)
+    result["sources"]["working_buffer"] = check_file_freshness(WORKING_BUFFER)
+    result["sources"]["handoff"] = check_file_freshness(HANDOFF)
+    result["sources"]["wal"] = check_file_freshness(WAL_FILE) if WAL_FILE.exists() else {"exists": False}
+    result["sources"]["repo"] = {"branch": current_branch}
+    
+    # Extract fields from each source
+    result["field_values"]["session_state_md"] = extract_all_fields(SESSION_STATE)
+    result["field_values"]["working_buffer_md"] = extract_all_fields(WORKING_BUFFER)
+    result["field_values"]["handoff_md"] = extract_all_fields(HANDOFF)
+    
+    # Add repo evidence
+    result["field_values"]["repo_evidence"] = {
+        "branch": {"status": "valid" if current_branch else "missing", "value": current_branch}
+    }
+    
+    # Resolve each field
+    for field in TRACKED_FIELDS:
+        field_values = {}
+        for source, fields in result["field_values"].items():
+            if field in fields and fields[field].get("status") == "valid":
+                field_values[source] = fields[field]
+        
+        if field_values:
+            result["field_resolution"][field] = resolve_field_conflicts(field_values)
+    
+    # Check for uncertainty
+    for field, resolution in result["field_resolution"].items():
+        if resolution.get("status") == "missing" and field in ["objective", "next_step", "next_actions"]:
+            result["uncertainty_flag"] = True
+    
+    result["recovered"] = SESSION_STATE.exists() or WORKING_BUFFER.exists()
+    
+    update_last_session()
+    save_recovery_summary(result)
+    
+    return result
+
+
+def is_new_session() -> bool:
+    current = get_current_session_id()
+    if not LAST_SESSION_FILE.exists():
+        return True
+    last = LAST_SESSION_FILE.read_text().strip()
+    return current != last
+
+
+def update_last_session():
+    current = get_current_session_id()
+    LAST_SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
+    LAST_SESSION_FILE.write_text(current)
+
+
+def save_recovery_summary(result: Dict):
+    RECOVERY_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # JSON
+    json_path = RECOVERY_DIR / "latest_recovery_summary.json"
+    json_path.write_text(json.dumps(result, indent=2, default=str))
+    
+    # Markdown
+    md_lines = [
+        "# Recovery Summary",
+        "",
+        f"**Timestamp**: {result['timestamp']}",
+        f"**Session ID**: {result['session_id']}",
+        f"**Recovered**: {result['recovered']}",
+        f"**Uncertainty Flag**: {result['uncertainty_flag']}",
+        "",
+        "## Field Resolution",
+        "",
+    ]
+    
+    for field, resolution in result.get("field_resolution", {}).items():
+        status = "✅" if resolution.get("status") == "valid" else "❌"
+        value = resolution.get("value", "N/A")
+        source = resolution.get("chosen_source", "N/A")
+        md_lines.append(f"### {field}: {status}")
+        md_lines.append(f"- **Value**: {value[:50]}..." if len(str(value)) > 50 else f"- **Value**: {value}")
+        md_lines.append(f"- **Source**: {source}")
+        if resolution.get("conflicts"):
+            md_lines.append(f"- **Conflicts**: {len(resolution['conflicts'])} alternative values")
+        md_lines.append("")
+    
+    md_path = RECOVERY_DIR / "latest_recovery_summary.md"
+    md_path.write_text("\n".join(md_lines))
+
+
+def check_needs_recovery() -> Dict[str, Any]:
+    current_session = get_current_session_id()
+    is_new = is_new_session()
+    
+    return {
+        "needs_recovery": is_new,
+        "session_id": current_session,
+        "has_session_state": SESSION_STATE.exists(),
+        "has_working_buffer": WORKING_BUFFER.exists(),
+        "has_handoff": HANDOFF.exists(),
+        "action": "recover" if is_new else "none"
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Session State Recovery v1.1.1")
+    parser.add_argument("--check", action="store_true", help="Check if recovery needed")
+    parser.add_argument("--recover", action="store_true", help="Perform recovery")
+    parser.add_argument("--force", action="store_true", help="Force recovery")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--summary", action="store_true", help="Output summary")
+    parser.add_argument("--health", action="store_true", help="Health check")
+    parser.add_argument("--preflight", action="store_true", help="Preflight check")
+    parser.add_argument("--debug", action="store_true", help="Debug output")
+    args = parser.parse_args()
+    
+    if args.health:
+        files = {
+            "session_state": check_file_freshness(SESSION_STATE),
+            "working_buffer": check_file_freshness(WORKING_BUFFER),
+            "handoff": check_file_freshness(HANDOFF),
+        }
+        status = "healthy" if all(f.get("exists") for f in [files["session_state"], files["working_buffer"]]) else "degraded"
+        print(json.dumps({"status": status, "files": files}, indent=2))
+        return
+    
+    if args.preflight:
+        result = check_needs_recovery()
+        print(json.dumps(result))
+        return
+    
+    if args.check:
+        result = check_needs_recovery()
+    else:
+        result = perform_field_level_recovery()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, default=str))
+    elif args.summary:
+        if result.get("recovered"):
+            print(f"✅ Session state recovered")
+            for field, resolution in result.get("field_resolution", {}).items():
+                status = "✅" if resolution.get("status") == "valid" else "❌"
+                print(f"  {status} {field}: {resolution.get('value', 'N/A')[:30]}...")
+            if result.get("uncertainty_flag"):
+                print(f"  ⚠️ Uncertainty flag set")
+        else:
+            print(f"⚠️ No session state found")
+    else:
+        print(json.dumps(result, indent=2, default=str))
+
+
+if __name__ == "__main__":
+    main()

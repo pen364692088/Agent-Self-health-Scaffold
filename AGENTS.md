@@ -8,6 +8,24 @@
 
 ---
 
+## ⚠️ FIRST ACTION (MANDATORY) ⚠️
+
+**Before ANY other action in a new session, you MUST:**
+
+```bash
+session-start-recovery --recover --summary
+```
+
+This command:
+1. Detects if this is a new session
+2. Recovers state from SESSION-STATE.md, working-buffer.md, handoff.md
+3. Logs recovery events to session_continuity_events.jsonl
+4. Generates recovery summary
+
+**You MUST execute this command now if this is a new session.**
+
+---
+
 ## 最高优先级：会话连续性协议 (MANDATORY)
 
 ### Purpose
@@ -54,19 +72,21 @@
 
 ### 新 Session 启动时自动执行
 
+**Execute immediately at session start:**
 ```bash
-# 自动执行
-session-start-recovery --recover
+session-start-recovery --recover --summary
 ```
 
 **如果恢复成功**:
 - 从 SESSION-STATE.md 提取 objective, phase, branch, blocker
 - 从 handoff.md 获取交接信息
 - 从 WAL 获取最新状态
+- 事件记录到 session_continuity_events.jsonl
 
 **如果恢复失败**:
 - 设置 uncertainty_flag
 - 报告状态不确定
+- 记录 recovery_uncertainty 事件
 
 ---
 

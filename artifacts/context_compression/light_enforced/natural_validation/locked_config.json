@@ -1,0 +1,10 @@
+{
+  "locked_at": "2026-03-07T23:50:00-06:00",
+  "mode": "light_enforced",
+  "scope": "low-risk",
+  "max_tokens": 100000,
+  "threshold_enforced": 0.85,
+  "threshold_strong": 0.92,
+  "current_budget_ratio": 0.81,
+  "session_id": "89cbc6ee-8dae-4a70-bb27-32fcf4fac44c"
+}

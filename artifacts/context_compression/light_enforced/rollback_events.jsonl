@@ -9,3 +9,4 @@
 {"timestamp":"2026-03-08T02:03:40.015Z","reason":"compress_failed","session_key":"agent:main:telegram:direct:8420019401","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T02:06:40.500Z","reason":"compress_failed","session_key":"agent:testbot:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T02:06:55.862Z","reason":"compress_failed","session_key":"agent:yuno:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T02:28:14.717Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}

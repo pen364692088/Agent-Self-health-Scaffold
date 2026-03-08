@@ -207,3 +207,70 @@ exit_conditions:
 ---
 
 **Keywords**: `phase-s1` `feature-frozen` `bucket-coverage` `continuous-window` `controlled-rollout`
+
+---
+
+## Milestone Structure (2026-03-07 Added)
+
+### Milestone A: First Enforced Trigger Validated ✅
+
+**Status**: COMPLETE
+**Date**: 2026-03-07T23:28:34-06:00
+**Type**: Controlled Validation
+**Evidence**: `FIRST_ENFORCED_TRIGGER_REPORT.md`
+
+**Proven**:
+- Trigger path functional
+- Counters increment correctly
+- Compression effective (40%)
+- Safety guards hold
+
+---
+
+### Milestone B: Natural Traffic Validation ⏳
+
+**Status**: EVIDENCE FREEZE - Waiting for natural trigger
+**DoD**: `NATURAL_TRAFFIC_VALIDATION_DOD.md`
+**Freeze**: `EVIDENCE_FREEZE.md`
+**Template**: `TRIGGER_EVIDENCE_TEMPLATE.md`
+
+**Current Progress**:
+```
+budget_ratio: ~0.825
+distance_to_hot_zone: ~0.015
+distance_to_trigger: ~0.025
+```
+
+**Purpose**: Prove default 100k config triggers naturally with reasonable timing
+
+**Pass Conditions**:
+1. Natural enforced_trigger_count >= 1
+2. sessions_over_threshold explainable growth
+3. Safety: all zeros
+4. Evidence preserved
+5. Timing questions answered
+
+**Forbidden**:
+- Threshold changes
+- Scoring/metrics/schema changes
+- OpenViking/L2 mixing
+- High-risk scope expansion
+- Any "convenient optimizations"
+
+---
+
+## Decision Framework
+
+```
+Milestone A ✅ → Mechanism Correct
+      ↓
+Milestone B ⏳ → Production Timing Reasonable
+      ↓
+Gate Passed   → Consider Extended Rollout
+```
+
+**Key Insight**: Milestone A proves the mechanism works; Milestone B proves production timing is appropriate. Do not conflate controlled validation with natural traffic validation.
+
+---
+
+*Added: 2026-03-07T23:38:00-06:00*

@@ -37,6 +37,42 @@ VALID_STATES = [
 ]
 
 
+
+def log_gate_event(event_type: str, task_id: str, gate_name: str, result: str, meta: dict = None):
+    """Log gate event to continuity event log."""
+    import subprocess
+    import os
+    import hashlib
+    
+    session_id = os.environ.get("OPENCLAW_SESSION_ID", 
+                                os.environ.get("TELEGRAM_CHAT_ID", "unknown"))
+    
+    # Generate deterministic gate_id
+    gate_id = hashlib.sha256(f"{task_id}:{gate_name}".encode()).hexdigest()[:16]
+    
+    cmd = [
+        str(WORKSPACE / "tools" / "continuity-event-log"),
+        event_type,
+        "--session-id", session_id,
+        "--meta", f"task_id={task_id}",
+        "--meta", f"gate={gate_name}",
+        "--meta", f"result={result}",
+        "--meta", f"gate_id={gate_id}"
+    ]
+    
+    if meta:
+        for k, v in meta.items():
+            if v is not None:
+                cmd.extend(["--meta", f"{k}={str(v)[:100]}"])
+    
+    try:
+        env = os.environ.copy()
+        env["CONTINUITY_SOURCE_TOOL"] = "verify-and-close"
+        subprocess.run(cmd, capture_output=True, timeout=5, env=env)
+    except Exception:
+        pass
+
+
 def load_workflow_state() -> Dict:
     if WORKFLOW_STATE.exists():
         with open(WORKFLOW_STATE) as f:
@@ -213,6 +249,14 @@ def main():
         "gate_c": "pass" if gate_c_passed else "fail"
     }
     
+    # Log gate events
+    log_gate_event("gate_completed", task_id, "gate_a", gate_results["gate_a"], 
+                   {"checks": len(gate_a_result.get("checks", []))})
+    log_gate_event("gate_completed", task_id, "gate_b", gate_results["gate_b"],
+                   {"checks": len(gate_b_result.get("checks", []))})
+    log_gate_event("gate_completed", task_id, "gate_c", gate_results["gate_c"],
+                   {"checks": len(gate_c_result.get("checks", []))})
+    
     # 生成 receipts
     contract_receipt = generate_receipt(
         task_id, "contract",
@@ -264,6 +308,7 @@ def main():
     
     if all_passed:
         result["message"] = "All gates passed. Task ready for human verification."
+        log_gate_event("task_ready_to_close", task_id, "all", "pass")
     else:
         result["reason"] = ", ".join(all_issues) if all_issues else "gate_failure"
         result["next_state"] = "repairing"

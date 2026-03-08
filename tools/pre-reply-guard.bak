@@ -1,0 +1,208 @@
+#!/usr/bin/env python3
+"""
+pre-reply-guard v1.1.1 - State Persistence Guard
+
+Checks if state persistence is required before sending a reply.
+Improved context ratio handling with fallback.
+
+Usage:
+  pre-reply-guard --check "<message>"
+  pre-reply-guard --context-ratio
+  pre-reply-guard --flush
+  pre-reply-guard --health
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import Any, Dict, Tuple
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
+WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+HANDOFF = WORKSPACE / "handoff.md"
+
+# Changes that trigger state persistence
+TRIGGER_KEYWORDS = [
+    "完成", "done", "finished", "completed",
+    "下一步", "next", "continue",
+    "决定", "决定用", "decided", "选择",
+    "blocker", "阻塞", "问题",
+    "目标", "objective", "goal",
+    "阶段", "phase", "stage",
+    "分支", "branch",
+    "交接", "handoff"
+]
+
+
+def get_context_ratio() -> Tuple[float, bool, str]:
+    """
+    Get context ratio with fallback.
+    Returns: (ratio, degraded_mode, source)
+    """
+    # Primary: Try session_status
+    try:
+        result = subprocess.run(
+            ["session_status"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        # Parse output: "Context: X/Y (Z%)"
+        match = re.search(r'Context:\s*\d+/(\d+)\s*\((\d+)%\)', result.stdout)
+        if match:
+            percentage = int(match.group(2))
+            return percentage / 100, False, "session_status"
+    except Exception as e:
+        pass
+    
+    # Fallback 1: Estimate from file size
+    try:
+        session_dir = Path.home() / ".openclaw" / "agents" / "main" / "sessions"
+        if session_dir.exists():
+            session_files = list(session_dir.glob("*.jsonl"))
+            if session_files:
+                latest = max(session_files, key=lambda f: f.stat().st_mtime)
+                file_size = latest.stat().st_size
+                # Rough estimate: 1 token ≈ 4 bytes, max 200k tokens
+                estimated_tokens = file_size / 4
+                ratio = min(estimated_tokens / 200000, 1.0)
+                return ratio, True, "fallback_file_size"
+    except Exception as e:
+        pass
+    
+    # Fallback 2: Default safe value
+    return 0.5, True, "fallback_default"
+
+
+def check_needs_flush(message: str) -> Dict[str, Any]:
+    """Check if message content triggers state persistence."""
+    message_lower = message.lower()
+    
+    triggers = []
+    for keyword in TRIGGER_KEYWORDS:
+        if keyword.lower() in message_lower:
+            triggers.append(keyword)
+    
+    ratio, degraded, source = get_context_ratio()
+    
+    result = {
+        "needs_flush": len(triggers) > 0 or ratio > 0.6,
+        "triggers": triggers,
+        "context_ratio": ratio,
+        "context_source": source,
+        "degraded_mode": degraded,
+        "context_threshold": "normal"
+    }
+    
+    if ratio > 0.8:
+        result["context_threshold"] = "critical"
+        result["needs_flush"] = True
+    elif ratio > 0.6:
+        result["context_threshold"] = "warning"
+    
+    return result
+
+
+def flush_state(
+    objective: str = None,
+    phase: str = None,
+    next_actions: str = None,
+    blockers: str = None
+) -> Dict[str, Any]:
+    """Persist state to files."""
+    timestamp = datetime.now().isoformat()
+    
+    if SESSION_STATE.exists():
+        content = SESSION_STATE.read_text()
+        # Update timestamp
+        lines = content.split("\n")
+        for i, line in enumerate(lines):
+            if line.startswith("**Updated**:"):
+                lines[i] = f"**Updated**: {timestamp}"
+        SESSION_STATE.write_text("\n".join(lines))
+    else:
+        SESSION_STATE.write_text(f"""# Session State
+
+**Updated**: {timestamp}
+
+## Current Objective
+{objective or "TBD"}
+
+## Current Phase
+{phase or "TBD"}
+
+## Next Actions
+{next_actions or "TBD"}
+
+## Blockers
+{blockers or "None"}
+""")
+    
+    return {"flushed": True, "timestamp": timestamp}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Pre-Reply State Guard v1.1.1")
+    parser.add_argument("--check", type=str, help="Check message for triggers")
+    parser.add_argument("--flush", action="store_true", help="Force flush state")
+    parser.add_argument("--context-ratio", action="store_true", help="Get context ratio")
+    parser.add_argument("--health", action="store_true", help="Health check")
+    parser.add_argument("--objective", type=str, help="Objective for flush")
+    parser.add_argument("--phase", type=str, help="Phase for flush")
+    parser.add_argument("--next", type=str, help="Next actions for flush")
+    parser.add_argument("--blockers", type=str, help="Blockers for flush")
+    args = parser.parse_args()
+    
+    if args.health:
+        print(json.dumps({
+            "status": "healthy",
+            "session_state_exists": SESSION_STATE.exists(),
+            "working_buffer_exists": WORKING_BUFFER.exists()
+        }))
+        return
+    
+    if args.context_ratio:
+        ratio, degraded, source = get_context_ratio()
+        print(json.dumps({
+            "ratio": ratio,
+            "degraded_mode": degraded,
+            "source": source
+        }))
+        return
+    
+    if args.check:
+        result = check_needs_flush(args.check)
+        print(json.dumps(result, ensure_ascii=False))
+        return
+    
+    if args.flush:
+        result = flush_state(
+            objective=args.objective,
+            phase=args.phase,
+            next_actions=args.next,
+            blockers=args.blockers
+        )
+        print(json.dumps(result))
+        return
+    
+    # Default: show context ratio
+    ratio, degraded, source = get_context_ratio()
+    threshold = "critical" if ratio > 0.8 else "warning" if ratio > 0.6 else "normal"
+    print(json.dumps({
+        "ratio": ratio,
+        "threshold": threshold,
+        "degraded_mode": degraded,
+        "source": source
+    }, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
