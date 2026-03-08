@@ -88,3 +88,39 @@
   "bucket_updates": {},
   "sessions_processed": []
 }
+=== S1 Validator Worker: Batch Run ===
+
+  Found 50 historical sessions
+  Found 8 trace files
+
+  Current historical_replay_reports: 18
+  Target: 10
+  Needed: 0
+
+  Batch complete: 0 historical samples created
+{
+  "historical_replay_created": 0,
+  "real_main_agent_created": 0,
+  "synthetic_created": 0,
+  "hard_fails": [],
+  "bucket_updates": {},
+  "sessions_processed": []
+}
+=== S1 Validator Worker: Batch Run ===
+
+  Found 50 historical sessions
+  Found 8 trace files
+
+  Current historical_replay_reports: 18
+  Target: 10
+  Needed: 0
+
+  Batch complete: 0 historical samples created
+{
+  "historical_replay_created": 0,
+  "real_main_agent_created": 0,
+  "synthetic_created": 0,
+  "hard_fails": [],
+  "bucket_updates": {},
+  "sessions_processed": []
+}

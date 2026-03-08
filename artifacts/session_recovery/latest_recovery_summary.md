@@ -1,29 +1,25 @@
 # Recovery Summary
 
-**Timestamp**: 2026-03-07T18:35:35.259317
+**Timestamp**: 2026-03-07T20:01:01.345094
 **Session ID**: unknown
-**New Session**: False
 **Recovered**: True
-**Uncertainty Flag**: True
+**Uncertainty Flag**: False
 
-## State Sources
+## Field Resolution
 
-- **session_state**: ✅
-  - Age: 0.0 hours
-- **working_buffer**: ✅
-  - Age: 1.1 hours
-- **handoff**: ✅
-- **wal**: ✅
-  - Age: 0.0 hours
-- **repo**: ❌
+### objective: ✅
+- **Value**: Session Continuity v1.1.1 热修
+- **Source**: session_state_md
 
-## Conflicts Detected
+### phase: ✅
+- **Value**: Phase 1: P0 热修 (Task 1 + Task 2)
+- **Source**: session_state_md
 
-- **missing_objective**: No current objective in SESSION-STATE.md
+### branch: ✅
+- **Value**: openviking-l2-bugfix
+- **Source**: repo_evidence
+- **Conflicts**: 1 alternative values
 
-## Recovered State
-
-**Objective**: Session Continuity v1.1 实战验收...
-**Phase**: 验收测试阶段
-**Next Actions**: 1. 完成场景 2 验收
-2. 继续场景 3-6...
+### blocker: ✅
+- **Value**: 无 ---
+- **Source**: session_state_md
