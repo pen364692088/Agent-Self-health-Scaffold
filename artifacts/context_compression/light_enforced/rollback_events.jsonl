@@ -15,3 +15,8 @@
 {"timestamp":"2026-03-08T07:58:15.367Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T08:09:35.400Z","reason":"compress_failed","session_key":"telegram:slash:8420019401","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T08:09:42.396Z","reason":"compress_failed","session_key":"agent:main:telegram:direct:8420019401","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T08:16:55.421Z","reason":"compress_failed","session_key":"agent:main:telegram:direct:8420019401","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T08:16:58.942Z","reason":"compress_failed","session_key":"agent:main:telegram:direct:8420019401","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T08:17:02.574Z","reason":"compress_failed","session_key":"telegram:slash:8420019401","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T08:17:09.136Z","reason":"compress_failed","session_key":"agent:main:telegram:direct:8420019401","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T08:17:15.384Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
