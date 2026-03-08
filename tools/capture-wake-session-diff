@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+PROBE_TOOL = WORKSPACE / 'tools' / 'session-route-probe'
+PROBE_DIR = WORKSPACE / 'artifacts' / 'session_reuse' / 'probe'
+REAL_SAMPLES_DIR = PROBE_DIR / 'real_samples'
+INCIDENT_DIR = WORKSPACE / 'artifacts' / 'session_reuse' / 'incidents'
+
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text())
+
+
+def run_json(cmd: list[str]) -> dict[str, Any]:
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f'command failed: {cmd}')
+    return json.loads(result.stdout)
+
+
+def parse_probe_ts(path: Path) -> datetime:
+    data = read_json(path)
+    return datetime.fromisoformat(data['ts'])
+
+
+def classify(diff: dict[str, Any]) -> tuple[str, str]:
+    if diff['session_key_changed']:
+        return 'confirmed', 'Confirmed route/sessionKey change during comparison window.'
+    if diff['runtime_session_changed'] or diff['session_file_changed']:
+        return 'confirmed', 'Confirmed runtime session/file rotation during comparison window.'
+    if diff['suspected_layer'] == 'higher-layer-surface':
+        return 'likely', 'Likely higher-layer surface/UI wrapper rotation; route and runtime core appear stable.'
+    if diff['suspected_layer'] == 'surface-only-or-none':
+        return 'likely', 'Likely surface-only presentation difference or no actual session rotation.'
+    return 'inconclusive', 'Evidence did not clearly isolate route/runtime/surface cause.'
+
+
+def choose_baseline(args: argparse.Namespace, current_path: Path) -> Path:
+    if args.baseline:
+        return Path(args.baseline)
+    candidates = []
+    for directory in [REAL_SAMPLES_DIR, PROBE_DIR]:
+        if not directory.exists():
+            continue
+        for path in directory.glob('*.json'):
+            if path.resolve() == current_path.resolve():
+                continue
+            candidates.append(path)
+    if not candidates:
+        raise RuntimeError('No baseline probe sample found.')
+    candidates.sort(key=parse_probe_ts, reverse=True)
+    return candidates[0]
+
+
+def build_incident_report(current: dict[str, Any], baseline: dict[str, Any], diff: dict[str, Any], level: str, verdict: str, out_path: Path) -> None:
+    text = f'''# Wake-like Session Incident Report
+
+## Conclusion
+- level: **{level}**
+- verdict: **{verdict}**
+
+## Current sample
+- inbound_event_id: {current.get('inbound_event_id')}
+- probe_id: {current.get('probe_id')}
+- route session_key: `{current['route']['session_key']}`
+- runtime_session_id: `{current['runtime'].get('runtime_session_id')}`
+- session_jsonl_path: `{current['runtime'].get('session_jsonl_path')}`
+- session_file_name: `{current['runtime'].get('session_file_name')}`
+- created_at: `{current['runtime'].get('created_at')}`
+- updated_at: `{current['runtime'].get('updated_at')}`
+- ui_conversation_id: `{current['runtime'].get('ui_conversation_id')}`
+- transport_conversation_id: `{current['runtime'].get('transport_conversation_id')}`
+- wrapper_session_id: `{current['runtime'].get('wrapper_session_id')}`
+
+## Baseline sample
+- inbound_event_id: {baseline.get('inbound_event_id')}
+- probe_id: {baseline.get('probe_id')}
+- route session_key: `{baseline['route']['session_key']}`
+- runtime_session_id: `{baseline['runtime'].get('runtime_session_id')}`
+- session_jsonl_path: `{baseline['runtime'].get('session_jsonl_path')}`
+- session_file_name: `{baseline['runtime'].get('session_file_name')}`
+- created_at: `{baseline['runtime'].get('created_at')}`
+- updated_at: `{baseline['runtime'].get('updated_at')}`
+- ui_conversation_id: `{baseline['runtime'].get('ui_conversation_id')}`
+- transport_conversation_id: `{baseline['runtime'].get('transport_conversation_id')}`
+- wrapper_session_id: `{baseline['runtime'].get('wrapper_session_id')}`
+
+## Diff result
+- session_key_changed: **{diff['session_key_changed']}**
+- runtime_session_changed: **{diff['runtime_session_changed']}**
+- session_file_changed: **{diff['session_file_changed']}**
+- suspected_layer: **{diff['suspected_layer']}**
+- suspected_cause: **{diff['suspected_cause']}**
+
+## Changed fields
+```json
+{json.dumps(diff['changed_fields'], ensure_ascii=False, indent=2)}
+```
+
+## Scope guard
+This tool performs incident capture only.
+It does not modify session routing, continuity state, or runtime behavior.
+'''
+    out_path.write_text(text)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description='Capture wake-like session incident evidence only')
+    parser.add_argument('--channel', default='telegram')
+    parser.add_argument('--chat-id', required=True)
+    parser.add_argument('--thread-id')
+    parser.add_argument('--account-id', required=True)
+    parser.add_argument('--dm-scope', default='per-channel-peer')
+    parser.add_argument('--agent-id', default='main')
+    parser.add_argument('--peer-kind', default='direct')
+    parser.add_argument('--peer-id')
+    parser.add_argument('--inbound-event-id')
+    parser.add_argument('--baseline', help='Optional explicit baseline probe path')
+    args = parser.parse_args()
+
+    INCIDENT_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = now_utc().strftime('%Y%m%dT%H%M%SZ')
+    current_probe_path = INCIDENT_DIR / f'current_probe_{stamp}.json'
+    current = run_json([
+        str(PROBE_TOOL), 'probe',
+        '--channel', args.channel,
+        '--chat-id', args.chat_id,
+        '--account-id', args.account_id,
+        '--dm-scope', args.dm_scope,
+        '--agent-id', args.agent_id,
+        '--peer-kind', args.peer_kind,
+        '--out', str(current_probe_path),
+        *(['--thread-id', args.thread_id] if args.thread_id else []),
+        *(['--peer-id', args.peer_id] if args.peer_id else []),
+        *(['--inbound-event-id', args.inbound_event_id] if args.inbound_event_id else []),
+    ])
+    current_probe = current['probe'] if 'probe' in current else read_json(current_probe_path)
+    baseline_path = choose_baseline(args, current_probe_path)
+    baseline_probe = read_json(baseline_path)
+    diff = run_json([
+        str(PROBE_TOOL), 'diff', '--left', str(baseline_path), '--right', str(current_probe_path)
+    ])
+    level, verdict = classify(diff)
+    report_path = INCIDENT_DIR / f'incident_report_{stamp}.md'
+    build_incident_report(current_probe, baseline_probe, diff, level, verdict, report_path)
+    payload = {
+        'level': level,
+        'verdict': verdict,
+        'current_probe_path': str(current_probe_path),
+        'baseline_probe_path': str(baseline_path),
+        'incident_report_path': str(report_path),
+        'diff': diff,
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

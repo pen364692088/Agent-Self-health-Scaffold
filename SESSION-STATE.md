@@ -3,18 +3,20 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)  
-**Updated**: 2026-03-08T08:54:00-06:00
+**Updated**: 2026-03-08T09:07:00-06:00
 
 ---
 
 ## Current Objective
-继续推进 session-route-probe，优先做真实 A/B diff，用证据区分 route input 变化、runtime rotation、以及仅表面展示差异。
+完成现场取证工具 `capture-wake-session-diff`，然后将 Session Reuse / Thread Affinity v1.0 切换到观察态，等待下一次真实 wake-like incident。
 
 ## Current Phase
 ✅ Phase 4: local decision layer complete
 ✅ Phase 5: upstream attachment points identified
 ✅ Phase 6: route probe / diff implemented
 ✅ Phase 7: real A/B diff completed
+✅ Phase 8: one-shot incident capture tooling complete
+🟡 Observation State: waiting for next real wake-like incident
 
 ## Current Branch / Workspace
 - Branch: openviking-l2-bugfix
@@ -26,72 +28,82 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Binding registry / decision layer | ✅ DONE | `tools/session_reuse_lib.py`, `tools/session-route` |
-| Upstream authoritative hook identification | ✅ DONE | `resolveAgentRoute`, `buildAgentSessionKey` |
-| Probe enriched runtime fields | ✅ DONE | runtime/session file/surface placeholders |
-| Diff enriched judgments | ✅ DONE | session_key/runtime/file/layer/cause |
-| Two real samples | ✅ DONE | `7886` vs `7913` |
-| A/B diff report | ✅ DONE | `artifacts/session_reuse/v1_0/AB_DIFF_REPORT.md` |
-| Core router source patch | ⏳ PENDING | source tree not present in workspace repo |
+| Decision layer | ✅ DONE | session reuse v1.0 local logic |
+| Route probe | ✅ DONE | enriched runtime/session fields |
+| Diff judgments | ✅ DONE | route/runtime/file/layer/cause |
+| Real A/B report | ✅ DONE | `artifacts/session_reuse/v1_0/AB_DIFF_REPORT.md` |
+| Incident capture tool | ✅ DONE | `tools/capture-wake-session-diff` |
+| Observation mode | ✅ DONE | wait for next real incident |
+| Automatic repair/intervention | ❌ INTENTIONALLY NOT DONE | evidence only |
 
 ---
 
-## Latest Evidence
+## New Capability
 
-### Real sample A
-- inbound_event_id: `telegram:7886`
-- session_key: `agent:main:main`
-- runtime_session_id: `20b82894-a9f6-40ef-acf0-b1e9362bf08d`
-- session_file: `20b82894-a9f6-40ef-acf0-b1e9362bf08d.jsonl`
+### Tool
+`tools/capture-wake-session-diff`
 
-### Real sample B
-- inbound_event_id: `telegram:7913`
-- session_key: `agent:main:main`
-- runtime_session_id: `20b82894-a9f6-40ef-acf0-b1e9362bf08d`
-- session_file: `20b82894-a9f6-40ef-acf0-b1e9362bf08d.jsonl`
+### Purpose
+One-shot incident forensics only:
+1. capture current probe
+2. choose latest or explicit baseline
+3. run diff automatically
+4. generate incident report
+5. classify conclusion as:
+   - `confirmed`
+   - `likely`
+   - `inconclusive`
 
-### A/B conclusion
+### Explicit non-goals
+- no auto-fix
+- no session mutation
+- no continuity mutation
+- no runtime intervention
+
+---
+
+## Latest Incident Capture Result
+Command executed against current Telegram direct chat with explicit baseline `normal_continuation_7886.json`.
+
+### Result
+- `level = likely`
+- verdict: `Likely surface-only presentation difference or no actual session rotation.`
+
+### Diff summary
 - `session_key_changed = false`
 - `runtime_session_changed = false`
 - `session_file_changed = false`
 - `suspected_layer = surface-only-or-none`
 - `suspected_cause = surface_only_or_same_session`
 
-## Direct Interpretation
-For this real same-chat pair, there is **no evidence** of:
-- route input / sessionKey churn
-- runtime session-id rotation
-- runtime session-file rotation
-
-So this sampled pair points most strongly to:
-- only surface presentation difference
-- or no actual session rotation at all
-
-## Files Added / Updated This Round
-- `tools/session-route-probe`
-- `docs/session_reuse/ROUTE_PROBE.md`
-- `tests/session_reuse/test_session_route_probe.py`
-- `artifacts/session_reuse/probe/real_samples/*.json`
-- `artifacts/session_reuse/v1_0/AB_DIFF_REPORT.md`
+### Evidence
+- current probe: `artifacts/session_reuse/incidents/current_probe_20260308T140600Z.json`
+- incident report: `artifacts/session_reuse/incidents/incident_report_20260308T140600Z.md`
 
 ## Test Status
-- `pytest -q tests/session_reuse/test_session_route_probe.py tests/session_reuse/test_session_reuse_v1.py`
-- ✅ 12 passed
+- `pytest -q tests/session_reuse/test_capture_wake_session_diff.py tests/session_reuse/test_session_route_probe.py tests/session_reuse/test_session_reuse_v1.py`
+- ✅ 13 passed
+
+## Observation Policy
+Session Reuse / Thread Affinity v1.0 is now in **observation mode**.
+Next action is not more abstraction; it is to wait for the next real wake-like symptom and run `tools/capture-wake-session-diff` immediately.
 
 ## Next Actions
-1. Capture another real pair when a future “wake-like new session” symptom is observed live
-2. Run probe immediately at that moment for higher confidence evidence
-3. If a future pair shows stable `session_key` but changed higher-layer ids, inspect UI/control-plane wrapper lifecycle
-4. If a future pair shows changed `session_key`, trace exact route input drift
+1. When the next wake-like incident happens, run:
+   ```bash
+   tools/capture-wake-session-diff --chat-id telegram:8420019401 --account-id manager --dm-scope per-channel-peer --inbound-event-id <message_id>
+   ```
+2. Review incident report classification
+3. Only escalate to route/runtime investigation if a future capture yields `confirmed` or stronger `likely` evidence for a non-surface layer
 
 ## Blockers
-- Historical wake-up symptom was not probed at the moment it happened, so current A/B result is limited to today’s available real samples
-- No clean authoritative upstream source tree in workspace for direct router integration
+- Still no authoritative upstream source tree in workspace for direct router integration
+- Higher-layer surface ids remain null in current samples
 
 ---
 
 ## Rollout Status
 
-**Mode**: Decision layer + route probe + real A/B diff complete  
-**Scope**: Evidence collection before upstream source integration  
-**Rollback Ready**: YES
+**Mode**: Observation  
+**Evidence path**: Ready  
+**Intervention path**: Deliberately disabled
