@@ -60,6 +60,14 @@ process.stdout.write(JSON.stringify({{sessionKey, mainSessionKey}}));
 
 
 def get_sessions_snapshot(limit: int = 200) -> dict[str, Any]:
+    store = Path.home() / '.openclaw' / 'agents' / 'main' / 'sessions' / 'sessions.json'
+    store_map = {}
+    if store.exists():
+        try:
+            store_map = json.loads(store.read_text())
+        except Exception:
+            store_map = {}
+
     cli = subprocess.run([
         'openclaw', 'sessions', '--agent', 'main', '--json'
     ], capture_output=True, text=True)
@@ -67,21 +75,22 @@ def get_sessions_snapshot(limit: int = 200) -> dict[str, Any]:
         raw = cli.stdout.strip()
         try:
             parsed = json.loads(raw)
-            return {'ok': True, 'result': parsed}
+            sessions = parsed.get('sessions') or parsed.get('items') or []
+            merged = []
+            for row in sessions[:limit]:
+                key = row.get('key') or row.get('sessionKey')
+                extra = store_map.get(key, {}) if key else {}
+                merged.append({**extra, **row, 'key': key or row.get('key')})
+            return {'ok': True, 'result': {'sessions': merged}, 'source': 'openclaw sessions --json + sessions.json merge'}
         except json.JSONDecodeError:
             pass
 
-    store = Path.home() / '.openclaw' / 'agents' / 'main' / 'sessions' / 'sessions.json'
-    if store.exists():
-        try:
-            parsed = json.loads(store.read_text())
-            items = []
-            for key, row in list(parsed.items())[:limit]:
-                if isinstance(row, dict):
-                    items.append({'key': key, **row})
-            return {'ok': True, 'result': {'sessions': items}, 'fallback': 'sessions.json'}
-        except Exception as err:
-            return {'ok': False, 'error': f'sessions.json parse failed: {err}'}
+    if store_map:
+        items = []
+        for key, row in list(store_map.items())[:limit]:
+            if isinstance(row, dict):
+                items.append({'key': key, **row})
+        return {'ok': True, 'result': {'sessions': items}, 'fallback': 'sessions.json'}
 
     return {'ok': False, 'error': cli.stderr.strip() or cli.stdout.strip() or 'no sessions source available'}
 
@@ -93,7 +102,13 @@ def find_runtime_matches(session_key: str, sessions_payload: dict[str, Any]) -> 
             'error': sessions_payload.get('error'),
             'runtime_session_matches': [],
             'runtime_session_id': None,
-            'runtime_session_changed': None,
+            'session_jsonl_path': None,
+            'session_file_name': None,
+            'created_at': None,
+            'updated_at': None,
+            'ui_conversation_id': None,
+            'transport_conversation_id': None,
+            'wrapper_session_id': None,
         }
     result = sessions_payload.get('result') or {}
     sessions = result.get('sessions') or result.get('items') or []
@@ -101,18 +116,33 @@ def find_runtime_matches(session_key: str, sessions_payload: dict[str, Any]) -> 
     for row in sessions:
         key = (row.get('key') or row.get('sessionKey') or '').strip()
         if key == session_key:
+            session_file = row.get('sessionFile')
             matches.append({
                 'key': key,
                 'label': row.get('label'),
-                'updatedAt': row.get('updatedAt'),
-                'kind': row.get('kind'),
+                'updated_at': row.get('updatedAt'),
+                'created_at': row.get('createdAt'),
+                'kind': row.get('kind') or row.get('chatType'),
                 'displayName': row.get('displayName'),
+                'session_id': row.get('sessionId'),
+                'session_jsonl_path': session_file,
+                'session_file_name': Path(session_file).name if session_file else None,
+                'ui_conversation_id': row.get('uiConversationId'),
+                'transport_conversation_id': row.get('transportConversationId'),
+                'wrapper_session_id': row.get('wrapperSessionId'),
             })
-    runtime_session_id = matches[0]['key'] if matches else None
+    primary = matches[0] if matches else {}
     return {
         'sessions_list_ok': True,
         'runtime_session_matches': matches,
-        'runtime_session_id': runtime_session_id,
+        'runtime_session_id': primary.get('session_id') or primary.get('key'),
+        'session_jsonl_path': primary.get('session_jsonl_path'),
+        'session_file_name': primary.get('session_file_name'),
+        'created_at': primary.get('created_at'),
+        'updated_at': primary.get('updated_at'),
+        'ui_conversation_id': primary.get('ui_conversation_id'),
+        'transport_conversation_id': primary.get('transport_conversation_id'),
+        'wrapper_session_id': primary.get('wrapper_session_id'),
     }
 
 
@@ -127,7 +157,9 @@ def infer_suspected_cause(current: dict[str, Any], previous: dict[str, Any] | No
         return 'suspected_route_input_change'
     if current['runtime'].get('runtime_session_id') != previous['runtime'].get('runtime_session_id'):
         return 'suspected_runtime_rotation'
-    return 'unknown'
+    if any(current['runtime'].get(k) != previous['runtime'].get(k) for k in ['ui_conversation_id','transport_conversation_id','wrapper_session_id']):
+        return 'suspected_ui_wrapper_new_session'
+    return 'surface_only_or_same_session'
 
 
 def build_probe(args: argparse.Namespace) -> dict[str, Any]:
@@ -215,14 +247,30 @@ def diff_probes(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
     compare('peer_id', left['route_inputs'].get('peer_id'), right['route_inputs'].get('peer_id'))
     compare('session_key', left['route']['session_key'], right['route']['session_key'])
     compare('runtime_session_id', left['runtime'].get('runtime_session_id'), right['runtime'].get('runtime_session_id'))
-    right['heuristics']['suspected_cause'] = infer_suspected_cause(right, left)
+    compare('session_jsonl_path', left['runtime'].get('session_jsonl_path'), right['runtime'].get('session_jsonl_path'))
+    compare('session_file_name', left['runtime'].get('session_file_name'), right['runtime'].get('session_file_name'))
+    compare('ui_conversation_id', left['runtime'].get('ui_conversation_id'), right['runtime'].get('ui_conversation_id'))
+    compare('transport_conversation_id', left['runtime'].get('transport_conversation_id'), right['runtime'].get('transport_conversation_id'))
+    compare('wrapper_session_id', left['runtime'].get('wrapper_session_id'), right['runtime'].get('wrapper_session_id'))
+    suspected_cause = infer_suspected_cause(right, left)
+    if left['route']['session_key'] != right['route']['session_key']:
+        suspected_layer = 'route'
+    elif left['runtime'].get('runtime_session_id') != right['runtime'].get('runtime_session_id') or left['runtime'].get('session_jsonl_path') != right['runtime'].get('session_jsonl_path'):
+        suspected_layer = 'runtime'
+    elif any(left['runtime'].get(k) != right['runtime'].get(k) for k in ['ui_conversation_id','transport_conversation_id','wrapper_session_id']):
+        suspected_layer = 'higher-layer-surface'
+    else:
+        suspected_layer = 'surface-only-or-none'
+    right['heuristics']['suspected_cause'] = suspected_cause
     return {
         'left_probe_id': left['probe_id'],
         'right_probe_id': right['probe_id'],
         'session_key_changed': left['route']['session_key'] != right['route']['session_key'],
         'runtime_session_changed': left['runtime'].get('runtime_session_id') != right['runtime'].get('runtime_session_id'),
+        'session_file_changed': left['runtime'].get('session_jsonl_path') != right['runtime'].get('session_jsonl_path'),
+        'suspected_layer': suspected_layer,
         'changed_fields': changed_fields,
-        'suspected_cause': right['heuristics']['suspected_cause'],
+        'suspected_cause': suspected_cause,
     }
 
 

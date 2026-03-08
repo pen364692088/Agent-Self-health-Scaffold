@@ -1,0 +1,63 @@
+{
+  "probe_id": "probe_375624225e882806_1772977825",
+  "ts": "2026-03-08T13:50:25.582059+00:00",
+  "inbound_event_id": "telegram:7913",
+  "route_inputs": {
+    "channel": "telegram",
+    "chat_id": "telegram:8420019401",
+    "thread_id": null,
+    "account_id": "manager",
+    "dm_scope": "per-channel-peer",
+    "agent_id": "main",
+    "peer_kind": "direct",
+    "peer_id": "telegram:8420019401",
+    "identity_links": null
+  },
+  "route_inputs_hash": "375624225e882806",
+  "route": {
+    "session_key": "agent:main:main",
+    "main_session_key": "agent:main:main",
+    "decision_preview": {
+      "selected_session_id": "probe_9cee2772f9aef4c9",
+      "reused": false,
+      "reason": "no_active_binding",
+      "previous_session_id": null,
+      "recovery_needed": true,
+      "ttl_seconds": 86400,
+      "session_status": null,
+      "context_state": null
+    }
+  },
+  "runtime": {
+    "sessions_list_ok": true,
+    "runtime_session_matches": [
+      {
+        "key": "agent:main:main",
+        "label": null,
+        "updated_at": 1772977630355,
+        "created_at": null,
+        "kind": "direct",
+        "displayName": null,
+        "session_id": "20b82894-a9f6-40ef-acf0-b1e9362bf08d",
+        "session_jsonl_path": "/home/moonlight/.openclaw/agents/main/sessions/20b82894-a9f6-40ef-acf0-b1e9362bf08d.jsonl",
+        "session_file_name": "20b82894-a9f6-40ef-acf0-b1e9362bf08d.jsonl",
+        "ui_conversation_id": null,
+        "transport_conversation_id": null,
+        "wrapper_session_id": null
+      }
+    ],
+    "runtime_session_id": "20b82894-a9f6-40ef-acf0-b1e9362bf08d",
+    "session_jsonl_path": "/home/moonlight/.openclaw/agents/main/sessions/20b82894-a9f6-40ef-acf0-b1e9362bf08d.jsonl",
+    "session_file_name": "20b82894-a9f6-40ef-acf0-b1e9362bf08d.jsonl",
+    "created_at": null,
+    "updated_at": 1772977630355,
+    "ui_conversation_id": null,
+    "transport_conversation_id": null,
+    "wrapper_session_id": null
+  },
+  "heuristics": {
+    "reused_channel_slot": true,
+    "new_runtime_session_created": false,
+    "suspected_cause": "unknown"
+  }
+}
