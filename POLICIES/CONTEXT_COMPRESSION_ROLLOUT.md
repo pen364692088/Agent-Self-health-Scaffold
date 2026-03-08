@@ -227,35 +227,42 @@ exit_conditions:
 
 ---
 
-### Milestone B: Natural Traffic Validation ⏳
+### Milestone B: Natural Traffic Validation (Redefined)
 
-**Status**: EVIDENCE FREEZE - Waiting for natural trigger
-**DoD**: `NATURAL_TRAFFIC_VALIDATION_DOD.md`
-**Freeze**: `EVIDENCE_FREEZE.md`
-**Template**: `TRIGGER_EVIDENCE_TEMPLATE.md`
+**Status**: SPLIT into B1 + B2
+**Incident**: CAI-20260308-001 (Config Alignment)
+**Updated**: 2026-03-08T00:17:00-06:00
 
-**Current Progress**:
-```
-budget_ratio: ~0.825
-distance_to_hot_zone: ~0.015
-distance_to_trigger: ~0.025
-```
+#### B1: Runtime Truth Established ✅ DONE
 
-**Purpose**: Prove default 100k config triggers naturally with reasonable timing
+**Purpose**: Document runtime default config and behavior.
 
-**Pass Conditions**:
-1. Natural enforced_trigger_count >= 1
-2. sessions_over_threshold explainable growth
-3. Safety: all zeros
-4. Evidence preserved
-5. Timing questions answered
+**Evidence**:
+- `config_alignment/runtime_config_snapshot.json`
+- `config_alignment/natural_enforced_event_snapshot.json`
+- `config_alignment/RUNTIME_DEFAULT_DISCOVERY.md`
 
-**Forbidden**:
-- Threshold changes
-- Scoring/metrics/schema changes
-- OpenViking/L2 mixing
-- High-risk scope expansion
-- Any "convenient optimizations"
+**Conclusion**:
+- Runtime default: `200k contextWindow`, `threshold_92`
+- Compression works at runtime defaults
+- Safety guardrails hold
+
+#### B2: Policy Compliance Validated ⏳ PENDING
+
+**Purpose**: Prove target policy (`100k / 0.85`) is active.
+
+**Blockers**:
+- Runtime does not enforce `0.85` threshold
+- Config alignment required (separate gate)
+
+**Dependencies**:
+- Config Alignment Gate
+- Re-run validation if config changed
+
+---
+
+**Original DoD**: `NATURAL_TRAFFIC_VALIDATION_DOD.md` (superseded)
+**New Definition**: `MILESTONE_B_REDEFINED.md`
 
 ---
 

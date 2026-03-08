@@ -1,0 +1,36 @@
+{
+  "event_id": "cmp_20260307_234818",
+  "captured_at": "2026-03-08T00:17:00-06:00",
+  "event_data": {
+    "session_id": "89cbc6ee-8dae-4a70-bb27-32fcf4fac44c",
+    "trigger": "threshold_92",
+    "pressure_level": "strong",
+    "before": {
+      "estimated_tokens": 61251,
+      "turn_count": 202,
+      "ratio": 1.0209
+    },
+    "after": {
+      "estimated_tokens": 36750,
+      "turn_count": 101,
+      "ratio": 0.6125
+    },
+    "resident_kept": [102, 103, 104, 105, 106, 107, 108, 109, 110, 111],
+    "capsules_created": ["cap_20260307_89cbc6ee_1_101"],
+    "evicted_turn_ranges": [{"start": 1, "end": 101}],
+    "vector_indexed": false,
+    "mode": "enforced",
+    "duration_ms": 254
+  },
+  "interpretation": {
+    "triggered_at_ratio": 1.0209,
+    "exceeded_context_window": true,
+    "compression_gain_percent": 40,
+    "safety_guardrails": "all_zeros"
+  },
+  "evidence_validity": {
+    "proves_runtime_default": true,
+    "proves_target_policy": false,
+    "notes": "Valid for B1 (Runtime Truth), not sufficient for B2 (Policy Compliance)"
+  }
+}

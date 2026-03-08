@@ -3,56 +3,71 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)  
-**Updated**: 2026-03-08T00:07:00-06:00
+**Updated**: 2026-03-08T00:17:00-06:00
 
 ---
 
 ## Current Objective
-Milestone B 自然流量验证 - 等待首个自然 trigger
+Context Compression - Milestone B1 完成，B2 待 Config Alignment
 
 ## Current Phase
-⏳ EVIDENCE FREEZE - 等待自然证据
+⏳ CONFIG ALIGNMENT INCIDENT - Runtime Truth documented
 
 ## Current Branch / Workspace
 - Branch: openviking-l2-bugfix
 - Workspace: ~/.openclaw/workspace
 
+---
+
+## Milestone B Status
+
+| Sub-milestone | Status | Evidence |
+|---------------|--------|----------|
+| B1: Runtime Truth | ✅ DONE | `config_alignment/` |
+| B2: Policy Compliance | ⏳ PENDING | Requires config gate |
+
+### Runtime Truth (B1)
+```
+contextWindow: 200k
+trigger: threshold_92
+compression: WORKING
+safety: ALL ZEROS
+```
+
+### Target Policy (B2)
+```
+max_tokens: 100k
+threshold: 0.85
+status: NOT IN EFFECT
+```
+
+---
+
 ## Latest Verified Status
-- ✅ Hot Zone 机制就绪
-- ✅ Auto-capture 就绪
-- ✅ 模板已准备
-- ✅ Evidence Freeze 已声明
+- ✅ Natural enforced compression observed
+- ✅ Runtime config captured
+- ✅ Config gap documented
+- ⏳ Config alignment decision pending
 
 ## Next Actions
-1. 等待 budget_ratio >= 0.85
-2. 触发时填模板封板
-3. 完成 Milestone B DoD
+1. Complete evidence freeze
+2. Decide on config alignment gate
+3. If aligned, re-run validation for B2
 
 ## Blockers
-无
+无 (B2 has dependency, not blocker)
 
 ---
 
-## Milestone B Progress
+## Evidence Freeze
 
-```
-Current Ratio: ~0.825
-Hot Zone: 0.84 (距离 ~0.015)
-Trigger: 0.85 (距离 ~0.025)
-```
+**Mode**: CONTINUED
+**Purpose**: Protect evidence chain integrity
 
-**Status**: APPROACHING_HOT_ZONE
-
----
-
-## Frozen Items
-
-- Metric semantics
-- Counter naming
-- Thresholds (0.85)
-- Evidence directory structure
-
-**See**: `artifacts/context_compression/light_enforced/natural_validation/EVIDENCE_FREEZE.md`
+**Files**:
+- `EVIDENCE_FREEZE.md`
+- `TRIGGER_EVIDENCE_TEMPLATE.md`
+- `CONFIG_ALIGNMENT_INCIDENT.md`
 
 ---
 
