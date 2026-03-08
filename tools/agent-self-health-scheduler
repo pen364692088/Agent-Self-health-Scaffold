@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, fcntl, json, os, subprocess, sys, time
+import argparse, fcntl, json, os, subprocess, sys, time, hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -8,7 +8,10 @@ RUNTIME = WORKSPACE / 'artifacts' / 'self_health' / 'runtime'
 STATE = WORKSPACE / 'artifacts' / 'self_health' / 'state'
 ALWAYS_ON = WORKSPACE / 'artifacts' / 'self_health' / 'always_on'
 LOCKS = WORKSPACE / 'artifacts' / 'self_health' / 'locks'
-for p in [RUNTIME, STATE, ALWAYS_ON, LOCKS]:
+INCIDENTS = WORKSPACE / 'artifacts' / 'self_health' / 'incidents'
+PROPOSALS = WORKSPACE / 'artifacts' / 'self_health' / 'proposals'
+AUDIT = WORKSPACE / 'artifacts' / 'self_health' / 'audit'
+for p in [RUNTIME, STATE, ALWAYS_ON, LOCKS, INCIDENTS, PROPOSALS, AUDIT]:
     p.mkdir(parents=True, exist_ok=True)
 
 CONFIG = {
@@ -16,6 +19,9 @@ CONFIG = {
     'full': {'cooldown': 3600, 'budget': 120, 'health_args': ['--deep', '--json']},
     'gate': {'cooldown': 300, 'budget': 30, 'health_args': None},
 }
+INCIDENT_DEDUP_SECONDS = 1800
+PROPOSAL_DEDUP_SECONDS = 3600
+SUMMARY_MIN_INTERVAL_SECONDS = 900
 
 
 def now_iso():
@@ -56,7 +62,14 @@ def file_age_seconds(path):
     return max(0, time.time() - p.stat().st_mtime)
 
 
-def runtime_snapshot(mode, health_result=None, gate_result=None):
+def parse_json(stdout, fallback=None):
+    try:
+        return json.loads(stdout)
+    except Exception:
+        return fallback if fallback is not None else {'raw_stdout': stdout[:1000]}
+
+
+def component_snapshot(mode, health_result=None, gate_result=None):
     ts = now_iso()
     hb = read_json(RUNTIME / 'heartbeat_status.json', {})
     cb = read_json(RUNTIME / 'callback_worker_status.json', {})
@@ -64,7 +77,9 @@ def runtime_snapshot(mode, health_result=None, gate_result=None):
     sm = read_json(RUNTIME / 'summary_status.json', {})
     metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {
         'scheduler_runs_total': 0, 'quick_runs_total': 0, 'full_runs_total': 0, 'gate_runs_total': 0,
-        'skipped_runs_total': 0, 'lock_contention_count': 0, 'execution_budget_hit_count': 0
+        'skipped_runs_total': 0, 'lock_contention_count': 0, 'execution_budget_hit_count': 0,
+        'incident_total': 0, 'deduped_incident_count': 0, 'proposal_total': 0, 'deduped_proposal_count': 0,
+        'cooldown_blocked_count': 0, 'repeated_same_alert_count': 0, 'gate_inconsistency_count': 0,
     })
     metrics['scheduler_runs_total'] += 1
     metrics[f'{mode}_runs_total'] = metrics.get(f'{mode}_runs_total', 0) + 1
@@ -75,7 +90,7 @@ def runtime_snapshot(mode, health_result=None, gate_result=None):
         'last_heartbeat_at': ts,
         'heartbeat_lag_seconds': 0,
         'heartbeat_cycle_ok': True,
-        'last_cycle_duration_ms': health_result.get('duration_ms') if health_result else None,
+        'last_cycle_duration_ms': health_result.get('duration_ms') if health_result else hb.get('last_cycle_duration_ms'),
         'last_quick_check_at': ts if mode == 'quick' else hb.get('last_quick_check_at'),
         'last_full_check_at': ts if mode == 'full' else hb.get('last_full_check_at'),
         'heartbeat_status': 'healthy' if (health_result or {}).get('ok', True) else 'degraded',
@@ -86,8 +101,8 @@ def runtime_snapshot(mode, health_result=None, gate_result=None):
     code, out, err = run(['python3', str(WORKSPACE / 'tools' / 'callback-worker-doctor')], timeout=20)
     cb.update({
         'worker_name': 'callback-worker',
-        'alive': '✅' in out.splitlines()[2] if out else False,
-        'last_progress_at': ts if '可以上线' in out or '不能上线' in out else cb.get('last_progress_at'),
+        'alive': '✅ Service running' in out,
+        'last_progress_at': ts if ('可以上线' in out or '不能上线' in out) else cb.get('last_progress_at'),
         'last_output_at': ts,
         'pending_count': None,
         'stuck_suspected': code != 0,
@@ -118,17 +133,96 @@ def runtime_snapshot(mode, health_result=None, gate_result=None):
     })
     write_json(RUNTIME / 'mailbox_worker_status.json', mb)
 
-    incident_dir = WORKSPACE / 'artifacts' / 'self_health' / 'incidents'
-    proposals_dir = WORKSPACE / 'artifacts' / 'self_health' / 'proposals'
     sm.update({
-        'last_health_summary_at': ts if mode in ('quick','full') else sm.get('last_health_summary_at'),
+        'last_health_summary_at': sm.get('last_health_summary_at'),
         'last_recovery_summary_at': sm.get('last_recovery_summary_at'),
-        'last_capability_summary_at': ts if mode == 'full' else sm.get('last_capability_summary_at'),
-        'last_proposal_summary_at': datetime.fromtimestamp(proposals_dir.stat().st_mtime, timezone.utc).isoformat() if proposals_dir.exists() else None,
-        'last_incident_recorded_at': datetime.fromtimestamp(incident_dir.stat().st_mtime, timezone.utc).isoformat() if incident_dir.exists() else None,
+        'last_capability_summary_at': sm.get('last_capability_summary_at'),
+        'last_proposal_summary_at': sm.get('last_proposal_summary_at'),
+        'last_incident_recorded_at': datetime.fromtimestamp(INCIDENTS.stat().st_mtime, timezone.utc).isoformat() if INCIDENTS.exists() else None,
         'summary_pipeline_status': 'healthy' if health_result or gate_result else sm.get('summary_pipeline_status', 'unknown')
     })
     write_json(RUNTIME / 'summary_status.json', sm)
+
+
+def should_dedup(kind, fingerprint, seconds):
+    ledger = read_json(RUNTIME / 'dedup_ledger.json', {})
+    now = time.time()
+    entry = ledger.get(kind, {}).get(fingerprint)
+    if entry and now - entry.get('epoch', 0) < seconds:
+        return True, entry
+    ledger.setdefault(kind, {})[fingerprint] = {'epoch': now, 'timestamp': now_iso()}
+    write_json(RUNTIME / 'dedup_ledger.json', ledger)
+    return False, None
+
+
+def maybe_generate_incident_and_proposal(health_payload):
+    metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
+    overall = health_payload.get('overall_status', 'GREEN')
+    components = health_payload.get('components', [])
+    bad = [c for c in components if c.get('status') in ('warning', 'error', 'unknown') and c.get('component') != 'network']
+    created = {'incident': None, 'proposal': None}
+
+    if overall in ('YELLOW', 'ORANGE', 'RED') or bad:
+        summary = '; '.join(f"{c.get('component')}={c.get('status')}" for c in bad) or f'overall={overall}'
+        fp = hashlib.sha1(summary.encode()).hexdigest()[:16]
+        deduped, _ = should_dedup('incident', fp, INCIDENT_DEDUP_SECONDS)
+        if deduped:
+            metrics['deduped_incident_count'] = metrics.get('deduped_incident_count', 0) + 1
+            metrics['repeated_same_alert_count'] = metrics.get('repeated_same_alert_count', 0) + 1
+        else:
+            level_map = {'YELLOW': 'YELLOW', 'ORANGE': 'ORANGE', 'RED': 'RED'}
+            rc, out, err = run([
+                str(WORKSPACE / 'tools' / 'agent-incident-report'),
+                '--level', level_map.get(overall, 'YELLOW'),
+                '--category', 'always_on_health',
+                '--summary', summary,
+                '--context', json.dumps({'source': 'agent-self-health-scheduler', 'overall_status': overall}),
+                '--json'
+            ], timeout=20)
+            created['incident'] = parse_json(out, {'raw_stdout': out[:500], 'error': err[:200]})
+            metrics['incident_total'] = metrics.get('incident_total', 0) + 1
+
+    if overall in ('ORANGE', 'RED'):
+        action = 'retry_subagent' if any(c.get('component') == 'subagents' for c in bad) else 'restart_subsystem'
+        fp = hashlib.sha1(f'{overall}:{action}'.encode()).hexdigest()[:16]
+        deduped, _ = should_dedup('proposal', fp, PROPOSAL_DEDUP_SECONDS)
+        if deduped:
+            metrics['deduped_proposal_count'] = metrics.get('deduped_proposal_count', 0) + 1
+        else:
+            rc, out, err = run([
+                str(WORKSPACE / 'tools' / 'agent-self-heal'),
+                '--proposal-only', '--action', action, '--level', 'B', '--json'
+            ], timeout=20)
+            created['proposal'] = parse_json(out, {'raw_stdout': out[:500], 'error': err[:200]})
+            metrics['proposal_total'] = metrics.get('proposal_total', 0) + 1
+
+    write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
+    return created
+
+
+def maybe_generate_summaries(mode, health_payload=None):
+    sm = read_json(RUNTIME / 'summary_status.json', {})
+    generated = {}
+    now = time.time()
+    last_health = sm.get('last_health_summary_epoch', 0) or 0
+    if mode == 'full' or now - last_health >= SUMMARY_MIN_INTERVAL_SECONDS:
+        rc, out, err = run([str(WORKSPACE / 'tools' / 'agent-health-summary'), '--json'], timeout=20)
+        payload = parse_json(out, {'raw_stdout': out[:500], 'error': err[:200]})
+        write_json(ALWAYS_ON / 'health_summary_latest.json', payload)
+        generated['health_summary'] = payload
+        sm['last_health_summary_at'] = now_iso()
+        sm['last_health_summary_epoch'] = now
+        sm['last_capability_summary_at'] = sm['last_health_summary_at']
+    if generated:
+        write_json(RUNTIME / 'summary_status.json', sm)
+    return generated
+
+
+def gate_consistency_metrics(gate_payload):
+    metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
+    if gate_payload.get('verdict') != 'PASS':
+        metrics['gate_inconsistency_count'] = metrics.get('gate_inconsistency_count', 0) + 1
+        write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
 
 
 def main():
@@ -139,7 +233,7 @@ def main():
     ap.add_argument('--health', action='store_true')
     args = ap.parse_args()
     if args.health:
-        print(json.dumps({'status':'healthy','tool':'agent-self-health-scheduler','version':'1.0.0'}))
+        print(json.dumps({'status':'healthy','tool':'agent-self-health-scheduler','version':'1.1.0'}))
         return 0
 
     cfg = CONFIG[args.mode]
@@ -166,6 +260,7 @@ def main():
         if not args.force and last_run and time.time() - last_run < cfg['cooldown']:
             metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
             metrics['skipped_runs_total'] = metrics.get('skipped_runs_total', 0) + 1
+            metrics['cooldown_blocked_count'] = metrics.get('cooldown_blocked_count', 0) + 1
             write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
             result = {'mode': args.mode, 'status': 'skipped', 'reason': 'cooldown', 'cooldown_seconds': cfg['cooldown'], 'timestamp': ts}
             state.update({'last_skipped_reason': 'cooldown', 'last_skipped_at': ts})
@@ -174,13 +269,11 @@ def main():
             print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else 'cooldown')
             return 0
 
+        extras = {}
         if args.mode in ('quick','full'):
             cmd = [str(WORKSPACE / 'tools' / 'agent-health-check')] + cfg['health_args']
             rc, out, err = run(cmd, timeout=cfg['budget'])
-            try:
-                payload = json.loads(out)
-            except Exception:
-                payload = {'raw_stdout': out[:1000], 'raw_stderr': err[:500]}
+            payload = parse_json(out, {'raw_stdout': out[:1000], 'raw_stderr': err[:500]})
             ok = rc in (0,1,2,3)
             duration_ms = int((time.time() - start) * 1000)
             result = {'mode': args.mode, 'status': 'ok' if ok else 'failed', 'exit_code': rc, 'timestamp': ts, 'duration_ms': duration_ms, 'health': payload}
@@ -189,13 +282,12 @@ def main():
                 metrics['execution_budget_hit_count'] = metrics.get('execution_budget_hit_count', 0) + 1
                 write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
                 result['budget_hit'] = True
-            runtime_snapshot(args.mode, {'ok': ok, 'duration_ms': duration_ms})
+            component_snapshot(args.mode, {'ok': ok, 'duration_ms': duration_ms})
+            extras['auto_flow'] = maybe_generate_incident_and_proposal(payload)
+            extras['summaries'] = maybe_generate_summaries(args.mode, payload)
         else:
             rc, out, err = run(['python3', str(WORKSPACE / 'tools' / 'gate-self-health-check'), '--json'], timeout=cfg['budget'])
-            try:
-                payload = json.loads(out)
-            except Exception:
-                payload = {'raw_stdout': out[:1000], 'raw_stderr': err[:500]}
+            payload = parse_json(out, {'raw_stdout': out[:1000], 'raw_stderr': err[:500]})
             ok = rc == 0
             duration_ms = int((time.time() - start) * 1000)
             result = {'mode': args.mode, 'status': 'ok' if ok else 'failed', 'exit_code': rc, 'timestamp': ts, 'duration_ms': duration_ms, 'gate': payload}
@@ -204,8 +296,12 @@ def main():
                 metrics['execution_budget_hit_count'] = metrics.get('execution_budget_hit_count', 0) + 1
                 write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
                 result['budget_hit'] = True
-            runtime_snapshot(args.mode, None, payload)
+            component_snapshot(args.mode, None, payload)
+            gate_consistency_metrics(payload)
+            extras['summaries'] = maybe_generate_summaries(args.mode)
 
+        if extras:
+            result.update(extras)
         state.update({'last_run_at': ts, 'last_run_epoch': time.time(), 'last_run_result': result['status'], 'last_run_duration_ms': result['duration_ms']})
         write_json(state_path, state)
         append_jsonl(history_path, result)

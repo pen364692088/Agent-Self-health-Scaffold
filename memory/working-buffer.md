@@ -1,22 +1,27 @@
 # Working Buffer
 
-**Updated**: 2026-03-08T14:03:04-05:00
+**Updated**: 2026-03-08T14:15:45-05:00
 
 ---
 
 ## Active Focus
-按 execution checklist 顺序把 self-health 从 manual-run proven 接入为 OpenClaw 主系统 default always-on。
+继续把 self-health 从 initial wiring 推到可 soak 的 always-on baseline。
 
-## Immediate order
-1. OAI-0: 固化 always-on policy / 状态机 / rollback
-2. OAI-1: quick/full/gate 默认链路接线
-3. OAI-2: runtime telemetry 持续落盘
-4. OAI-5: lock / cooldown / dedup / budget / rollback
-5. OAI-3/OAI-4: 自动流转 + Gate 常驻
-6. OAI-6: soak + final verdict
+## Completed
+- OAI-0 policy 固化
+- OAI-1 quick/full/gate 默认链路骨架接线
+- OAI-2 runtime telemetry 持续落盘骨架
+- OAI-5 baseline safety controls: lock/cooldown/budget/dedup 可观测
+- OAI-3 baseline auto-flow: summary / incident / proposal-only wiring
+- OAI-4 baseline gate history + inconsistency accounting
+
+## Next Focus
+1. 丰富 callback/mailbox telemetry 真值
+2. 增强 Gate A/B/C explanation 粒度
+3. 跑短期 soak，观察是否出现 storm / drift / main-loop impact
+4. 根据证据决定是否进入 WIRING_ACTIVE_BUT_SOAK_PENDING
 
 ## Constraints
-- 不把手动运行说成 always-on
-- 不把后台脚本说成默认链路
-- Level B/C 保持 proposal-only
-- 不破坏 INSTANCE_1_PROVEN 基线
+- 不把 baseline auto-flow 说成 production-complete
+- callback-worker 当前 degraded 信号必须保留真实语义
+- final verdict 只能基于 soak 证据给出
