@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""
+state-lock v1.1 - State File Locking
+
+Provides simple file-based locking for state files.
+
+Usage:
+  state-lock --file <path> --acquire
+  state-lock --file <path> --release
+  state-lock --file <path> --check
+  state-lock --file <path> --with "<command>"
+"""
+
+import argparse
+import json
+import sys
+import os
+import time
+from pathlib import Path
+from datetime import datetime
+from typing import Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+LOCK_DIR = WORKSPACE / "state" / "locks"
+
+
+def get_lock_path(filepath: Path) -> Path:
+    """Get lock file path for a given file."""
+    filepath = Path(filepath).resolve()
+    lock_name = f"{filepath.name}.lock"
+    return LOCK_DIR / lock_name
+
+
+def acquire_lock(filepath: Path, timeout: int = 30, owner: Optional[str] = None) -> Dict:
+    """Acquire a lock on a file."""
+    lock_path = get_lock_path(filepath)
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    
+    owner = owner or os.environ.get("OPENCLAW_SESSION_ID", "unknown")
+    
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        # Try to create lock file atomically
+        try:
+            # Check if lock exists
+            if lock_path.exists():
+                # Read lock info
+                lock_info = json.loads(lock_path.read_text())
+                age = time.time() - lock_info.get("timestamp_unix", 0)
+                
+                # Check if lock is stale (> 5 minutes old)
+                if age > 300:
+                    lock_path.unlink()
+                else:
+                    # Lock is held by someone else
+                    time.sleep(0.1)
+                    continue
+            
+            # Create lock file
+            lock_info = {
+                "owner": owner,
+                "timestamp": datetime.now().isoformat(),
+                "timestamp_unix": time.time(),
+                "file": str(filepath)
+            }
+            
+            # Atomic write
+            temp_path = lock_path.with_suffix(".tmp")
+            temp_path.write_text(json.dumps(lock_info))
+            temp_path.rename(lock_path)
+            
+            return {
+                "success": True,
+                "lock_path": str(lock_path),
+                "owner": owner
+            }
+            
+        except Exception as e:
+            time.sleep(0.1)
+            continue
+    
+    return {
+        "success": False,
+        "error": "Timeout waiting for lock",
+        "lock_path": str(lock_path)
+    }
+
+
+def release_lock(filepath: Path, owner: Optional[str] = None) -> Dict:
+    """Release a lock on a file."""
+    lock_path = get_lock_path(filepath)
+    owner = owner or os.environ.get("OPENCLAW_SESSION_ID", "unknown")
+    
+    if not lock_path.exists():
+        return {"success": True, "message": "Lock does not exist"}
+    
+    try:
+        lock_info = json.loads(lock_path.read_text())
+        
+        # Only owner can release
+        if lock_info.get("owner") != owner:
+            return {
+                "success": False,
+                "error": f"Lock owned by {lock_info.get('owner')}, not {owner}"
+            }
+        
+        lock_path.unlink()
+        return {"success": True, "released_by": owner}
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def check_lock(filepath: Path) -> Dict:
+    """Check lock status on a file."""
+    lock_path = get_lock_path(filepath)
+    
+    if not lock_path.exists():
+        return {
+            "locked": False,
+            "file": str(filepath)
+        }
+    
+    try:
+        lock_info = json.loads(lock_path.read_text())
+        age = time.time() - lock_info.get("timestamp_unix", 0)
+        
+        return {
+            "locked": True,
+            "file": str(filepath),
+            "owner": lock_info.get("owner"),
+            "age_seconds": round(age, 1),
+            "stale": age > 300
+        }
+        
+    except Exception as e:
+        return {
+            "locked": True,
+            "file": str(filepath),
+            "error": str(e)
+        }
+
+
+def with_lock(filepath: Path, command: str, timeout: int = 30) -> Dict:
+    """Execute a command while holding a lock."""
+    # Acquire lock
+    result = acquire_lock(filepath, timeout)
+    
+    if not result["success"]:
+        return result
+    
+    try:
+        # Execute command
+        exit_code = os.system(command)
+        
+        return {
+            "success": exit_code == 0,
+            "exit_code": exit_code,
+            "command": command
+        }
+        
+    finally:
+        # Release lock
+        release_lock(filepath)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="State File Locking")
+    parser.add_argument("--file", "-f", required=True, help="File to lock")
+    parser.add_argument("--acquire", action="store_true", help="Acquire lock")
+    parser.add_argument("--release", action="store_true", help="Release lock")
+    parser.add_argument("--check", action="store_true", help="Check lock status")
+    parser.add_argument("--with", "-w", dest="with_cmd", help="Command to run with lock")
+    parser.add_argument("--timeout", type=int, default=30, help="Lock timeout")
+    parser.add_argument("--owner", help="Lock owner")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    args = parser.parse_args()
+    
+    filepath = Path(args.file)
+    
+    if not filepath.is_absolute():
+        filepath = WORKSPACE / filepath
+    
+    if args.acquire:
+        result = acquire_lock(filepath, args.timeout, args.owner)
+    elif args.release:
+        result = release_lock(filepath, args.owner)
+    elif args.check:
+        result = check_lock(filepath)
+    elif args.with_cmd:
+        result = with_lock(filepath, args.with_cmd, args.timeout)
+    else:
+        parser.print_help()
+        return
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        if result.get("success"):
+            print(f"✅ {result}")
+        else:
+            print(f"❌ {result}")
+
+
+if __name__ == "__main__":
+    main()

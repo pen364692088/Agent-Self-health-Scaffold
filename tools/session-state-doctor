@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+"""
+session-state-doctor v1.1 - State Health Check Tool
+
+Diagnoses session continuity mechanism health.
+
+Usage:
+  session-state-doctor
+  session-state-doctor --json
+  session-state-doctor --fix
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
+WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+HANDOFF = WORKSPACE / "handoff.md"
+WAL_FILE = WORKSPACE / "state" / "wal" / "session_state_wal.jsonl"
+RECOVERY_SUMMARY = WORKSPACE / "artifacts" / "session_recovery" / "latest_recovery_summary.json"
+
+
+def check_file_health(filepath: Path, max_age_hours: int = 72) -> Dict[str, Any]:
+    """Check health of a single file."""
+    if not filepath.exists():
+        return {
+            "exists": False,
+            "status": "missing",
+            "score": 0
+        }
+    
+    stat = filepath.stat()
+    mtime = datetime.fromtimestamp(stat.st_mtime)
+    age = datetime.now() - mtime
+    age_hours = age.total_seconds() / 3600
+    
+    if age_hours <= 24:
+        status = "healthy"
+        score = 100
+    elif age_hours <= 72:
+        status = "stale"
+        score = 50
+    else:
+        status = "expired"
+        score = 20
+    
+    return {
+        "exists": True,
+        "status": status,
+        "score": score,
+        "age_hours": round(age_hours, 1),
+        "modified": mtime.isoformat(),
+        "size_bytes": stat.st_size
+    }
+
+
+def check_wal_health() -> Dict[str, Any]:
+    """Check WAL journal health."""
+    if not WAL_FILE.exists():
+        return {
+            "exists": False,
+            "status": "missing",
+            "score": 0
+        }
+    
+    try:
+        entries = []
+        with open(WAL_FILE, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except:
+                        continue
+        
+        if not entries:
+            return {
+                "exists": True,
+                "status": "empty",
+                "score": 30
+            }
+        
+        # Check latest entry age
+        latest = entries[-1]
+        latest_time = datetime.fromisoformat(latest.get("timestamp", ""))
+        age_hours = (datetime.now() - latest_time).total_seconds() / 3600
+        
+        if age_hours <= 1:
+            status = "active"
+            score = 100
+        elif age_hours <= 24:
+            status = "recent"
+            score = 80
+        else:
+            status = "inactive"
+            score = 40
+        
+        return {
+            "exists": True,
+            "status": status,
+            "score": score,
+            "entry_count": len(entries),
+            "latest_age_hours": round(age_hours, 1)
+        }
+        
+    except Exception as e:
+        return {
+            "exists": True,
+            "status": "error",
+            "score": 0,
+            "error": str(e)
+        }
+
+
+def check_recovery_status() -> Dict[str, Any]:
+    """Check last recovery status."""
+    if not RECOVERY_SUMMARY.exists():
+        return {
+            "exists": False,
+            "status": "never_recovered",
+            "score": 0
+        }
+    
+    try:
+        data = json.loads(RECOVERY_SUMMARY.read_text())
+        
+        if data.get("recovered"):
+            if data.get("uncertainty_flag"):
+                status = "uncertain"
+                score = 50
+            else:
+                status = "success"
+                score = 100
+        else:
+            status = "failed"
+            score = 10
+        
+        return {
+            "exists": True,
+            "status": status,
+            "score": score,
+            "timestamp": data.get("timestamp"),
+            "session_id": data.get("session_id")
+        }
+        
+    except Exception as e:
+        return {
+            "exists": True,
+            "status": "error",
+            "score": 0,
+            "error": str(e)
+        }
+
+
+def run_diagnosis() -> Dict[str, Any]:
+    """Run full health diagnosis."""
+    checks = {
+        "session_state": check_file_health(SESSION_STATE),
+        "working_buffer": check_file_health(WORKING_BUFFER),
+        "handoff": check_file_health(HANDOFF),
+        "wal": check_wal_health(),
+        "recovery": check_recovery_status()
+    }
+    
+    # Calculate overall score
+    scores = [c["score"] for c in checks.values()]
+    avg_score = sum(scores) / len(scores) if scores else 0
+    
+    # Determine overall status
+    if avg_score >= 80:
+        overall = "healthy"
+    elif avg_score >= 50:
+        overall = "degraded"
+    else:
+        overall = "critical"
+    
+    # Generate recommendations
+    recommendations = []
+    
+    if checks["session_state"]["status"] == "missing":
+        recommendations.append("Create SESSION-STATE.md with current objective and phase")
+    elif checks["session_state"]["status"] == "expired":
+        recommendations.append("Update SESSION-STATE.md - it's over 72 hours old")
+    
+    if checks["working_buffer"]["status"] == "missing":
+        recommendations.append("Create working-buffer.md for short-term memory")
+    
+    if checks["wal"]["status"] == "missing":
+        recommendations.append("Initialize WAL journal for atomic writes")
+    elif checks["wal"]["status"] == "inactive":
+        recommendations.append("WAL journal is inactive - check write flow")
+    
+    if checks["recovery"]["status"] == "never_recovered":
+        recommendations.append("Run session-start-recovery --recover to initialize")
+    elif checks["recovery"]["status"] == "failed":
+        recommendations.append("Last recovery failed - check state files")
+    
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "overall_status": overall,
+        "overall_score": round(avg_score, 1),
+        "checks": checks,
+        "recommendations": recommendations
+    }
+
+
+def print_report(diagnosis: Dict[str, Any]):
+    """Print human-readable report."""
+    status_colors = {
+        "healthy": "\033[92m",  # green
+        "degraded": "\033[93m",  # yellow
+        "critical": "\033[91m",  # red
+        "missing": "\033[90m",   # gray
+        "stale": "\033[93m",
+        "expired": "\033[91m",
+        "active": "\033[92m",
+        "recent": "\033[92m",
+        "inactive": "\033[93m",
+        "empty": "\033[93m",
+        "success": "\033[92m",
+        "uncertain": "\033[93m",
+        "failed": "\033[91m",
+    }
+    reset = "\033[0m"
+    
+    overall = diagnosis["overall_status"]
+    color = status_colors.get(overall, "")
+    
+    print(f"\n{'='*50}")
+    print(f"  Session State Health Report")
+    print(f"{'='*50}")
+    print(f"\nOverall: {color}{overall.upper()}{reset} (score: {diagnosis['overall_score']}/100)")
+    print(f"Time: {diagnosis['timestamp']}")
+    print(f"\n{'Checks:'}")
+    
+    for name, check in diagnosis["checks"].items():
+        status = check["status"]
+        color = status_colors.get(status, "")
+        score = check["score"]
+        
+        extra = ""
+        if check.get("age_hours"):
+            extra = f" (age: {check['age_hours']}h)"
+        elif check.get("entry_count"):
+            extra = f" ({check['entry_count']} entries)"
+        
+        print(f"  - {name}: {color}{status}{reset} [{score}/100]{extra}")
+    
+    if diagnosis["recommendations"]:
+        print(f"\n{'Recommendations:'}")
+        for i, rec in enumerate(diagnosis["recommendations"], 1):
+            print(f"  {i}. {rec}")
+    
+    print(f"\n{'='*50}\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Session State Doctor")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--fix", action="store_true", help="Attempt auto-fix")
+    args = parser.parse_args()
+    
+    diagnosis = run_diagnosis()
+    
+    if args.json:
+        print(json.dumps(diagnosis, indent=2))
+    else:
+        print_report(diagnosis)
+    
+    # Exit code based on status
+    if diagnosis["overall_status"] == "critical":
+        sys.exit(2)
+    elif diagnosis["overall_status"] == "degraded":
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

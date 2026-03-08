@@ -1,33 +1,63 @@
 #!/usr/bin/env python3
 """
-session-start-recovery v1.0 - Session State Recovery Tool
+session-start-recovery v1.1 - Session State Recovery Tool
 
 Recovers session state from persisted files when a new session starts.
+MUST be called BEFORE any substantive reply.
 
 Usage:
-  session-start-recovery --check
-  session-start-recovery --recover
-  session-start-recovery --json
-  session-start-recovery --health
+  session-start-recovery --check           # Check if recovery needed
+  session-start-recovery --recover         # Perform recovery
+  session-start-recovery --force           # Force recovery even if not new session
+  session-start-recovery --json            # JSON output
+  session-start-recovery --summary         # Output recovery summary
+  session-start-recovery --health          # Health check
+  session-start-recovery --preflight       # Preflight check for reply guard
 """
 
 import argparse
 import json
 import sys
+import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Tuple
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
 WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
 HANDOFF = WORKSPACE / "handoff.md"
 LAST_SESSION_FILE = WORKSPACE / ".last_session_id"
+RECOVERY_DIR = WORKSPACE / "artifacts" / "session_recovery"
+WAL_FILE = WORKSPACE / "state" / "wal" / "session_state_wal.jsonl"
+
+# State source priority (higher = more trusted)
+SOURCE_PRIORITY = {
+    "repo_evidence": 100,
+    "wal_entry": 90,
+    "handoff_md": 80,
+    "session_state_md": 70,
+    "working_buffer_md": 60,
+}
 
 
-def get_current_session_id():
+def get_current_session_id() -> str:
     """Get current session ID from environment or generate."""
-    import os
-    return os.environ.get("OPENCLAW_SESSION_ID", "unknown")
+    return os.environ.get("OPENCLAW_SESSION_ID", 
+                          os.environ.get("TELEGRAM_CHAT_ID", "unknown"))
+
+
+def get_current_branch() -> Optional[str]:
+    """Get current git branch."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True, text=True, cwd=WORKSPACE, timeout=5
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except:
+        return None
 
 
 def read_markdown_section(filepath: Path, section: str) -> str:
@@ -54,30 +84,173 @@ def read_markdown_section(filepath: Path, section: str) -> str:
     return "\n".join(section_content).strip()
 
 
-def check_state_files() -> dict:
-    """Check existence and freshness of state files."""
-    result = {
-        "session_state": {
-            "exists": SESSION_STATE.exists(),
-            "path": str(SESSION_STATE),
-            "modified": None
-        },
-        "working_buffer": {
-            "exists": WORKING_BUFFER.exists(),
-            "path": str(WORKING_BUFFER),
-            "modified": None
-        },
-        "handoff": {
-            "exists": HANDOFF.exists(),
-            "path": str(HANDOFF),
-            "modified": None
-        }
+def parse_markdown_metadata(filepath: Path) -> Dict[str, Any]:
+    """Parse key-value pairs from markdown file."""
+    if not filepath.exists():
+        return {}
+    
+    content = filepath.read_text()
+    result = {}
+    
+    for line in content.split("\n"):
+        # Look for "**Key**:" pattern
+        if line.startswith("**") and "**:" in line:
+            key = line.split("**")[1].strip()
+            value = line.split("**:")[1].strip() if "**:" in line else ""
+            result[key.lower().replace(" ", "_")] = value
+        # Look for "- Key: Value" pattern
+        elif line.startswith("- ") and ":" in line:
+            parts = line[2:].split(":", 1)
+            if len(parts) == 2:
+                result[parts[0].strip().lower().replace(" ", "_")] = parts[1].strip()
+    
+    return result
+
+
+def check_file_freshness(filepath: Path, max_age_hours: int = 24) -> Dict[str, Any]:
+    """Check if a file exists and how fresh it is."""
+    if not filepath.exists():
+        return {"exists": False, "fresh": False, "age_hours": None}
+    
+    mtime = datetime.fromtimestamp(filepath.stat().st_mtime)
+    age = datetime.now() - mtime
+    age_hours = age.total_seconds() / 3600
+    
+    return {
+        "exists": True,
+        "fresh": age_hours <= max_age_hours,
+        "age_hours": round(age_hours, 2),
+        "modified": mtime.isoformat()
+    }
+
+
+def detect_conflicts(sources: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Detect conflicts between state sources."""
+    conflicts = []
+    
+    # Check for branch mismatch
+    session_branch = sources.get("session_state", {}).get("current_branch")
+    repo_branch = sources.get("repo", {}).get("branch")
+    
+    if session_branch and repo_branch and session_branch != repo_branch:
+        conflicts.append({
+            "type": "branch_mismatch",
+            "session_state_branch": session_branch,
+            "repo_branch": repo_branch,
+            "resolution": "repo_evidence",  # Repo wins
+            "reason": "Repo is source of truth for branch"
+        })
+    
+    # Check for stale state files
+    for name, info in sources.items():
+        if isinstance(info, dict) and info.get("exists") and not info.get("fresh"):
+            if info.get("age_hours", 0) > 48:
+                conflicts.append({
+                    "type": "stale_file",
+                    "source": name,
+                    "age_hours": info["age_hours"],
+                    "resolution": "warn",
+                    "reason": f"{name} is {info['age_hours']:.1f} hours old"
+                })
+    
+    # Check for missing objective
+    if not sources.get("session_state", {}).get("objective"):
+        conflicts.append({
+            "type": "missing_objective",
+            "resolution": "prompt_user",
+            "reason": "No current objective in SESSION-STATE.md"
+        })
+    
+    return conflicts
+
+
+def resolve_conflicts(conflicts: List[Dict], sources: Dict) -> Dict[str, Any]:
+    """Resolve conflicts based on priority rules."""
+    resolution = {
+        "resolved": True,
+        "uncertainty_flag": False,
+        "chosen_sources": {},
+        "applied_resolutions": []
     }
     
-    for key, info in result.items():
-        if info["exists"]:
-            mtime = Path(info["path"]).stat().st_mtime
-            info["modified"] = datetime.fromtimestamp(mtime).isoformat()
+    for conflict in conflicts:
+        if conflict["type"] == "branch_mismatch":
+            # Repo wins
+            resolution["chosen_sources"]["branch"] = conflict["repo_branch"]
+            resolution["applied_resolutions"].append({
+                "conflict": conflict["type"],
+                "resolution": "Used repo branch",
+                "source": "repo_evidence"
+            })
+        elif conflict["type"] == "stale_file":
+            resolution["uncertainty_flag"] = True
+            resolution["applied_resolutions"].append({
+                "conflict": conflict["type"],
+                "resolution": "Flagged as potentially stale",
+                "source": conflict["source"]
+            })
+        elif conflict["type"] == "missing_objective":
+            resolution["uncertainty_flag"] = True
+            resolution["applied_resolutions"].append({
+                "conflict": conflict["type"],
+                "resolution": "Need user input to set objective",
+                "source": None
+            })
+    
+    return resolution
+
+
+def perform_recovery() -> Dict[str, Any]:
+    """Perform full session state recovery."""
+    current_session = get_current_session_id()
+    current_branch = get_current_branch()
+    
+    result = {
+        "session_id": current_session,
+        "timestamp": datetime.now().isoformat(),
+        "is_new_session": is_new_session(),
+        "sources": {},
+        "conflicts": [],
+        "resolution": None,
+        "recovered": False,
+        "uncertainty_flag": False,
+        "objective": None,
+        "phase": None,
+        "next_actions": None,
+        "blockers": None
+    }
+    
+    # Gather all sources
+    result["sources"]["session_state"] = check_file_freshness(SESSION_STATE)
+    result["sources"]["working_buffer"] = check_file_freshness(WORKING_BUFFER)
+    result["sources"]["handoff"] = check_file_freshness(HANDOFF)
+    result["sources"]["wal"] = check_file_freshness(WAL_FILE) if WAL_FILE.exists() else {"exists": False}
+    result["sources"]["repo"] = {"branch": current_branch}
+    
+    # Parse state from files
+    if SESSION_STATE.exists():
+        result["session_state_data"] = parse_markdown_metadata(SESSION_STATE)
+        result["objective"] = read_markdown_section(SESSION_STATE, "Current Objective")
+        result["phase"] = read_markdown_section(SESSION_STATE, "Current Phase")
+        result["next_actions"] = read_markdown_section(SESSION_STATE, "Next Actions")
+        result["blockers"] = read_markdown_section(SESSION_STATE, "Blockers")
+    
+    # Detect conflicts
+    result["conflicts"] = detect_conflicts(result["sources"])
+    
+    # Resolve conflicts
+    if result["conflicts"]:
+        result["resolution"] = resolve_conflicts(result["conflicts"], result["sources"])
+        result["uncertainty_flag"] = result["resolution"]["uncertainty_flag"]
+    
+    # Determine recovery success
+    result["recovered"] = SESSION_STATE.exists() or WORKING_BUFFER.exists() or HANDOFF.exists()
+    
+    # Update last session ID
+    update_last_session()
+    
+    # Save recovery summary
+    save_recovery_summary(result)
     
     return result
 
@@ -96,62 +269,120 @@ def is_new_session() -> bool:
 def update_last_session():
     """Update last session ID."""
     current = get_current_session_id()
+    LAST_SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
     LAST_SESSION_FILE.write_text(current)
 
 
-def recover_state() -> dict:
-    """Recover state from files."""
-    result = {
-        "session_id": get_current_session_id(),
-        "is_new": is_new_session(),
-        "files": check_state_files(),
-        "recovered": False,
-        "objective": None,
-        "phase": None,
-        "next_actions": None,
-        "blockers": None
+def save_recovery_summary(result: Dict):
+    """Save recovery summary to artifacts."""
+    RECOVERY_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # JSON summary
+    json_path = RECOVERY_DIR / "latest_recovery_summary.json"
+    json_path.write_text(json.dumps(result, indent=2, default=str))
+    
+    # Markdown summary
+    md_lines = [
+        f"# Recovery Summary",
+        f"",
+        f"**Timestamp**: {result['timestamp']}",
+        f"**Session ID**: {result['session_id']}",
+        f"**New Session**: {result['is_new_session']}",
+        f"**Recovered**: {result['recovered']}",
+        f"**Uncertainty Flag**: {result['uncertainty_flag']}",
+        f"",
+        f"## State Sources",
+        f"",
+    ]
+    
+    for name, info in result.get("sources", {}).items():
+        if isinstance(info, dict):
+            status = "✅" if info.get("exists") and info.get("fresh") else "⚠️" if info.get("exists") else "❌"
+            md_lines.append(f"- **{name}**: {status}")
+            if info.get("age_hours"):
+                md_lines.append(f"  - Age: {info['age_hours']:.1f} hours")
+    
+    if result.get("conflicts"):
+        md_lines.append(f"")
+        md_lines.append(f"## Conflicts Detected")
+        md_lines.append(f"")
+        for conflict in result["conflicts"]:
+            md_lines.append(f"- **{conflict['type']}**: {conflict.get('reason', 'N/A')}")
+    
+    md_lines.append(f"")
+    md_lines.append(f"## Recovered State")
+    md_lines.append(f"")
+    md_lines.append(f"**Objective**: {result.get('objective', 'N/A')[:100]}...")
+    md_lines.append(f"**Phase**: {result.get('phase', 'N/A')}")
+    md_lines.append(f"**Next Actions**: {result.get('next_actions', 'N/A')[:100] if result.get('next_actions') else 'N/A'}...")
+    
+    md_path = RECOVERY_DIR / "latest_recovery_summary.md"
+    md_path.write_text("\n".join(md_lines))
+
+
+def check_needs_recovery() -> Dict[str, Any]:
+    """Check if recovery is needed (for preflight)."""
+    current_session = get_current_session_id()
+    is_new = is_new_session()
+    
+    return {
+        "needs_recovery": is_new,
+        "session_id": current_session,
+        "has_session_state": SESSION_STATE.exists(),
+        "has_working_buffer": WORKING_BUFFER.exists(),
+        "has_handoff": HANDOFF.exists(),
+        "action": "recover" if is_new else "none"
     }
-    
-    if SESSION_STATE.exists():
-        result["objective"] = read_markdown_section(SESSION_STATE, "Current Objective")
-        result["phase"] = read_markdown_section(SESSION_STATE, "Current Phase")
-        result["next_actions"] = read_markdown_section(SESSION_STATE, "Next Actions")
-        result["blockers"] = read_markdown_section(SESSION_STATE, "Blockers")
-        result["recovered"] = True
-    
-    update_last_session()
-    
-    return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Session State Recovery")
-    parser.add_argument("--check", action="store_true", help="Check state files")
-    parser.add_argument("--recover", action="store_true", help="Recover state")
+    parser = argparse.ArgumentParser(description="Session State Recovery v1.1")
+    parser.add_argument("--check", action="store_true", help="Check if recovery needed")
+    parser.add_argument("--recover", action="store_true", help="Perform recovery")
+    parser.add_argument("--force", action="store_true", help="Force recovery")
     parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--summary", action="store_true", help="Output recovery summary")
     parser.add_argument("--health", action="store_true", help="Health check")
+    parser.add_argument("--preflight", action="store_true", help="Preflight check for reply guard")
     args = parser.parse_args()
     
     if args.health:
-        files = check_state_files()
-        status = "healthy" if all(f["exists"] for f in files.values()) else "degraded"
+        files = {
+            "session_state": check_file_freshness(SESSION_STATE),
+            "working_buffer": check_file_freshness(WORKING_BUFFER),
+            "handoff": check_file_freshness(HANDOFF),
+            "wal": check_file_freshness(WAL_FILE) if WAL_FILE.exists() else {"exists": False}
+        }
+        status = "healthy" if all(f.get("exists") for f in [files["session_state"], files["working_buffer"]]) else "degraded"
         print(json.dumps({"status": status, "files": files}, indent=2))
         return
     
+    if args.preflight:
+        result = check_needs_recovery()
+        print(json.dumps(result))
+        return
+    
     if args.check:
-        result = check_state_files()
+        result = check_needs_recovery()
     else:
-        result = recover_state()
+        # Default or --recover or --force
+        result = perform_recovery()
     
     if args.json:
-        print(json.dumps(result, indent=2))
-    else:
+        print(json.dumps(result, indent=2, default=str))
+    elif args.summary:
+        # Output human-readable summary
         if result.get("recovered"):
-            print("✅ Session state recovered:")
+            print(f"✅ Session state recovered")
+            print(f"  Session: {result.get('session_id', 'unknown')}")
             print(f"  Objective: {result.get('objective', 'N/A')[:50]}...")
-            print(f"  Phase: {result.get('phase', 'N/A')}")
+            if result.get("uncertainty_flag"):
+                print(f"  ⚠️ Uncertainty flag: Some conflicts detected")
         else:
-            print("⚠️ No session state found")
+            print(f"⚠️ No session state found")
+            print(f"  Session: {result.get('session_id', 'unknown')}")
+    else:
+        print(json.dumps(result, indent=2, default=str))
 
 
 if __name__ == "__main__":

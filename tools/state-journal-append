@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""
+state-journal-append v1.1 - WAL Journal Appender
+
+Appends entries to the session state WAL journal.
+
+Usage:
+  state-journal-append --action <type> --summary "<text>"
+  state-journal-append --list
+  state-journal-append --latest
+  state-journal-append --replay
+"""
+
+import argparse
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+WAL_FILE = WORKSPACE / "state" / "wal" / "session_state_wal.jsonl"
+
+
+def get_session_id() -> str:
+    """Get current session ID."""
+    return os.environ.get("OPENCLAW_SESSION_ID", 
+                          os.environ.get("TELEGRAM_CHAT_ID", "unknown"))
+
+
+def get_agent_id() -> str:
+    """Get current agent ID."""
+    return os.environ.get("OPENCLAW_AGENT_ID", "main")
+
+
+def append_entry(
+    action_type: str,
+    summary: str,
+    task_id: Optional[str] = None,
+    branch: Optional[str] = None,
+    objective: Optional[str] = None,
+    phase: Optional[str] = None,
+    extra: Optional[Dict] = None
+) -> Dict[str, Any]:
+    """Append an entry to the WAL journal."""
+    
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "session_id": get_session_id(),
+        "agent_id": get_agent_id(),
+        "action_type": action_type,
+        "summary": summary
+    }
+    
+    if task_id:
+        entry["task_id"] = task_id
+    if branch:
+        entry["branch"] = branch
+    if objective:
+        entry["objective"] = objective[:100]  # Truncate long objectives
+    if phase:
+        entry["phase"] = phase
+    if extra:
+        entry["extra"] = extra
+    
+    try:
+        WAL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(WAL_FILE, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+            f.flush()
+        
+        return {"success": True, "entry": entry}
+    
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def list_entries(limit: int = 20) -> List[Dict]:
+    """List recent WAL entries."""
+    if not WAL_FILE.exists():
+        return []
+    
+    entries = []
+    with open(WAL_FILE, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except:
+                    continue
+    
+    return entries[-limit:]
+
+
+def get_latest_entry() -> Optional[Dict]:
+    """Get the latest WAL entry."""
+    entries = list_entries(limit=1)
+    return entries[0] if entries else None
+
+
+def replay_journal(since: Optional[str] = None) -> Dict[str, Any]:
+    """Replay journal entries to reconstruct state."""
+    entries = list_entries(limit=1000)  # Get more for replay
+    
+    if since:
+        # Filter to entries after 'since' timestamp
+        entries = [e for e in entries if e.get("timestamp", "") > since]
+    
+    state = {
+        "objective": None,
+        "phase": None,
+        "branch": None,
+        "task_id": None,
+        "last_action": None
+    }
+    
+    for entry in entries:
+        action = entry.get("action_type")
+        
+        if action == "objective_change":
+            state["objective"] = entry.get("objective")
+        elif action == "phase_change":
+            state["phase"] = entry.get("phase")
+        elif action == "branch_change":
+            state["branch"] = entry.get("branch")
+        elif action == "task_start":
+            state["task_id"] = entry.get("task_id")
+        elif action == "task_complete":
+            state["task_id"] = None
+        
+        state["last_action"] = entry
+    
+    return state
+
+
+def main():
+    parser = argparse.ArgumentParser(description="WAL Journal Appender")
+    parser.add_argument("--action", "-a", help="Action type")
+    parser.add_argument("--summary", "-s", help="Summary text")
+    parser.add_argument("--task-id", help="Task ID")
+    parser.add_argument("--branch", help="Git branch")
+    parser.add_argument("--objective", help="Current objective")
+    parser.add_argument("--phase", help="Current phase")
+    parser.add_argument("--list", action="store_true", help="List recent entries")
+    parser.add_argument("--latest", action="store_true", help="Show latest entry")
+    parser.add_argument("--replay", action="store_true", help="Replay journal")
+    parser.add_argument("--since", help="Replay since timestamp")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument("--limit", type=int, default=20, help="List limit")
+    args = parser.parse_args()
+    
+    if args.list:
+        entries = list_entries(args.limit)
+        if args.json:
+            print(json.dumps(entries, indent=2))
+        else:
+            for entry in entries:
+                print(f"{entry.get('timestamp', 'N/A')} [{entry.get('action_type', 'N/A')}] {entry.get('summary', '')[:50]}")
+        return
+    
+    if args.latest:
+        entry = get_latest_entry()
+        if entry:
+            print(json.dumps(entry, indent=2))
+        else:
+            print("No entries found")
+        return
+    
+    if args.replay:
+        state = replay_journal(args.since)
+        print(json.dumps(state, indent=2))
+        return
+    
+    if args.action and args.summary:
+        result = append_entry(
+            action_type=args.action,
+            summary=args.summary,
+            task_id=args.task_id,
+            branch=args.branch,
+            objective=args.objective,
+            phase=args.phase
+        )
+        
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            if result["success"]:
+                print(f"✅ Journal entry appended")
+            else:
+                print(f"❌ Failed: {result.get('error')}")
+        return
+    
+    parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
