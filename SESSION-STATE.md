@@ -3,15 +3,15 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)  
-**Updated**: 2026-03-08T00:17:00-06:00
+**Updated**: 2026-03-08T00:55:00-06:00
 
 ---
 
 ## Current Objective
-Context Compression - Milestone B1 完成，B2 待 Config Alignment
+Config Alignment Gate 已通过，进入 Controlled Validation 阶段
 
 ## Current Phase
-⏳ CONFIG ALIGNMENT INCIDENT - Runtime Truth documented
+⏳ Phase C: Controlled Validation
 
 ## Current Branch / Workspace
 - Branch: openviking-l2-bugfix
@@ -19,64 +19,82 @@ Context Compression - Milestone B1 完成，B2 待 Config Alignment
 
 ---
 
-## Milestone B Status
+## Config Alignment Status
 
-| Sub-milestone | Status | Evidence |
-|---------------|--------|----------|
-| B1: Runtime Truth | ✅ DONE | `config_alignment/` |
-| B2: Policy Compliance | ⏸️ WAITING | Config Alignment Gate 未决策 |
+| Phase | Status | Description |
+|-------|--------|-------------|
+| A. Config Alignment Gate | ✅ PASSED | 配置对齐完成 |
+| B. Runtime Policy Implementation | ✅ DONE | 运行时策略实现 |
+| C. Controlled Validation | ⏳ READY | 受控验证 |
+| D. Natural Validation | ⏳ PENDING | 自然验证 |
+| E. Default Rollout | ⏳ PENDING | 默认推出 |
 
-### Canonical Statement
-> **当前 Natural Validation 仅对 runtime truth（200k / 0.92）有效；目标策略（100k / 0.85）的合规性验证尚未开始，需等待 Config Alignment Gate。**
+---
 
-### Runtime Truth (B1)
-```
-contextWindow: 200k
-trigger: threshold_92
-compression: WORKING
-safety: ALL ZEROS
-```
+## Policy Changes Applied
 
-### Target Policy (B2)
-```
-max_tokens: 100k
-threshold: 0.85
-status: NOT IN EFFECT
-```
+| Parameter | Before | After |
+|-----------|--------|-------|
+| max_tokens | 100000 | **200000** |
+| threshold_enforced | 0.92 | **0.85** |
+| trigger_point | threshold_92 | **threshold_85** |
+
+### Critical Rule
+**不允许跨过 0.85 后继续拖延** ✅
+
+---
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `hooks/context-compression-shadow/handler.ts` | max_tokens + threshold |
+| `artifacts/context_compression/config_alignment_gate/` | All gate files |
 
 ---
 
 ## Latest Verified Status
-- ✅ Natural enforced compression observed
-- ✅ Runtime config captured
-- ✅ Config gap documented
-- ⏳ Config alignment decision pending
+- ✅ All tools self-test passed (13/13)
+- ✅ Configuration aligned
+- ✅ Threshold enforced = 0.85
+- ✅ Kill switch available
 
 ## Next Actions
-1. Complete evidence freeze
-2. Decide on config alignment gate
-3. If aligned, re-run validation for B2
+1. Monitor natural traffic for 0.85 triggers
+2. Verify safety counters remain zero
+3. Collect evidence for validation report
 
 ## Blockers
-无 (B2 has dependency, not blocker)
+无
 
 ---
 
-## Evidence Freeze
+## Evidence Location
 
-**Mode**: CONTINUED
-**Purpose**: Protect evidence chain integrity
+```
+artifacts/context_compression/config_alignment_gate/
+├── CONFIG_ALIGNMENT_GATE.md
+├── runtime_compression_policy.json
+├── runtime_policy_source_of_truth.md
+├── runtime_policy_patch_report.md
+└── CONTROLLED_VALIDATION_REPORT.md
+```
 
-**Files**:
-- `EVIDENCE_FREEZE.md`
-- `TRIGGER_EVIDENCE_TEMPLATE.md`
-- `CONFIG_ALIGNMENT_INCIDENT.md`
+---
+
+## Rollback Plan
+
+如果验证失败：
+```bash
+cp ~/.openclaw/hooks/context-compression-shadow/handler.ts.backup \
+   ~/.openclaw/hooks/context-compression-shadow/handler.ts
+```
 
 ---
 
 ## Rollout Status
 
-**Mode**: GUARD STABLE  
+**Mode**: LIGHT ENFORCED  
 **Scope**: Layer 1 (Default-ON)
 
 **Rollback Ready**: YES
