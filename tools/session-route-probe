@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+ARTIFACT_DIR = WORKSPACE / 'artifacts' / 'session_reuse' / 'probe'
+LIB_PATH = WORKSPACE / 'tools' / 'session_reuse_lib.py'
+OPENCLAW_SESSION_KEY_MODULE = '/home/moonlight/.npm-global/lib/node_modules/openclaw/dist/session-key-GuEQvqMH.js'
+
+spec = importlib.util.spec_from_file_location('session_reuse_lib', LIB_PATH)
+lib = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = lib
+spec.loader.exec_module(lib)
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def json_hash(payload: dict[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+
+
+def ensure_dir(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+
+
+def run_node_build_session_key(payload: dict[str, Any]) -> dict[str, Any]:
+    script = f"""
+const mod = await import('file://{OPENCLAW_SESSION_KEY_MODULE}');
+const payload = {json.dumps(payload, ensure_ascii=False)};
+const peer = payload.peerId ? {{kind: payload.peerKind || 'direct', id: payload.peerId}} : null;
+const sessionKey = mod.i({{
+  agentId: payload.agentId || 'main',
+  channel: payload.channel,
+  accountId: payload.accountId,
+  peer,
+  dmScope: payload.dmScope,
+  identityLinks: payload.identityLinks || undefined,
+}});
+const mainSessionKey = mod.r({{
+  agentId: payload.agentId || 'main',
+  mainKey: payload.mainKey || 'main'
+}});
+process.stdout.write(JSON.stringify({{sessionKey, mainSessionKey}}));
+"""
+    result = subprocess.run(['node', '--input-type=module', '-e', script], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or 'node import failed')
+    return json.loads(result.stdout)
+
+
+def get_sessions_snapshot(limit: int = 200) -> dict[str, Any]:
+    cli = subprocess.run([
+        'openclaw', 'sessions', '--agent', 'main', '--json'
+    ], capture_output=True, text=True)
+    if cli.returncode == 0:
+        raw = cli.stdout.strip()
+        try:
+            parsed = json.loads(raw)
+            return {'ok': True, 'result': parsed}
+        except json.JSONDecodeError:
+            pass
+
+    store = Path.home() / '.openclaw' / 'agents' / 'main' / 'sessions' / 'sessions.json'
+    if store.exists():
+        try:
+            parsed = json.loads(store.read_text())
+            items = []
+            for key, row in list(parsed.items())[:limit]:
+                if isinstance(row, dict):
+                    items.append({'key': key, **row})
+            return {'ok': True, 'result': {'sessions': items}, 'fallback': 'sessions.json'}
+        except Exception as err:
+            return {'ok': False, 'error': f'sessions.json parse failed: {err}'}
+
+    return {'ok': False, 'error': cli.stderr.strip() or cli.stdout.strip() or 'no sessions source available'}
+
+
+def find_runtime_matches(session_key: str, sessions_payload: dict[str, Any]) -> dict[str, Any]:
+    if not sessions_payload.get('ok'):
+        return {
+            'sessions_list_ok': False,
+            'error': sessions_payload.get('error'),
+            'runtime_session_matches': [],
+            'runtime_session_id': None,
+            'runtime_session_changed': None,
+        }
+    result = sessions_payload.get('result') or {}
+    sessions = result.get('sessions') or result.get('items') or []
+    matches = []
+    for row in sessions:
+        key = (row.get('key') or row.get('sessionKey') or '').strip()
+        if key == session_key:
+            matches.append({
+                'key': key,
+                'label': row.get('label'),
+                'updatedAt': row.get('updatedAt'),
+                'kind': row.get('kind'),
+                'displayName': row.get('displayName'),
+            })
+    runtime_session_id = matches[0]['key'] if matches else None
+    return {
+        'sessions_list_ok': True,
+        'runtime_session_matches': matches,
+        'runtime_session_id': runtime_session_id,
+    }
+
+
+def infer_suspected_cause(current: dict[str, Any], previous: dict[str, Any] | None) -> str:
+    if previous is None:
+        return 'unknown'
+    if current['route']['session_key'] != previous['route']['session_key']:
+        if current['route_inputs'].get('thread_id') != previous['route_inputs'].get('thread_id'):
+            return 'suspected_thread_change'
+        if current['route_inputs'].get('account_id') != previous['route_inputs'].get('account_id'):
+            return 'suspected_account_change'
+        return 'suspected_route_input_change'
+    if current['runtime'].get('runtime_session_id') != previous['runtime'].get('runtime_session_id'):
+        return 'suspected_runtime_rotation'
+    return 'unknown'
+
+
+def build_probe(args: argparse.Namespace) -> dict[str, Any]:
+    route_inputs = {
+        'channel': args.channel,
+        'chat_id': args.chat_id,
+        'thread_id': args.thread_id,
+        'account_id': args.account_id,
+        'dm_scope': args.dm_scope,
+        'agent_id': args.agent_id,
+        'peer_kind': args.peer_kind,
+        'peer_id': args.peer_id or args.chat_id,
+        'identity_links': json.loads(args.identity_links) if args.identity_links else None,
+    }
+    node_payload = {
+        'channel': args.channel,
+        'accountId': args.account_id,
+        'agentId': args.agent_id,
+        'peerKind': args.peer_kind,
+        'peerId': args.peer_id or args.chat_id,
+        'dmScope': args.dm_scope,
+        'identityLinks': route_inputs['identity_links'],
+    }
+    built = run_node_build_session_key(node_payload)
+    session_key = built['sessionKey'].lower()
+    main_session_key = built['mainSessionKey'].lower()
+    decision = lib.decide_session_for_inbound(
+        chat_id=args.chat_id,
+        thread_id=args.thread_id,
+        account_id=args.account_id,
+        ttl_seconds=args.ttl_seconds,
+        registry=lib.load_registry(),
+        source_tool='session-route-probe',
+        new_session_id=f'probe_{json_hash(route_inputs)}',
+    )['decision']
+    sessions_payload = get_sessions_snapshot(limit=args.sessions_limit)
+    runtime = find_runtime_matches(session_key, sessions_payload)
+    route_hash_input = {
+        'chat_id': args.chat_id,
+        'thread_id': lib.normalize_thread_id(args.thread_id),
+        'account_id': args.account_id,
+        'channel': args.channel,
+        'peer_kind': args.peer_kind,
+        'peer_id': args.peer_id or args.chat_id,
+        'dm_scope': args.dm_scope,
+        'agent_id': args.agent_id,
+    }
+    result = {
+        'probe_id': f'probe_{json_hash(route_hash_input)}_{int(datetime.now().timestamp())}',
+        'ts': now_iso(),
+        'inbound_event_id': args.inbound_event_id,
+        'route_inputs': route_inputs,
+        'route_inputs_hash': json_hash(route_hash_input),
+        'route': {
+            'session_key': session_key,
+            'main_session_key': main_session_key,
+            'decision_preview': decision,
+        },
+        'runtime': runtime,
+        'heuristics': {
+            'reused_channel_slot': bool(runtime.get('runtime_session_id')),
+            'new_runtime_session_created': runtime.get('runtime_session_id') is None,
+            'suspected_cause': 'unknown',
+        },
+    }
+    return result
+
+
+def write_probe_file(probe: dict[str, Any], path: Path | None) -> Path:
+    ensure_dir(ARTIFACT_DIR)
+    target = path or (ARTIFACT_DIR / f"{probe['probe_id']}.json")
+    target.write_text(json.dumps(probe, ensure_ascii=False, indent=2) + '\n')
+    return target
+
+
+def diff_probes(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
+    changed_fields = {}
+    def compare(label: str, a: Any, b: Any):
+        if a != b:
+            changed_fields[label] = {'from': a, 'to': b}
+    compare('chat_id', left['route_inputs'].get('chat_id'), right['route_inputs'].get('chat_id'))
+    compare('thread_id', left['route_inputs'].get('thread_id'), right['route_inputs'].get('thread_id'))
+    compare('account_id', left['route_inputs'].get('account_id'), right['route_inputs'].get('account_id'))
+    compare('dm_scope', left['route_inputs'].get('dm_scope'), right['route_inputs'].get('dm_scope'))
+    compare('peer_id', left['route_inputs'].get('peer_id'), right['route_inputs'].get('peer_id'))
+    compare('session_key', left['route']['session_key'], right['route']['session_key'])
+    compare('runtime_session_id', left['runtime'].get('runtime_session_id'), right['runtime'].get('runtime_session_id'))
+    right['heuristics']['suspected_cause'] = infer_suspected_cause(right, left)
+    return {
+        'left_probe_id': left['probe_id'],
+        'right_probe_id': right['probe_id'],
+        'session_key_changed': left['route']['session_key'] != right['route']['session_key'],
+        'runtime_session_changed': left['runtime'].get('runtime_session_id') != right['runtime'].get('runtime_session_id'),
+        'changed_fields': changed_fields,
+        'suspected_cause': right['heuristics']['suspected_cause'],
+    }
+
+
+def load_json(path: str) -> dict[str, Any]:
+    return json.loads(Path(path).read_text())
+
+
+def cmd_probe(args: argparse.Namespace) -> int:
+    probe = build_probe(args)
+    path = write_probe_file(probe, Path(args.out) if args.out else None)
+    print(json.dumps({'probe': probe, 'saved_to': str(path)}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_diff(args: argparse.Namespace) -> int:
+    left = load_json(args.left)
+    right = load_json(args.right)
+    diff = diff_probes(left, right)
+    print(json.dumps(diff, ensure_ascii=False, indent=2))
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description='Probe/diff session route and runtime session behavior')
+    sub = parser.add_subparsers(dest='command', required=True)
+
+    p = sub.add_parser('probe')
+    p.add_argument('--channel', default='telegram')
+    p.add_argument('--chat-id', required=True)
+    p.add_argument('--thread-id')
+    p.add_argument('--account-id', required=True)
+    p.add_argument('--dm-scope', default='per-channel-peer')
+    p.add_argument('--agent-id', default='main')
+    p.add_argument('--peer-kind', default='direct')
+    p.add_argument('--peer-id')
+    p.add_argument('--identity-links')
+    p.add_argument('--ttl-seconds', type=int, default=24 * 3600)
+    p.add_argument('--sessions-limit', type=int, default=200)
+    p.add_argument('--inbound-event-id')
+    p.add_argument('--out')
+    p.set_defaults(func=cmd_probe)
+
+    d = sub.add_parser('diff')
+    d.add_argument('--left', required=True)
+    d.add_argument('--right', required=True)
+    d.set_defaults(func=cmd_diff)
+
+    args = parser.parse_args()
+    return args.func(args)
+
+if __name__ == '__main__':
+    raise SystemExit(main())

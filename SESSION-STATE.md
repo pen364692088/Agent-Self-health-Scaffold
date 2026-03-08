@@ -3,16 +3,17 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)  
-**Updated**: 2026-03-08T08:52:00-06:00
+**Updated**: 2026-03-08T08:31:00-06:00
 
 ---
 
 ## Current Objective
-实现 Session Reuse / Thread Affinity v1.0 的可运行决策层，并明确 OpenClaw 上游 authoritative route 挂点，确保后续能在正确层接入复用策略。
+实现 Session Reuse / Thread Affinity v1.0 的可运行决策层，并补齐 route probe / diff，能用证据区分 sessionKey 变化与 runtime session 变化。
 
 ## Current Phase
 ✅ Phase 4: local decision layer complete
 ✅ Phase 5: upstream attachment points identified
+✅ Phase 6: route probe / diff implemented
 
 ## Current Branch / Workspace
 - Branch: openviking-l2-bugfix
@@ -30,37 +31,47 @@
 | TTL policy | ✅ DONE | conservative defaults |
 | Decision function | ✅ DONE | `decide_session_for_inbound` |
 | Continuity handoff | ✅ DONE | `recovery_needed` + recovery hook |
-| Local validation | ✅ DONE | 9 tests passing |
+| Local validation | ✅ DONE | 11 tests passing |
 | Upstream route identification | ✅ DONE | authoritative hook points found in installed OpenClaw dist |
+| Route probe / diff | ✅ DONE | `tools/session-route-probe` |
 | Core router source patch | ⏳ PENDING | source tree not present in workspace repo |
 
 ---
 
-## New Findings
-- `recordInboundSession()` is not the session-selection hook.
-- Real transport-level decision point is upstream at:
-  - `resolveAgentRoute(input)`
-  - `buildAgentSessionKey(params)`
-- If `sessionKey` remains stable, OpenClaw channel/session storage should naturally reuse the same slot.
-- User-observed “new session” may therefore be happening above the channel-store layer unless the route inputs themselves changed.
+## Latest Evidence
+- Probe tool derives route/session key using installed OpenClaw `session-key` dist module
+- Probe tool inspects runtime session matches via `openclaw sessions --json` with `sessions.json` fallback
+- Current direct-telegram probe result:
+  - derived `session_key = agent:main:main`
+  - runtime match exists for `agent:main:main`
+  - `reused_channel_slot = true`
+  - `new_runtime_session_created = false`
 
-## Evidence
-- `docs/session_reuse/UPSTREAM_ATTACHMENT.md`
-- `tools/inspect-openclaw-session-route`
+This means the latest observed direct-message case is **not evidence of bottom-layer channel slot churn**.
+It leans toward a higher-layer runtime/UI/session-surface distinction unless route inputs differ in another case.
+
+## Files Added This Round
+- `tools/session-route-probe`
+- `docs/session_reuse/ROUTE_PROBE.md`
+- `tests/session_reuse/test_session_route_probe.py`
 
 ## Next Actions
-1. Compare real inbound events to derived `sessionKey` over time
-2. Determine whether observed “new session” means changed `sessionKey` or higher-layer runtime session creation
-3. If source tree becomes available, patch `resolveAgentRoute(input)` integration there
-4. Keep avoiding direct minified-dist patching as the primary path
+1. Capture two real probes for the “last night” vs “wake-up” comparison
+2. Diff them with `tools/session-route-probe diff`
+3. Determine whether the problematic case is:
+   - route/sessionKey change
+   - runtime rotation above stable key
+   - UI/session-surface presentation issue
+4. If source tree becomes available, patch `resolveAgentRoute(input)` integration there
 
 ## Blockers
 - Only dist build is locally available for authoritative router internals; no clean source module to patch in workspace repo
+- Historical “last night” probe was not captured at the time, so exact A/B diff still needs a second real sample
 
 ---
 
 ## Rollout Status
 
-**Mode**: Local decision layer + upstream locator complete  
+**Mode**: Local decision layer + upstream locator + route probe complete  
 **Scope**: Pre-source integration  
 **Rollback Ready**: YES
