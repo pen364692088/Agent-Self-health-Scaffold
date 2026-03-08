@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openclaw.ai/schemas/agent-incident.v1.json",
+  "title": "Agent Incident Report",
+  "type": "object",
+  "required": ["incident_id", "title", "timestamp", "severity", "symptoms", "impact_scope", "evidence", "actions_taken", "current_system_state", "next_recommended_step", "needs_human_intervention", "status"],
+  "properties": {
+    "incident_id": { "type": "string", "pattern": "^INC-[0-9]{8}-[0-9]{6}-[a-f0-9]{8}$" },
+    "title": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "severity": { "type": "string", "enum": ["INFO", "WARN", "ERROR", "CRITICAL"] },
+    "category": { "type": "string" },
+    "summary": { "type": "string" },
+    "symptoms": { "type": "array", "items": { "type": "string" } },
+    "impact_scope": { "type": "array", "items": { "type": "string" } },
+    "most_likely_root_cause": { "type": ["string", "null"] },
+    "evidence": { "type": "array", "items": { "type": ["string", "object"] } },
+    "actions_taken": { "type": "array", "items": { "type": "object" } },
+    "action_results": { "type": "array", "items": { "type": "object" } },
+    "current_system_state": { "type": "object" },
+    "next_recommended_step": { "type": "string" },
+    "needs_human_intervention": { "type": "boolean" },
+    "status": { "type": "string", "enum": ["active", "investigating", "resolved", "ignored", "blocked"] },
+    "session_key": { "type": "string" },
+    "context": { "type": "object" }
+  }
+}

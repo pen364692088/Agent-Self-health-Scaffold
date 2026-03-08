@@ -1,0 +1,53 @@
+#!/bin/bash
+set -euo pipefail
+WORKSPACE="$HOME/.openclaw/workspace"
+AUDIT_DIR="$WORKSPACE/artifacts/self_health/audit"
+PROPOSALS_DIR="$WORKSPACE/artifacts/self_health/proposals"
+RECOVERY_DIR="$WORKSPACE/artifacts/self_health/recovery_logs"
+STATE_DIR="$WORKSPACE/artifacts/self_health/state"
+mkdir -p "$AUDIT_DIR" "$PROPOSALS_DIR" "$RECOVERY_DIR" "$STATE_DIR" "$WORKSPACE/artifacts/cache" "$WORKSPACE/artifacts/logs"
+JSON_OUTPUT=false; DRY_RUN=false; PROPOSAL_ONLY=false; ACTION=""; HEAL_LEVEL=""; SESSION_KEY="${SESSION_KEY:-agent:main:main}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --action) ACTION="$2"; shift 2 ;;
+    --level) HEAL_LEVEL="$2"; shift 2 ;;
+    --dry-run) DRY_RUN=true; shift ;;
+    --proposal-only) PROPOSAL_ONLY=true; shift ;;
+    --json) JSON_OUTPUT=true; shift ;;
+    --health) echo '{"status":"healthy","tool":"agent-self-heal","version":"1.0.0"}'; exit 0 ;;
+    *) shift ;;
+  esac
+done
+proposal(){ local id="PROP-$(date -u +%Y%m%d-%H%M%S)-$(head -c 4 /dev/urandom | xxd -p)"; local f="$PROPOSALS_DIR/proposal_${id}.json"; cat > "$f" <<EOF
+{"proposal_id":"$id","action":"$ACTION","level":"${HEAL_LEVEL:-B}","status":"pending_review","risk_assessment":{"impact":"needs review","reversibility":"varies"},"validation_plan":"shadow validate before execute","rollback_plan":"revert to previous known good state","created_at":"$(date -u -Iseconds)"}
+EOF
+ echo "$f"; }
+audit(){ echo "{\"timestamp\":\"$(date -u -Iseconds)\",\"action\":\"$1\",\"result\":\"$2\",\"session_key\":\"$SESSION_KEY\"}" >> "$AUDIT_DIR/health_audit.jsonl"; }
+if [[ "$PROPOSAL_ONLY" == true ]]; then p=$(proposal); [[ "$JSON_OUTPUT" == true ]] && cat "$p" || echo "Proposal created: $p"; exit 0; fi
+[[ -n "$ACTION" ]] || { echo 'ERROR: --action required' >&2; exit 1; }
+case "$ACTION" in
+  clear_cache)
+    before=$(find "$WORKSPACE/artifacts/cache" -type f 2>/dev/null | wc -l || true)
+    [[ "$DRY_RUN" == true ]] || find "$WORKSPACE/artifacts/cache" -mindepth 1 -delete 2>/dev/null || true
+    after=$(find "$WORKSPACE/artifacts/cache" -type f 2>/dev/null | wc -l || true)
+    audit heal_clear_cache success
+    out="{\"action\":\"clear_cache\",\"level\":\"A\",\"before\":$before,\"after\":$after,\"dry_run\":$DRY_RUN}"
+    ;;
+  rotate_logs)
+    before=$(find "$WORKSPACE/artifacts/logs" -name '*.log' 2>/dev/null | wc -l || true)
+    [[ "$DRY_RUN" == true ]] || find "$WORKSPACE/artifacts/logs" -name '*.log' -mtime +7 -exec gzip -f {} \; 2>/dev/null || true
+    audit heal_rotate_logs success
+    out="{\"action\":\"rotate_logs\",\"level\":\"A\",\"before\":$before,\"dry_run\":$DRY_RUN}"
+    ;;
+  refresh_session_index)
+    audit heal_refresh_session_index skipped
+    out='{"action":"refresh_session_index","level":"A","result":"skipped","reason":"session-indexer unavailable in scaffold"}'
+    ;;
+  retry_subagent|compact_context)
+    audit "heal_${ACTION}" skipped
+    out="{\"action\":\"$ACTION\",\"level\":\"A\",\"result\":\"skipped\",\"reason\":\"not auto-executed in scaffold\"}"
+    ;;
+  *)
+    ACTION="$ACTION"; p=$(proposal); audit proposal_created success; out=$(cat "$p") ;;
+esac
+[[ "$JSON_OUTPUT" == true ]] && echo "$out" | python3 -m json.tool || echo "$out"

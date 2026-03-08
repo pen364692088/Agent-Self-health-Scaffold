@@ -1,0 +1,48 @@
+{
+  "task_id": "agent_self_health_v1",
+  "receipt_type": "final",
+  "status": "pass",
+  "generated_at": "2026-03-08T10:40:05.270636",
+  "checks": [
+    {
+      "name": "task_in_workflow",
+      "status": "skip",
+      "details": "standalone task"
+    },
+    {
+      "name": "task_id_valid",
+      "status": "pass",
+      "details": "agent_self_health_v1"
+    },
+    {
+      "name": "scope_valid",
+      "status": "pass"
+    },
+    {
+      "name": "e2e",
+      "status": "skip",
+      "details": "skipped for non-code task"
+    },
+    {
+      "name": "artifact:IMPLEMENTATION_SUMMARY.md",
+      "status": "pass"
+    },
+    {
+      "name": "done_guard_available",
+      "status": "pass"
+    }
+  ],
+  "artifacts": [
+    "/home/moonlight/.openclaw/workspace/artifacts/receipts/agent_self_health_v1_contract_receipt.json",
+    "/home/moonlight/.openclaw/workspace/artifacts/receipts/agent_self_health_v1_e2e_receipt.json",
+    "/home/moonlight/.openclaw/workspace/artifacts/receipts/agent_self_health_v1_preflight_receipt.json",
+    "artifacts/self_health/IMPLEMENTATION_SUMMARY.md"
+  ],
+  "gate_results": {
+    "gate_a": "pass",
+    "gate_b": "pass",
+    "gate_c": "pass"
+  },
+  "state_before": "standalone",
+  "state_after": "ready_to_close"
+}

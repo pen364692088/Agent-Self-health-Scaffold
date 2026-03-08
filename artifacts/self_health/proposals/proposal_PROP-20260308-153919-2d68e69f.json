@@ -1,0 +1,1 @@
+{"proposal_id":"PROP-20260308-153919-2d68e69f","action":"restart_subsystem","level":"B","status":"pending_review","risk_assessment":{"impact":"needs review","reversibility":"varies"},"validation_plan":"shadow validate before execute","rollback_plan":"revert to previous known good state","created_at":"2026-03-08T15:39:19+00:00"}

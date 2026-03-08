@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+WORKSPACE="$HOME/.openclaw/workspace"
+STATE_DIR="$WORKSPACE/artifacts/self_health/state"
+INCIDENTS_DIR="$WORKSPACE/artifacts/self_health/incidents"
+mkdir -p "$STATE_DIR" "$INCIDENTS_DIR"
+HOURS=24; JSON_OUTPUT=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --hours) HOURS="$2"; shift 2 ;;
+    --json) JSON_OUTPUT=true; shift ;;
+    --health) echo '{"status":"healthy","tool":"agent-health-summary","version":"1.0.0"}'; exit 0 ;;
+    *) shift ;;
+  esac
+done
+current='{}'; [[ -f "$STATE_DIR/current_health.json" ]] && current=$(cat "$STATE_DIR/current_health.json")
+level=$(echo "$current" | python3 - <<'PY'
+import sys,json
+try: print(json.load(sys.stdin).get('overall_status','GREEN'))
+except: print('GREEN')
+PY
+)
+incident_count=$(find "$INCIDENTS_DIR" -name 'incident_*.json' -mmin -$((HOURS*60)) 2>/dev/null | wc -l || true)
+active_incidents=$(find "$INCIDENTS_DIR" -name 'incident_*.json' -mmin -$((HOURS*60)) -exec grep -l '"status": *"active"' {} \; 2>/dev/null | wc -l || true)
+summary="{\"current_level\":\"$level\",\"hours_analyzed\":$HOURS,\"incident_count\":$incident_count,\"active_incidents\":$active_incidents,\"current_health\":$current,\"generated_at\":\"$(date -u -Iseconds)\"}"
+if [[ "$JSON_OUTPUT" == true ]]; then echo "$summary" | python3 -m json.tool; else echo "$summary" | python3 -m json.tool; fi
+case "$level" in GREEN) exit 0;; YELLOW) exit 1;; ORANGE) exit 2;; RED) exit 3;; esac

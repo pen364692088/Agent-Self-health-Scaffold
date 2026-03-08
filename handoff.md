@@ -1,56 +1,53 @@
 # Handoff Summary
 
-**Created**: 2026-03-08T09:07:00-06:00
+**Created**: 2026-03-08T10:40:00-06:00
 
 ---
 
 ## Current Objective
-完成 `capture-wake-session-diff`，让 wake-like session anomaly 可以一键现场取证，然后进入观察态。
+构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。
 
-## Completed This Round
-- 新增 `tools/capture-wake-session-diff`
-- 新增 `docs/session_reuse/CAPTURE_WAKE_DIFF.md`
-- 新增 `tests/session_reuse/test_capture_wake_session_diff.py`
-- 工具行为：
-  1. 抓当前 probe
-  2. 选最近或显式 baseline
-  3. 自动跑 diff
-  4. 自动生成 incident report
-  5. 输出 `confirmed/likely/inconclusive`
-- 工具明确只做取证，不做任何修复或 session 干预
+## Current Status
+第一版可运行骨架已落地，定位为：
+- 先观察
+- 会汇报
+- 低风险白名单有限自愈
+- 中高风险只出 proposal
 
-## Latest Run Result
-- level: `likely`
-- verdict: `Likely surface-only presentation difference or no actual session rotation.`
-- evidence:
-  - `artifacts/session_reuse/incidents/current_probe_20260308T140600Z.json`
-  - `artifacts/session_reuse/incidents/incident_report_20260308T140600Z.md`
+## Delivered
+- Policy: `POLICIES/AGENT_SELF_HEALTH_POLICY.md`
+- Schemas:
+  - `POLICIES/AGENT_HEALTH_STATE.schema.json`
+  - `POLICIES/AGENT_INCIDENT.schema.json`
+- Tools:
+  - `tools/agent-health-check`
+  - `tools/agent-health-summary`
+  - `tools/agent-incident-report`
+  - `tools/agent-self-heal`
+- Artifacts directories:
+  - `artifacts/self_health/state`
+  - `artifacts/self_health/incidents`
+  - `artifacts/self_health/proposals`
+  - `artifacts/self_health/recovery_logs`
+  - `artifacts/self_health/audit`
+- Tests:
+  - `tests/test_agent_self_health.py`
 
-## Current Mode
-**Observation state**
+## What v1 Proves
+- health state can be scanned and persisted
+- incidents can be emitted in structured JSON
+- Level A whitelist actions can be constrained
+- Level B/C actions are proposal-only
+- executable tools provide `--health` endpoints
 
-Meaning:
-- no further abstraction for now
-- wait for next real wake-like incident
-- run capture tool immediately when it happens
+## What v1 Does Not Yet Prove
+- full production-grade coverage across all systemd/services/chains
+- complete Gate A/B/C receipt integration
+- rich before/after verification for every Level A action
+- complete runner/worker recovery automation
 
-## Resume Command
-```bash
-tools/capture-wake-session-diff --chat-id telegram:8420019401 --account-id manager --dm-scope per-channel-peer --inbound-event-id <message_id>
-```
-
-## Test Status
-- 13 tests passing
-
-## Latest External Decision
-- Phase C accepted
-- Phase D unblocked
-- Resume from Phase D; do not reopen Phase C unless new contradictory evidence appears.
-
-
-## Context Compression Status
-
-- Config Alignment Gate: PASS
-- Phase C / Controlled Validation: PASS
-- Phase D / Natural Validation: BLOCKED
-- See: `PHASE_D_BLOCKED_STATUS.md`
+## Resume Path
+1. Run `pytest -q tests/test_agent_self_health.py`
+2. Run `tools/agent-health-check --deep --json`
+3. Read `POLICIES/AGENT_SELF_HEALTH_POLICY.md`
+4. Decide whether next step is coverage expansion or Gate integration hardening

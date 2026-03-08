@@ -1,0 +1,29 @@
+{
+    "incident_id": "INC-20260308-153859-26ae016e",
+    "title": "subagent incident",
+    "timestamp": "2026-03-08T15:38:59+00:00",
+    "severity": "WARN",
+    "category": "subagent",
+    "summary": "test incident",
+    "symptoms": [
+        "test incident"
+    ],
+    "impact_scope": [
+        "agent_health"
+    ],
+    "most_likely_root_cause": null,
+    "evidence": [
+        {
+            "type": "health_state_before",
+            "value": {}
+        }
+    ],
+    "actions_taken": [],
+    "action_results": [],
+    "current_system_state": {},
+    "next_recommended_step": "Review incident and decide on Level A/B/C response",
+    "needs_human_intervention": false,
+    "status": "active",
+    "session_key": "agent:main:main",
+    "context": {}
+}

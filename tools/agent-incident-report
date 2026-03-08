@@ -1,0 +1,54 @@
+#!/bin/bash
+set -euo pipefail
+WORKSPACE="$HOME/.openclaw/workspace"
+INCIDENTS_DIR="$WORKSPACE/artifacts/self_health/incidents"
+AUDIT_DIR="$WORKSPACE/artifacts/self_health/audit"
+STATE_DIR="$WORKSPACE/artifacts/self_health/state"
+mkdir -p "$INCIDENTS_DIR" "$AUDIT_DIR" "$STATE_DIR"
+MODE="create"; LEVEL=""; CATEGORY="unknown"; SUMMARY=""; CONTEXT='{}'; JSON_OUTPUT=false; HOURS=24; INCIDENT_ID=""; SESSION_KEY="${SESSION_KEY:-agent:main:main}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --level) LEVEL="$2"; shift 2 ;;
+    --category) CATEGORY="$2"; shift 2 ;;
+    --summary) SUMMARY="$2"; shift 2 ;;
+    --context) [[ -f "$2" ]] && CONTEXT=$(cat "$2") || CONTEXT="$2"; shift 2 ;;
+    --session-key) SESSION_KEY="$2"; shift 2 ;;
+    --list) MODE="list"; shift ;;
+    --hours) HOURS="$2"; shift 2 ;;
+    --resolve) MODE="resolve"; INCIDENT_ID="$2"; shift 2 ;;
+    --json) JSON_OUTPUT=true; shift ;;
+    --health) echo '{"status":"healthy","tool":"agent-incident-report","version":"1.0.0"}'; exit 0 ;;
+    *) shift ;;
+  esac
+done
+make_id(){ echo "INC-$(date -u +%Y%m%d-%H%M%S)-$(head -c 4 /dev/urandom | xxd -p)"; }
+severity_for(){ case "$1" in YELLOW) echo WARN;; ORANGE) echo ERROR;; RED) echo CRITICAL;; *) echo INFO;; esac; }
+if [[ "$MODE" == "list" ]]; then
+  if [[ "$JSON_OUTPUT" == true ]]; then python3 - <<'PY' "$INCIDENTS_DIR" "$HOURS"
+import sys,glob,json,os,time
+path,hours=sys.argv[1],int(sys.argv[2]); now=time.time(); items=[]
+for f in glob.glob(os.path.join(path,'incident_*.json')):
+    if now-os.path.getmtime(f) <= hours*3600:
+        try: items.append(json.load(open(f)))
+        except: pass
+print(json.dumps(items,ensure_ascii=False,indent=2))
+PY
+  else echo "See --json"; fi; exit 0
+fi
+if [[ "$MODE" == "resolve" ]]; then
+  f="$INCIDENTS_DIR/incident_${INCIDENT_ID}.json"; [[ -f "$f" ]] || { echo "incident not found" >&2; exit 1; }
+  python3 - <<'PY' "$f"
+import sys,json,datetime
+p=sys.argv[1]; d=json.load(open(p)); d['status']='resolved'; d['resolved_at']=datetime.datetime.utcnow().isoformat()+'Z'; json.dump(d,open(p,'w'),ensure_ascii=False,indent=2); print(json.dumps(d,ensure_ascii=False,indent=2))
+PY
+  exit 0
+fi
+[[ -n "$LEVEL" && -n "$SUMMARY" ]] || { echo 'ERROR: --level and --summary required' >&2; exit 1; }
+id=$(make_id); ts=$(date -u -Iseconds); health='{}'; [[ -f "$STATE_DIR/current_health.json" ]] && health=$(cat "$STATE_DIR/current_health.json")
+incident=$(cat <<EOF
+{"incident_id":"$id","title":"$CATEGORY incident","timestamp":"$ts","severity":"$(severity_for $LEVEL)","category":"$CATEGORY","summary":"$SUMMARY","symptoms":["$SUMMARY"],"impact_scope":["agent_health"],"most_likely_root_cause":null,"evidence":[{"type":"health_state_before","value":$health}],"actions_taken":[],"action_results":[],"current_system_state":$health,"next_recommended_step":"Review incident and decide on Level A/B/C response","needs_human_intervention":$([[ "$LEVEL" == "RED" ]] && echo true || echo false),"status":"active","session_key":"$SESSION_KEY","context":$CONTEXT}
+EOF
+)
+echo "$incident" | python3 -m json.tool > "$INCIDENTS_DIR/incident_${id}.json"
+echo "{\"timestamp\":\"$ts\",\"action\":\"incident_created\",\"incident_id\":\"$id\",\"level\":\"$LEVEL\",\"category\":\"$CATEGORY\",\"session_key\":\"$SESSION_KEY\"}" >> "$AUDIT_DIR/health_audit.jsonl"
+if [[ "$JSON_OUTPUT" == true ]]; then echo "$incident" | python3 -m json.tool; else echo "Incident created: $id"; fi

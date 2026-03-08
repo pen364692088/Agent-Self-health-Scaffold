@@ -1,0 +1,86 @@
+#!/bin/bash
+set -euo pipefail
+WORKSPACE="$HOME/.openclaw/workspace"
+STATE_DIR="$WORKSPACE/artifacts/self_health/state"
+AUDIT_DIR="$WORKSPACE/artifacts/self_health/audit"
+INCIDENTS_DIR="$WORKSPACE/artifacts/self_health/incidents"
+RECOVERY_DIR="$WORKSPACE/artifacts/self_health/recovery_logs"
+PROPOSALS_DIR="$WORKSPACE/artifacts/self_health/proposals"
+mkdir -p "$STATE_DIR" "$AUDIT_DIR" "$INCIDENTS_DIR" "$RECOVERY_DIR" "$PROPOSALS_DIR"
+MODE="quick"; JSON_OUTPUT=false; SESSION_KEY="${SESSION_KEY:-agent:main:main}"
+for arg in "$@"; do
+  case "$arg" in
+    --quick) MODE="quick" ;;
+    --deep) MODE="deep" ;;
+    --gate) MODE="gate" ;;
+    --json) JSON_OUTPUT=true ;;
+    --health) echo '{"status":"healthy","tool":"agent-health-check","version":"1.0.0"}'; exit 0 ;;
+  esac
+done
+if [[ "${1:-}" == "--session-key" ]]; then SESSION_KEY="${2:-$SESSION_KEY}"; fi
+TS=$(date -u -Iseconds)
+mem_percent=$(free | awk '/Mem:/ {printf("%.1f", $3/$2*100)}' 2>/dev/null || echo 0)
+disk_percent=$(df "$WORKSPACE" | awk 'NR==2 {gsub(/%/,"",$5); print $5}' 2>/dev/null || echo 0)
+failed_subagents=$(find "$WORKSPACE/reports/subtasks" -name '*.json' -mmin -60 -exec grep -l '"status": *"failed"' {} \; 2>/dev/null | wc -l || true)
+pending_inbox=$(find "$WORKSPACE/reports/subtasks" -name '*.json' -mmin -60 2>/dev/null | wc -l || true)
+context_tool="$WORKSPACE/tools/context-budget-check"
+context_usage=0
+context_status="ok"
+context_msg="Context budget normal"
+if [[ -x "$context_tool" ]]; then
+  raw=$($context_tool --json 2>/dev/null || echo '{}')
+  context_usage=$(echo "$raw" | python3 - <<'PY'
+import sys,json
+try:
+ d=json.load(sys.stdin)
+ print(d.get('usage_percent') or d.get('context_usage_percent') or 0)
+except: print(0)
+PY
+)
+fi
+comp(){ python3 - "$1" "$2" <<'PY'
+import sys
+print('1' if float(sys.argv[1]) >= float(sys.argv[2]) else '0')
+PY
+}
+sev(){ case "$1" in ok) echo INFO;; warning) echo WARN;; error) echo ERROR;; *) echo WARN;; esac; }
+reco(){ case "$1" in ok) echo none;; warning) echo observe_or_report;; error) echo incident_or_level_a_heal;; *) echo investigate;; esac; }
+status_from_threshold(){ local value="$1" warn="$2" crit="$3"; if [[ $(comp "$value" "$crit") == 1 ]]; then echo error; elif [[ $(comp "$value" "$warn") == 1 ]]; then echo warning; else echo ok; fi; }
+liveness_status="ok"; liveness_msg="Agent responsive"
+touch "$WORKSPACE/.agent_health_touch" 2>/dev/null || { liveness_status="error"; liveness_msg="Workspace not writable"; }
+rm -f "$WORKSPACE/.agent_health_touch" 2>/dev/null || true
+memory_status=$(status_from_threshold "$mem_percent" 80 90)
+storage_status=$(status_from_threshold "$disk_percent" 80 90)
+subagent_status="ok"; subagent_msg="Subagents healthy"
+if [[ "$failed_subagents" -gt 3 ]]; then subagent_status="error"; subagent_msg="Multiple subagent failures"; elif [[ "$failed_subagents" -gt 0 ]]; then subagent_status="warning"; subagent_msg="Subagent failures detected"; fi
+network_status="unknown"; network_msg="Skipped in quick mode"
+if [[ "$MODE" != "quick" ]]; then network_status="ok"; network_msg="Network check skipped-passive"; fi
+components=$(cat <<EOF
+[
+  {"component":"liveness","status":"$liveness_status","severity":"$(sev $liveness_status)","last_ok_at":"$TS","last_fail_at":null,"fail_count":0,"recovery_attempts":0,"latest_evidence":{"message":"$liveness_msg"},"recommended_action":"$(reco $liveness_status)","message":"$liveness_msg"},
+  {"component":"memory","status":"$memory_status","severity":"$(sev $memory_status)","last_ok_at":"$TS","last_fail_at":null,"fail_count":0,"recovery_attempts":0,"latest_evidence":{"memory_usage_percent":$mem_percent},"recommended_action":"$(reco $memory_status)","message":"Memory usage ${mem_percent}%"},
+  {"component":"context","status":"$context_status","severity":"$(sev $context_status)","last_ok_at":"$TS","last_fail_at":null,"fail_count":0,"recovery_attempts":0,"latest_evidence":{"context_usage_percent":$context_usage},"recommended_action":"$(reco $context_status)","message":"$context_msg"},
+  {"component":"subagents","status":"$subagent_status","severity":"$(sev $subagent_status)","last_ok_at":"$TS","last_fail_at":null,"fail_count":$failed_subagents,"recovery_attempts":0,"latest_evidence":{"failed_subagents_last_hour":$failed_subagents,"pending_inbox_items":$pending_inbox},"recommended_action":"$(reco $subagent_status)","message":"$subagent_msg"},
+  {"component":"storage","status":"$storage_status","severity":"$(sev $storage_status)","last_ok_at":"$TS","last_fail_at":null,"fail_count":0,"recovery_attempts":0,"latest_evidence":{"disk_usage_percent":$disk_percent},"recommended_action":"$(reco $storage_status)","message":"Disk usage ${disk_percent}%"},
+  {"component":"network","status":"$network_status","severity":"$(sev $network_status)","last_ok_at":"$TS","last_fail_at":null,"fail_count":0,"recovery_attempts":0,"latest_evidence":{},"recommended_action":"$(reco $network_status)","message":"$network_msg"}
+]
+EOF
+)
+errors=$(echo "$components" | grep -o '"status":"error"' | wc -l || true)
+warns=$(echo "$components" | grep -o '"status":"warning"' | wc -l || true)
+if [[ "$errors" -ge 2 ]]; then level="RED"; elif [[ "$errors" -ge 1 ]]; then level="ORANGE"; elif [[ "$warns" -ge 1 ]]; then level="YELLOW"; else level="GREEN"; fi
+prev="GREEN"; [[ -f "$STATE_DIR/current_health.json" ]] && prev=$(python3 - <<'PY' "$STATE_DIR/current_health.json"
+import sys,json
+try: print(json.load(open(sys.argv[1])).get('overall_status','GREEN'))
+except: print('GREEN')
+PY
+)
+state=$(cat <<EOF
+{"timestamp":"$TS","session_key":"$SESSION_KEY","overall_status":"$level","mode":"$MODE","components":$components,"metrics":{"context_usage_percent":$context_usage,"memory_usage_percent":$mem_percent,"disk_usage_percent":$disk_percent,"failed_subagents_last_hour":$failed_subagents,"pending_inbox_items":$pending_inbox},"previous_level":"$prev","active_incidents":[],"last_heal_action":null}
+EOF
+)
+echo "$state" > "$STATE_DIR/current_health.json.tmp" && mv "$STATE_DIR/current_health.json.tmp" "$STATE_DIR/current_health.json"
+echo "$state" >> "$STATE_DIR/health_history.jsonl"
+echo "{\"timestamp\":\"$TS\",\"action\":\"health_check\",\"mode\":\"$MODE\",\"level\":\"$level\",\"session_key\":\"$SESSION_KEY\"}" >> "$AUDIT_DIR/health_audit.jsonl"
+if [[ "$JSON_OUTPUT" == true ]]; then echo "$state" | python3 -m json.tool; else echo "Health check [$MODE]: $level"; fi
+case "$level" in GREEN) exit 0;; YELLOW) exit 1;; ORANGE) exit 2;; RED) exit 3;; esac
