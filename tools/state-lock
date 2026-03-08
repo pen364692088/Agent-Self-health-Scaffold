@@ -11,6 +11,8 @@ Usage:
   state-lock --file <path> --with "<command>"
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import sys
@@ -18,7 +20,7 @@ import os
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 LOCK_DIR = WORKSPACE / "state" / "locks"
@@ -31,7 +33,7 @@ def get_lock_path(filepath: Path) -> Path:
     return LOCK_DIR / lock_name
 
 
-def acquire_lock(filepath: Path, timeout: int = 30, owner: Optional[str] = None) -> Dict:
+def acquire_lock(filepath: Path, timeout: int = 30, owner: Optional[str] = None) -> Dict[str, Any]:
     """Acquire a lock on a file."""
     lock_path = get_lock_path(filepath)
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,23 +43,17 @@ def acquire_lock(filepath: Path, timeout: int = 30, owner: Optional[str] = None)
     start_time = time.time()
     
     while time.time() - start_time < timeout:
-        # Try to create lock file atomically
         try:
-            # Check if lock exists
             if lock_path.exists():
-                # Read lock info
                 lock_info = json.loads(lock_path.read_text())
                 age = time.time() - lock_info.get("timestamp_unix", 0)
                 
-                # Check if lock is stale (> 5 minutes old)
                 if age > 300:
                     lock_path.unlink()
                 else:
-                    # Lock is held by someone else
                     time.sleep(0.1)
                     continue
             
-            # Create lock file
             lock_info = {
                 "owner": owner,
                 "timestamp": datetime.now().isoformat(),
@@ -65,7 +61,6 @@ def acquire_lock(filepath: Path, timeout: int = 30, owner: Optional[str] = None)
                 "file": str(filepath)
             }
             
-            # Atomic write
             temp_path = lock_path.with_suffix(".tmp")
             temp_path.write_text(json.dumps(lock_info))
             temp_path.rename(lock_path)
@@ -87,7 +82,7 @@ def acquire_lock(filepath: Path, timeout: int = 30, owner: Optional[str] = None)
     }
 
 
-def release_lock(filepath: Path, owner: Optional[str] = None) -> Dict:
+def release_lock(filepath: Path, owner: Optional[str] = None) -> Dict[str, Any]:
     """Release a lock on a file."""
     lock_path = get_lock_path(filepath)
     owner = owner or os.environ.get("OPENCLAW_SESSION_ID", "unknown")
@@ -98,7 +93,6 @@ def release_lock(filepath: Path, owner: Optional[str] = None) -> Dict:
     try:
         lock_info = json.loads(lock_path.read_text())
         
-        # Only owner can release
         if lock_info.get("owner") != owner:
             return {
                 "success": False,
@@ -112,7 +106,7 @@ def release_lock(filepath: Path, owner: Optional[str] = None) -> Dict:
         return {"success": False, "error": str(e)}
 
 
-def check_lock(filepath: Path) -> Dict:
+def check_lock(filepath: Path) -> Dict[str, Any]:
     """Check lock status on a file."""
     lock_path = get_lock_path(filepath)
     
@@ -142,16 +136,14 @@ def check_lock(filepath: Path) -> Dict:
         }
 
 
-def with_lock(filepath: Path, command: str, timeout: int = 30) -> Dict:
+def with_lock(filepath: Path, command: str, timeout: int = 30) -> Dict[str, Any]:
     """Execute a command while holding a lock."""
-    # Acquire lock
     result = acquire_lock(filepath, timeout)
     
     if not result["success"]:
         return result
     
     try:
-        # Execute command
         exit_code = os.system(command)
         
         return {
@@ -161,7 +153,6 @@ def with_lock(filepath: Path, command: str, timeout: int = 30) -> Dict:
         }
         
     finally:
-        # Release lock
         release_lock(filepath)
 
 
@@ -198,9 +189,9 @@ def main():
         print(json.dumps(result, indent=2))
     else:
         if result.get("success"):
-            print(f"✅ {result}")
+            print(f"OK: {result}")
         else:
-            print(f"❌ {result}")
+            print(f"FAIL: {result}")
 
 
 if __name__ == "__main__":
