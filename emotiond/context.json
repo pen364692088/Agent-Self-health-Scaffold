@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7864",
+  "message_id": "7870",
   "from": "telegram:8420019401",
-  "timestamp": 1772958629000,
+  "timestamp": 1772959244000,
   "decision": {
-    "action": "boundary",
-    "decision_id": 346,
+    "action": "withdraw",
+    "decision_id": 347,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 2.1182445691344987e-13,
+        "bond": 1.9161862370238584e-13,
         "grudge": 0,
         "trust": 0.49900000000000033,
         "repair_bank": 0
@@ -38,7 +38,7 @@
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.0773000000000636,
+          "score": 0.07730000000005754,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.06980000000006362,
+          "score": 0.06980000000005755,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.03530000000006363,
+          "score": 0.03530000000005756,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "boundary",
+      "selected": "withdraw",
       "selection_reasons": [
-        "Selected via stochastic process (score: 0.029)",
+        "Selected via stochastic process (score: -0.042)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "clear, firm",
-    "intent": "establish limits",
+    "tone": "brief, neutral",
+    "intent": "conserve energy",
     "phrases": [
-      "I need to be clear",
-      "not comfortable"
+      "I understand",
+      "noted"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-08T08:30:30.334Z",
+  "generated_at": "2026-03-08T08:40:45.388Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 2.1182445691344987e-13,
+          "bond": 1.9161862370238584e-13,
           "trust": 0.49900000000000033,
           "grudge": 0,
           "repair_bank": 0
@@ -178,7 +178,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1772958630.1984866,
+      "generated_at": 1772959245.3681974,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,
