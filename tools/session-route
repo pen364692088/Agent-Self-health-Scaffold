@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+LIB_PATH = WORKSPACE / 'tools' / 'session_reuse_lib.py'
+SESSION_START_RECOVERY = WORKSPACE / 'tools' / 'session-start-recovery'
+
+spec = importlib.util.spec_from_file_location('session_reuse_lib', LIB_PATH)
+lib = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = lib
+spec.loader.exec_module(lib)
+
+
+def resolve_ttl(args) -> int:
+    if args.ttl_seconds is not None:
+        return args.ttl_seconds
+    return lib.TTL_PROFILES[args.ttl_profile]
+
+
+def run_recovery_if_needed(enabled: bool) -> dict:
+    if not enabled:
+        return {'attempted': False, 'ok': False, 'skipped': True}
+    result = subprocess.run(
+        [str(SESSION_START_RECOVERY), '--recover', '--json'],
+        capture_output=True,
+        text=True,
+    )
+    try:
+        payload = json.loads(result.stdout) if result.stdout.strip() else {}
+    except json.JSONDecodeError:
+        payload = {'raw_stdout': result.stdout, 'raw_stderr': result.stderr}
+    payload['attempted'] = True
+    payload['ok'] = result.returncode == 0
+    payload['returncode'] = result.returncode
+    return payload
+
+
+def command_decide(args) -> int:
+    ttl_seconds = resolve_ttl(args)
+    registry = lib.load_registry()
+    outcome = lib.decide_session_for_inbound(
+        chat_id=args.chat_id,
+        thread_id=args.thread_id,
+        account_id=args.account_id,
+        ttl_seconds=ttl_seconds,
+        registry=registry,
+        explicit_new_session=args.explicit_new_session,
+        agent_restarted=args.agent_restarted,
+        source_tool=args.source_tool,
+        new_session_id=args.new_session_id,
+    )
+    decision = outcome['decision']
+    registry = lib.update_binding_after_decision(
+        chat_id=args.chat_id,
+        thread_id=args.thread_id,
+        account_id=args.account_id,
+        decision=decision,
+        session_status=args.session_status,
+        continuity_enabled=not args.disable_continuity,
+        context_state=args.context_state,
+        registry=registry,
+        session_file=args.session_file,
+    )
+    lib.save_registry(registry)
+    lib.append_decision_log(outcome['decision_log_entry'])
+
+    recovery = None
+    if decision['recovery_needed'] and args.run_recovery:
+        recovery = run_recovery_if_needed(not args.disable_continuity)
+
+    payload = {
+        **decision,
+        'binding_key': outcome['binding_key'],
+        'recovery': recovery,
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def command_metrics(args) -> int:
+    print(json.dumps(lib.metrics_from_decision_log(), ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description='Session reuse / thread affinity decision tool')
+    sub = parser.add_subparsers(dest='command', required=True)
+
+    decide = sub.add_parser('decide', help='Decide reused/new session for inbound message')
+    decide.add_argument('--chat-id', required=True)
+    decide.add_argument('--thread-id')
+    decide.add_argument('--account-id', required=True)
+    decide.add_argument('--ttl-profile', choices=sorted(lib.TTL_PROFILES.keys()), default='project')
+    decide.add_argument('--ttl-seconds', type=int)
+    decide.add_argument('--new-session-id')
+    decide.add_argument('--session-status', choices=['active', 'paused', 'closed'], default='active')
+    decide.add_argument('--context-state', choices=['normal', 'candidate', 'near_limit', 'hard_blocked'], default='normal')
+    decide.add_argument('--session-file')
+    decide.add_argument('--explicit-new-session', action='store_true')
+    decide.add_argument('--agent-restarted', action='store_true')
+    decide.add_argument('--disable-continuity', action='store_true')
+    decide.add_argument('--run-recovery', action='store_true')
+    decide.add_argument('--source-tool', default='session-route')
+    decide.set_defaults(func=command_decide)
+
+    metrics = sub.add_parser('metrics', help='Summarize decision log metrics')
+    metrics.set_defaults(func=command_metrics)
+    return parser
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    return args.func(args)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

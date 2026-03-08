@@ -1,87 +1,32 @@
 # Working Buffer
 
-**Updated**: 2026-03-07T22:42:00-06:00
+**Updated**: 2026-03-08T08:32:00-06:00
 
 ---
 
 ## Active Focus
-Observation Freeze 生效，7 天正式数据收集
+把 Session Reuse / Thread Affinity v1.0 从“独立决策层”接到真正的 inbound router 上。
 
----
+## What Exists Now
+- `tools/session_reuse_lib.py` 提供 registry / decision log / TTL / reason enums
+- `tools/session-route` 提供统一 CLI 入口
+- 新 session 会返回 `recovery_needed=true`，可协同 continuity recovery
+- 9 个核心测试已过
 
-## Observation Freeze Status
+## What Is Missing
+- 真实 transport/router 调用点
+- 线上 reason 分布
+- 真实 reuse 成功率
+- 真实 recovery-after-new-session 数据
 
-**Status**: FROZEN
-**Start**: 2026-03-07
-**End**: 2026-03-14
-
-### Frozen Items
-- ✅ Metric semantics (v1.1.1a)
-- ✅ Dedupe rules
-- ✅ Event names
-- ✅ Aggregation logic
-- ✅ Core flow
-
-### Allowed Only
-- Bug fixes (clearly broken)
-- Documentation clarifications
-- Additional monitoring (read-only)
-
----
-
-## Daily Tasks (Every Day)
-
-1. **Run daily audit**
-   ```bash
-   ~/.openclaw/workspace/tools/session-daily-audit
-   ~/.openclaw/workspace/tools/session-deep-audit
-   ```
-
-2. **Update documents**
-   - ROLLOUT_OBSERVATION.md
-   - HEALTH_SUMMARY.md
-   - ANOMALY_LEDGER.md (if anomalies)
-
-3. **Check coverage progress**
-   - 10+ recoveries
-   - 5+ handoffs
-   - 3+ high-context
-   - 2+ interruptions
-
----
-
-## Diagnostic Metrics (Beyond Success Rate)
-
-| Metric | Purpose |
-|--------|---------|
-| Recovery usable rate | 真正能继续任务的比例 |
-| Event/File consistency | 事件与文件对应 |
-| Dedup correctness | 去重正确性 |
-| Cross-entry consistency | 跨入口一致性 |
-
----
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| OBSERVATION_FREEZE.md | 冻结声明 |
-| ANOMALY_LEDGER.md | 异常台账 |
-| REVIEW_CRITERIA.md | 评审门槛 |
-| daily_snapshots/ | 每日快照 |
-
----
-
-## Review Date
-
-**Scheduled**: 2026-03-14
-**Decision**: PASS / CONDITIONAL / FAIL
-
----
+## Guardrails
+- 不重写 continuity runtime
+- 不改 WAL / handoff 语义
+- 不做多候选复杂调度
+- 先接单入口，再看是否扩展
 
 ## Next Actions
-
-1. 每日审计
-2. 记录异常
-3. 2026-03-14 评审
-4. 决定 Layer 2 扩展
+1. 找到 authoritative inbound router
+2. 在 session 创建前调用 `session-route decide`
+3. 只在 `recovery_needed=true` 时触发 recovery
+4. 收集一轮真实日志后再调 TTL

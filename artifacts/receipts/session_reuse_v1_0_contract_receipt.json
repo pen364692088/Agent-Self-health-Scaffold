@@ -1,0 +1,24 @@
+{
+  "task_id": "session_reuse_v1_0",
+  "receipt_type": "contract",
+  "status": "pass",
+  "generated_at": "2026-03-08T08:18:52.280947",
+  "checks": [
+    {
+      "name": "task_in_workflow",
+      "status": "skip",
+      "details": "standalone task"
+    },
+    {
+      "name": "task_id_valid",
+      "status": "pass",
+      "details": "session_reuse_v1_0"
+    },
+    {
+      "name": "scope_valid",
+      "status": "pass"
+    }
+  ],
+  "state_before": "standalone",
+  "state_after": "self_verify"
+}
