@@ -13,3 +13,5 @@
 {"timestamp":"2026-03-08T06:46:08.886Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T07:42:15.239Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T07:58:15.367Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T08:09:35.400Z","reason":"compress_failed","session_key":"telegram:slash:8420019401","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T08:09:42.396Z","reason":"compress_failed","session_key":"agent:main:telegram:direct:8420019401","details":{"mode":"light_enforced"}}
