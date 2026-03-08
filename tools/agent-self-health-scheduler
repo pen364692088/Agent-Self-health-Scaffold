@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+import argparse, fcntl, json, os, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+RUNTIME = WORKSPACE / 'artifacts' / 'self_health' / 'runtime'
+STATE = WORKSPACE / 'artifacts' / 'self_health' / 'state'
+ALWAYS_ON = WORKSPACE / 'artifacts' / 'self_health' / 'always_on'
+LOCKS = WORKSPACE / 'artifacts' / 'self_health' / 'locks'
+for p in [RUNTIME, STATE, ALWAYS_ON, LOCKS]:
+    p.mkdir(parents=True, exist_ok=True)
+
+CONFIG = {
+    'quick': {'cooldown': 300, 'budget': 15, 'health_args': ['--quick', '--json']},
+    'full': {'cooldown': 3600, 'budget': 120, 'health_args': ['--deep', '--json']},
+    'gate': {'cooldown': 300, 'budget': 30, 'health_args': None},
+}
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def read_json(path, default):
+    try:
+        return json.loads(Path(path).read_text())
+    except Exception:
+        return default
+
+
+def write_json(path, obj):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + '.tmp')
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
+    tmp.replace(path)
+
+
+def append_jsonl(path, obj):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('a', encoding='utf-8') as f:
+        f.write(json.dumps(obj, ensure_ascii=False) + '\n')
+
+
+def run(cmd, timeout=None):
+    p = subprocess.run(cmd, cwd=WORKSPACE, capture_output=True, text=True, timeout=timeout)
+    return p.returncode, p.stdout, p.stderr
+
+
+def file_age_seconds(path):
+    p = Path(path)
+    if not p.exists():
+        return None
+    return max(0, time.time() - p.stat().st_mtime)
+
+
+def runtime_snapshot(mode, health_result=None, gate_result=None):
+    ts = now_iso()
+    hb = read_json(RUNTIME / 'heartbeat_status.json', {})
+    cb = read_json(RUNTIME / 'callback_worker_status.json', {})
+    mb = read_json(RUNTIME / 'mailbox_worker_status.json', {})
+    sm = read_json(RUNTIME / 'summary_status.json', {})
+    metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {
+        'scheduler_runs_total': 0, 'quick_runs_total': 0, 'full_runs_total': 0, 'gate_runs_total': 0,
+        'skipped_runs_total': 0, 'lock_contention_count': 0, 'execution_budget_hit_count': 0
+    })
+    metrics['scheduler_runs_total'] += 1
+    metrics[f'{mode}_runs_total'] = metrics.get(f'{mode}_runs_total', 0) + 1
+    write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
+
+    last_hist_age = file_age_seconds(STATE / 'health_history.jsonl')
+    hb.update({
+        'last_heartbeat_at': ts,
+        'heartbeat_lag_seconds': 0,
+        'heartbeat_cycle_ok': True,
+        'last_cycle_duration_ms': health_result.get('duration_ms') if health_result else None,
+        'last_quick_check_at': ts if mode == 'quick' else hb.get('last_quick_check_at'),
+        'last_full_check_at': ts if mode == 'full' else hb.get('last_full_check_at'),
+        'heartbeat_status': 'healthy' if (health_result or {}).get('ok', True) else 'degraded',
+        'health_history_age_seconds': last_hist_age,
+    })
+    write_json(RUNTIME / 'heartbeat_status.json', hb)
+
+    code, out, err = run(['python3', str(WORKSPACE / 'tools' / 'callback-worker-doctor')], timeout=20)
+    cb.update({
+        'worker_name': 'callback-worker',
+        'alive': '✅' in out.splitlines()[2] if out else False,
+        'last_progress_at': ts if '可以上线' in out or '不能上线' in out else cb.get('last_progress_at'),
+        'last_output_at': ts,
+        'pending_count': None,
+        'stuck_suspected': code != 0,
+        'last_error_at': ts if code != 0 else cb.get('last_error_at'),
+        'last_error_type': 'doctor_failed' if code != 0 else None,
+        'worker_status': 'healthy' if code == 0 else 'degraded',
+        'doctor_excerpt': '\n'.join(out.splitlines()[:8])[:500]
+    })
+    write_json(RUNTIME / 'callback_worker_status.json', cb)
+
+    inbox = WORKSPACE / 'mailbox' / 'inbox.jsonl'
+    done = WORKSPACE / 'mailbox' / 'done.jsonl'
+    backlog = 0
+    if inbox.exists():
+        try:
+            backlog = sum(1 for _ in inbox.open('r', encoding='utf-8'))
+        except Exception:
+            backlog = 0
+    mb.update({
+        'worker_name': 'mailbox-worker',
+        'alive': True if (WORKSPACE / 'flows' / 'mailbox-worker.prose').exists() else False,
+        'last_poll_at': ts,
+        'last_progress_at': datetime.fromtimestamp(done.stat().st_mtime, timezone.utc).isoformat() if done.exists() else None,
+        'backlog_count': backlog,
+        'stuck_suspected': backlog > 20,
+        'mailbox_status': 'healthy' if backlog <= 20 else 'degraded',
+        'source': 'mailbox files + flow definition'
+    })
+    write_json(RUNTIME / 'mailbox_worker_status.json', mb)
+
+    incident_dir = WORKSPACE / 'artifacts' / 'self_health' / 'incidents'
+    proposals_dir = WORKSPACE / 'artifacts' / 'self_health' / 'proposals'
+    sm.update({
+        'last_health_summary_at': ts if mode in ('quick','full') else sm.get('last_health_summary_at'),
+        'last_recovery_summary_at': sm.get('last_recovery_summary_at'),
+        'last_capability_summary_at': ts if mode == 'full' else sm.get('last_capability_summary_at'),
+        'last_proposal_summary_at': datetime.fromtimestamp(proposals_dir.stat().st_mtime, timezone.utc).isoformat() if proposals_dir.exists() else None,
+        'last_incident_recorded_at': datetime.fromtimestamp(incident_dir.stat().st_mtime, timezone.utc).isoformat() if incident_dir.exists() else None,
+        'summary_pipeline_status': 'healthy' if health_result or gate_result else sm.get('summary_pipeline_status', 'unknown')
+    })
+    write_json(RUNTIME / 'summary_status.json', sm)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--mode', choices=['quick','full','gate'], default='quick')
+    ap.add_argument('--force', action='store_true')
+    ap.add_argument('--json', action='store_true')
+    ap.add_argument('--health', action='store_true')
+    args = ap.parse_args()
+    if args.health:
+        print(json.dumps({'status':'healthy','tool':'agent-self-health-scheduler','version':'1.0.0'}))
+        return 0
+
+    cfg = CONFIG[args.mode]
+    lock_path = LOCKS / f'{args.mode}.lock'
+    state_path = RUNTIME / f'{args.mode}_scheduler_state.json'
+    history_path = RUNTIME / 'run_history.jsonl'
+    state = read_json(state_path, {})
+    start = time.time()
+    ts = now_iso()
+
+    with open(lock_path, 'w') as lockf:
+        try:
+            fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
+            metrics['lock_contention_count'] = metrics.get('lock_contention_count', 0) + 1
+            write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
+            result = {'mode': args.mode, 'status': 'skipped', 'reason': 'lock_contended', 'timestamp': ts}
+            append_jsonl(history_path, result)
+            print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else 'lock_contended')
+            return 0
+
+        last_run = state.get('last_run_epoch')
+        if not args.force and last_run and time.time() - last_run < cfg['cooldown']:
+            metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
+            metrics['skipped_runs_total'] = metrics.get('skipped_runs_total', 0) + 1
+            write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
+            result = {'mode': args.mode, 'status': 'skipped', 'reason': 'cooldown', 'cooldown_seconds': cfg['cooldown'], 'timestamp': ts}
+            state.update({'last_skipped_reason': 'cooldown', 'last_skipped_at': ts})
+            write_json(state_path, state)
+            append_jsonl(history_path, result)
+            print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else 'cooldown')
+            return 0
+
+        if args.mode in ('quick','full'):
+            cmd = [str(WORKSPACE / 'tools' / 'agent-health-check')] + cfg['health_args']
+            rc, out, err = run(cmd, timeout=cfg['budget'])
+            try:
+                payload = json.loads(out)
+            except Exception:
+                payload = {'raw_stdout': out[:1000], 'raw_stderr': err[:500]}
+            ok = rc in (0,1,2,3)
+            duration_ms = int((time.time() - start) * 1000)
+            result = {'mode': args.mode, 'status': 'ok' if ok else 'failed', 'exit_code': rc, 'timestamp': ts, 'duration_ms': duration_ms, 'health': payload}
+            if duration_ms > cfg['budget'] * 1000:
+                metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
+                metrics['execution_budget_hit_count'] = metrics.get('execution_budget_hit_count', 0) + 1
+                write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
+                result['budget_hit'] = True
+            runtime_snapshot(args.mode, {'ok': ok, 'duration_ms': duration_ms})
+        else:
+            rc, out, err = run(['python3', str(WORKSPACE / 'tools' / 'gate-self-health-check'), '--json'], timeout=cfg['budget'])
+            try:
+                payload = json.loads(out)
+            except Exception:
+                payload = {'raw_stdout': out[:1000], 'raw_stderr': err[:500]}
+            ok = rc == 0
+            duration_ms = int((time.time() - start) * 1000)
+            result = {'mode': args.mode, 'status': 'ok' if ok else 'failed', 'exit_code': rc, 'timestamp': ts, 'duration_ms': duration_ms, 'gate': payload}
+            if duration_ms > cfg['budget'] * 1000:
+                metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
+                metrics['execution_budget_hit_count'] = metrics.get('execution_budget_hit_count', 0) + 1
+                write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
+                result['budget_hit'] = True
+            runtime_snapshot(args.mode, None, payload)
+
+        state.update({'last_run_at': ts, 'last_run_epoch': time.time(), 'last_run_result': result['status'], 'last_run_duration_ms': result['duration_ms']})
+        write_json(state_path, state)
+        append_jsonl(history_path, result)
+        print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else result['status'])
+        return 0 if ok else 1
+
+if __name__ == '__main__':
+    sys.exit(main())

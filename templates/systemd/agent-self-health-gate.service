@@ -1,0 +1,8 @@
+[Unit]
+Description=OpenClaw Agent Self-Health Gate Mode
+After=default.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.openclaw/workspace/tools/agent-self-health-scheduler --mode gate --json
+WorkingDirectory=%h/.openclaw/workspace

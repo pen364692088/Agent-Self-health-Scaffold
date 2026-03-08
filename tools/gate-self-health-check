@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+import argparse, json, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+RUNTIME = WORKSPACE / 'artifacts' / 'self_health' / 'runtime'
+ALWAYS_ON = WORKSPACE / 'artifacts' / 'self_health' / 'always_on'
+
+
+def read_json(path, default):
+    try:
+        return json.loads(Path(path).read_text())
+    except Exception:
+        return default
+
+
+def age(path):
+    p = Path(path)
+    if not p.exists():
+        return None
+    return max(0, time.time() - p.stat().st_mtime)
+
+
+def run(cmd, timeout=20):
+    p = subprocess.run(cmd, cwd=WORKSPACE, capture_output=True, text=True, timeout=timeout)
+    return p.returncode, p.stdout, p.stderr
+
+
+def gate_a():
+    required = [
+        WORKSPACE / 'POLICIES' / 'AGENT_SELF_HEALTH_POLICY.md',
+        WORKSPACE / 'POLICIES' / 'OPENCLAW_ALWAYS_ON_POLICY.md',
+        WORKSPACE / 'tools' / 'agent-health-check',
+        WORKSPACE / 'tools' / 'agent-self-heal',
+        WORKSPACE / 'tools' / 'agent-self-health-scheduler',
+    ]
+    missing = [str(p.relative_to(WORKSPACE)) for p in required if not p.exists()]
+    status = 'PASS' if not missing else 'FAIL'
+    return {'status': status, 'missing': missing, 'explanation': 'registry/policy/tool presence'}
+
+
+def gate_b():
+    files = {
+        'heartbeat': RUNTIME / 'heartbeat_status.json',
+        'callback': RUNTIME / 'callback_worker_status.json',
+        'mailbox': RUNTIME / 'mailbox_worker_status.json',
+        'summary': RUNTIME / 'summary_status.json',
+    }
+    ages = {k: age(v) for k, v in files.items()}
+    missing = [k for k, v in files.items() if not v.exists()]
+    stale = [k for k, sec in ages.items() if sec is not None and sec > 7200]
+    if missing:
+        status = 'PARTIAL'
+        explanation = f'telemetry_missing: {missing}'
+    elif stale:
+        status = 'PARTIAL'
+        explanation = f'telemetry_stale: {stale}'
+    else:
+        status = 'PASS'
+        explanation = 'runtime telemetry present and fresh'
+    return {'status': status, 'ages_seconds': ages, 'explanation': explanation}
+
+
+def gate_c():
+    checks = {}
+    rc, out, err = run(['python3', str(WORKSPACE / 'tools' / 'tool_doctor'), str(WORKSPACE / 'tools' / 'agent-health-check'), '--ci'])
+    checks['tool_doctor_agent_health_check'] = 'PASS' if rc == 0 else 'FAIL'
+    rc2, out2, err2 = run(['python3', str(WORKSPACE / 'tools' / 'pre-reply-guard'), '--health'])
+    checks['execution_guard_health'] = 'PASS' if rc2 == 0 else 'FAIL'
+    scheduler = read_json(RUNTIME / 'gate_scheduler_state.json', {})
+    status = 'PASS' if all(v == 'PASS' for v in checks.values()) else 'FAIL'
+    return {'status': status, 'checks': checks, 'last_gate_run_at': scheduler.get('last_run_at'), 'explanation': 'preflight/doctor/execution-guard baseline checks'}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--json', action='store_true')
+    ap.add_argument('--health', action='store_true')
+    args = ap.parse_args()
+    if args.health:
+        print(json.dumps({'status': 'healthy', 'tool': 'gate-self-health-check', 'version': '1.0.0'}))
+        return 0
+    result = {
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'gate_a': gate_a(),
+        'gate_b': gate_b(),
+        'gate_c': gate_c(),
+    }
+    result['verdict'] = 'PASS' if all(result[g]['status'] == 'PASS' for g in ('gate_a','gate_b','gate_c')) else 'PARTIAL_OR_FAIL'
+    out = ALWAYS_ON / 'gate_report_latest.json'
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(result, ensure_ascii=False, indent=2))
+    with (ALWAYS_ON / 'gate_report_history.jsonl').open('a', encoding='utf-8') as f:
+        f.write(json.dumps(result, ensure_ascii=False) + '\n')
+    print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else result['verdict'])
+    return 0 if result['verdict'] == 'PASS' else 1
+
+if __name__ == '__main__':
+    sys.exit(main())

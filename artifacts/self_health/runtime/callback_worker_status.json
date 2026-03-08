@@ -1,0 +1,12 @@
+{
+  "worker_name": "callback-worker",
+  "alive": false,
+  "last_progress_at": "2026-03-08T19:11:43.260452+00:00",
+  "last_output_at": "2026-03-08T19:11:43.260452+00:00",
+  "pending_count": null,
+  "stuck_suspected": true,
+  "last_error_at": "2026-03-08T19:11:43.260452+00:00",
+  "last_error_type": "doctor_failed",
+  "worker_status": "degraded",
+  "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n❌ Service running: OK\n✅ Kill-switch: Disabled (normal)\n✅ Queue writable: OK (0 events)\n✅ State read/write + lock: OK\n✅ Spawn backend: OK (health check passed)"
+}

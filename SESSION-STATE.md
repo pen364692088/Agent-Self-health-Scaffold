@@ -3,15 +3,15 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)
-**Updated**: 2026-03-08T10:40:00-06:00
+**Updated**: 2026-03-08T14:12:52-05:00
 
 ---
 
 ## Current Objective
-构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制的第一版可运行骨架，优先完成“观察 + 汇报 + Level A 白名单 + Level B/C proposal scaffold”。
+按顺序实施 OpenClaw self-health always-on integration：先固化 always-on policy，再完成 quick/full/gate 默认链路接线、runtime telemetry 持续落盘、安全控制与回退、自动流转、Gate 常驻化，最后做 soak 与 final verdict。
 
 ## Current Phase
-✅ Phase 1 scaffold implemented: observation + structured incident + whitelist-only self-heal + proposal-only path
+🚧 OAI-0/OAI-1/OAI-2 initial wiring landed: policy + scheduler + gate checker + runtime telemetry + systemd timers; next focus is OAI-5 safety hardening and OAI-3/OAI-4 automatic flow enrichment.
 
 ## Current Branch / Workspace
 - Branch: openviking-l2-bugfix
@@ -20,48 +20,45 @@
 ---
 
 ## Delivered (Scaffold v1)
-- `POLICIES/AGENT_SELF_HEALTH_POLICY.md`
-- `POLICIES/AGENT_HEALTH_STATE.schema.json`
-- `POLICIES/AGENT_INCIDENT.schema.json`
-- `tools/agent-health-check`
-- `tools/agent-health-summary`
-- `tools/agent-incident-report`
-- `tools/agent-self-heal`
-- `artifacts/self_health/{state,incidents,proposals,recovery_logs,audit}/`
-- `tests/test_agent_self_health.py`
+- 'POLICIES/AGENT_SELF_HEALTH_POLICY.md'
+- 'POLICIES/AGENT_HEALTH_STATE.schema.json'
+- 'POLICIES/AGENT_INCIDENT.schema.json'
+- 'tools/agent-health-check'
+- 'tools/agent-health-summary'
+- 'tools/agent-incident-report'
+- 'tools/agent-self-heal'
+- 'artifacts/self_health/{state,incidents,proposals,recovery_logs,audit}/'
+- 'tests/test_agent_self_health.py'
 
-## Behavior in v1
-- observation across liveness / memory / context / subagents / storage / network scaffold
-- structured health state persisted to `artifacts/self_health/state/current_health.json`
-- incident creation with structured JSON evidence
-- Level A whitelist path for reversible actions:
-  - `clear_cache`
-  - `rotate_logs`
-  - limited scaffold handling for `compact_context`, `retry_subagent`, `refresh_session_index`
-- Level B/C proposal-only path via `--proposal-only`
-- all executable tools expose `--health`
-
-## Hard Boundaries Preserved
-- no core governance mutation
-- no router/prompt rewrite
-- no destructive/high-risk auto execution
-- no Level B/C auto execute
+## Delivered (Always-On Wiring v0)
+- 'POLICIES/OPENCLAW_ALWAYS_ON_POLICY.md'
+- 'tools/agent-self-health-scheduler'
+- 'tools/gate-self-health-check'
+- 'artifacts/self_health/runtime/{heartbeat_status,callback_worker_status,mailbox_worker_status,summary_status}.json'
+- 'artifacts/self_health/runtime/run_history.jsonl'
+- 'artifacts/self_health/always_on/{ALWAYS_ON_BASELINE,ALWAYS_ON_ROLLBACK_PLAN}.md'
+- 'templates/systemd/agent-self-health-{full,gate}.{service,timer}'
+- heartbeat quick-mode hook appended to 'HEARTBEAT.md'
+- user systemd timers enabled: 'agent-self-health-full.timer', 'agent-self-health-gate.timer'
 
 ## Validation Status
-- `pytest -q tests/test_agent_self_health.py`
-- ✅ 3 passed
+- 'pytest -q tests/test_agent_self_health.py'
+- 'pytest -q tests/test_main_system_always_on_wiring.py'
 - manual smoke:
-  - `tools/agent-health-check --deep --json`
-  - `tools/agent-incident-report --level YELLOW ... --json`
-  - `tools/agent-self-heal --proposal-only --action restart_subsystem --level B --json`
+  - 'tools/agent-self-health-scheduler --mode quick --force --json'
+  - 'tools/agent-self-health-scheduler --mode full --force --json'
+  - 'python3 tools/gate-self-health-check --json'
+  - 'systemctl --user status agent-self-health-full.timer'
+  - 'systemctl --user status agent-self-health-gate.timer'
 
 ## Next Actions
-1. Add richer component coverage for heartbeat / callback-worker / mailbox-worker / cron / hooks
-2. Generate unified `health_summary.json` artifact on summary runs
-3. Add Gate A/B/C specific integration docs and receipts
-4. Expand Level A verification before/after state diff and recovery logs
-5. Add proposal generator tool if proposal volume grows beyond scaffold
+1. Harden OAI-5: richer lock/cooldown/dedup/budget observability and rollback proofs
+2. Enrich OAI-3: capability / incident / proposal / summary auto flow beyond baseline scheduler writes
+3. Enrich OAI-4: Gate A/B/C explanations and main-chain consumption semantics
+4. Run short soak and produce always-on verdict artifacts only after evidence is sufficient
 
 ## Blockers / Limits
-- v1 is scaffold quality, not full production-grade immunity layer
-- some Level A actions are currently scaffold/skip implementations, not fully wired execution paths
+- quick mode heartbeat integration is policy-hook based and still needs repeated soak evidence
+- callback-worker telemetry currently reports degraded when service is inactive; this is evidence, not a bug mask
+- mailbox-worker telemetry is currently file/flow heuristic, not process-backed service telemetry
+- final verdict must remain evidence-based; always-on is not yet declared active

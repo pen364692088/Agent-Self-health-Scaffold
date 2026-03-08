@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-03-08T19:11:43.150439+00:00",
+  "gate_a": {
+    "status": "PASS",
+    "missing": [],
+    "explanation": "registry/policy/tool presence"
+  },
+  "gate_b": {
+    "status": "PASS",
+    "ages_seconds": {
+      "heartbeat": 7.630663871765137,
+      "callback": 7.571320533752441,
+      "mailbox": 7.5709145069122314,
+      "summary": 7.570566892623901
+    },
+    "explanation": "runtime telemetry present and fresh"
+  },
+  "gate_c": {
+    "status": "PASS",
+    "checks": {
+      "tool_doctor_agent_health_check": "PASS",
+      "execution_guard_health": "PASS"
+    },
+    "last_gate_run_at": null,
+    "explanation": "preflight/doctor/execution-guard baseline checks"
+  },
+  "verdict": "PASS"
+}

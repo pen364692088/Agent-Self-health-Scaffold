@@ -190,3 +190,20 @@ ALERT: RECOVERY_FAILED
 HEARTBEAT_OK
 [后台执行落盘，不输出]
 ```
+
+---
+
+## Self-Health Quick Mode Hook (Always-On Wiring) ⭐⭐⭐⭐⭐
+
+每次 heartbeat 检查时，先触发 quick mode（静默执行，不改变 heartbeat 输出协议）：
+
+```bash
+~/.openclaw/workspace/tools/agent-self-health-scheduler --mode quick --json >/dev/null 2>&1 || true
+```
+
+要求：
+- 不阻塞 heartbeat 正常 `HEARTBEAT_OK` / `ALERT:` 输出契约
+- 依赖 scheduler 内部 lock / cooldown / budget 控制
+- quick mode run history 写入：
+  - `artifacts/self_health/runtime/run_history.jsonl`
+  - `artifacts/self_health/runtime/heartbeat_status.json`

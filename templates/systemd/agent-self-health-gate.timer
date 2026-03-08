@@ -1,0 +1,11 @@
+[Unit]
+Description=Run OpenClaw Agent Self-Health Gate Mode Every 5 Minutes
+
+[Timer]
+OnBootSec=3m
+OnUnitActiveSec=5m
+Persistent=true
+Unit=agent-self-health-gate.service
+
+[Install]
+WantedBy=timers.target

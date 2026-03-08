@@ -1,0 +1,50 @@
+{
+  "tool": "/home/moonlight/.openclaw/workspace/tools/agent-health-check",
+  "timestamp": "2026-03-08T14:11:43.219060",
+  "mode": "ci",
+  "transport": "local",
+  "status": "healthy",
+  "checks": [
+    {
+      "name": "config",
+      "status": "pass",
+      "message": "Configuration check"
+    },
+    {
+      "name": "port",
+      "status": "warn",
+      "message": "CI mode: skipping real port check",
+      "details": {
+        "mode": "ci",
+        "suggestion": "Use --ci-port for CI testing"
+      }
+    },
+    {
+      "name": "health",
+      "status": "warn",
+      "message": "CI mode: skipping real health check",
+      "details": {
+        "mode": "ci",
+        "transport": "local"
+      }
+    },
+    {
+      "name": "sample_call",
+      "status": "warn",
+      "message": "CI mode: mock sample call",
+      "details": {
+        "mode": "ci",
+        "transport": "local",
+        "mock": true
+      }
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "warnings": 3
+  },
+  "chosen_port": null,
+  "health_ok": true,
+  "sample_call_ok": true
+}
