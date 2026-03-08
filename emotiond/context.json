@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "8148",
+  "message_id": "8155",
   "from": "telegram:8420019401",
-  "timestamp": 1773006065000,
+  "timestamp": 1773006260000,
   "decision": {
-    "action": "boundary",
-    "decision_id": 434,
+    "action": "approach",
+    "decision_id": 435,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 8.300370317529923e-17,
+        "bond": 8.054451173607775e-17,
         "grudge": 0,
         "trust": 0.5000000000000003,
         "repair_bank": 0
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "boundary",
+      "selected": "approach",
       "selection_reasons": [
-        "Selected via stochastic process (score: 0.030)",
+        "Selected via stochastic process (score: 0.036)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "clear, firm",
-    "intent": "establish limits",
+    "tone": "warm, open, friendly",
+    "intent": "engage warmly",
     "phrases": [
-      "I need to be clear",
-      "not comfortable"
+      "glad to hear",
+      "I appreciate"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-08T21:41:05.680Z",
+  "generated_at": "2026-03-08T21:44:21.288Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 8.300370317529923e-17,
+          "bond": 8.054451173607775e-17,
           "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
@@ -176,7 +176,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1773006065.6680002,
+      "generated_at": 1773006261.2758698,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

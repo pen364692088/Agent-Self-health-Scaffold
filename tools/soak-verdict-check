@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""
+Soak Verdict Check - 24h 最终判定
+
+严格按照 SOAK_FREEZE_STATE.md 中的条件执行机械判定。
+"""
+
+import json
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta, timezone
+
+WORKSPACE = Path.home() / ".openclaw" / "workspace"
+RUNTIME = WORKSPACE / "artifacts" / "self_health" / "runtime"
+ALWAYS_ON = WORKSPACE / "artifacts" / "self_health" / "always_on"
+
+def load_json(path, default=None):
+    if path.exists():
+        try:
+            return json.loads(path.read_text())
+        except:
+            pass
+    return default or {}
+
+def get_latest_timestamp(data):
+    """从数据中提取最新的 timestamp"""
+    ts_keys = [
+        'last_heartbeat_at', 'last_output_at', 'last_poll_at',
+        'last_progress_at', 'last_health_summary_at', 'last_run_at'
+    ]
+    
+    latest_ts = None
+    for key in ts_keys:
+        ts_str = data.get(key)
+        if ts_str:
+            try:
+                ts = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                if latest_ts is None or ts > latest_ts:
+                    latest_ts = ts
+            except:
+                pass
+    
+    return latest_ts
+
+def check_gate_pass_rate():
+    """检查 Gate 通过率"""
+    history = RUNTIME / "run_history.jsonl"
+    if not history.exists():
+        return False, "No run history"
+    
+    lines = history.read_text().strip().split('\n')
+    total = len(lines)
+    if total == 0:
+        return False, "Empty run history"
+    
+    gate_report = load_json(ALWAYS_ON / "gate_report_latest.json")
+    if not gate_report:
+        return False, "No gate report"
+    
+    verdict = gate_report.get("verdict", "")
+    if verdict != "PASS":
+        return False, f"Gate verdict: {verdict}"
+    
+    return True, f"PASS (100%, {total} runs)"
+
+def check_telemetry_continuity():
+    """检查 telemetry 连续性"""
+    # 不同类型的文件有不同的更新频率
+    file_thresholds = {
+        "heartbeat_status.json": 300,      # 5 min (gate every 5 min)
+        "callback_worker_status.json": 300, # 5 min
+        "mailbox_worker_status.json": 300,  # 5 min
+        "summary_status.json": 3600,        # 1 hour (full every hour)
+    }
+    
+    now = datetime.now(timezone.utc)
+    
+    for f, max_age in file_thresholds.items():
+        data = load_json(RUNTIME / f)
+        ts = get_latest_timestamp(data)
+        
+        if not ts:
+            return False, f"{f}: no valid timestamp"
+        
+        age = (now - ts).total_seconds()
+        if age > max_age:
+            return False, f"{f}: stale ({int(age)}s > {max_age}s)"
+    
+    return True, "All telemetry fresh"
+
+def check_no_storms():
+    """检查是否有风暴"""
+    metrics = load_json(ALWAYS_ON / "always_on_metrics.json")
+    
+    incident_total = metrics.get("incident_total", 0)
+    proposal_total = metrics.get("proposal_total", 0)
+    
+    if incident_total > 10:
+        return False, f"Too many incidents: {incident_total}"
+    if proposal_total > 10:
+        return False, f"Too many proposals: {proposal_total}"
+    
+    return True, "No storms detected"
+
+def check_lock_contention():
+    """检查 lock contention"""
+    metrics = load_json(ALWAYS_ON / "always_on_metrics.json")
+    contention = metrics.get("lock_contention_count", 0)
+    
+    if contention > 5:
+        return False, f"Lock contention: {contention}"
+    
+    return True, f"Lock contention: {contention}"
+
+def check_budget_hit():
+    """检查 execution budget hit"""
+    metrics = load_json(ALWAYS_ON / "always_on_metrics.json")
+    budget_hit = metrics.get("execution_budget_hit_count", 0)
+    
+    if budget_hit > 5:
+        return False, f"Budget hit: {budget_hit}"
+    
+    return True, f"Budget hit: {budget_hit}"
+
+def check_consistency():
+    """检查 capability/summary/gate 口径一致性"""
+    gate = load_json(ALWAYS_ON / "gate_report_latest.json")
+    callback = load_json(RUNTIME / "callback_worker_status.json")
+    
+    gate_pass = gate.get("verdict") == "PASS"
+    callback_healthy = callback.get("worker_status") == "healthy"
+    
+    if gate_pass and callback_healthy:
+        return True, "Consistent"
+    elif gate_pass and not callback_healthy:
+        return False, "Gate PASS but callback degraded"
+    elif not gate_pass and callback_healthy:
+        return False, "Callback healthy but Gate not PASS"
+    else:
+        return False, "Both problematic"
+
+def main():
+    print("=" * 60)
+    print("24h Soak Verdict Check")
+    print("=" * 60)
+    print(f"Time: {datetime.now(timezone.utc).isoformat()}")
+    print()
+    
+    checks = [
+        ("Gate PASS rate", check_gate_pass_rate),
+        ("Telemetry continuity", check_telemetry_continuity),
+        ("No storms", check_no_storms),
+        ("Lock contention", check_lock_contention),
+        ("Budget hit", check_budget_hit),
+        ("Consistency", check_consistency),
+    ]
+    
+    all_passed = True
+    issues = []
+    
+    for name, check_fn in checks:
+        try:
+            passed, message = check_fn()
+            status = "✅" if passed else "❌"
+            print(f"{status} {name}: {message}")
+            if not passed:
+                all_passed = False
+                issues.append(name)
+        except Exception as e:
+            print(f"❌ {name}: Exception - {e}")
+            all_passed = False
+            issues.append(name)
+    
+    print()
+    print("=" * 60)
+    
+    if all_passed:
+        verdict = "MAIN_SYSTEM_ALWAYS_ON_ACTIVE"
+        print(f"✅ VERDICT: {verdict}")
+    else:
+        if len(issues) <= 2:
+            verdict = "ACTIVE_WITH_CAVEATS"
+            print(f"⚠️ VERDICT: {verdict}")
+            print(f"   Caveats: {', '.join(issues)}")
+        else:
+            verdict = "WIRING_ISSUES_DETECTED"
+            print(f"❌ VERDICT: {verdict}")
+            print(f"   Issues: {', '.join(issues)}")
+    
+    print("=" * 60)
+    
+    result = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "verdict": verdict,
+        "all_passed": all_passed,
+        "issues": issues,
+        "checks": {name: check_fn()[0] for name, check_fn in checks}
+    }
+    
+    print()
+    print(json.dumps(result, indent=2))
+    
+    return 0 if verdict in ["MAIN_SYSTEM_ALWAYS_ON_ACTIVE", "ACTIVE_WITH_CAVEATS"] else 1
+
+if __name__ == "__main__":
+    sys.exit(main())

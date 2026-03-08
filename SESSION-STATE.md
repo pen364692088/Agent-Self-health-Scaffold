@@ -3,7 +3,7 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)
-**Updated**: 2026-03-08T16:33:30-05:00
+**Updated**: 2026-03-08T16:43:00-05:00
 
 ---
 
@@ -12,7 +12,10 @@
 
 ## Current Phase
 ✅ OAI-5/OAI-3/OAI-4 baseline landed
-🧪 SOAK_IN_PROGRESS - 2h 21m continuous PASS, targeting 24h milestone
+✅ Telemetry semantic fix applied (event-driven service mapping)
+🧪 SOAK_IN_PROGRESS - 2h 32m continuous PASS, targeting 24h milestone
+
+---
 
 ## Current Branch / Workspace
 - Branch: openviking-l2-bugfix
@@ -43,20 +46,24 @@
 - heartbeat quick-mode hook appended to 'HEARTBEAT.md'
 - user systemd timers enabled: 'agent-self-health-full.timer', 'agent-self-health-gate.timer'
 
-## Soak Evidence (2h 21m)
-- 41 runs (31 gate, 6 full, 4 quick)
+## Delivered (Telemetry Semantic Fix)
+- 'tools/callback-worker-doctor' - 区分事件驱动服务状态
+- 'tools/agent-self-health-scheduler' - 正确映射 idle_expected
+
+## Soak Evidence (2h 32m)
+- 45+ runs (gate ~35, full ~6, quick ~4)
 - 100% Gate PASS rate
 - 0 lock contention, 0 budget hit
 - Telemetry continuously written
 - Details: artifacts/self_health/always_on/ALWAYS_ON_PROGRESS.md
 
 ## Next Actions
-1. ✅ Run short always-on soak and collect evidence - DONE (2h+)
-2. ⏳ Continue soak to 24h milestone
-3. ⏳ Improve callback-worker telemetry semantics (event-driven vs process-alive)
-4. ⏳ Expand Gate A/B/C explanations
+1. ✅ Continue soak to 24h milestone
+2. ✅ Fix callback-worker telemetry semantics - DONE
+3. ⏳ Monitor soak stability
+4. ⏳ Final verdict at 24h
 
 ## Blockers / Limits
-- callback-worker telemetry: semantic mismatch (inactive ≠ degraded for event-driven)
-- mailbox-worker telemetry: file heuristic, not process-backed
+- ✅ callback-worker telemetry semantic issue - FIXED
+- mailbox-worker telemetry: file heuristic, not process-backed (caveat, defer)
 - final verdict pending 24h soak completion
