@@ -2,18 +2,18 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "7695",
+  "message_id": "7697",
   "from": "telegram:8420019401",
-  "timestamp": 1772934808000,
+  "timestamp": 1772935419000,
   "decision": {
-    "action": "boundary",
-    "decision_id": 279,
+    "action": "attack",
+    "decision_id": 280,
     "explanation": {
       "emotion": {
         "top2": [
           [
             "loneliness",
-            0.005163918718931986
+            0.29999999999999993
           ]
         ],
         "all": {
@@ -21,7 +21,7 @@
           "sadness": 0,
           "anxiety": 0,
           "joy": 0,
-          "loneliness": 0.005163918718931986
+          "loneliness": 0.29999999999999993
         }
       },
       "interoception": {
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 1.0890169401961132e-11,
+        "bond": 9.851361372980004e-12,
         "grudge": 0,
         "trust": 0.49900000000000033,
         "repair_bank": 0
@@ -38,7 +38,7 @@
       "candidates": [
         {
           "action": "repair_offer",
-          "score": 0.07730000000326712,
+          "score": 0.07730000000295548,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.05,
@@ -58,7 +58,7 @@
         },
         {
           "action": "attack",
-          "score": 0.06980000000326712,
+          "score": 0.06980000000295548,
           "alpha": 0,
           "predicted_global": {
             "safety": -0.05,
@@ -78,7 +78,7 @@
         },
         {
           "action": "approach",
-          "score": 0.035300000003267135,
+          "score": 0.035300000002955495,
           "alpha": 0,
           "predicted_global": {
             "safety": 0.03,
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "boundary",
+      "selected": "attack",
       "selection_reasons": [
-        "Selected via stochastic process (score: 0.029)",
+        "Selected via stochastic process (score: 0.070)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "clear, firm",
-    "intent": "establish limits",
+    "tone": "defensive, sharp",
+    "intent": "push back",
     "phrases": [
-      "I need to be clear",
-      "not comfortable"
+      "I have to push back",
+      "not acceptable"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-08T01:53:30.552Z",
+  "generated_at": "2026-03-08T02:03:40.227Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -141,12 +141,12 @@
         "sadness": 0,
         "anxiety": 0,
         "joy": 0,
-        "loneliness": 0.005163918718931986
+        "loneliness": 0.29999999999999993
       },
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 1.0890169401961132e-11,
+          "bond": 9.851361372980004e-12,
           "trust": 0.49900000000000033,
           "grudge": 0,
           "repair_bank": 0
@@ -160,7 +160,7 @@
         "没有明显悲伤",
         "没有明显焦虑",
         "当前没有明显愉悦激活",
-        "没有明显孤独感",
+        "仍存在一定连接需求",
         "与该用户的关系较浅",
         "信任处于中等偏低水平",
         "没有明显积怨"
@@ -169,6 +169,8 @@
         "不要声称 joy 上升",
         "不要声称'我更开心了'",
         "不要声称愉悦感增加",
+        "不要声称孤独感已经消失",
+        "不要声称'我不再孤独'",
         "不要声称信任上升",
         "不要声称'我更信任你了'",
         "不要声称任何未在 allowed_claims 中列出的情绪状态",
@@ -176,7 +178,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1772934810.5228868,
+      "generated_at": 1772935420.1680532,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

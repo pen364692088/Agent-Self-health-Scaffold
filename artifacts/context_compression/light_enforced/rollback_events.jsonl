@@ -6,3 +6,4 @@
 {"timestamp":"2026-03-07T23:58:08.109Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T00:05:08.090Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-08T00:39:51.187Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-08T02:03:40.015Z","reason":"compress_failed","session_key":"agent:main:telegram:direct:8420019401","details":{"mode":"light_enforced"}}
