@@ -50,7 +50,7 @@ jobs:
       
       - name: State transition validation
         run: |
-          # Test all valid transitions
+          # Test all valid transitions (these should return 0 for ALLOW)
           python3 tools/done-guard --validate-state planned:implementing --json
           python3 tools/done-guard --validate-state implementing:self_verify --json
           python3 tools/done-guard --validate-state self_verify:await_human_test --json
@@ -63,10 +63,12 @@ jobs:
       - name: Fake completion detection
         run: |
           # Test fake completion detection
-          echo "任务已完成" | python3 tools/done-guard --check-text /dev/stdin --json
+          # done-guard returns 1 for BLOCK (expected), so we check output not exit code
+          OUTPUT=$(echo "任务已完成" | python3 tools/done-guard --check-text /dev/stdin --json || true)
+          echo "$OUTPUT"
           
           # Should detect fake completion
-          if echo "任务已完成" | python3 tools/done-guard --check-text /dev/stdin --json | grep -q '"has_fake_completion": true'; then
+          if echo "$OUTPUT" | grep -q '"has_fake_completion": true'; then
             echo "✅ Fake completion detection working"
           else
             echo "❌ Fake completion detection failed"
@@ -96,7 +98,7 @@ jobs:
           report = {
             'timestamp': datetime.now().isoformat(),
             'checks': {
-              'test_suite': '9/9',
+              'test_suite': '13/13',
               'schema_validation': 'passed',
               'state_transitions': 'passed',
               'fake_completion_detection': 'passed',
