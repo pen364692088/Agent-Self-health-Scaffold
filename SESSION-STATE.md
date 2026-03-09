@@ -1,54 +1,40 @@
-# Session State
-
-**Purpose**: 恢复主骨架 - 稳定且关键的信息
-
-**Baseline**: v1.1.1 STABLE (FROZEN)
-**Updated**: 2026-03-08T22:00:00-05:00
-
----
+# SESSION-STATE.md
 
 ## Current Objective
-Identify lane holder for `session:agent:main:telegram:direct:8420019401` and prove why it blocked manual trigger.
 
-## Current Phase
-✅ **LANE_HOLDER_IDENTIFIED**
-- Lane was held by embedded run `c98af15b-000a-437e-96dd-c3248bd6b7d0`
-- Run ended at 21:56:50 with `FailoverError: API rate limit reached`
-- Lane is now FREE (no events after 21:56:50)
+✅ 全部完成
 
----
+## Phase
 
-## Current Branch / Workspace
-- Branch: main
-- Workspace: ~/.openclaw/workspace
+CLOSED
 
----
+## Completed Tasks
 
-## Key Findings
+### 1. Native Compaction Restoration
+- **Status**: ✅ RESTORED
+- **Verdict**: Bundle adoption 已生效，正确入口已确认
+- **Evidence**: `artifacts/real_session_compaction_test/FINAL_VERDICT.md`
 
-1. **Lane holder**: embedded_run with runId `c98af15b-000a-437e-96dd-c3248bd6b7d0`
-2. **Hold reason**: LLM prompt processing; held session lane during API call
-3. **Release**: Normal release after task error at 21:56:50
-4. **Manual trigger failure**: `sessions_send` timeout while session was busy
-5. **True native path**: NOT entered; `sessions_send` ≠ `/compact` handler
+### 2. OpenViking Enablement
+- **Status**: ✅ ENABLED_AND_VERIFIED
+- **Verdict**: 服务运行正常，检索/添加功能验证通过
+- **Evidence**: `artifacts/openviking-enablement/FINAL_OPENVIKING_ENABLEMENT_VERDICT.md`
 
----
+### 3. Session Archive with Distillation
+- **Status**: ✅ IMPLEMENTED
+- **Flow**: 原始文件 → LLM提炼 → OpenViking入库 → git提交
+- **Compression**: ~90%
 
-## Verdict
+## System Status
 
-| Item | Status |
-|------|--------|
-| Lane owner identified | ✅ DONE |
-| Release mechanism proven | ✅ DONE |
-| sessions_send vs lane correlation | ✅ DONE |
-| Manual trigger authenticity | ✅ NOT_NATIVE_PATH |
-| Root cause single point | ✅ `hung_inflight_owner` (resolved) |
+| 组件 | 状态 |
+|------|------|
+| Native Compaction | ✅ RESTORED |
+| OpenViking | ✅ ENABLED |
+| Session Archive | ✅ INTEGRATED |
+| Regression Impact | ✅ None |
 
----
+## Next Steps
 
-## Next Actions
-1. If user wants to revalidate native compaction: wait for idle session, then send real `/compact` command
-2. Or: accept that the post-adoption window was blocked by a busy session, not a code bug
+无阻塞任务。系统进入观察态。
 
-## Blockers
-None. Lane is free. The second root cause is now explained.

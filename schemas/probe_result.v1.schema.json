@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "probe_result.v1.schema.json",
+  "title": "Probe Result",
+  "description": "Schema for probe framework results",
+  "type": "object",
+  "required": [
+    "probe_name",
+    "verification_mode",
+    "status",
+    "message",
+    "evidence",
+    "timestamp",
+    "duration_ms"
+  ],
+  "properties": {
+    "probe_name": {
+      "type": "string",
+      "description": "Unique name identifying the probe",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "verification_mode": {
+      "type": "string",
+      "description": "The verification mode used",
+      "enum": [
+        "probe_check",
+        "recent_success_check",
+        "artifact_output_check",
+        "synthetic_input_check",
+        "chain_integrity_check",
+        "base"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "description": "Result status",
+      "enum": ["ok", "warn", "fail", "error"]
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable result message",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Supporting evidence for the result",
+      "additionalProperties": true
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO 8601 timestamp of when the probe was executed",
+      "format": "date-time"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "description": "Duration of probe execution in milliseconds",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+}

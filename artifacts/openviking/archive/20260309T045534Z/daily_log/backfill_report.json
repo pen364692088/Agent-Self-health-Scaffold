@@ -1,0 +1,99 @@
+{
+  "version": "openviking_backfill_embeddings.v3",
+  "generated_at": "2026-03-09T04:55:36.786440+00:00",
+  "dry_run": false,
+  "upsert": true,
+  "inputs": {
+    "doc_ids_count": 1,
+    "from_audit": null,
+    "since_days": null,
+    "only_non_ok": false,
+    "root_uri": "viking://resources/user/memory/"
+  },
+  "params": {
+    "max_tokens": 800,
+    "overlap_tokens": 100,
+    "overlap_policy": "min(100,max_tokens//8)",
+    "max_chars": 4000,
+    "max_bytes": 12000,
+    "embedding_version": "openviking.default",
+    "policy": "/home/moonlight/.openclaw/workspace/config/openviking_embedding_policy.yaml",
+    "tokenizer": "auto",
+    "openai_model": "text-embedding-3-large",
+    "hf_model": null,
+    "manifest": "/home/moonlight/.openclaw/workspace/artifacts/openviking/index_manifest.json"
+  },
+  "cost_estimate": {
+    "embed_calls_est": 4,
+    "chunk_total_est": 4,
+    "bytes_total_est": 2673,
+    "time_est_sec": 1.0,
+    "write_ops_est": 1
+  },
+  "summary": {
+    "processed": 1,
+    "failed": 0,
+    "coverage_before_avg": 0.0,
+    "coverage_after_avg": 1.0,
+    "skipped_after_total": 0,
+    "idempotent_skipped": 0
+  },
+  "artifacts": {
+    "embedding_audit": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T045534Z/daily_log/embedding_audit.json",
+    "offenders": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T045534Z/daily_log/embedding_offenders_topN.json",
+    "policy_decision": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T045534Z/daily_log/policy_decision.json",
+    "metrics": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T045534Z/daily_log/metrics.json",
+    "manifest": "/home/moonlight/.openclaw/workspace/artifacts/openviking/index_manifest.json"
+  },
+  "results": [
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08_distilled_1/2026-03-08_distilled.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08_distilled_1/2026-03-08_distilled.md",
+        "doc_hash": "f5b4cb0282616ccc4a088e01a3f7cd12139263b9d6fdf07a03fb6844aaa1e29c",
+        "chunk_count_total": 4,
+        "chunk_count_embedded": 4,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 800,
+        "max_chunk_chars_seen": 600,
+        "max_chunk_bytes_seen": 800,
+        "status_counts": {
+          "ok": 4,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 237,
+        "dual_guard_trim_count": 233,
+        "indexed_at": "2026-03-09T04:55:35.954913+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 4,
+      "max_chunk_tokens": 800,
+      "max_chunk_chars": 600,
+      "max_chunk_bytes": 800,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 237,
+      "dual_guard_trim_count": 233,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,67 @@
+{
+  "probe_name": "probe-native-compaction",
+  "verification_mode": "probe_check",
+  "checks": [
+    {
+      "name": "tool_exists",
+      "description": "Check compaction tool exists and is executable",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/context-compress",
+        "is_executable": true
+      }
+    },
+    {
+      "name": "capsule_builder_exists",
+      "description": "Check capsule builder exists",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/capsule-builder"
+      }
+    },
+    {
+      "name": "test_data_creation",
+      "description": "Create test session data for compaction",
+      "passed": true,
+      "details": {
+        "temp_dir": "/tmp/probe_compaction_2qavss3t",
+        "state_file": "/tmp/probe_compaction_2qavss3t/test_state.json"
+      }
+    },
+    {
+      "name": "compaction_execution",
+      "description": "Execute compaction on test data",
+      "passed": true,
+      "details": {
+        "elapsed_seconds": 0.12,
+        "returncode": 0,
+        "stdout_preview": "{\n  \"compression_triggered\": false,\n  \"mode\": \"shadow\",\n  \"pressure_level\": \"normal\",\n  \"reason\": \"Context pressure is normal, no compression needed\",\n  \"budget\": {\n    \"estimated_tokens\": 114,\n    \"max_tokens\": 100000,\n    \"ratio\": 0.0011,\n    \"pressure_level\": \"normal\",\n    \"threshold_hit\": null,\n    \"snapshot_id\": \"snap_20260309_013037\"\n  }\n}\n"
+      }
+    },
+    {
+      "name": "output_format",
+      "description": "Validate compaction output format",
+      "passed": true,
+      "details": {
+        "schema_exists": true,
+        "capsules_count": 5,
+        "capsules_dir_exists": true
+      }
+    },
+    {
+      "name": "retrieval_functionality",
+      "description": "Check context retrieval tool",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/context-retrieve",
+        "health_check_returncode": 0
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "check_count": 6,
+  "pass_count": 6,
+  "timestamp": "2026-03-09T06:30:38.507811+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-native-compaction_evidence.json"
+}

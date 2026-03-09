@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""
+Archive with Distillation - 归档时先提炼再存储
+
+流程：
+1. 加载 daily log / memory.md
+2. 调用 LLM 提炼核心要点
+3. 存储提炼后的要点到 OpenViking（附带原始文件路径）
+4. 提交到 git
+
+Usage:
+    archive-with-distill [--dry-run]
+"""
+import argparse
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+MEMORY_DIR = WORKSPACE / "memory"
+DISTILL_DIR = WORKSPACE / "artifacts" / "distilled"
+DISTILL_TOOL = WORKSPACE / "tools" / "distill-content"
+ARCHIVE_TOOL = WORKSPACE / "scripts" / "openviking_archive_entry.py"
+
+
+def run_cmd(cmd, check=True, capture=True):
+    """Run shell command."""
+    result = subprocess.run(
+        cmd, shell=True, capture_output=capture, text=True
+    )
+    if check and result.returncode != 0:
+        raise RuntimeError(f"Command failed: {cmd}\n{result.stderr}")
+    return result
+
+
+def distill_file(input_path: Path, output_path: Path) -> dict:
+    """Distill a file to key points."""
+    result = run_cmd(
+        f"{DISTILL_TOOL} {input_path} --output {output_path} --json",
+        check=False
+    )
+    
+    if result.returncode != 0:
+        return {"success": False, "error": result.stderr}
+    
+    try:
+        data = json.loads(output_path.read_text())
+        return {
+            "success": True,
+            "source_file": data.get("source_file"),
+            "compression_ratio": data.get("compression_ratio"),
+            "output_file": str(output_path),
+            "original_size": data.get("source_size_bytes"),
+            "distilled_size": len(data.get("content", ""))
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def archive_to_openviking(distilled_files: list, dry_run: bool = False) -> dict:
+    """Archive distilled files to OpenViking."""
+    if not ARCHIVE_TOOL.exists():
+        return {"success": False, "error": f"Archive tool not found: {ARCHIVE_TOOL}"}
+    
+    results = []
+    for df in distilled_files:
+        if not Path(df).exists():
+            results.append({"file": df, "status": "missing"})
+            continue
+        
+        cmd = f"python3 {ARCHIVE_TOOL} --daily-log {df} --json"
+        if dry_run:
+            cmd += " --dry-run"
+        
+        result = run_cmd(cmd, check=False)
+        
+        if result.returncode != 0:
+            results.append({"file": df, "status": "error", "error": result.stderr[:200]})
+        else:
+            try:
+                data = json.loads(result.stdout)
+                results.append({
+                    "file": df,
+                    "status": "ok",
+                    "resources": sum(r.get("leaf_count", 0) for r in data.get("results", []))
+                })
+            except:
+                results.append({"file": df, "status": "ok", "raw": result.stdout[:200]})
+    
+    return {"success": True, "results": results}
+
+
+def commit_to_git(message: str, dry_run: bool = False) -> dict:
+    """Commit changes to backup repo."""
+    backup_repo = Path.home() / ".openclaw"
+    
+    try:
+        os.chdir(backup_repo)
+        
+        # Check changes
+        result = run_cmd("git status --porcelain", check=False)
+        if not result.stdout.strip():
+            return {"status": "no_changes"}
+        
+        if dry_run:
+            return {"status": "dry_run", "changes": result.stdout.strip().split('\n')[:10]}
+        
+        # Add and commit
+        run_cmd("git add -A")
+        run_cmd(f'git commit -m "{message}"')
+        
+        # Push
+        push_result = run_cmd("git push", check=False)
+        if push_result.returncode != 0:
+            return {"status": "commit_ok_push_failed", "error": push_result.stderr[:200]}
+        
+        return {"status": "ok", "commit": message}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Archive with distillation')
+    parser.add_argument('--dry-run', action='store_true', help='Dry run')
+    parser.add_argument('--json', action='store_true', help='Output as JSON')
+    args = parser.parse_args()
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    DISTILL_DIR.mkdir(parents=True, exist_ok=True)
+    
+    print(f"\n{'='*60}")
+    print(f"Archive with Distillation: {today}")
+    print(f"{'='*60}\n")
+    
+    results = {
+        "date": today,
+        "dry_run": args.dry_run,
+        "steps": {}
+    }
+    
+    # Step 1: Distill daily log
+    daily_log = MEMORY_DIR / f"{today}.md"
+    distilled_daily = DISTILL_DIR / f"{today}_distilled.md"
+    
+    if daily_log.exists():
+        print(f"Step 1: Distilling daily log...")
+        distill_result = distill_file(daily_log, distilled_daily)
+        results["steps"]["distill_daily"] = distill_result
+        
+        if distill_result.get("success"):
+            print(f"  ✓ Compressed: {distill_result.get('compression_ratio')}")
+        else:
+            print(f"  ✗ Error: {distill_result.get('error')}")
+    else:
+        print(f"Step 1: Daily log not found: {daily_log}")
+        results["steps"]["distill_daily"] = {"success": False, "error": "not_found"}
+    
+    # Step 2: Distill memory.md
+    memory_md = WORKSPACE / "memory.md"
+    distilled_memory = DISTILL_DIR / "memory_distilled.md"
+    
+    if memory_md.exists():
+        print(f"\nStep 2: Distilling memory.md...")
+        distill_result = distill_file(memory_md, distilled_memory)
+        results["steps"]["distill_memory"] = distill_result
+        
+        if distill_result.get("success"):
+            print(f"  ✓ Compressed: {distill_result.get('compression_ratio')}")
+        else:
+            print(f"  ✗ Error: {distill_result.get('error')}")
+    else:
+        print(f"Step 2: memory.md not found")
+        results["steps"]["distill_memory"] = {"success": False, "error": "not_found"}
+    
+    # Step 3: Archive to OpenViking
+    print(f"\nStep 3: Archiving to OpenViking...")
+    
+    distilled_files = []
+    if distilled_daily.exists():
+        distilled_files.append(str(distilled_daily))
+    if distilled_memory.exists():
+        distilled_files.append(str(distilled_memory))
+    
+    if distilled_files:
+        archive_result = archive_to_openviking(distilled_files, args.dry_run)
+        results["steps"]["openviking"] = archive_result
+        
+        if archive_result.get("success"):
+            for r in archive_result.get("results", []):
+                status = "✓" if r.get("status") == "ok" else "✗"
+                print(f"  {status} {r.get('file')}: {r.get('resources', r.get('error', 'ok'))} resources")
+        else:
+            print(f"  ✗ Error: {archive_result.get('error')}")
+    else:
+        print("  Skipped: No distilled files to archive")
+        results["steps"]["openviking"] = {"success": False, "error": "no_files"}
+    
+    # Step 4: Commit to git
+    print(f"\nStep 4: Committing to git...")
+    commit_result = commit_to_git(f"archive: distilled {today}", args.dry_run)
+    results["steps"]["git"] = commit_result
+    
+    if commit_result.get("status") == "ok":
+        print(f"  ✓ Committed and pushed")
+    elif commit_result.get("status") == "no_changes":
+        print(f"  No changes to commit")
+    elif commit_result.get("status") == "dry_run":
+        print(f"  Dry run: {len(commit_result.get('changes', []))} changes")
+    else:
+        print(f"  Status: {commit_result.get('status')}")
+    
+    # Summary
+    print(f"\n{'='*60}")
+    print("Summary:")
+    print(f"  Daily log: {results['steps'].get('distill_daily', {}).get('compression_ratio', 'N/A')}")
+    print(f"  Memory: {results['steps'].get('distill_memory', {}).get('compression_ratio', 'N/A')}")
+    print(f"  OpenViking: {len(distilled_files)} files archived")
+    print(f"  Git: {commit_result.get('status', 'unknown')}")
+    print(f"{'='*60}\n")
+    
+    if args.json:
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+
+
+if __name__ == '__main__':
+    main()

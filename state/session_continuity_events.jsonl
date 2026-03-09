@@ -217,3 +217,81 @@
     "recovery_id": "unknown:2026-03-08T20:23:53.285368"
   }
 }
+{
+  "ts": "2026-03-08T21:17:44-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T21:17:44.284735",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "🧊 FROZENOBSERVATION (2026-03-08 16:44 → 2026-03-09 14:00 CDT) - ✅ OAI-5/3/4 baseline landed - ✅ Tele",
+    "recovery_id": "unknown:2026-03-08T21:17:44.284735"
+  }
+}
+{
+  "ts": "2026-03-08T21:42:57-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T21:42:57.896164",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "🧊 FROZENOBSERVATION (2026-03-08 16:44 → 2026-03-09 14:00 CDT) - ✅ OAI-5/3/4 baseline landed - ✅ Tele",
+    "recovery_id": "unknown:2026-03-08T21:42:57.896164"
+  }
+}
+{
+  "ts": "2026-03-08T22:08:44-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T22:08:43.994385",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "✅ LANEHOLDERIDENTIFIED - Lane was held by embedded run c98af15b-000a-437e-96dd-c3248bd6b7d0 - Run en",
+    "recovery_id": "unknown:2026-03-08T22:08:43.994385"
+  }
+}
+{
+  "ts": "2026-03-08T22:22:41-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T22:22:41.306047",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "✅ LANEHOLDERIDENTIFIED - Lane was held by embedded run c98af15b-000a-437e-96dd-c3248bd6b7d0 - Run en",
+    "recovery_id": "unknown:2026-03-08T22:22:41.306047"
+  }
+}
+{
+  "ts": "2026-03-09T00:57:57-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T00:57:57.960973",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "CLOSED",
+    "recovery_id": "unknown:2026-03-09T00:57:57.960973"
+  }
+}
+{
+  "ts": "2026-03-09T01:00:20-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T01:00:20.761376",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "CLOSED",
+    "recovery_id": "unknown:2026-03-09T01:00:20.761376"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "version": "openviking_metrics.v1",
+  "generated_at": "2026-03-09T04:53:56.121642+00:00",
+  "source": "backfill",
+  "doc_count": 1,
+  "coverage": {
+    "min": 1.0,
+    "p50": 1.0,
+    "p95": 1.0
+  },
+  "skipped_chunks_count": 0,
+  "fallback_trigger_count": 41,
+  "dual_guard_trim_count": 39,
+  "offenders_topN": [
+    {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled/memory_distilled.md",
+      "doc_hash": "bd28dff11cda46e0b3ec937b938c1d4bf3d95338c9c2157553217582c1e503e1",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 795,
+      "max_chunk_chars_seen": 601,
+      "max_chunk_bytes_seen": 795,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 41,
+      "dual_guard_trim_count": 39
+    }
+  ]
+}

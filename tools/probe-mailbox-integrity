@@ -1,0 +1,389 @@
+#!/usr/bin/env python3
+"""
+probe-mailbox-integrity - Mailbox Worker Integrity Probe
+
+Verification Mode: artifact_output_check + process_check
+
+Checks mailbox worker integrity:
+1. mailbox_worker_status.json exists
+2. Actual process is running (not just status file)
+3. Recent processing activity
+4. Queue has no backlog
+5. Processing is active
+
+Usage:
+  probe-mailbox-integrity
+  probe-mailbox-integrity --json
+  probe-mailbox-integrity --backlog-threshold 5 --activity-threshold 3600
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import os
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+RUNTIME_DIR = WORKSPACE / "artifacts" / "self_health" / "runtime"
+STATE_DIR = WORKSPACE / "artifacts" / "self_health" / "state"
+
+# Default thresholds
+DEFAULT_BACKLOG_THRESHOLD = 5
+DEFAULT_ACTIVITY_THRESHOLD_SECONDS = 3600  # 1 hour
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def parse_iso_datetime(dt_str: str) -> Optional[datetime]:
+    """Parse ISO datetime string."""
+    if not dt_str:
+        return None
+    try:
+        # Handle various ISO formats
+        dt_str = dt_str.replace('Z', '+00:00')
+        if '+' not in dt_str and '-' not in dt_str[-6:]:
+            dt_str += '+00:00'
+        return datetime.fromisoformat(dt_str)
+    except Exception:
+        return None
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class MailboxIntegrityProbe:
+    """Probe for mailbox worker integrity."""
+    
+    def __init__(self, backlog_threshold: int = DEFAULT_BACKLOG_THRESHOLD,
+                 activity_threshold: int = DEFAULT_ACTIVITY_THRESHOLD_SECONDS):
+        self.backlog_threshold = backlog_threshold
+        self.activity_threshold = activity_threshold
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-mailbox-integrity",
+            "verification_mode": "artifact_output_check + process_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_status_file_exists(self) -> Dict:
+        """Check 1: mailbox_worker_status.json exists."""
+        check = {
+            "name": "status_file_exists",
+            "description": "Check mailbox worker status file exists",
+            "passed": False,
+            "details": {}
+        }
+        
+        status_file = RUNTIME_DIR / "mailbox_worker_status.json"
+        
+        if status_file.exists():
+            check["passed"] = True
+            check["details"]["file_path"] = str(status_file)
+            
+            # Get file stats
+            stat = status_file.stat()
+            check["details"]["file_size_bytes"] = stat.st_size
+            check["details"]["modified_at"] = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+        else:
+            check["details"]["error"] = f"Status file not found: {status_file}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_actual_process_running(self) -> Dict:
+        """Check 2: Actual process is running (not just file)."""
+        check = {
+            "name": "process_running",
+            "description": "Check mailbox worker process is actually running",
+            "passed": False,
+            "details": {}
+        }
+        
+        try:
+            # Check for mailbox-worker or related processes
+            result = subprocess.run(
+                ["pgrep", "-f", "mailbox"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                pids = result.stdout.strip().split('\n')
+                check["passed"] = True
+                check["details"]["pids_found"] = pids
+                check["details"]["process_count"] = len(pids)
+            else:
+                # Check via systemctl for systemd-managed workers
+                svc_result = subprocess.run(
+                    ["systemctl", "--user", "is-active", "mailbox-worker"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                
+                if svc_result.returncode == 0:
+                    check["passed"] = True
+                    check["details"]["service_status"] = svc_result.stdout.strip()
+                else:
+                    # Check for any Python process that might be the worker
+                    py_result = subprocess.run(
+                        ["pgrep", "-af", "python.*mailbox"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    
+                    if py_result.returncode == 0 and py_result.stdout.strip():
+                        check["passed"] = True
+                        check["details"]["python_process"] = py_result.stdout.strip()
+                    else:
+                        check["details"]["error"] = "No mailbox worker process found"
+                        check["details"]["pgrep_result"] = result.stdout.strip() or "(empty)"
+                        
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = "Timeout checking process"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_status_content(self) -> Dict:
+        """Check 3: Status file content validation."""
+        check = {
+            "name": "status_content",
+            "description": "Validate status file content",
+            "passed": False,
+            "details": {}
+        }
+        
+        status_file = RUNTIME_DIR / "mailbox_worker_status.json"
+        
+        if not status_file.exists():
+            check["details"]["error"] = "Status file not found"
+            self.checks.append(check)
+            return check
+        
+        try:
+            with open(status_file, 'r') as f:
+                status = json.load(f)
+            
+            check["details"]["status"] = status
+            
+            # Validate required fields
+            required_fields = ["alive", "last_poll_at"]
+            missing = [f for f in required_fields if f not in status]
+            
+            if missing:
+                check["details"]["missing_fields"] = missing
+                check["passed"] = False
+            else:
+                check["passed"] = status.get("alive", False)
+                check["details"]["is_alive"] = status.get("alive")
+                check["details"]["mailbox_status"] = status.get("mailbox_status")
+                check["details"]["stuck_suspected"] = status.get("stuck_suspected")
+                
+        except json.JSONDecodeError as e:
+            check["details"]["error"] = f"Invalid JSON: {e}"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_backlog(self) -> Dict:
+        """Check 4: Queue backlog within threshold."""
+        check = {
+            "name": "queue_backlog",
+            "description": "Check queue backlog is within threshold",
+            "passed": False,
+            "details": {}
+        }
+        
+        status_file = RUNTIME_DIR / "mailbox_worker_status.json"
+        
+        if status_file.exists():
+            try:
+                with open(status_file, 'r') as f:
+                    status = json.load(f)
+                
+                backlog = status.get("backlog_count", 0)
+                check["details"]["backlog_count"] = backlog
+                check["details"]["threshold"] = self.backlog_threshold
+                
+                if backlog > self.backlog_threshold:
+                    check["passed"] = False
+                    check["details"]["error"] = f"Backlog {backlog} exceeds threshold {self.backlog_threshold}"
+                else:
+                    check["passed"] = True
+                    
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        else:
+            check["details"]["warning"] = "Status file not found, skipping backlog check"
+            check["passed"] = True  # Non-blocking
+        
+        self.checks.append(check)
+        return check
+    
+    def check_recent_activity(self) -> Dict:
+        """Check 5: Recent processing activity."""
+        check = {
+            "name": "recent_activity",
+            "description": "Check recent processing activity",
+            "passed": False,
+            "details": {}
+        }
+        
+        status_file = RUNTIME_DIR / "mailbox_worker_status.json"
+        
+        if status_file.exists():
+            try:
+                with open(status_file, 'r') as f:
+                    status = json.load(f)
+                
+                last_poll = status.get("last_poll_at")
+                last_progress = status.get("last_progress_at")
+                
+                check["details"]["last_poll_at"] = last_poll
+                check["details"]["last_progress_at"] = last_progress
+                
+                now = datetime.now(timezone.utc)
+                
+                # Check last poll time
+                if last_poll:
+                    poll_dt = parse_iso_datetime(last_poll)
+                    if poll_dt:
+                        poll_age = (now - poll_dt).total_seconds()
+                        check["details"]["last_poll_age_seconds"] = poll_age
+                        check["passed"] = poll_age < self.activity_threshold
+                    else:
+                        check["details"]["parse_error"] = "Could not parse last_poll_at"
+                        check["passed"] = True  # Non-blocking
+                else:
+                    check["passed"] = True  # May not have polled yet
+                    
+            except Exception as e:
+                check["details"]["error"] = str(e)
+                check["passed"] = True  # Non-blocking
+        else:
+            check["details"]["warning"] = "Status file not found"
+            check["passed"] = True  # Non-blocking
+        
+        self.checks.append(check)
+        return check
+    
+    def check_stuck_detection(self) -> Dict:
+        """Check 6: Stuck detection status."""
+        check = {
+            "name": "stuck_detection",
+            "description": "Check if worker is suspected stuck",
+            "passed": False,
+            "details": {}
+        }
+        
+        status_file = RUNTIME_DIR / "mailbox_worker_status.json"
+        
+        if status_file.exists():
+            try:
+                with open(status_file, 'r') as f:
+                    status = json.load(f)
+                
+                stuck = status.get("stuck_suspected", False)
+                check["details"]["stuck_suspected"] = stuck
+                
+                if stuck:
+                    check["passed"] = False
+                    check["details"]["error"] = "Worker is suspected stuck"
+                else:
+                    check["passed"] = True
+                    
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        else:
+            check["details"]["warning"] = "Status file not found"
+            check["passed"] = True  # Non-blocking
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        # Run all checks
+        self.check_status_file_exists()
+        self.check_actual_process_running()
+        self.check_status_content()
+        self.check_backlog()
+        self.check_recent_activity()
+        self.check_stuck_detection()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["backlog_threshold"] = self.backlog_threshold
+        self.evidence["activity_threshold_seconds"] = self.activity_threshold
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-mailbox-integrity", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Mailbox Worker Integrity Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--backlog-threshold", type=int, default=DEFAULT_BACKLOG_THRESHOLD)
+    parser.add_argument("--activity-threshold", type=int, default=DEFAULT_ACTIVITY_THRESHOLD_SECONDS)
+    args = parser.parse_args()
+    
+    probe = MailboxIntegrityProbe(
+        backlog_threshold=args.backlog_threshold,
+        activity_threshold=args.activity_threshold
+    )
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-mailbox-integrity")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

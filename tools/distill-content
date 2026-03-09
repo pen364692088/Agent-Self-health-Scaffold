@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""
+Distill Content - 提炼内容要点，压缩存储
+
+Usage:
+    distill-content <input_file> [--output <output_file>] [--model <model>]
+
+Output:
+    提炼后的要点 + 原始文件路径引用
+"""
+import argparse
+import json
+import os
+import re
+import sys
+import requests
+from datetime import datetime
+from pathlib import Path
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+CONFIG_PATH = Path.home() / ".openclaw" / "openclaw.json"
+
+
+def load_config():
+    """Load OpenClaw config."""
+    with open(CONFIG_PATH, 'r') as f:
+        return json.load(f)
+
+
+def get_provider_config(provider: str, config: dict):
+    """Get provider config from OpenClaw config."""
+    providers = config.get('models', {}).get('providers', {})
+    return providers.get(provider, providers.get('baiduqianfancodingplan', {}))
+
+
+def resolve_env_vars(value):
+    """Resolve ${VAR} environment variables in string."""
+    if isinstance(value, str):
+        pattern = r'\$\{([^}]+)\}'
+        matches = re.findall(pattern, value)
+        for var in matches:
+            value = value.replace(f'${{{var}}}', os.environ.get(var, ''))
+    return value
+
+
+def load_content(file_path: str) -> str:
+    """Load content from file."""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return f.read()
+
+
+def call_llm_distill(content: str, provider: str = "baiduqianfancodingplan", model: str = "qianfan-code-latest") -> dict:
+    """Call LLM to distill content into key points."""
+    config = load_config()
+    provider_config = get_provider_config(provider, config)
+    
+    base_url = resolve_env_vars(provider_config.get('baseUrl', ''))
+    api_key = resolve_env_vars(provider_config.get('apiKey', ''))
+    
+    if not base_url or not api_key:
+        return {"success": False, "error": f"Missing config for {provider}"}
+    
+    prompt = f"""分析以下内容，提炼出核心要点。
+
+要求：
+1. 保留所有重要信息，去除冗余细节
+2. 使用结构化格式输出
+3. 每个要点一行，简洁明了
+4. 保留时间戳、决策、结果等关键信息
+5. 压缩目标：保留 20-30% 的原始信息量
+
+格式：
+## 核心要点
+- [要点1]
+- [要点2]
+...
+
+## 关键决策
+- [决策及原因]
+
+## 重要结果
+- [结果]
+
+## 待办/下一步
+- [如有]
+
+---
+内容：
+{content}
+"""
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 2000,
+        "temperature": 0.3
+    }
+    
+    try:
+        response = requests.post(
+            f"{base_url}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        
+        if response.status_code != 200:
+            return {"success": False, "error": f"API error: {response.status_code} - {response.text[:200]}"}
+        
+        data = response.json()
+        distilled = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+        
+        if not distilled:
+            return {"success": False, "error": "Empty response from LLM"}
+        
+        return {
+            "success": True,
+            "distilled": distilled,
+            "model": f"{provider}/{model}",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Distill content into key points')
+    parser.add_argument('input_file', help='Input file to distill')
+    parser.add_argument('--output', '-o', help='Output file (default: stdout)')
+    parser.add_argument('--provider', '-p', default='baiduqianfancodingplan',
+                        help='Provider to use')
+    parser.add_argument('--model', '-m', default='qianfan-code-latest',
+                        help='Model to use for distillation')
+    parser.add_argument('--json', action='store_true', help='Output as JSON')
+    args = parser.parse_args()
+    
+    # Load content
+    content = load_content(args.input_file)
+    original_size = len(content)
+    
+    # Distill
+    result = call_llm_distill(content, args.provider, args.model)
+    
+    if not result.get('success'):
+        print(f"Error: {result.get('error', 'Unknown error')}", file=sys.stderr)
+        sys.exit(1)
+    
+    distilled = result['distilled']
+    distilled_size = len(distilled)
+    
+    # Add source reference
+    output = {
+        "source_file": os.path.abspath(args.input_file),
+        "source_size_bytes": original_size,
+        "distilled_at": result['timestamp'],
+        "model": result['model'],
+        "compression_ratio": f"{100 - (distilled_size / original_size * 100):.1f}%",
+        "content": distilled
+    }
+    
+    if args.json:
+        output_text = json.dumps(output, ensure_ascii=False, indent=2)
+    else:
+        output_text = f"""# Distilled Content
+
+Source: {output['source_file']}
+Compressed: {output['compression_ratio']}
+Timestamp: {output['distilled_at']}
+
+---
+
+{distilled}
+
+---
+[Original: {original_size} bytes → Distilled: {distilled_size} bytes]
+"""
+    
+    if args.output:
+        Path(args.output).write_text(output_text, encoding='utf-8')
+        print(f"Written to {args.output}")
+    else:
+        print(output_text)
+
+
+if __name__ == '__main__':
+    main()

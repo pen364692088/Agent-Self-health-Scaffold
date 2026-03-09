@@ -11,13 +11,23 @@ LOCKS = WORKSPACE / 'artifacts' / 'self_health' / 'locks'
 INCIDENTS = WORKSPACE / 'artifacts' / 'self_health' / 'incidents'
 PROPOSALS = WORKSPACE / 'artifacts' / 'self_health' / 'proposals'
 AUDIT = WORKSPACE / 'artifacts' / 'self_health' / 'audit'
-for p in [RUNTIME, STATE, ALWAYS_ON, LOCKS, INCIDENTS, PROPOSALS, AUDIT]:
+PROBES_DIR = WORKSPACE / 'artifacts' / 'self_health' / 'probes'
+for p in [RUNTIME, STATE, ALWAYS_ON, LOCKS, INCIDENTS, PROPOSALS, AUDIT, PROBES_DIR]:
     p.mkdir(parents=True, exist_ok=True)
 
+# P0 Probes - Critical blind spots
+P0_PROBES = [
+    'probe-native-compaction',
+    'probe-context-overflow',
+    'probe-callback-delivery',
+    'probe-mailbox-integrity',
+    'probe-gate-consistency',
+]
+
 CONFIG = {
-    'quick': {'cooldown': 300, 'budget': 15, 'health_args': ['--quick', '--json']},
-    'full': {'cooldown': 3600, 'budget': 120, 'health_args': ['--deep', '--json']},
-    'gate': {'cooldown': 300, 'budget': 30, 'health_args': None},
+    'quick': {'cooldown': 300, 'budget': 15, 'health_args': ['--quick', '--json'], 'run_probes': True},
+    'full': {'cooldown': 3600, 'budget': 120, 'health_args': ['--deep', '--json'], 'run_probes': True},
+    'gate': {'cooldown': 300, 'budget': 30, 'health_args': None, 'run_probes': False},
 }
 INCIDENT_DEDUP_SECONDS = 1800
 PROPOSAL_DEDUP_SECONDS = 3600
@@ -69,7 +79,54 @@ def parse_json(stdout, fallback=None):
         return fallback if fallback is not None else {'raw_stdout': stdout[:1000]}
 
 
-def component_snapshot(mode, health_result=None, gate_result=None):
+def run_p0_probes():
+    """Run all P0 probes and collect results."""
+    results = {}
+    failed_probes = []
+    
+    for probe_name in P0_PROBES:
+        probe_path = WORKSPACE / 'tools' / probe_name
+        if not probe_path.exists():
+            results[probe_name] = {'status': 'error', 'message': f'Probe not found: {probe_name}'}
+            continue
+        
+        try:
+            rc, out, err = run(['python3', str(probe_path), '--json'], timeout=30)
+            result = parse_json(out, {'raw_stdout': out[:500], 'error': err[:200]})
+            results[probe_name] = result
+            
+            # Write individual probe result
+            write_json(PROBES_DIR / f'{probe_name}.json', result)
+            
+            if result.get('status') in ('fail', 'error'):
+                failed_probes.append({
+                    'probe': probe_name,
+                    'status': result.get('status'),
+                    'message': result.get('message', 'Unknown failure')
+                })
+        except Exception as e:
+            results[probe_name] = {'status': 'error', 'message': str(e)}
+            failed_probes.append({
+                'probe': probe_name,
+                'status': 'error',
+                'message': str(e)
+            })
+    
+    # Write combined probe status
+    probe_summary = {
+        'timestamp': now_iso(),
+        'total_probes': len(P0_PROBES),
+        'passed': len(P0_PROBES) - len(failed_probes),
+        'failed': len(failed_probes),
+        'failed_probes': failed_probes,
+        'results': results
+    }
+    write_json(PROBES_DIR / 'probe_summary.json', probe_summary)
+    
+    return probe_summary, failed_probes
+
+
+def component_snapshot(mode, health_result=None, gate_result=None, probe_summary=None):
     ts = now_iso()
     hb = read_json(RUNTIME / 'heartbeat_status.json', {})
     cb = read_json(RUNTIME / 'callback_worker_status.json', {})
@@ -80,9 +137,13 @@ def component_snapshot(mode, health_result=None, gate_result=None):
         'skipped_runs_total': 0, 'lock_contention_count': 0, 'execution_budget_hit_count': 0,
         'incident_total': 0, 'deduped_incident_count': 0, 'proposal_total': 0, 'deduped_proposal_count': 0,
         'cooldown_blocked_count': 0, 'repeated_same_alert_count': 0, 'gate_inconsistency_count': 0,
+        'probe_runs_total': 0, 'probe_failures_total': 0,
     })
     metrics['scheduler_runs_total'] += 1
     metrics[f'{mode}_runs_total'] = metrics.get(f'{mode}_runs_total', 0) + 1
+    if probe_summary:
+        metrics['probe_runs_total'] = metrics.get('probe_runs_total', 0) + 1
+        metrics['probe_failures_total'] = metrics.get('probe_failures_total', 0) + probe_summary.get('failed', 0)
     write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
 
     last_hist_age = file_age_seconds(STATE / 'health_history.jsonl')
@@ -95,12 +156,12 @@ def component_snapshot(mode, health_result=None, gate_result=None):
         'last_full_check_at': ts if mode == 'full' else hb.get('last_full_check_at'),
         'heartbeat_status': 'healthy' if (health_result or {}).get('ok', True) else 'degraded',
         'health_history_age_seconds': last_hist_age,
+        'last_probe_summary': probe_summary,
     })
     write_json(RUNTIME / 'heartbeat_status.json', hb)
 
     code, out, err = run(['python3', str(WORKSPACE / 'tools' / 'callback-worker-doctor')], timeout=20)
     
-    # Parse service state from doctor output (事件驱动服务语义映射)
     service_state = 'unknown'
     if '✅ Service state: OK (idle, no pending work)' in out:
         service_state = 'idle_expected'
@@ -109,7 +170,6 @@ def component_snapshot(mode, health_result=None, gate_result=None):
     elif '❌ Service state: Inactive with' in out:
         service_state = 'degraded'
     
-    # 映射 worker_status: idle_expected 也是 healthy
     worker_status = 'healthy' if code == 0 or service_state == 'idle_expected' else 'degraded'
     
     cb.update({
@@ -122,7 +182,7 @@ def component_snapshot(mode, health_result=None, gate_result=None):
         'last_error_at': ts if service_state == 'degraded' else cb.get('last_error_at'),
         'last_error_type': 'doctor_failed' if service_state == 'degraded' else None,
         'worker_status': worker_status,
-        'service_state': service_state,  # 新增: 详细状态
+        'service_state': service_state,
         'doctor_excerpt': '\n'.join(out.splitlines()[:8])[:500]
     })
     write_json(RUNTIME / 'callback_worker_status.json', cb)
@@ -169,11 +229,23 @@ def should_dedup(kind, fingerprint, seconds):
     return False, None
 
 
-def maybe_generate_incident_and_proposal(health_payload):
+def maybe_generate_incident_and_proposal(health_payload, probe_failures=None):
     metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
-    overall = health_payload.get('overall_status', 'GREEN')
-    components = health_payload.get('components', [])
+    overall = health_payload.get('overall_status', 'GREEN') if health_payload else 'GREEN'
+    components = health_payload.get('components', []) if health_payload else []
     bad = [c for c in components if c.get('status') in ('warning', 'error', 'unknown') and c.get('component') != 'network']
+    
+    # Add probe failures to bad list
+    if probe_failures:
+        for pf in probe_failures:
+            bad.append({
+                'component': f'probe:{pf["probe"]}',
+                'status': pf['status'],
+                'message': pf['message']
+            })
+        if probe_failures:
+            overall = 'ORANGE' if overall == 'GREEN' else overall
+    
     created = {'incident': None, 'proposal': None}
 
     if overall in ('YELLOW', 'ORANGE', 'RED') or bad:
@@ -190,7 +262,7 @@ def maybe_generate_incident_and_proposal(health_payload):
                 '--level', level_map.get(overall, 'YELLOW'),
                 '--category', 'always_on_health',
                 '--summary', summary,
-                '--context', json.dumps({'source': 'agent-self-health-scheduler', 'overall_status': overall}),
+                '--context', json.dumps({'source': 'agent-self-health-scheduler', 'overall_status': overall, 'probe_failures': probe_failures}),
                 '--json'
             ], timeout=20)
             created['incident'] = parse_json(out, {'raw_stdout': out[:500], 'error': err[:200]})
@@ -245,9 +317,10 @@ def main():
     ap.add_argument('--force', action='store_true')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--health', action='store_true')
+    ap.add_argument('--no-probes', action='store_true', help='Skip P0 probes')
     args = ap.parse_args()
     if args.health:
-        print(json.dumps({'status':'healthy','tool':'agent-self-health-scheduler','version':'1.1.0'}))
+        print(json.dumps({'status':'healthy','tool':'agent-self-health-scheduler','version':'1.2.0'}))
         return 0
 
     cfg = CONFIG[args.mode]
@@ -284,6 +357,14 @@ def main():
             return 0
 
         extras = {}
+        probe_summary = None
+        probe_failures = None
+        
+        # Run P0 probes if configured
+        if cfg.get('run_probes') and not args.no_probes:
+            probe_summary, probe_failures = run_p0_probes()
+            extras['probes'] = probe_summary
+        
         if args.mode in ('quick','full'):
             cmd = [str(WORKSPACE / 'tools' / 'agent-health-check')] + cfg['health_args']
             rc, out, err = run(cmd, timeout=cfg['budget'])
@@ -296,8 +377,8 @@ def main():
                 metrics['execution_budget_hit_count'] = metrics.get('execution_budget_hit_count', 0) + 1
                 write_json(ALWAYS_ON / 'always_on_metrics.json', metrics)
                 result['budget_hit'] = True
-            component_snapshot(args.mode, {'ok': ok, 'duration_ms': duration_ms})
-            extras['auto_flow'] = maybe_generate_incident_and_proposal(payload)
+            component_snapshot(args.mode, {'ok': ok, 'duration_ms': duration_ms}, probe_summary=probe_summary)
+            extras['auto_flow'] = maybe_generate_incident_and_proposal(payload, probe_failures)
             extras['summaries'] = maybe_generate_summaries(args.mode, payload)
         else:
             rc, out, err = run(['python3', str(WORKSPACE / 'tools' / 'gate-self-health-check'), '--json'], timeout=cfg['budget'])

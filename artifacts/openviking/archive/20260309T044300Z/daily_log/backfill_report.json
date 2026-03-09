@@ -1,0 +1,387 @@
+{
+  "version": "openviking_backfill_embeddings.v3",
+  "generated_at": "2026-03-09T04:43:10.066920+00:00",
+  "dry_run": false,
+  "upsert": true,
+  "inputs": {
+    "doc_ids_count": 7,
+    "from_audit": null,
+    "since_days": null,
+    "only_non_ok": false,
+    "root_uri": "viking://resources/user/memory/"
+  },
+  "params": {
+    "max_tokens": 400,
+    "overlap_tokens": 50,
+    "overlap_policy": "min(100,max_tokens//8)",
+    "max_chars": 2000,
+    "max_bytes": 6000,
+    "embedding_version": "openviking.default",
+    "policy": "/home/moonlight/.openclaw/workspace/config/openviking_embedding_policy.yaml",
+    "tokenizer": "auto",
+    "openai_model": "text-embedding-3-large",
+    "hf_model": null,
+    "manifest": "/home/moonlight/.openclaw/workspace/artifacts/openviking/index_manifest.json"
+  },
+  "cost_estimate": {
+    "embed_calls_est": 171,
+    "chunk_total_est": 171,
+    "bytes_total_est": 66358,
+    "time_est_sec": 42.75,
+    "write_ops_est": 7
+  },
+  "summary": {
+    "processed": 7,
+    "failed": 0,
+    "coverage_before_avg": 0.0,
+    "coverage_after_avg": 1.0,
+    "skipped_after_total": 0,
+    "idempotent_skipped": 0
+  },
+  "artifacts": {
+    "embedding_audit": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T044300Z/daily_log/embedding_audit.json",
+    "offenders": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T044300Z/daily_log/embedding_offenders_topN.json",
+    "policy_decision": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T044300Z/daily_log/policy_decision.json",
+    "metrics": "/home/moonlight/.openclaw/workspace/artifacts/openviking/archive/20260309T044300Z/daily_log/metrics.json",
+    "manifest": "/home/moonlight/.openclaw/workspace/artifacts/openviking/index_manifest.json"
+  },
+  "results": [
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/2026-03-08_2022_CST_Native_compaction_saf_50fbe0f1.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/2026-03-08_2022_CST_Native_compaction_saf_50fbe0f1.md",
+        "doc_hash": "f746e329f636f2beda1beccacdf065ad6c525ce1e3107c964a056473c3ee3940",
+        "chunk_count_total": 30,
+        "chunk_count_embedded": 30,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 400,
+        "max_chunk_chars_seen": 400,
+        "max_chunk_bytes_seen": 400,
+        "status_counts": {
+          "ok": 30,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 6502,
+        "dual_guard_trim_count": 6472,
+        "indexed_at": "2026-03-09T04:43:02.804274+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 30,
+      "max_chunk_tokens": 400,
+      "max_chunk_chars": 400,
+      "max_chunk_bytes": 400,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 6502,
+      "dual_guard_trim_count": 6472,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/2026-03-08_2115_CST_Session_wrap-up/Follow-up_next_session.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/2026-03-08_2115_CST_Session_wrap-up/Follow-up_next_session.md",
+        "doc_hash": "13248fb388524a0cf4a6ad6c1c4e77a944e54dd88b196e70aed7dbe93fd0a9a4",
+        "chunk_count_total": 2,
+        "chunk_count_embedded": 2,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 394,
+        "max_chunk_chars_seen": 394,
+        "max_chunk_bytes_seen": 394,
+        "status_counts": {
+          "ok": 2,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 3,
+        "dual_guard_trim_count": 1,
+        "indexed_at": "2026-03-09T04:43:03.056842+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 2,
+      "max_chunk_tokens": 394,
+      "max_chunk_chars": 394,
+      "max_chunk_bytes": 394,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 3,
+      "dual_guard_trim_count": 1,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/2026-03-08_2115_CST_Session_wrap-up/Key_topics_7more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/2026-03-08_2115_CST_Session_wrap-up/Key_topics_7more.md",
+        "doc_hash": "9652f6125047336b5e2032d2eb2dd43cac825596d64fef7f543f4bfeaac34a32",
+        "chunk_count_total": 34,
+        "chunk_count_embedded": 34,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 400,
+        "max_chunk_chars_seen": 400,
+        "max_chunk_bytes_seen": 400,
+        "status_counts": {
+          "ok": 34,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 7157,
+        "dual_guard_trim_count": 7123,
+        "indexed_at": "2026-03-09T04:43:03.335958+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 34,
+      "max_chunk_tokens": 400,
+      "max_chunk_chars": 400,
+      "max_chunk_bytes": 400,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 7157,
+      "dual_guard_trim_count": 7123,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/Agent_Self-Health_Scaffold_-_Complete_Imp_d04b2cf1.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/Agent_Self-Health_Scaffold_-_Complete_Imp_d04b2cf1.md",
+        "doc_hash": "b751aa7827fd54267e9bb09e177904b07d9d67f00c155118104299cf7b0af26c",
+        "chunk_count_total": 26,
+        "chunk_count_embedded": 26,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 400,
+        "max_chunk_chars_seen": 400,
+        "max_chunk_bytes_seen": 400,
+        "status_counts": {
+          "ok": 26,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 4637,
+        "dual_guard_trim_count": 4611,
+        "indexed_at": "2026-03-09T04:43:03.600235+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 26,
+      "max_chunk_tokens": 400,
+      "max_chunk_chars": 400,
+      "max_chunk_bytes": 400,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 4637,
+      "dual_guard_trim_count": 4611,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/Compaction_safeguard_live_bundle_adoption_2b7497c9.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/Compaction_safeguard_live_bundle_adoption_2b7497c9.md",
+        "doc_hash": "6604652cb3db5785b399b1affb94461de9a4e2d5145f4d82b6eb9d946f7f530a",
+        "chunk_count_total": 23,
+        "chunk_count_embedded": 23,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 400,
+        "max_chunk_chars_seen": 400,
+        "max_chunk_bytes_seen": 400,
+        "status_counts": {
+          "ok": 23,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 3718,
+        "dual_guard_trim_count": 3695,
+        "indexed_at": "2026-03-09T04:43:03.864033+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 23,
+      "max_chunk_tokens": 400,
+      "max_chunk_chars": 400,
+      "max_chunk_bytes": 400,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 3718,
+      "dual_guard_trim_count": 3695,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/OpenEmotion_MVP115_progress_and_guardrails.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/OpenEmotion_MVP115_progress_and_guardrails.md",
+        "doc_hash": "78a0ce3cf681a9afe5e2410452213406187384319f6f9978d860cd1122402e49",
+        "chunk_count_total": 20,
+        "chunk_count_embedded": 20,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 400,
+        "max_chunk_chars_seen": 400,
+        "max_chunk_bytes_seen": 400,
+        "status_counts": {
+          "ok": 20,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 3588,
+        "dual_guard_trim_count": 3568,
+        "indexed_at": "2026-03-09T04:43:04.148767+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 20,
+      "max_chunk_tokens": 400,
+      "max_chunk_chars": 400,
+      "max_chunk_bytes": 400,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 3588,
+      "dual_guard_trim_count": 3568,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    },
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/Operational_preference_lea_6more.md",
+      "before": null,
+      "after": {
+        "audit_version": "openviking_embedding_audit.v1",
+        "doc_id": "viking://resources/user/sessions/daily/2026-03-08/2026-03-08_Session_Memory/Operational_preference_lea_6more.md",
+        "doc_hash": "67d8d5c572658d18d19952af54fdeed774aa0d7b7e54a53c2cb236c5397fb48c",
+        "chunk_count_total": 36,
+        "chunk_count_embedded": 36,
+        "embedding_status": "ok",
+        "embedding_coverage_pct": 1.0,
+        "max_chunk_tokens_seen": 400,
+        "max_chunk_chars_seen": 400,
+        "max_chunk_bytes_seen": 400,
+        "status_counts": {
+          "ok": 36,
+          "truncated": 0,
+          "skipped": 0,
+          "error": 0
+        },
+        "chunker_version": "deterministic_chunker.v2",
+        "embedding_version": "openviking.default",
+        "token_count_method": "safe_fallback",
+        "fallback_trigger_count": 6703,
+        "dual_guard_trim_count": 6667,
+        "indexed_at": "2026-03-09T04:43:04.451835+00:00",
+        "source": "backfill"
+      },
+      "policy": {
+        "level": "OK",
+        "reasons": [],
+        "suggested_actions": [],
+        "policy_mode": "warn_soft"
+      },
+      "chunk_count": 36,
+      "max_chunk_tokens": 400,
+      "max_chunk_chars": 400,
+      "max_chunk_bytes": 400,
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 6703,
+      "dual_guard_trim_count": 6667,
+      "idempotent_skip": false,
+      "explain": {
+        "skip_reason": null,
+        "dual_guard_triggered": true,
+        "fallback_triggered": true
+      }
+    }
+  ],
+  "failures": []
+}

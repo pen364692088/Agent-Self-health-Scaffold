@@ -1,0 +1,87 @@
+{
+  "probe_name": "probe-callback-delivery",
+  "verification_mode": "chain_integrity_check",
+  "checks": [
+    {
+      "name": "systemd_service_status",
+      "description": "Check callback-worker systemd service",
+      "passed": false,
+      "details": {
+        "returncode": 3,
+        "status": "inactive",
+        "path_unit_active": true
+      }
+    },
+    {
+      "name": "inbox_tool_exists",
+      "description": "Check subagent-inbox tool exists",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/subagent-inbox"
+      }
+    },
+    {
+      "name": "recent_telemetry",
+      "description": "Check recent callback activity",
+      "passed": true,
+      "details": {
+        "journal_lines": 1,
+        "success_indicators_found": [],
+        "has_recent_activity": true
+      }
+    },
+    {
+      "name": "subtasks_directory",
+      "description": "Check subtasks reports directory",
+      "passed": true,
+      "details": {
+        "total_files": 57,
+        "processed_files": 51,
+        "pending_backlog": 0,
+        "backlog_threshold": 10
+      }
+    },
+    {
+      "name": "e2e_chain",
+      "description": "Verify end-to-end callback chain components",
+      "passed": true,
+      "details": {
+        "components_found": {
+          "subagent-inbox": "/home/moonlight/.openclaw/workspace/tools/subagent-inbox",
+          "subagent-completion-handler": "/home/moonlight/.openclaw/workspace/tools/subagent-completion-handler",
+          "callback-worker": "/home/moonlight/.openclaw/workspace/tools/callback-worker"
+        },
+        "components_missing": [],
+        "workflow_state_exists": true,
+        "workflow_phase": null
+      }
+    },
+    {
+      "name": "callback_worker_status",
+      "description": "Check callback worker status file",
+      "passed": true,
+      "details": {
+        "status": {
+          "worker_name": "callback-worker",
+          "alive": true,
+          "last_progress_at": "2026-03-09T06:30:37.448998+00:00",
+          "last_output_at": "2026-03-09T06:30:37.448998+00:00",
+          "pending_count": null,
+          "stuck_suspected": false,
+          "last_error_at": "2026-03-08T21:39:36.688896+00:00",
+          "last_error_type": null,
+          "worker_status": "healthy",
+          "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n✅ Service state: OK (idle, no pending work)\n✅ Kill-switch: Disabled (normal)\n✅ Queue writable: OK (0 events)\n✅ State read/write + lock: OK\n✅ Spawn backend: OK (health check passed)",
+          "service_state": "idle_expected"
+        }
+      }
+    }
+  ],
+  "passed": false,
+  "failures": [
+    "systemd_service_status"
+  ],
+  "backlog_threshold": 10,
+  "timestamp": "2026-03-09T06:30:38.891832+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-callback-delivery_evidence.json"
+}

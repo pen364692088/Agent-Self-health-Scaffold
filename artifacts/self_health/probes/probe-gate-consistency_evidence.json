@@ -1,0 +1,141 @@
+{
+  "probe_name": "probe-gate-consistency",
+  "verification_mode": "chain_integrity_check",
+  "checks": [
+    {
+      "name": "gate_definitions_exist",
+      "description": "Check Gate A/B/C definition files",
+      "passed": true,
+      "details": {
+        "gates_found": {
+          "gate-a-signer": "/home/moonlight/.openclaw/workspace/tools/gate-a-signer",
+          "gate-b-signer": "/home/moonlight/.openclaw/workspace/tools/gate-b-signer",
+          "gate-c-signer": "/home/moonlight/.openclaw/workspace/tools/gate-c-signer",
+          "gate-eval": "/home/moonlight/.openclaw/workspace/tools/gate-eval"
+        },
+        "gates_missing": []
+      }
+    },
+    {
+      "name": "gate_self_health",
+      "description": "Run gate self-health check",
+      "passed": false,
+      "details": {
+        "returncode": 0,
+        "health_result": {
+          "timestamp": "2026-03-09T06:30:39.101885+00:00",
+          "gate_a": {
+            "status": "PASS",
+            "missing": [],
+            "explanation": "registry/policy/tool presence"
+          },
+          "gate_b": {
+            "status": "PASS",
+            "ages_seconds": {
+              "heartbeat": 1.6506736278533936,
+              "callback": 1.5370113849639893,
+              "mailbox": 1.5365877151489258,
+              "summary": 1.5363366603851318
+            },
+            "explanation": "runtime telemetry present and fresh"
+          },
+          "gate_c": {
+            "status": "PASS",
+            "checks": {
+              "tool_doctor_agent_health_check": "PASS",
+              "execution_guard_health": "PASS"
+            },
+            "last_gate_run_at": "2026-03-09T06:25:45.894036+00:00",
+            "explanation": "preflight/doctor/execution-guard baseline checks"
+          },
+          "verdict": "PASS"
+        }
+      }
+    },
+    {
+      "name": "gate_a_signer",
+      "description": "Check Gate A signer",
+      "passed": true,
+      "details": {
+        "has_help": true
+      }
+    },
+    {
+      "name": "gate_b_signer",
+      "description": "Check Gate B signer",
+      "passed": true,
+      "details": {
+        "has_help": true
+      }
+    },
+    {
+      "name": "gate_c_signer",
+      "description": "Check Gate C signer",
+      "passed": true,
+      "details": {
+        "has_help": true
+      }
+    },
+    {
+      "name": "always_on_verdict",
+      "description": "Check always-on verdict availability",
+      "passed": true,
+      "details": {
+        "verdict_files": [],
+        "metrics_file_exists": true,
+        "metrics": {
+          "scheduler_runs_total": 149,
+          "quick_runs_total": 5,
+          "full_runs_total": 12,
+          "gate_runs_total": 132,
+          "skipped_runs_total": 9,
+          "lock_contention_count": 0,
+          "execution_budget_hit_count": 0,
+          "cooldown_blocked_count": 6
+        }
+      }
+    },
+    {
+      "name": "done_guard",
+      "description": "Check done-guard integration",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/done-guard",
+        "has_help": true
+      }
+    },
+    {
+      "name": "receipt_schema",
+      "description": "Check receipt schema for Gate outputs",
+      "passed": true,
+      "details": {
+        "schema_exists": true,
+        "schema_title": "Task Receipt Schema",
+        "required_fields": [
+          "task_id",
+          "receipt_type",
+          "status",
+          "generated_at"
+        ],
+        "receipts_count": 31
+      }
+    },
+    {
+      "name": "truth_alignment",
+      "description": "Verify truth alignment between Gate definitions",
+      "passed": true,
+      "details": {
+        "config_files_found": [],
+        "policy_file_exists": true,
+        "has_gate_a": false,
+        "has_gate_b": false,
+        "has_gate_c": false
+      }
+    }
+  ],
+  "passed": false,
+  "failures": [
+    "gate_self_health"
+  ],
+  "timestamp": "2026-03-09T06:30:39.564602+00:00"
+}

@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-03-08T22:11:00-05:00",
+  "method": "openclaw gateway call sessions.compact",
+  "params": {
+    "key": "telegram:direct:8420019401"
+  },
+  "result": {
+    "ok": true,
+    "compacted": false,
+    "kept": 48
+  },
+  "entrypoint_chain": [
+    "openclaw gateway call",
+    "sessions.compact RPC method",
+    "handleCompactCommand (likely)",
+    "compactEmbeddedPiSession",
+    "contextEngine.compact"
+  ],
+  "proof": {
+    "rpc_method_exists": true,
+    "rpc_call_succeeded": true,
+    "response_valid": true,
+    "compaction_attempted": true,
+    "compaction_occurred": false
+  }
+}

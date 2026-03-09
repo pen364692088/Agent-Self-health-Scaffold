@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-03-08T22:12:00-05:00",
+  "session_key": "agent:main:telegram:direct:8420019401",
+  "before": {
+    "context_ratio": null,
+    "note": "Not applicable - compaction did not occur"
+  },
+  "after": {
+    "context_ratio": null,
+    "note": "Not applicable - compaction did not occur"
+  }
+}

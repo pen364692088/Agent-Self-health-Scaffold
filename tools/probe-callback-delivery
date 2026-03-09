@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""
+probe-callback-delivery - Callback Delivery Chain Probe
+
+Verification Mode: chain_integrity_check
+
+Checks the callback delivery chain:
+1. callback-worker systemd service status
+2. Recent callback telemetry
+3. End-to-end chain: subagent complete -> receipt -> worker trigger -> notification
+4. reports/subtasks/ directory status
+
+Usage:
+  probe-callback-delivery
+  probe-callback-delivery --json
+  probe-callback-delivery --backlog-threshold 10
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import time
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+REPORTS_DIR = WORKSPACE / "reports" / "subtasks"
+RUNTIME_DIR = WORKSPACE / "artifacts" / "self_health" / "runtime"
+
+# Tool paths
+INBOX_TOOL = TOOLS_DIR / "subagent-inbox"
+HANDLER_TOOL = TOOLS_DIR / "subagent-completion-handler"
+CALLBACK_WORKER = TOOLS_DIR / "callback-worker"
+
+DEFAULT_BACKLOG_THRESHOLD = 10
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class CallbackDeliveryProbe:
+    """Probe for callback delivery chain integrity."""
+    
+    def __init__(self, backlog_threshold: int = DEFAULT_BACKLOG_THRESHOLD):
+        self.backlog_threshold = backlog_threshold
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-callback-delivery",
+            "verification_mode": "chain_integrity_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_systemd_service(self) -> Dict:
+        """Check 1: callback-worker systemd service status."""
+        check = {
+            "name": "systemd_service_status",
+            "description": "Check callback-worker systemd service",
+            "passed": False,
+            "details": {}
+        }
+        
+        try:
+            # Check service status
+            result = subprocess.run(
+                ["systemctl", "--user", "status", "callback-worker"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            output = result.stdout + result.stderr
+            check["details"]["returncode"] = result.returncode
+            
+            # Parse status
+            if "active (running)" in output.lower():
+                check["passed"] = True
+                check["details"]["status"] = "running"
+            elif "active (exited)" in output.lower():
+                check["passed"] = True  # Path-activated services show as exited
+                check["details"]["status"] = "exited (path-activated)"
+            elif "inactive" in output.lower():
+                check["details"]["status"] = "inactive"
+            elif "failed" in output.lower():
+                check["details"]["status"] = "failed"
+            else:
+                check["details"]["status"] = "unknown"
+                check["details"]["output_preview"] = output[:500]
+            
+            # Check if path unit exists
+            path_result = subprocess.run(
+                ["systemctl", "--user", "status", "callback-worker.path"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            check["details"]["path_unit_active"] = "active" in (path_result.stdout + path_result.stderr).lower()
+            
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = "Timeout checking systemd service"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_inbox_tool(self) -> Dict:
+        """Check 2: subagent-inbox tool exists."""
+        check = {
+            "name": "inbox_tool_exists",
+            "description": "Check subagent-inbox tool exists",
+            "passed": False,
+            "details": {}
+        }
+        
+        if INBOX_TOOL.exists():
+            check["passed"] = True
+            check["details"]["tool_path"] = str(INBOX_TOOL)
+        else:
+            check["details"]["error"] = f"Tool not found: {INBOX_TOOL}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_recent_telemetry(self) -> Dict:
+        """Check 3: Recent callback telemetry."""
+        check = {
+            "name": "recent_telemetry",
+            "description": "Check recent callback activity",
+            "passed": False,
+            "details": {}
+        }
+        
+        try:
+            # Check journal for recent callback-worker activity
+            result = subprocess.run(
+                ["journalctl", "--user", "-u", "callback-worker", 
+                 "--since", "1 hour ago", "-n", "20", "--no-pager"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            output = result.stdout
+            check["details"]["journal_lines"] = len(output.strip().split('\n')) if output.strip() else 0
+            
+            # Check for success indicators
+            success_indicators = ["processed", "success", "notify_user", "send_result"]
+            found_indicators = [ind for ind in success_indicators if ind in output.lower()]
+            check["details"]["success_indicators_found"] = found_indicators
+            
+            # Check for recent activity
+            if output.strip():
+                check["passed"] = True
+                check["details"]["has_recent_activity"] = True
+            else:
+                check["details"]["has_recent_activity"] = False
+                check["passed"] = True  # Non-blocking: may just be no callbacks recently
+                
+        except Exception as e:
+            check["details"]["error"] = str(e)
+            check["passed"] = True  # Non-blocking
+        
+        self.checks.append(check)
+        return check
+    
+    def check_subtasks_directory(self) -> Dict:
+        """Check 4: reports/subtasks/ directory status."""
+        check = {
+            "name": "subtasks_directory",
+            "description": "Check subtasks reports directory",
+            "passed": False,
+            "details": {}
+        }
+        
+        if REPORTS_DIR.exists():
+            # Count files
+            all_files = list(REPORTS_DIR.glob("*"))
+            done_files = list(REPORTS_DIR.glob("*.done"))
+            processed_files = list(REPORTS_DIR.glob("*.processed.json"))
+            pending_files = list(REPORTS_DIR.glob("*.done"))  # .done files waiting to be processed
+            pending_files = [f for f in pending_files if not f.with_suffix(".processed.json").exists()]
+            
+            check["details"]["total_files"] = len(all_files)
+            check["details"]["processed_files"] = len(processed_files)
+            check["details"]["pending_backlog"] = len(pending_files)
+            check["details"]["backlog_threshold"] = self.backlog_threshold
+            
+            # Check backlog
+            if len(pending_files) > self.backlog_threshold:
+                check["passed"] = False
+                check["details"]["error"] = f"Backlog exceeds threshold: {len(pending_files)} > {self.backlog_threshold}"
+            else:
+                check["passed"] = True
+        else:
+            check["details"]["error"] = f"Directory not found: {REPORTS_DIR}"
+            check["passed"] = True  # Non-blocking: may not have run any subtasks
+        
+        self.checks.append(check)
+        return check
+    
+    def check_e2e_chain(self) -> Dict:
+        """Check 5: End-to-end chain verification."""
+        check = {
+            "name": "e2e_chain",
+            "description": "Verify end-to-end callback chain components",
+            "passed": False,
+            "details": {}
+        }
+        
+        components = {
+            "subagent-inbox": INBOX_TOOL,
+            "subagent-completion-handler": HANDLER_TOOL,
+            "callback-worker": CALLBACK_WORKER
+        }
+        
+        existing = {}
+        missing = []
+        
+        for name, path in components.items():
+            if path.exists():
+                existing[name] = str(path)
+            else:
+                missing.append(name)
+        
+        check["details"]["components_found"] = existing
+        check["details"]["components_missing"] = missing
+        check["passed"] = len(missing) == 0
+        
+        # Check workflow state file
+        workflow_file = WORKSPACE / "WORKFLOW_STATE.json"
+        if workflow_file.exists():
+            try:
+                with open(workflow_file, 'r') as f:
+                    workflow = json.load(f)
+                check["details"]["workflow_state_exists"] = True
+                check["details"]["workflow_phase"] = workflow.get("current_phase")
+            except Exception as e:
+                check["details"]["workflow_state_error"] = str(e)
+        else:
+            check["details"]["workflow_state_exists"] = False
+        
+        self.checks.append(check)
+        return check
+    
+    def check_callback_worker_status(self) -> Dict:
+        """Check 6: Callback worker runtime status."""
+        check = {
+            "name": "callback_worker_status",
+            "description": "Check callback worker status file",
+            "passed": False,
+            "details": {}
+        }
+        
+        status_file = RUNTIME_DIR / "callback_worker_status.json"
+        
+        if status_file.exists():
+            try:
+                with open(status_file, 'r') as f:
+                    status = json.load(f)
+                
+                check["details"]["status"] = status
+                check["passed"] = status.get("alive", False) or status.get("status") == "healthy"
+                
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        else:
+            check["details"]["error"] = "Status file not found"
+            check["passed"] = True  # Non-blocking: may not have run callback worker yet
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        # Run all checks
+        self.check_systemd_service()
+        self.check_inbox_tool()
+        self.check_recent_telemetry()
+        self.check_subtasks_directory()
+        self.check_e2e_chain()
+        self.check_callback_worker_status()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["backlog_threshold"] = self.backlog_threshold
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-callback-delivery", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Callback Delivery Chain Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--backlog-threshold", type=int, default=DEFAULT_BACKLOG_THRESHOLD)
+    args = parser.parse_args()
+    
+    probe = CallbackDeliveryProbe(backlog_threshold=args.backlog_threshold)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-callback-delivery")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

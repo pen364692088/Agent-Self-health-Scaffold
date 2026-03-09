@@ -1,0 +1,80 @@
+{
+  "probe_name": "probe-mailbox-integrity",
+  "verification_mode": "artifact_output_check + process_check",
+  "checks": [
+    {
+      "name": "status_file_exists",
+      "description": "Check mailbox worker status file exists",
+      "passed": true,
+      "details": {
+        "file_path": "/home/moonlight/.openclaw/workspace/artifacts/self_health/runtime/mailbox_worker_status.json",
+        "file_size_bytes": 264,
+        "modified_at": "2026-03-09T06:30:37.565511+00:00"
+      }
+    },
+    {
+      "name": "process_running",
+      "description": "Check mailbox worker process is actually running",
+      "passed": true,
+      "details": {
+        "pids_found": [
+          "338212"
+        ],
+        "process_count": 1
+      }
+    },
+    {
+      "name": "status_content",
+      "description": "Validate status file content",
+      "passed": true,
+      "details": {
+        "status": {
+          "worker_name": "mailbox-worker",
+          "alive": true,
+          "last_poll_at": "2026-03-09T06:30:37.448998+00:00",
+          "last_progress_at": null,
+          "backlog_count": 0,
+          "stuck_suspected": false,
+          "mailbox_status": "healthy",
+          "source": "mailbox files + flow definition"
+        },
+        "is_alive": true,
+        "mailbox_status": "healthy",
+        "stuck_suspected": false
+      }
+    },
+    {
+      "name": "queue_backlog",
+      "description": "Check queue backlog is within threshold",
+      "passed": true,
+      "details": {
+        "backlog_count": 0,
+        "threshold": 5
+      }
+    },
+    {
+      "name": "recent_activity",
+      "description": "Check recent processing activity",
+      "passed": true,
+      "details": {
+        "last_poll_at": "2026-03-09T06:30:37.448998+00:00",
+        "last_progress_at": null,
+        "last_poll_age_seconds": 1.544753
+      }
+    },
+    {
+      "name": "stuck_detection",
+      "description": "Check if worker is suspected stuck",
+      "passed": true,
+      "details": {
+        "stuck_suspected": false
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "backlog_threshold": 5,
+  "activity_threshold_seconds": 3600,
+  "timestamp": "2026-03-09T06:30:38.993846+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-mailbox-integrity_evidence.json"
+}

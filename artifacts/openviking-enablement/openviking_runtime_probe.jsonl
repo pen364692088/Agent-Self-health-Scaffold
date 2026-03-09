@@ -1,0 +1,3 @@
+{"ts": "2026-03-08T23:59:00Z", "event": "service_check", "status": "running", "pid": 3862921}
+{"ts": "2026-03-08T23:59:01Z", "event": "health_check", "endpoint": "http://localhost:8000/health", "status": "ok"}
+{"ts": "2026-03-08T23:59:02Z", "event": "find_test", "query": "native compaction", "results": 3, "top_score": 0.678}

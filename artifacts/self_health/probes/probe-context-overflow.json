@@ -1,0 +1,74 @@
+{
+  "probe_name": "probe-context-overflow",
+  "verification_mode": "synthetic_input_check",
+  "checks": [
+    {
+      "name": "budget_check_tool_exists",
+      "description": "Check context-budget-check tool exists",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/context-budget-check",
+        "is_executable": true
+      }
+    },
+    {
+      "name": "health_endpoint",
+      "description": "Check tool health endpoint",
+      "passed": true,
+      "details": {
+        "returncode": 0,
+        "stdout_preview": "{\n  \"status\": \"healthy\",\n  \"checks\": {\n    \"snapshots_dir\": \"/home/moonlight/.openclaw/workspace/artifacts/budget_snapshots\",\n    \"token_estimation\": \"ok\"\n  },\n  \"issues\": null,\n  \"timestamp\": \"2026-03-09T01:30:38.630340\"\n}\n"
+      }
+    },
+    {
+      "name": "overflow_detection",
+      "description": "Test overflow detection with synthetic context",
+      "passed": true,
+      "details": {
+        "synthetic_files_created": true,
+        "returncode": 0,
+        "pressure_level": "normal",
+        "pressure_ratio": null,
+        "estimated_tokens": 53059,
+        "overflow_detected": false
+      }
+    },
+    {
+      "name": "compression_fallback",
+      "description": "Check compression fallback tool exists",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/context-compress",
+        "has_shadow_mode": true,
+        "has_enforced_mode": true
+      }
+    },
+    {
+      "name": "data_preservation",
+      "description": "Verify critical data not lost during overflow",
+      "passed": true,
+      "details": {
+        "never_compress_slots": [
+          "task_goal",
+          "open_loops",
+          "recent_commitments",
+          "tool_execution_state",
+          "recent_errors",
+          "user_corrected_constraints",
+          "response_contract"
+        ],
+        "slots_count": 7,
+        "critical_slots_protected": [
+          "task_goal",
+          "open_loops",
+          "response_contract"
+        ]
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "threshold": 0.85,
+  "timestamp": "2026-03-09T06:30:38.778747+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-context-overflow_evidence.json"
+}

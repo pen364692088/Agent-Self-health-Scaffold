@@ -1,0 +1,11 @@
+{
+  "session_key": "agent:testbot:telegram:direct:8420019401",
+  "test_purpose": "验证真实对话 session 的 native compaction 行为（高 context）",
+  "context_usage": "93%",
+  "message_counts": {
+    "user": 7,
+    "assistant": 32,
+    "toolResult": 23
+  },
+  "timestamp": "2026-03-08T22:26:00-06:00"
+}
