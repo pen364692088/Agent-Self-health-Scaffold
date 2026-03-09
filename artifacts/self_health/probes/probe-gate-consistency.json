@@ -23,7 +23,7 @@
       "details": {
         "returncode": 0,
         "health_result": {
-          "timestamp": "2026-03-09T08:07:05.960333+00:00",
+          "timestamp": "2026-03-09T08:18:34.888246+00:00",
           "gate_a": {
             "status": "PASS",
             "missing": [],
@@ -32,10 +32,10 @@
           "gate_b": {
             "status": "PASS",
             "ages_seconds": {
-              "heartbeat": 3.1862571239471436,
-              "callback": 3.095677137374878,
-              "mailbox": 3.0952441692352295,
-              "summary": 3.095008134841919
+              "heartbeat": 129.94271612167358,
+              "callback": 129.88600969314575,
+              "mailbox": 129.88572669029236,
+              "summary": 129.88554167747498
             },
             "explanation": "runtime telemetry present and fresh"
           },
@@ -45,7 +45,7 @@
               "tool_doctor_agent_health_check": "PASS",
               "execution_guard_health": "PASS"
             },
-            "last_gate_run_at": "2026-03-09T08:06:19.836945+00:00",
+            "last_gate_run_at": "2026-03-09T08:16:24.812148+00:00",
             "explanation": "preflight/doctor/execution-guard baseline checks"
           },
           "verdict": "PASS"
@@ -84,21 +84,21 @@
         "verdict_files": [],
         "metrics_file_exists": true,
         "metrics": {
-          "scheduler_runs_total": 188,
-          "quick_runs_total": 28,
+          "scheduler_runs_total": 191,
+          "quick_runs_total": 29,
           "full_runs_total": 13,
-          "gate_runs_total": 147,
-          "skipped_runs_total": 11,
+          "gate_runs_total": 149,
+          "skipped_runs_total": 12,
           "lock_contention_count": 0,
           "execution_budget_hit_count": 0,
-          "cooldown_blocked_count": 8,
-          "probe_runs_total": 24,
-          "probe_failures_total": 24,
+          "cooldown_blocked_count": 9,
+          "probe_runs_total": 25,
+          "probe_failures_total": 25,
           "incident_total": 4,
           "proposal_total": 2,
-          "deduped_incident_count": 15,
-          "repeated_same_alert_count": 15,
-          "deduped_proposal_count": 17
+          "deduped_incident_count": 16,
+          "repeated_same_alert_count": 16,
+          "deduped_proposal_count": 18
         }
       }
     },
@@ -144,6 +144,6 @@
   "failures": [],
   "status": "ok",
   "message": "Probe checks passed",
-  "timestamp": "2026-03-09T08:07:06.292579+00:00",
+  "timestamp": "2026-03-09T08:18:35.139680+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-gate-consistency_evidence.json"
 }

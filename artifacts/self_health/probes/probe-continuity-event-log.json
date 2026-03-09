@@ -19,7 +19,7 @@
         "path": "/home/moonlight/.openclaw/workspace/state/session_continuity_events.jsonl",
         "file_size_bytes": 10319,
         "event_count": 22,
-        "file_age_hours": 1.57
+        "file_age_hours": 1.76
       }
     },
     {
@@ -32,10 +32,10 @@
         "invalid_events": 0,
         "format_errors": [],
         "event_types_found": [
-          "recovery_success",
           "conflict_resolution_applied",
-          "task_ready_to_close",
-          "gate_completed"
+          "recovery_success",
+          "gate_completed",
+          "task_ready_to_close"
         ]
       }
     },
@@ -89,6 +89,6 @@
   "message": "Continuity event log healthy",
   "check_count": 6,
   "pass_count": 6,
-  "timestamp": "2026-03-09T08:07:11.154430+00:00",
+  "timestamp": "2026-03-09T08:18:39.488732+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-continuity-event-log_evidence.json"
 }

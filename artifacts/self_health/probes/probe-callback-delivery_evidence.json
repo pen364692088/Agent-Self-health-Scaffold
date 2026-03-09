@@ -5,10 +5,10 @@
     {
       "name": "systemd_service_status",
       "description": "Check callback-worker systemd service",
-      "passed": false,
+      "passed": true,
       "details": {
         "returncode": 3,
-        "status": "failed",
+        "status": "inactive (path-activated, expected)",
         "path_unit_active": true
       }
     },
@@ -25,8 +25,10 @@
       "description": "Check recent callback activity",
       "passed": true,
       "details": {
-        "journal_lines": 1,
-        "success_indicators_found": [],
+        "journal_lines": 7,
+        "success_indicators_found": [
+          "processed"
+        ],
         "has_recent_activity": true
       }
     },
@@ -64,8 +66,8 @@
         "status": {
           "worker_name": "callback-worker",
           "alive": true,
-          "last_progress_at": "2026-03-09T08:07:02.770889+00:00",
-          "last_output_at": "2026-03-09T08:07:02.770889+00:00",
+          "last_progress_at": "2026-03-09T08:16:24.945065+00:00",
+          "last_output_at": "2026-03-09T08:16:24.945065+00:00",
           "pending_count": null,
           "stuck_suspected": false,
           "last_error_at": "2026-03-08T21:39:36.688896+00:00",
@@ -77,12 +79,10 @@
       }
     }
   ],
-  "passed": false,
-  "failures": [
-    "systemd_service_status"
-  ],
-  "status": "fail",
-  "message": "Callback delivery chain has issues",
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Callback delivery chain healthy",
   "backlog_threshold": 10,
-  "timestamp": "2026-03-09T08:07:05.802496+00:00"
+  "timestamp": "2026-03-09T08:18:34.780025+00:00"
 }

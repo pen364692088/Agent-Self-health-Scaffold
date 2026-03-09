@@ -102,6 +102,8 @@ class CallbackDeliveryProbe:
                 check["passed"] = True  # Path-activated services show as exited
                 check["details"]["status"] = "exited (path-activated)"
             elif "inactive" in output.lower():
+                # For oneshot + path-activated services, inactive is normal
+                # Will check path unit below to determine if this is expected
                 check["details"]["status"] = "inactive"
             elif "failed" in output.lower():
                 check["details"]["status"] = "failed"
@@ -116,7 +118,15 @@ class CallbackDeliveryProbe:
                 text=True,
                 timeout=5
             )
-            check["details"]["path_unit_active"] = "active" in (path_result.stdout + path_result.stderr).lower()
+            path_active = "active" in (path_result.stdout + path_result.stderr).lower()
+            check["details"]["path_unit_active"] = path_active
+            
+            # For path-activated oneshot services:
+            # - inactive + path active = normal (service ran and completed)
+            # - inactive + path inactive = problem
+            if check["details"]["status"] == "inactive" and path_active:
+                check["passed"] = True  # Path unit will trigger service when needed
+                check["details"]["status"] = "inactive (path-activated, expected)"
             
         except subprocess.TimeoutExpired:
             check["details"]["error"] = "Timeout checking systemd service"

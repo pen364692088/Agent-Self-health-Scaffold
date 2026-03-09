@@ -20,12 +20,12 @@
       "passed": true,
       "details": {
         "valid_states": [
-          "QUEUED",
-          "FAILED",
-          "RUNNING",
           "DONE",
+          "FAILED",
+          "QUEUED",
           "STUCK",
-          "CANCELLED"
+          "CANCELLED",
+          "RUNNING"
         ],
         "valid_transitions": {
           "QUEUED": [
@@ -62,8 +62,8 @@
       "details": {
         "jobs_checked": 20,
         "states_found": [
-          "DONE",
-          "CANCELLED"
+          "CANCELLED",
+          "DONE"
         ],
         "invalid_transitions": []
       }
@@ -144,6 +144,6 @@
       "rev": 6
     }
   ],
-  "timestamp": "2026-03-09T08:07:09.868510+00:00",
+  "timestamp": "2026-03-09T08:18:38.433842+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-state-machine_evidence.json"
 }
