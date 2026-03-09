@@ -64,8 +64,8 @@
         "status": {
           "worker_name": "callback-worker",
           "alive": true,
-          "last_progress_at": "2026-03-09T07:56:18.129191+00:00",
-          "last_output_at": "2026-03-09T07:56:18.129191+00:00",
+          "last_progress_at": "2026-03-09T08:07:02.770889+00:00",
+          "last_output_at": "2026-03-09T08:07:02.770889+00:00",
           "pending_count": null,
           "stuck_suspected": false,
           "last_error_at": "2026-03-08T21:39:36.688896+00:00",
@@ -84,6 +84,6 @@
   "status": "fail",
   "message": "Callback delivery chain has issues",
   "backlog_threshold": 10,
-  "timestamp": "2026-03-09T08:02:44.010953+00:00",
+  "timestamp": "2026-03-09T08:07:05.802496+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-callback-delivery_evidence.json"
 }

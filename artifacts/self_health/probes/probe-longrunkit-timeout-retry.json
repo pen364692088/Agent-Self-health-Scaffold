@@ -55,6 +55,6 @@
   "message": "LongRunKit timeout/retry configuration verified",
   "check_count": 3,
   "pass_count": 3,
-  "timestamp": "2026-03-09T08:02:52.931709+00:00",
+  "timestamp": "2026-03-09T08:07:09.964259+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-timeout-retry_evidence.json"
 }

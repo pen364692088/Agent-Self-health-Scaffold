@@ -87,6 +87,6 @@
   "message": "Context shadow system healthy",
   "check_count": 5,
   "pass_count": 5,
-  "timestamp": "2026-03-09T08:02:54.099520+00:00",
+  "timestamp": "2026-03-09T08:07:10.700734+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-context-shadow_evidence.json"
 }
