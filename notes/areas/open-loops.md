@@ -20,3 +20,6 @@
 - Native compaction safeguard bug remains OPEN.
 - Next step: apply/verify root fix in actual live runtime path and revalidate native compaction end-to-end.
 - Phase D / Natural Validation remains BLOCKED pending real live compaction success evidence.
+
+- [ ] Compaction safeguard lane blockage: identify what is holding `agent:main:telegram:direct:8420019401` session lane and why queued `/compact` work is not draining.
+- [ ] Post-adoption live revalidation: after lane blockage is cleared, rerun minimal native compaction check and distinguish semantic correction vs functional restoration.
