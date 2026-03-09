@@ -1,0 +1,30 @@
+10763:const CORE_MESSAGING_TOOLS = new Set(["sessions_send", "message"]);
+10771:	if (toolName === "sessions_send") return true;
+10887:	"sessions_send",
+11220:	"sessions_send",
+11290:		case "sessions_send": return true;
+14766:		"- Cross-session messaging → use sessions_send(sessionKey, message)",
+14833:		sessions_send: "Send a message to another session/sub-agent",
+14860:		"sessions_send",
+14970:			"- sessions_send: send to another session",
+17039:	if (normalizedToolName === "sessions_send") return {
+20182:				sourceTool: params.sourceTool ?? "sessions_send"
+51206:					sourceTool: "sessions_send"
+51233:			sourceTool: "sessions_send"
+51248:			log$6.warn("sessions_send announce delivery failed", {
+51256:		log$6.warn("sessions_send announce flow failed", {
+51280:		name: "sessions_send",
+51312:					error: "Sandboxed sessions_send label lookup is limited to this agent"
+51430:					sourceTool: "sessions_send"
+51593:			if (unsupportedParam) throw new ToolInputError(`sessions_spawn does not support "${unsupportedParam}". Use "message" or "sessions_send" for channel delivery.`);
+60519:async function dispatchReplyFromConfig(params) {
+61015:		run: () => dispatchReplyFromConfig({
+61248:async function dispatchReplyWithBufferedBlockDispatcher(params) {
+61257:async function dispatchReplyWithDispatcher(params) {
+69673:	const dispatchResult = await dispatchReplyWithDispatcher({
+72613:	await dispatchReplyWithBufferedBlockDispatcher({
+78688:				const { queuedFinal } = await dispatchReplyWithBufferedBlockDispatcher({
+83763:			const { createReplyPrefixOptions, deliverSlackSlashReplies, dispatchReplyWithDispatcher, finalizeInboundContext, recordInboundSessionMetaSafe, resolveAgentRoute, resolveChunkMode, resolveConversationLabel, resolveMarkdownTableMode } = await loadSlashDispatchRuntime();
+83846:			const { counts } = await dispatchReplyWithDispatcher({
+88212:		({queuedFinal} = await dispatchReplyWithBufferedBlockDispatcher({
+88996:				await dispatchReplyWithBufferedBlockDispatcher({

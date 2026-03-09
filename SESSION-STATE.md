@@ -3,19 +3,18 @@
 **Purpose**: 恢复主骨架 - 稳定且关键的信息
 
 **Baseline**: v1.1.1 STABLE (FROZEN)
-**Updated**: 2026-03-08T21:58:00-05:00
+**Updated**: 2026-03-08T22:00:00-05:00
 
 ---
 
 ## Current Objective
-Prove live compaction reachability and locate the true pre-/around-prepareCompaction blocking point for `agent:main:telegram:direct:8420019401`.
+Identify lane holder for `session:agent:main:telegram:direct:8420019401` and prove why it blocked manual trigger.
 
 ## Current Phase
-🔎 **RUNTIME_REACHABILITY_NARROWING**
-- ✅ bundle adoption confirmed in live `reply-C5LKjXcC.js`
-- ✅ manual `/compact` path source located
-- ✅ post-adoption minimal window reviewed
-- ⏳ narrowing last_hit_stage / first_miss_stage
+✅ **LANE_HOLDER_IDENTIFIED**
+- Lane was held by embedded run `c98af15b-000a-437e-96dd-c3248bd6b7d0`
+- Run ended at 21:56:50 with `FailoverError: API rate limit reached`
+- Lane is now FREE (no events after 21:56:50)
 
 ---
 
@@ -25,35 +24,31 @@ Prove live compaction reachability and locate the true pre-/around-prepareCompac
 
 ---
 
-## Frozen Scope
+## Key Findings
 
-**Do not spend time on**:
-- bundle adoption re-proof
-- prepareCompaction internals beyond reachability needs
-- threshold/schema tuning before reachability is nailed down
-
-**Focus now**:
-- trigger authenticity
-- session selection
-- lane / queue / gating before or around compact execution
-- last_hit_stage / first_miss_stage
+1. **Lane holder**: embedded_run with runId `c98af15b-000a-437e-96dd-c3248bd6b7d0`
+2. **Hold reason**: LLM prompt processing; held session lane during API call
+3. **Release**: Normal release after task error at 21:56:50
+4. **Manual trigger failure**: `sessions_send` timeout while session was busy
+5. **True native path**: NOT entered; `sessions_send` ≠ `/compact` handler
 
 ---
 
-## Current Findings
+## Verdict
 
-1. Post-adoption manual trigger attempt in the minimal window was **not proven native**; artifact records `sessions_send_timeout`.
-2. Real `/compact` command path in source is `handleCompactCommand -> compactEmbeddedPiSession -> contextEngine.compact -> compactEmbeddedPiSessionDirect`.
-3. Historic live runtime traces prove the real native compaction path can reach `session_before_compact` on the target session.
-4. Therefore the strongest current narrowing is around **manual trigger authenticity and session-lane / queue behavior**, not bundle adoption.
+| Item | Status |
+|------|--------|
+| Lane owner identified | ✅ DONE |
+| Release mechanism proven | ✅ DONE |
+| sessions_send vs lane correlation | ✅ DONE |
+| Manual trigger authenticity | ✅ NOT_NATIVE_PATH |
+| Root cause single point | ✅ `hung_inflight_owner` (resolved) |
 
 ---
 
 ## Next Actions
-
-1. Emit reachability ladder artifact
-2. Emit abort/session-selection/manual-trigger proof artifacts
-3. Summarize current narrowing for user
+1. If user wants to revalidate native compaction: wait for idle session, then send real `/compact` command
+2. Or: accept that the post-adoption window was blocked by a busy session, not a code bug
 
 ## Blockers
-None.
+None. Lane is free. The second root cause is now explained.

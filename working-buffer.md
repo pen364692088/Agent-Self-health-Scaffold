@@ -1,18 +1,22 @@
 # Working Buffer
 
 ## Focus
-Narrow live compaction reachability for `agent:main:telegram:direct:8420019401`.
+Lane ownership for `session:agent:main:telegram:direct:8420019401` - COMPLETE
 
-## Key evidence in hand
-- `artifacts/compaction_safeguard_bundle_adoption/live_revalidation_after_bundle_adoption_trace.jsonl`
-- `artifacts/compaction_safeguard_bugfix/runtime_instrumentation_trace.jsonl`
-- `memory/2026-03-09-bundle-adoption.md`
-- `~/.npm-global/lib/node_modules/openclaw/dist/compact-B247y5Qt.js`
+## Key evidence
+- Journalctl shows embedded run `c98af15b-...` held the lane
+- Rate limit error caused run to end at 21:56:50
+- Lane released normally after task error
+- No stale lock or missing release
 
-## Current hypothesis
-The post-adoption minimal window failed mainly because the attempted trigger was not a completed native `/compact` execution (`sessions_send_timeout`), while earlier real native executions did reach the safeguard hook on the correct session. So the best narrowing point is queue/lane/manual-trigger authenticity, not a new pre-prepareCompaction bug.
+## Current conclusion
+The second root cause was **an embedded run holding the session lane while processing an LLM prompt**. This blocked the post-adoption manual trigger attempt, which used `sessions_send` (wrong path) and timed out while the session was busy.
 
-## Needed for user reply
-- be explicit about what is proven vs inferred
-- name last_hit_stage / first_miss_stage
-- avoid overstating prepareCompaction-internal conclusions
+## What this means
+- Bundle adoption is complete
+- Native compaction is reachable (proven by historical traces)
+- The post-adoption revalidation failed due to test timing/methodology, not a code bug
+
+## Needed for user
+- Explain that lane is now free
+- Suggest proper revalidation method: real `/compact` command when session is idle
