@@ -22,6 +22,10 @@ P0_PROBES = [
     'probe-callback-delivery',
     'probe-mailbox-integrity',
     'probe-gate-consistency',
+    'probe-session-persistence',
+    'probe-proposal-boundary',
+    'probe-truth-alignment',
+    'probe-handoff-integrity',
 ]
 
 CONFIG = {

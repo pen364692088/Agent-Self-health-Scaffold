@@ -1,0 +1,81 @@
+{
+  "probe_name": "probe-truth-alignment",
+  "verification_mode": "chain_integrity_check",
+  "status": "ok",
+  "message": "Truth alignment consistent",
+  "checks": [
+    {
+      "name": "truth_sources_exist",
+      "description": "Check all truth source files exist",
+      "passed": true,
+      "details": {
+        "existing": [
+          "current_health",
+          "gate_report",
+          "heartbeat_status",
+          "probe_summary"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "name": "status_consistency",
+      "description": "Check status fields are consistent across sources",
+      "passed": true,
+      "details": {
+        "statuses": {
+          "current_health": "GREEN",
+          "gate_report": "PASS",
+          "heartbeat_status": "healthy",
+          "probe_summary": "PASS"
+        },
+        "has_positive": true,
+        "has_negative": false
+      }
+    },
+    {
+      "name": "timestamp_freshness",
+      "description": "Check timestamps are recent",
+      "passed": true,
+      "details": {
+        "timestamps": {
+          "current_health": {
+            "timestamp": "2026-03-09T06:30:39+00:00",
+            "age_minutes": 20.3
+          },
+          "gate_report": {
+            "timestamp": "2026-03-09T06:50:54.185319+00:00",
+            "age_minutes": 0.0
+          },
+          "heartbeat_status": {
+            "timestamp": "2026-03-09T06:50:53.231106+00:00",
+            "age_minutes": 0.0
+          },
+          "probe_summary": {
+            "timestamp": "2026-03-09T06:30:39.573175+00:00",
+            "age_minutes": 20.3
+          }
+        },
+        "stale_sources": [],
+        "max_age_minutes": 60
+      }
+    },
+    {
+      "name": "field_validity",
+      "description": "Check key fields are valid",
+      "passed": true,
+      "details": {
+        "current_health": {
+          "has_overall_status": true,
+          "has_components": true,
+          "has_timestamp": true
+        },
+        "gate_report": {
+          "has_verdict": true,
+          "has_gates": false
+        }
+      }
+    }
+  ],
+  "timestamp": "2026-03-09T06:50:55.101148+00:00"
+}

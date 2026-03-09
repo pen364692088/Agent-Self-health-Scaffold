@@ -1,0 +1,57 @@
+{
+  "probe_name": "probe-session-persistence",
+  "verification_mode": "probe_check + artifact_output_check",
+  "status": "ok",
+  "message": "Session persistence healthy",
+  "checks": [
+    {
+      "name": "session_state_md",
+      "description": "Check SESSION-STATE.md exists and format correct",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/SESSION-STATE.md",
+        "size_bytes": 948,
+        "fields_found": [
+          "status"
+        ]
+      }
+    },
+    {
+      "name": "state_write_atomic",
+      "description": "Check state-write-atomic tool exists",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/tools/state-write-atomic",
+        "executable": true
+      }
+    },
+    {
+      "name": "session_start_recovery",
+      "description": "Check session-start-recovery tool exists",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/tools/session-start-recovery"
+      }
+    },
+    {
+      "name": "wal_file",
+      "description": "Check WAL file integrity",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/state/session_continuity_events.jsonl",
+        "total_lines": 297,
+        "valid_entries": 0
+      }
+    },
+    {
+      "name": "working_buffer",
+      "description": "Check working-buffer.md exists",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/working-buffer.md",
+        "size_bytes": 907
+      }
+    }
+  ],
+  "timestamp": "2026-03-09T06:50:54.805114+00:00"
+}

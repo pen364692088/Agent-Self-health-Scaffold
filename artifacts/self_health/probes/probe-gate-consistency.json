@@ -23,7 +23,7 @@
       "details": {
         "returncode": 0,
         "health_result": {
-          "timestamp": "2026-03-09T06:30:39.101885+00:00",
+          "timestamp": "2026-03-09T06:50:54.185319+00:00",
           "gate_a": {
             "status": "PASS",
             "missing": [],
@@ -32,10 +32,10 @@
           "gate_b": {
             "status": "PASS",
             "ages_seconds": {
-              "heartbeat": 1.6506736278533936,
-              "callback": 1.5370113849639893,
-              "mailbox": 1.5365877151489258,
-              "summary": 1.5363366603851318
+              "heartbeat": 0.9532837867736816,
+              "callback": 0.8113744258880615,
+              "mailbox": 0.8107314109802246,
+              "summary": 0.6810264587402344
             },
             "explanation": "runtime telemetry present and fresh"
           },
@@ -45,7 +45,7 @@
               "tool_doctor_agent_health_check": "PASS",
               "execution_guard_health": "PASS"
             },
-            "last_gate_run_at": "2026-03-09T06:25:45.894036+00:00",
+            "last_gate_run_at": "2026-03-09T06:50:52.870660+00:00",
             "explanation": "preflight/doctor/execution-guard baseline checks"
           },
           "verdict": "PASS"
@@ -84,14 +84,16 @@
         "verdict_files": [],
         "metrics_file_exists": true,
         "metrics": {
-          "scheduler_runs_total": 149,
-          "quick_runs_total": 5,
+          "scheduler_runs_total": 152,
+          "quick_runs_total": 6,
           "full_runs_total": 12,
-          "gate_runs_total": 132,
+          "gate_runs_total": 134,
           "skipped_runs_total": 9,
           "lock_contention_count": 0,
           "execution_budget_hit_count": 0,
-          "cooldown_blocked_count": 6
+          "cooldown_blocked_count": 6,
+          "probe_runs_total": 1,
+          "probe_failures_total": 0
         }
       }
     },
@@ -137,6 +139,6 @@
   "failures": [
     "gate_self_health"
   ],
-  "timestamp": "2026-03-09T06:30:39.564602+00:00",
+  "timestamp": "2026-03-09T06:50:54.739074+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-gate-consistency_evidence.json"
 }

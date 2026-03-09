@@ -1,0 +1,81 @@
+{
+  "probe_name": "probe-handoff-integrity",
+  "verification_mode": "artifact_output_check + chain_integrity_check",
+  "status": "warn",
+  "message": "Handoff integrity needs attention",
+  "checks": [
+    {
+      "name": "handoff_md_exists",
+      "description": "Check handoff.md exists",
+      "passed": true,
+      "details": {
+        "exists": true,
+        "path": "/home/moonlight/.openclaw/workspace/handoff.md",
+        "size_bytes": 1594
+      }
+    },
+    {
+      "name": "handoff_format",
+      "description": "Check handoff format is valid",
+      "passed": true,
+      "details": {
+        "has_header": true,
+        "has_sections": true,
+        "key_fields_found": [
+          "objective",
+          "next",
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "key_fields",
+      "description": "Check required fields are present",
+      "passed": false,
+      "details": {
+        "fields": {
+          "objective": {
+            "required": true,
+            "found": true
+          },
+          "phase": {
+            "required": true,
+            "found": false
+          },
+          "next_actions": {
+            "required": true,
+            "found": true
+          },
+          "blockers": {
+            "required": false,
+            "found": false
+          },
+          "timestamp": {
+            "required": false,
+            "found": true
+          }
+        }
+      }
+    },
+    {
+      "name": "handoff_timestamp",
+      "description": "Check timestamp is valid",
+      "passed": true,
+      "details": {
+        "has_explicit_timestamp": true,
+        "timestamp": "2026-03-08",
+        "age_days": 1
+      }
+    },
+    {
+      "name": "session_archive_tool",
+      "description": "Check session-archive tool exists",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/tools/session-archive",
+        "executable": true
+      }
+    }
+  ],
+  "timestamp": "2026-03-09T06:50:55.164110+00:00"
+}

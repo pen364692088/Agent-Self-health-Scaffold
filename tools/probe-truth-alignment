@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+"""
+probe-truth-alignment - 多源 Truth 口径一致性检查
+
+Verification Mode: chain_integrity_check
+
+检查内容:
+1. 读取多个 truth source
+2. 检查状态字段一致性
+3. 检查 timestamp 合理性
+4. 检查关键字段有效性
+5. Schema 对齐验证
+"""
+
+import argparse
+import json
+import os
+import sys
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+OUTPUT_DIR = WORKSPACE / 'artifacts' / 'self_health' / 'probes'
+
+# Truth sources to check
+TRUTH_SOURCES = {
+    'current_health': WORKSPACE / 'artifacts' / 'self_health' / 'state' / 'current_health.json',
+    'gate_report': WORKSPACE / 'artifacts' / 'self_health' / 'always_on' / 'gate_report_latest.json',
+    'heartbeat_status': WORKSPACE / 'artifacts' / 'self_health' / 'runtime' / 'heartbeat_status.json',
+    'probe_summary': WORKSPACE / 'artifacts' / 'self_health' / 'probes' / 'probe_summary.json',
+}
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def parse_iso_time(s):
+    """解析 ISO 时间字符串"""
+    if not s:
+        return None
+    try:
+        # 处理各种格式
+        s = s.replace('Z', '+00:00')
+        if '+' not in s and '-' not in s[-6:]:
+            s += '+00:00'
+        return datetime.fromisoformat(s)
+    except:
+        return None
+
+
+def check_truth_sources_exist():
+    """检查所有 truth source 文件存在"""
+    existing = {}
+    missing = []
+    
+    for name, path in TRUTH_SOURCES.items():
+        if path.exists():
+            existing[name] = path
+        else:
+            missing.append(name)
+    
+    return len(missing) == 0, f"{len(existing)}/{len(TRUTH_SOURCES)} truth sources exist", {
+        'existing': list(existing.keys()),
+        'missing': missing
+    }
+
+
+def check_status_consistency():
+    """检查状态字段一致性"""
+    statuses = {}
+    
+    # current_health.json
+    path = TRUTH_SOURCES['current_health']
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+            statuses['current_health'] = data.get('overall_status', 'UNKNOWN')
+        except:
+            statuses['current_health'] = 'PARSE_ERROR'
+    
+    # gate_report_latest.json
+    path = TRUTH_SOURCES['gate_report']
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+            statuses['gate_report'] = data.get('verdict', 'UNKNOWN')
+        except:
+            statuses['gate_report'] = 'PARSE_ERROR'
+    
+    # heartbeat_status.json
+    path = TRUTH_SOURCES['heartbeat_status']
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+            hb_status = data.get('heartbeat_status', 'UNKNOWN')
+            statuses['heartbeat_status'] = 'healthy' if hb_status in ('healthy', 'GREEN') else hb_status
+        except:
+            statuses['heartbeat_status'] = 'PARSE_ERROR'
+    
+    # probe_summary.json
+    path = TRUTH_SOURCES['probe_summary']
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+            statuses['probe_summary'] = 'PASS' if data.get('failed', 0) == 0 else 'FAIL'
+        except:
+            statuses['probe_summary'] = 'PARSE_ERROR'
+    
+    # 检查一致性 - 正向状态映射
+    positive_states = {'GREEN', 'PASS', 'healthy', 'ok'}
+    negative_states = {'RED', 'FAIL', 'unhealthy', 'error', 'degraded'}
+    
+    is_consistent = True
+    has_positive = False
+    has_negative = False
+    
+    for name, status in statuses.items():
+        if status in positive_states:
+            has_positive = True
+        elif status in negative_states:
+            has_negative = True
+    
+    # 如果同时有正负状态，则不一致
+    if has_positive and has_negative:
+        is_consistent = False
+    
+    return is_consistent, f"Status consistency: {'consistent' if is_consistent else 'inconsistent'}", {
+        'statuses': statuses,
+        'has_positive': has_positive,
+        'has_negative': has_negative
+    }
+
+
+def check_timestamp_freshness():
+    """检查 timestamp 合理性"""
+    now = datetime.now(timezone.utc)
+    max_age_minutes = 60  # 最大允许 60 分钟过期
+    
+    timestamps = {}
+    stale_sources = []
+    
+    for name, path in TRUTH_SOURCES.items():
+        if not path.exists():
+            timestamps[name] = None
+            continue
+        
+        try:
+            data = json.loads(path.read_text())
+            ts = data.get('timestamp') or data.get('last_heartbeat_at') or data.get('updated_at')
+            if ts:
+                parsed = parse_iso_time(ts)
+                if parsed:
+                    age = (now - parsed).total_seconds() / 60
+                    timestamps[name] = {
+                        'timestamp': ts,
+                        'age_minutes': round(age, 1)
+                    }
+                    if age > max_age_minutes:
+                        stale_sources.append(name)
+        except:
+            timestamps[name] = {'error': 'parse_failed'}
+    
+    return len(stale_sources) == 0, f"{len(timestamps) - len(stale_sources)}/{len(timestamps)} sources fresh", {
+        'timestamps': timestamps,
+        'stale_sources': stale_sources,
+        'max_age_minutes': max_age_minutes
+    }
+
+
+def check_field_validity():
+    """检查关键字段有效性"""
+    validity = {}
+    
+    # current_health
+    path = TRUTH_SOURCES['current_health']
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+            validity['current_health'] = {
+                'has_overall_status': 'overall_status' in data,
+                'has_components': 'components' in data,
+                'has_timestamp': 'timestamp' in data
+            }
+        except:
+            validity['current_health'] = {'error': True}
+    
+    # gate_report
+    path = TRUTH_SOURCES['gate_report']
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+            validity['gate_report'] = {
+                'has_verdict': 'verdict' in data,
+                'has_gates': 'gates' in data or 'checks' in data
+            }
+        except:
+            validity['gate_report'] = {'error': True}
+    
+    return True, f"Field validity checked for {len(validity)} sources", validity
+
+
+def run_probe():
+    """执行 probe"""
+    checks = []
+    all_passed = True
+    
+    # 1. Truth sources exist
+    passed, msg, details = check_truth_sources_exist()
+    checks.append({
+        'name': 'truth_sources_exist',
+        'description': 'Check all truth source files exist',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    # 2. Status consistency
+    passed, msg, details = check_status_consistency()
+    checks.append({
+        'name': 'status_consistency',
+        'description': 'Check status fields are consistent across sources',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    # 3. Timestamp freshness
+    passed, msg, details = check_timestamp_freshness()
+    checks.append({
+        'name': 'timestamp_freshness',
+        'description': 'Check timestamps are recent',
+        'passed': passed,
+        'details': details
+    })
+    # Timestamp staleness is a warning, not a hard fail
+    
+    # 4. Field validity
+    passed, msg, details = check_field_validity()
+    checks.append({
+        'name': 'field_validity',
+        'description': 'Check key fields are valid',
+        'passed': passed,
+        'details': details
+    })
+    
+    result = {
+        'probe_name': 'probe-truth-alignment',
+        'verification_mode': 'chain_integrity_check',
+        'status': 'ok' if all_passed else 'warn',
+        'message': f"Truth alignment {'consistent' if all_passed else 'needs attention'}",
+        'checks': checks,
+        'timestamp': now_iso()
+    }
+    
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Truth Alignment Probe')
+    parser.add_argument('--json', action='store_true', help='Output JSON')
+    args = parser.parse_args()
+    
+    result = run_probe()
+    
+    # 写入输出
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    (OUTPUT_DIR / 'probe-truth-alignment.json').write_text(
+        json.dumps(result, indent=2, ensure_ascii=False)
+    )
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"Probe: {result['probe_name']}")
+        print(f"Status: {result['status']}")
+        for c in result['checks']:
+            status = '✓' if c['passed'] else '✗'
+            print(f"  {status} {c['name']}: {c['description']}")
+    
+    return 0 if result['status'] == 'ok' else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

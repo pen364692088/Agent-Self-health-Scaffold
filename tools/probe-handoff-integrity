@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+"""
+probe-handoff-integrity - Handoff 完整性检查
+
+Verification Mode: artifact_output_check + chain_integrity_check
+
+检查内容:
+1. handoff.md 存在
+2. 格式符合 schema
+3. 关键字段存在 (objective, phase, next_actions, blockers)
+4. Timestamp 有效
+5. session-archive 工具存在
+"""
+
+import argparse
+import json
+import os
+import sys
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+OUTPUT_DIR = WORKSPACE / 'artifacts' / 'self_health' / 'probes'
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def parse_iso_time(s):
+    """解析 ISO 时间字符串"""
+    if not s:
+        return None
+    try:
+        s = s.replace('Z', '+00:00')
+        if '+' not in s and '-' not in s[-6:]:
+            s += '+00:00'
+        return datetime.fromisoformat(s)
+    except:
+        return None
+
+
+def check_handoff_md_exists():
+    """检查 handoff.md 存在"""
+    path = WORKSPACE / 'handoff.md'
+    if not path.exists():
+        return True, "handoff.md optional (not all sessions need it)", {
+            'exists': False,
+            'path': str(path)
+        }
+    
+    return True, "handoff.md exists", {
+        'exists': True,
+        'path': str(path),
+        'size_bytes': path.stat().st_size
+    }
+
+
+def check_handoff_format():
+    """检查 handoff 格式符合 schema"""
+    path = WORKSPACE / 'handoff.md'
+    if not path.exists():
+        return True, "handoff.md not present (optional)", {'exists': False}
+    
+    content = path.read_text()
+    
+    # 检查 markdown 结构
+    has_header = content.strip().startswith('#')
+    has_sections = '##' in content
+    
+    # 检查关键字段 (灵活匹配)
+    key_fields = ['objective', 'phase', 'next', 'action', 'blocker']
+    found_fields = []
+    for field in key_fields:
+        if re.search(rf'\b{field}\b', content, re.IGNORECASE):
+            found_fields.append(field)
+    
+    format_ok = has_header and len(found_fields) >= 2
+    
+    return format_ok, f"Format {'valid' if format_ok else 'needs improvement'}", {
+        'has_header': has_header,
+        'has_sections': has_sections,
+        'key_fields_found': found_fields
+    }
+
+
+def check_key_fields():
+    """检查关键字段"""
+    path = WORKSPACE / 'handoff.md'
+    if not path.exists():
+        return True, "handoff.md optional", {'exists': False}
+    
+    content = path.read_text()
+    
+    # 定义必要字段和它们的模式
+    required_patterns = [
+        ('objective', r'\*\*objective\*\*|\bobjective\b|\bgoal\b'),
+        ('phase', r'\*\*phase\*\*|\bphase\b'),
+        ('next_actions', r'\*\*next\*\*|\bnext\s*action|\bnext\s*step'),
+    ]
+    
+    optional_patterns = [
+        ('blockers', r'\*\*blocker\*\*|\bblocker\b|\bblocked\b'),
+        ('timestamp', r'\d{4}-\d{2}-\d{2}'),
+    ]
+    
+    fields_status = {}
+    for name, pattern in required_patterns:
+        fields_status[name] = {'required': True, 'found': bool(re.search(pattern, content, re.IGNORECASE))}
+    
+    for name, pattern in optional_patterns:
+        fields_status[name] = {'required': False, 'found': bool(re.search(pattern, content, re.IGNORECASE))}
+    
+    required_ok = all(f['found'] for f in fields_status.values() if f['required'])
+    
+    return required_ok, f"Required fields: {'present' if required_ok else 'missing'}", {
+        'fields': fields_status
+    }
+
+
+def check_handoff_timestamp():
+    """检查 timestamp 有效"""
+    path = WORKSPACE / 'handoff.md'
+    if not path.exists():
+        return True, "handoff.md optional", {'exists': False}
+    
+    content = path.read_text()
+    
+    # 查找日期模式
+    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', content)
+    if not date_match:
+        return True, "No explicit timestamp (using file mtime)", {
+            'has_explicit_timestamp': False,
+            'file_mtime': datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()
+        }
+    
+    try:
+        ts = datetime.strptime(date_match.group(1), '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        age_days = (datetime.now(timezone.utc) - ts).days
+        
+        return True, f"Timestamp valid (age: {age_days} days)", {
+            'has_explicit_timestamp': True,
+            'timestamp': date_match.group(1),
+            'age_days': age_days
+        }
+    except:
+        return False, "Invalid timestamp format", {}
+
+
+def check_session_archive_tool():
+    """检查 session-archive 工具存在"""
+    path = WORKSPACE / 'tools' / 'session-archive'
+    if not path.exists():
+        return False, "session-archive tool not found", {}
+    
+    return True, "session-archive tool exists", {
+        'path': str(path),
+        'executable': os.access(path, os.X_OK)
+    }
+
+
+def run_probe():
+    """执行 probe"""
+    checks = []
+    all_passed = True
+    
+    # 1. handoff.md exists
+    passed, msg, details = check_handoff_md_exists()
+    checks.append({
+        'name': 'handoff_md_exists',
+        'description': 'Check handoff.md exists',
+        'passed': passed,
+        'details': details
+    })
+    
+    # 2. handoff format
+    passed, msg, details = check_handoff_format()
+    checks.append({
+        'name': 'handoff_format',
+        'description': 'Check handoff format is valid',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    # 3. key fields
+    passed, msg, details = check_key_fields()
+    checks.append({
+        'name': 'key_fields',
+        'description': 'Check required fields are present',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    # 4. timestamp
+    passed, msg, details = check_handoff_timestamp()
+    checks.append({
+        'name': 'handoff_timestamp',
+        'description': 'Check timestamp is valid',
+        'passed': passed,
+        'details': details
+    })
+    
+    # 5. session-archive tool
+    passed, msg, details = check_session_archive_tool()
+    checks.append({
+        'name': 'session_archive_tool',
+        'description': 'Check session-archive tool exists',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    result = {
+        'probe_name': 'probe-handoff-integrity',
+        'verification_mode': 'artifact_output_check + chain_integrity_check',
+        'status': 'ok' if all_passed else 'warn',
+        'message': f"Handoff integrity {'healthy' if all_passed else 'needs attention'}",
+        'checks': checks,
+        'timestamp': now_iso()
+    }
+    
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Handoff Integrity Probe')
+    parser.add_argument('--json', action='store_true', help='Output JSON')
+    args = parser.parse_args()
+    
+    result = run_probe()
+    
+    # 写入输出
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    (OUTPUT_DIR / 'probe-handoff-integrity.json').write_text(
+        json.dumps(result, indent=2, ensure_ascii=False)
+    )
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"Probe: {result['probe_name']}")
+        print(f"Status: {result['status']}")
+        for c in result['checks']:
+            status = '✓' if c['passed'] else '✗'
+            print(f"  {status} {c['name']}: {c['description']}")
+    
+    return 0 if result['status'] == 'ok' else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

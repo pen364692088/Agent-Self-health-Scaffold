@@ -8,7 +8,7 @@
       "passed": false,
       "details": {
         "returncode": 3,
-        "status": "inactive",
+        "status": "failed",
         "path_unit_active": true
       }
     },
@@ -25,7 +25,7 @@
       "description": "Check recent callback activity",
       "passed": true,
       "details": {
-        "journal_lines": 1,
+        "journal_lines": 8,
         "success_indicators_found": [],
         "has_recent_activity": true
       }
@@ -64,14 +64,14 @@
         "status": {
           "worker_name": "callback-worker",
           "alive": true,
-          "last_progress_at": "2026-03-09T06:30:37.448998+00:00",
-          "last_output_at": "2026-03-09T06:30:37.448998+00:00",
+          "last_progress_at": "2026-03-09T06:50:53.231106+00:00",
+          "last_output_at": "2026-03-09T06:50:53.231106+00:00",
           "pending_count": null,
           "stuck_suspected": false,
           "last_error_at": "2026-03-08T21:39:36.688896+00:00",
           "last_error_type": null,
           "worker_status": "healthy",
-          "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n✅ Service state: OK (idle, no pending work)\n✅ Kill-switch: Disabled (normal)\n✅ Queue writable: OK (0 events)\n✅ State read/write + lock: OK\n✅ Spawn backend: OK (health check passed)",
+          "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n✅ Service state: OK (idle, no pending work)\n✅ Kill-switch: Disabled (normal)\n❌ Queue writable: events/ permissions incorrect: 0o775 (should be 0o700)\n✅ State read/write + lock: OK\n✅ Spawn backend: OK (health check passed)",
           "service_state": "idle_expected"
         }
       }
@@ -82,5 +82,5 @@
     "systemd_service_status"
   ],
   "backlog_threshold": 10,
-  "timestamp": "2026-03-09T06:30:38.891832+00:00"
+  "timestamp": "2026-03-09T06:50:53.932665+00:00"
 }

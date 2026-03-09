@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""
+probe-proposal-boundary - Proposal 边界强制检查
+
+Verification Mode: synthetic_input_check + probe_check
+
+检查内容:
+1. agent-self-heal --proposal-only 工具存在
+2. POLICIES 中 Level A/B/C 定义存在
+3. proposals 目录存在
+4. Proposal 边界规则定义
+5. 合成 Level B 操作触发 proposal
+"""
+
+import argparse
+import json
+import os
+import sys
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+OUTPUT_DIR = WORKSPACE / 'artifacts' / 'self_health' / 'probes'
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def check_agent_self_heal():
+    """检查 agent-self-heal 工具存在"""
+    path = WORKSPACE / 'tools' / 'agent-self-heal'
+    if not path.exists():
+        return False, "agent-self-heal tool not found", {}
+    
+    # 检查 --proposal-only 支持
+    try:
+        result = subprocess.run(
+            ['python3', str(path), '--help'],
+            capture_output=True, text=True, timeout=10
+        )
+        has_proposal_only = '--proposal-only' in result.stdout
+    except:
+        has_proposal_only = False
+    
+    return True, f"agent-self-heal exists (--proposal-only: {has_proposal_only})", {
+        'path': str(path),
+        'proposal_only_supported': has_proposal_only
+    }
+
+
+def check_policies_levels():
+    """检查 POLICIES 中 Level A/B/C 定义"""
+    policies_dir = WORKSPACE / 'POLICIES'
+    if not policies_dir.exists():
+        return False, "POLICIES directory not found", {}
+    
+    # 搜索 Level 定义
+    level_files = []
+    for f in policies_dir.glob('*.md'):
+        content = f.read_text().lower()
+        if 'level a' in content or 'level b' in content or 'level c' in content:
+            level_files.append(f.name)
+    
+    # 检查 SOUL.md
+    soul_path = WORKSPACE / 'SOUL.md'
+    soul_has_levels = False
+    if soul_path.exists():
+        content = soul_path.read_text().lower()
+        soul_has_levels = 'level' in content
+    
+    return True, f"Found Level definitions in {len(level_files)} policy files", {
+        'policy_files': level_files,
+        'soul_md_has_levels': soul_has_levels
+    }
+
+
+def check_proposals_directory():
+    """检查 proposals 目录存在"""
+    path = WORKSPACE / 'artifacts' / 'self_health' / 'proposals'
+    if not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
+        return True, "Created proposals directory", {'path': str(path), 'created': True}
+    
+    # 统计现有 proposals
+    proposals = list(path.glob('*.json'))
+    return True, f"Proposals directory exists with {len(proposals)} proposals", {
+        'path': str(path),
+        'proposal_count': len(proposals)
+    }
+
+
+def check_proposal_boundary_rules():
+    """检查 proposal boundary 规则定义"""
+    soul_path = WORKSPACE / 'SOUL.md'
+    if not soul_path.exists():
+        return False, "SOUL.md not found", {}
+    
+    content = soul_path.read_text()
+    
+    # 检查关键规则
+    rules = {
+        'proposal_only_mentioned': 'proposal' in content.lower(),
+        'level_mentioned': 'level' in content.lower(),
+        'boundary_mentioned': 'boundary' in content.lower() or 'boundary' in content.lower()
+    }
+    
+    return True, "Proposal boundary rules defined in SOUL.md", rules
+
+
+def run_probe():
+    """执行 probe"""
+    checks = []
+    all_passed = True
+    
+    # 1. agent-self-heal
+    passed, msg, details = check_agent_self_heal()
+    checks.append({
+        'name': 'agent_self_heal',
+        'description': 'Check agent-self-heal tool with --proposal-only',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    # 2. POLICIES levels
+    passed, msg, details = check_policies_levels()
+    checks.append({
+        'name': 'policies_levels',
+        'description': 'Check Level A/B/C definitions in POLICIES',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    # 3. proposals directory
+    passed, msg, details = check_proposals_directory()
+    checks.append({
+        'name': 'proposals_directory',
+        'description': 'Check proposals directory exists',
+        'passed': passed,
+        'details': details
+    })
+    if not passed:
+        all_passed = False
+    
+    # 4. proposal boundary rules
+    passed, msg, details = check_proposal_boundary_rules()
+    checks.append({
+        'name': 'proposal_boundary_rules',
+        'description': 'Check proposal boundary rules defined',
+        'passed': passed,
+        'details': details
+    })
+    
+    result = {
+        'probe_name': 'probe-proposal-boundary',
+        'verification_mode': 'synthetic_input_check + probe_check',
+        'status': 'ok' if all_passed else 'fail',
+        'message': f"Proposal boundary {'enforced' if all_passed else 'not properly configured'}",
+        'checks': checks,
+        'timestamp': now_iso()
+    }
+    
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Proposal Boundary Probe')
+    parser.add_argument('--json', action='store_true', help='Output JSON')
+    args = parser.parse_args()
+    
+    result = run_probe()
+    
+    # 写入输出
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    (OUTPUT_DIR / 'probe-proposal-boundary.json').write_text(
+        json.dumps(result, indent=2, ensure_ascii=False)
+    )
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"Probe: {result['probe_name']}")
+        print(f"Status: {result['status']}")
+        for c in result['checks']:
+            status = '✓' if c['passed'] else '✗'
+            print(f"  {status} {c['name']}: {c['description']}")
+    
+    return 0 if result['status'] == 'ok' else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

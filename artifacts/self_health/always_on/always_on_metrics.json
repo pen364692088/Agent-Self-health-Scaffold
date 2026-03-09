@@ -1,12 +1,12 @@
 {
-  "scheduler_runs_total": 151,
-  "quick_runs_total": 6,
+  "scheduler_runs_total": 153,
+  "quick_runs_total": 7,
   "full_runs_total": 12,
-  "gate_runs_total": 133,
+  "gate_runs_total": 134,
   "skipped_runs_total": 9,
   "lock_contention_count": 0,
   "execution_budget_hit_count": 0,
   "cooldown_blocked_count": 6,
-  "probe_runs_total": 1,
+  "probe_runs_total": 2,
   "probe_failures_total": 0
 }

@@ -24,8 +24,8 @@
       "description": "Create test session data for compaction",
       "passed": true,
       "details": {
-        "temp_dir": "/tmp/probe_compaction_2qavss3t",
-        "state_file": "/tmp/probe_compaction_2qavss3t/test_state.json"
+        "temp_dir": "/tmp/probe_compaction_lyyg2s8h",
+        "state_file": "/tmp/probe_compaction_lyyg2s8h/test_state.json"
       }
     },
     {
@@ -33,9 +33,9 @@
       "description": "Execute compaction on test data",
       "passed": true,
       "details": {
-        "elapsed_seconds": 0.12,
+        "elapsed_seconds": 0.15,
         "returncode": 0,
-        "stdout_preview": "{\n  \"compression_triggered\": false,\n  \"mode\": \"shadow\",\n  \"pressure_level\": \"normal\",\n  \"reason\": \"Context pressure is normal, no compression needed\",\n  \"budget\": {\n    \"estimated_tokens\": 114,\n    \"max_tokens\": 100000,\n    \"ratio\": 0.0011,\n    \"pressure_level\": \"normal\",\n    \"threshold_hit\": null,\n    \"snapshot_id\": \"snap_20260309_013037\"\n  }\n}\n"
+        "stdout_preview": "{\n  \"compression_triggered\": false,\n  \"mode\": \"shadow\",\n  \"pressure_level\": \"normal\",\n  \"reason\": \"Context pressure is normal, no compression needed\",\n  \"budget\": {\n    \"estimated_tokens\": 114,\n    \"max_tokens\": 100000,\n    \"ratio\": 0.0011,\n    \"pressure_level\": \"normal\",\n    \"threshold_hit\": null,\n    \"snapshot_id\": \"snap_20260309_015052\"\n  }\n}\n"
       }
     },
     {
@@ -62,5 +62,5 @@
   "failures": [],
   "check_count": 6,
   "pass_count": 6,
-  "timestamp": "2026-03-09T06:30:38.507811+00:00"
+  "timestamp": "2026-03-09T06:50:53.497226+00:00"
 }
