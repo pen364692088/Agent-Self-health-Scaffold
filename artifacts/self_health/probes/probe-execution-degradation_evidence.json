@@ -61,7 +61,7 @@
         "returncode": 0,
         "check_output": {
           "metrics": {
-            "collection_time": "2026-03-09T03:18:39.332424",
+            "collection_time": "2026-03-09T03:32:13.282729",
             "window": "1h",
             "metrics": {
               "finalize_response_blocks_hourly": 0,
@@ -82,5 +82,5 @@
   "message": "Execution degradation monitoring healthy",
   "check_count": 5,
   "pass_count": 5,
-  "timestamp": "2026-03-09T08:18:39.339693+00:00"
+  "timestamp": "2026-03-09T08:32:13.289767+00:00"
 }

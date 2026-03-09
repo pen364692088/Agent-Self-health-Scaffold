@@ -1,0 +1,87 @@
+{
+  "probe_name": "probe-daily-rollup",
+  "verification_mode": "artifact_output_check",
+  "checks": [
+    {
+      "name": "daily_rollup_tools",
+      "description": "Check daily rollup tools exist",
+      "passed": true,
+      "details": {
+        "tools_found": 6,
+        "tools": [
+          {
+            "name": "callback-daily-summary",
+            "path": "/home/moonlight/.openclaw/workspace/tools/callback-daily-summary",
+            "executable": true
+          },
+          {
+            "name": "memory-daily-obs",
+            "path": "/home/moonlight/.openclaw/workspace/tools/memory-daily-obs",
+            "executable": true
+          },
+          {
+            "name": "s1-daily-report",
+            "path": "/home/moonlight/.openclaw/workspace/tools/s1-daily-report",
+            "executable": true
+          },
+          {
+            "name": "session-daily-audit",
+            "path": "/home/moonlight/.openclaw/workspace/tools/session-daily-audit",
+            "executable": true
+          },
+          {
+            "name": "session-continuity-daily-check",
+            "path": "/home/moonlight/.openclaw/workspace/tools/session-continuity-daily-check",
+            "executable": true
+          },
+          {
+            "name": "srap-daily-report",
+            "path": "/home/moonlight/.openclaw/workspace/tools/srap-daily-report",
+            "executable": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "latest_rollup_file",
+      "description": "Check latest rollup file exists",
+      "passed": true,
+      "details": {
+        "rollup_files_count": 1,
+        "latest_file": "daily_summaries.jsonl",
+        "latest_path": "/home/moonlight/.openclaw/workspace/memory/daily_summaries.jsonl",
+        "latest_age_hours": 1.99
+      }
+    },
+    {
+      "name": "rollup_format",
+      "description": "Check rollup format correctness",
+      "passed": true,
+      "details": {
+        "daily_summaries_exists": true,
+        "lines_count": 1,
+        "valid_json_lines": 1
+      }
+    },
+    {
+      "name": "aggregated_data_integrity",
+      "description": "Check aggregated data integrity",
+      "passed": true,
+      "details": {
+        "total_md_files": 158,
+        "recent_md_files": 4,
+        "events_log_exists": true,
+        "events_log_size": 111453,
+        "index_exists": true
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Daily rollup healthy",
+  "check_count": 4,
+  "pass_count": 4,
+  "timestamp": "2026-03-09T08:32:20.346778+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-daily-rollup_evidence.json"
+}

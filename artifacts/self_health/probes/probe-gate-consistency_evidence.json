@@ -23,7 +23,7 @@
       "details": {
         "returncode": 0,
         "health_result": {
-          "timestamp": "2026-03-09T08:18:34.888246+00:00",
+          "timestamp": "2026-03-09T08:32:08.833605+00:00",
           "gate_a": {
             "status": "PASS",
             "missing": [],
@@ -32,10 +32,10 @@
           "gate_b": {
             "status": "PASS",
             "ages_seconds": {
-              "heartbeat": 129.94271612167358,
-              "callback": 129.88600969314575,
-              "mailbox": 129.88572669029236,
-              "summary": 129.88554167747498
+              "heartbeat": 39.814234256744385,
+              "callback": 39.75542092323303,
+              "mailbox": 39.754698276519775,
+              "summary": 39.75453281402588
             },
             "explanation": "runtime telemetry present and fresh"
           },
@@ -45,7 +45,7 @@
               "tool_doctor_agent_health_check": "PASS",
               "execution_guard_health": "PASS"
             },
-            "last_gate_run_at": "2026-03-09T08:16:24.812148+00:00",
+            "last_gate_run_at": "2026-03-09T08:31:28.868408+00:00",
             "explanation": "preflight/doctor/execution-guard baseline checks"
           },
           "verdict": "PASS"
@@ -84,15 +84,15 @@
         "verdict_files": [],
         "metrics_file_exists": true,
         "metrics": {
-          "scheduler_runs_total": 191,
-          "quick_runs_total": 29,
+          "scheduler_runs_total": 195,
+          "quick_runs_total": 30,
           "full_runs_total": 13,
-          "gate_runs_total": 149,
+          "gate_runs_total": 152,
           "skipped_runs_total": 12,
           "lock_contention_count": 0,
           "execution_budget_hit_count": 0,
           "cooldown_blocked_count": 9,
-          "probe_runs_total": 25,
+          "probe_runs_total": 26,
           "probe_failures_total": 25,
           "incident_total": 4,
           "proposal_total": 2,
@@ -144,5 +144,5 @@
   "failures": [],
   "status": "ok",
   "message": "Probe checks passed",
-  "timestamp": "2026-03-09T08:18:35.139680+00:00"
+  "timestamp": "2026-03-09T08:32:09.084024+00:00"
 }

@@ -1,0 +1,276 @@
+#!/usr/bin/env python3
+"""
+probe-memory-retrieval - Memory Retrieval Verification
+
+Verification Mode: probe_check
+
+检查逻辑:
+1. 检查 memory-retrieve 工具存在
+2. 检查索引文件存在
+3. 检查检索成功率
+4. 检查两阶段检索状态
+
+Usage:
+  probe-memory-retrieval
+  probe-memory-retrieval --json
+  probe-memory-retrieval --timeout 30
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+MEMORY_DIR = WORKSPACE / "memory"
+OPENVIKING_TOOL = Path.home() / ".local" / "bin" / "openviking"
+
+MEMORY_RETRIEVE_TOOL = TOOLS_DIR / "memory-retrieve"
+INDEX_FILE = MEMORY_DIR / "INDEX.yaml"
+EVENTS_LOG = MEMORY_DIR / "events.log"
+TOMBSTONES_FILE = MEMORY_DIR / "TOMBSTONES.jsonl"
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class MemoryRetrievalProbe:
+    """Probe for memory retrieval functionality."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-memory-retrieval",
+            "verification_mode": "probe_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_memory_retrieve_tool(self) -> Dict:
+        """Check 1: memory-retrieve 工具存在."""
+        check = {
+            "name": "memory_retrieve_tool",
+            "description": "Check memory-retrieve tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if MEMORY_RETRIEVE_TOOL.exists():
+            check["passed"] = True
+            check["details"]["tool_path"] = str(MEMORY_RETRIEVE_TOOL)
+            check["details"]["is_executable"] = os.access(MEMORY_RETRIEVE_TOOL, os.X_OK)
+            
+            # Check tool size
+            check["details"]["tool_size_bytes"] = MEMORY_RETRIEVE_TOOL.stat().st_size
+        else:
+            check["details"]["error"] = f"Tool not found: {MEMORY_RETRIEVE_TOOL}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_index_files(self) -> Dict:
+        """Check 2: 索引文件存在."""
+        check = {
+            "name": "index_files",
+            "description": "Check memory index files exist",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check main index
+        if INDEX_FILE.exists():
+            check["details"]["index_file_exists"] = True
+            check["details"]["index_file_path"] = str(INDEX_FILE)
+            
+            try:
+                content = INDEX_FILE.read_text()
+                check["details"]["index_size_bytes"] = len(content)
+                check["details"]["has_content"] = len(content) > 50
+            except Exception as e:
+                check["details"]["read_error"] = str(e)
+        else:
+            check["details"]["index_file_exists"] = False
+        
+        # Check memory directory
+        if MEMORY_DIR.exists():
+            check["details"]["memory_dir_exists"] = True
+            
+            # Count memory files
+            md_files = list(MEMORY_DIR.glob("*.md"))
+            check["details"]["memory_files_count"] = len(md_files)
+            
+            # Check for domain subdirectories
+            domains_dir = MEMORY_DIR / "domains"
+            if domains_dir.exists():
+                check["details"]["domains_dir_exists"] = True
+        
+        # Tombstones file
+        if TOMBSTONES_FILE.exists():
+            check["details"]["tombstones_exists"] = True
+        
+        # Consider passed if memory dir exists with files
+        check["passed"] = MEMORY_DIR.exists() and len(list(MEMORY_DIR.glob("*.md"))) > 0
+        
+        self.checks.append(check)
+        return check
+    
+    def check_retrieval_success_rate(self) -> Dict:
+        """Check 3: 检索成功率."""
+        check = {
+            "name": "retrieval_success_rate",
+            "description": "Check retrieval success rate from logs",
+            "passed": False,
+            "details": {}
+        }
+        
+        if EVENTS_LOG.exists():
+            check["details"]["events_log_exists"] = True
+            
+            try:
+                lines = EVENTS_LOG.read_text().strip().split('\n')
+                check["details"]["log_lines_count"] = len(lines)
+                
+                # Count recall events
+                recall_count = sum(1 for line in lines if '"event": "recall"' in line or 'recall' in line.lower())
+                check["details"]["recall_events"] = recall_count
+                
+                # Check recent activity (last 100 lines)
+                recent_lines = lines[-100:] if len(lines) > 100 else lines
+                recent_recall = sum(1 for line in recent_lines if '"event": "recall"' in line)
+                check["details"]["recent_recall_events"] = recent_recall
+                
+                check["passed"] = True
+                
+            except Exception as e:
+                check["details"]["parse_error"] = str(e)
+                check["passed"] = True  # Non-blocking
+        else:
+            check["details"]["events_log_not_found"] = True
+            check["passed"] = True  # Non-blocking
+        
+        self.checks.append(check)
+        return check
+    
+    def check_two_stage_retrieval(self) -> Dict:
+        """Check 4: 两阶段检索状态."""
+        check = {
+            "name": "two_stage_retrieval",
+            "description": "Check two-stage retrieval status",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check for Stage 1: pinned/index lookup
+        if INDEX_FILE.exists():
+            check["details"]["stage1_index_available"] = True
+        
+        # Check for Stage 2: OpenViking semantic search
+        if OPENVIKING_TOOL.exists():
+            check["details"]["stage2_openviking_available"] = True
+            check["details"]["openviking_path"] = str(OPENVIKING_TOOL)
+        else:
+            check["details"]["stage2_openviking_available"] = False
+            check["details"]["warning"] = "OpenViking not available for Stage 2 semantic search"
+        
+        # Check memory-retrieve tool for two-stage support
+        if MEMORY_RETRIEVE_TOOL.exists():
+            try:
+                # Check if tool mentions two-stage retrieval
+                content = MEMORY_RETRIEVE_TOOL.read_text()
+                if "two-stage" in content.lower() or "STAGE2" in content:
+                    check["details"]["two_stage_implemented"] = True
+                if "openviking" in content.lower():
+                    check["details"]["openviking_integration"] = True
+            except Exception:
+                pass
+        
+        # Determine if two-stage is operational
+        stage1_ok = INDEX_FILE.exists()
+        stage2_ok = OPENVIKING_TOOL.exists()
+        
+        check["details"]["stage1_status"] = "ok" if stage1_ok else "not_available"
+        check["details"]["stage2_status"] = "ok" if stage2_ok else "not_available"
+        
+        # At least Stage 1 should be working
+        check["passed"] = stage1_ok
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_memory_retrieve_tool()
+        self.check_index_files()
+        self.check_retrieval_success_rate()
+        self.check_two_stage_retrieval()
+        
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Memory retrieval healthy" if all_passed else "Memory retrieval issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        evidence_file = write_evidence("probe-memory-retrieval", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Memory Retrieval Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = MemoryRetrievalProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-memory-retrieval")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

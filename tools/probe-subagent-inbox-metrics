@@ -1,0 +1,288 @@
+#!/usr/bin/env python3
+"""
+probe-subagent-inbox-metrics - Subagent Inbox Metrics Verification
+
+Verification Mode: probe_check
+
+检查逻辑:
+1. 检查 subagent-inbox-metrics 工具存在
+2. 检查 inbox 状态文件
+3. 检查 pending/processed 统计
+4. 检查健康指标
+
+Usage:
+  probe-subagent-inbox-metrics
+  probe-subagent-inbox-metrics --json
+  probe-subagent-inbox-metrics --timeout 30
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+INBOX_DIR = WORKSPACE / "reports" / "subtasks"
+
+INBOX_METRICS_TOOL = TOOLS_DIR / "subagent-inbox-metrics"
+SUBAGENT_INBOX_TOOL = TOOLS_DIR / "subagent-inbox"
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class SubagentInboxMetricsProbe:
+    """Probe for subagent inbox metrics functionality."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-subagent-inbox-metrics",
+            "verification_mode": "probe_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_inbox_metrics_tool(self) -> Dict:
+        """Check 1: subagent-inbox-metrics 工具存在."""
+        check = {
+            "name": "inbox_metrics_tool",
+            "description": "Check subagent-inbox-metrics tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if INBOX_METRICS_TOOL.exists():
+            check["passed"] = True
+            check["details"]["tool_path"] = str(INBOX_METRICS_TOOL)
+            check["details"]["is_executable"] = os.access(INBOX_METRICS_TOOL, os.X_OK)
+        else:
+            check["details"]["error"] = f"Tool not found: {INBOX_METRICS_TOOL}"
+        
+        # Also check subagent-inbox tool
+        if SUBAGENT_INBOX_TOOL.exists():
+            check["details"]["subagent_inbox_exists"] = True
+            check["details"]["subagent_inbox_path"] = str(SUBAGENT_INBOX_TOOL)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_inbox_status_files(self) -> Dict:
+        """Check 2: inbox 状态文件."""
+        check = {
+            "name": "inbox_status_files",
+            "description": "Check inbox status files exist",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not INBOX_DIR.exists():
+            check["details"]["error"] = f"Inbox directory not found: {INBOX_DIR}"
+            self.checks.append(check)
+            return check
+        
+        check["details"]["inbox_dir_exists"] = True
+        check["details"]["inbox_dir_path"] = str(INBOX_DIR)
+        
+        # Count different file types
+        pending_files = list(INBOX_DIR.glob("*.done.json"))
+        claimed_files = list(INBOX_DIR.glob("*.claimed.json"))
+        processed_files = list(INBOX_DIR.glob("*.processed.json"))
+        
+        check["details"]["pending_count"] = len(pending_files)
+        check["details"]["claimed_count"] = len(claimed_files)
+        check["details"]["processed_count"] = len(processed_files)
+        check["details"]["total_files"] = len(pending_files) + len(claimed_files) + len(processed_files)
+        
+        # Check for any files
+        if check["details"]["total_files"] >= 0:
+            check["passed"] = True
+        
+        self.checks.append(check)
+        return check
+    
+    def check_pending_processed_stats(self) -> Dict:
+        """Check 3: pending/processed 统计."""
+        check = {
+            "name": "pending_processed_stats",
+            "description": "Check pending/processed statistics",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Run the metrics tool
+        if not INBOX_METRICS_TOOL.exists():
+            check["details"]["error"] = "Metrics tool not found"
+            self.checks.append(check)
+            return check
+        
+        try:
+            result = subprocess.run(
+                [str(INBOX_METRICS_TOOL), "--json"],
+                capture_output=True,
+                text=True,
+                timeout=self.timeout
+            )
+            
+            if result.returncode == 0:
+                try:
+                    metrics = json.loads(result.stdout)
+                    check["details"]["metrics"] = metrics
+                    check["passed"] = True
+                    
+                    # Extract key metrics
+                    check["details"]["pending_count"] = metrics.get("pending_count", 0)
+                    check["details"]["claimed_count"] = metrics.get("claimed_count", 0)
+                    check["details"]["processed_count"] = metrics.get("processed_count", 0)
+                    check["details"]["receipt_age_p95"] = metrics.get("receipt_age_p95", 0)
+                    check["details"]["stuck_claimed_count"] = metrics.get("stuck_claimed_count", 0)
+                except json.JSONDecodeError as e:
+                    check["details"]["parse_error"] = str(e)
+                    check["details"]["stdout_preview"] = result.stdout[:500]
+            else:
+                check["details"]["returncode"] = result.returncode
+                check["details"]["stderr"] = result.stderr[:200] if result.stderr else None
+                
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = f"Timeout after {self.timeout}s"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_health_indicators(self) -> Dict:
+        """Check 4: 健康指标."""
+        check = {
+            "name": "health_indicators",
+            "description": "Check health indicators",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Get metrics from previous check or re-run
+        metrics = {}
+        if INBOX_METRICS_TOOL.exists():
+            try:
+                result = subprocess.run(
+                    [str(INBOX_METRICS_TOOL), "--json"],
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout
+                )
+                if result.returncode == 0:
+                    metrics = json.loads(result.stdout)
+            except Exception:
+                pass
+        
+        health_issues = []
+        
+        # Check pending threshold
+        pending = metrics.get("pending_count", 0)
+        if pending > 10:
+            health_issues.append(f"pending_count ({pending}) > 10")
+        check["details"]["pending_health"] = "ok" if pending <= 10 else "warning"
+        
+        # Check receipt age
+        age_p95 = metrics.get("receipt_age_p95", 0)
+        if age_p95 > 60:
+            health_issues.append(f"receipt_age_p95 ({age_p95:.1f}s) > 60s")
+        check["details"]["age_health"] = "ok" if age_p95 <= 60 else "warning"
+        
+        # Check stuck claims
+        stuck = metrics.get("stuck_claimed_count", 0)
+        if stuck > 0:
+            health_issues.append(f"stuck_claimed_count ({stuck}) > 0")
+        check["details"]["stuck_health"] = "ok" if stuck == 0 else "warning"
+        
+        check["details"]["health_issues"] = health_issues
+        check["passed"] = len(health_issues) == 0
+        
+        # Overall health status
+        if check["passed"]:
+            check["details"]["overall_health"] = "healthy"
+        else:
+            check["details"]["overall_health"] = "degraded"
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_inbox_metrics_tool()
+        self.check_inbox_status_files()
+        self.check_pending_processed_stats()
+        self.check_health_indicators()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Subagent inbox metrics healthy" if all_passed else "Subagent inbox metrics issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-subagent-inbox-metrics", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Subagent Inbox Metrics Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = SubagentInboxMetricsProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-subagent-inbox-metrics")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

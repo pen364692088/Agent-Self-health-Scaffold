@@ -46,7 +46,20 @@ P1_PROBES = [
 ]
 
 # All probes to run
-ALL_PROBES = P0_PROBES + P1_PROBES
+# P2 Probes - Medium priority (can defer)
+P2_PROBES = [
+    'probe-telegram-notification',
+    'probe-session-archive',
+    'probe-subagent-inbox-metrics',
+    'probe-embedding-policy',
+    'probe-memory-retrieval',
+    'probe-daily-rollup',
+    'probe-token-counter-cjk',
+    'probe-webhook-fallback',
+]
+
+# All probes to run
+ALL_PROBES = P0_PROBES + P1_PROBES + P2_PROBES
 
 CONFIG = {
     'quick': {'cooldown': 300, 'budget': 15, 'health_args': ['--quick', '--json'], 'run_probes': True},

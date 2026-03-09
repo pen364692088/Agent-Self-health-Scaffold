@@ -1,0 +1,64 @@
+{
+  "probe_name": "probe-memory-retrieval",
+  "verification_mode": "probe_check",
+  "checks": [
+    {
+      "name": "memory_retrieve_tool",
+      "description": "Check memory-retrieve tool exists and is executable",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/memory-retrieve",
+        "is_executable": true,
+        "tool_size_bytes": 19463
+      }
+    },
+    {
+      "name": "index_files",
+      "description": "Check memory index files exist",
+      "passed": true,
+      "details": {
+        "index_file_exists": true,
+        "index_file_path": "/home/moonlight/.openclaw/workspace/memory/INDEX.yaml",
+        "index_size_bytes": 550,
+        "has_content": true,
+        "memory_dir_exists": true,
+        "memory_files_count": 158,
+        "domains_dir_exists": true,
+        "tombstones_exists": true
+      }
+    },
+    {
+      "name": "retrieval_success_rate",
+      "description": "Check retrieval success rate from logs",
+      "passed": true,
+      "details": {
+        "events_log_exists": true,
+        "log_lines_count": 244,
+        "recall_events": 179,
+        "recent_recall_events": 73
+      }
+    },
+    {
+      "name": "two_stage_retrieval",
+      "description": "Check two-stage retrieval status",
+      "passed": true,
+      "details": {
+        "stage1_index_available": true,
+        "stage2_openviking_available": true,
+        "openviking_path": "/home/moonlight/.local/bin/openviking",
+        "two_stage_implemented": true,
+        "openviking_integration": true,
+        "stage1_status": "ok",
+        "stage2_status": "ok"
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Memory retrieval healthy",
+  "check_count": 4,
+  "pass_count": 4,
+  "timestamp": "2026-03-09T08:32:20.308470+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-memory-retrieval_evidence.json"
+}

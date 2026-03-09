@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+"""
+probe-session-archive - Session Archive Verification
+
+Verification Mode: artifact_output_check
+
+检查逻辑:
+1. 检查 session-archive 工具存在
+2. 检查 session-archives/ 目录存在
+3. 检查最新归档文件存在
+4. 检查 distill 输出存在
+
+Usage:
+  probe-session-archive
+  probe-session-archive --json
+  probe-session-archive --timeout 30
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+SESSION_ARCHIVES = WORKSPACE / "session-archives"
+DISTILL_DIR = WORKSPACE / "artifacts" / "distilled"
+
+SESSION_ARCHIVE_TOOL = TOOLS_DIR / "session-archive"
+ARCHIVE_WITH_DISTILL = TOOLS_DIR / "archive-with-distill"
+DISTILL_TOOL = TOOLS_DIR / "distill-content"
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class SessionArchiveProbe:
+    """Probe for session archive functionality."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-session-archive",
+            "verification_mode": "artifact_output_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_session_archive_tool(self) -> Dict:
+        """Check 1: session-archive 工具存在."""
+        check = {
+            "name": "session_archive_tool",
+            "description": "Check session-archive tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if SESSION_ARCHIVE_TOOL.exists():
+            check["passed"] = True
+            check["details"]["tool_path"] = str(SESSION_ARCHIVE_TOOL)
+            check["details"]["is_executable"] = os.access(SESSION_ARCHIVE_TOOL, os.X_OK)
+        else:
+            check["details"]["error"] = f"Tool not found: {SESSION_ARCHIVE_TOOL}"
+        
+        # Also check archive-with-distill
+        if ARCHIVE_WITH_DISTILL.exists():
+            check["details"]["archive_with_distill_exists"] = True
+            check["details"]["archive_with_distill_path"] = str(ARCHIVE_WITH_DISTILL)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_session_archives_dir(self) -> Dict:
+        """Check 2: session-archives/ 目录存在."""
+        check = {
+            "name": "session_archives_dir",
+            "description": "Check session-archives directory exists",
+            "passed": False,
+            "details": {}
+        }
+        
+        if SESSION_ARCHIVES.exists():
+            check["passed"] = True
+            check["details"]["dir_exists"] = True
+            check["details"]["dir_path"] = str(SESSION_ARCHIVES)
+            
+            # Count archive files
+            archive_files = list(SESSION_ARCHIVES.glob("*.md"))
+            check["details"]["archive_count"] = len(archive_files)
+        else:
+            check["details"]["error"] = f"Directory not found: {SESSION_ARCHIVES}"
+            check["details"]["suggestion"] = "Create session-archives directory"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_latest_archive(self) -> Dict:
+        """Check 3: 最新归档文件存在."""
+        check = {
+            "name": "latest_archive",
+            "description": "Check latest archive file exists",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not SESSION_ARCHIVES.exists():
+            check["details"]["error"] = "session-archives directory not found"
+            self.checks.append(check)
+            return check
+        
+        archive_files = sorted(SESSION_ARCHIVES.glob("*.md"), 
+                               key=lambda f: f.stat().st_mtime, reverse=True)
+        
+        if archive_files:
+            check["passed"] = True
+            latest = archive_files[0]
+            check["details"]["latest_archive"] = latest.name
+            check["details"]["archive_count"] = len(archive_files)
+            
+            # Get file stats
+            stat = latest.stat()
+            mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+            check["details"]["latest_modified"] = mtime.isoformat()
+            check["details"]["latest_size_bytes"] = stat.st_size
+            
+            # Check content structure
+            try:
+                content = latest.read_text()
+                check["details"]["content_preview"] = content[:200] if content else None
+                check["details"]["has_content"] = len(content) > 100
+            except Exception as e:
+                check["details"]["read_error"] = str(e)
+        else:
+            check["details"]["error"] = "No archive files found"
+            check["details"]["suggestion"] = "Run session-archive to create archive"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_distill_output(self) -> Dict:
+        """Check 4: distill 输出存在."""
+        check = {
+            "name": "distill_output",
+            "description": "Check distill output exists",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check distill tool
+        if DISTILL_TOOL.exists():
+            check["details"]["distill_tool_exists"] = True
+            check["details"]["distill_tool_path"] = str(DISTILL_TOOL)
+        else:
+            check["details"]["distill_tool_exists"] = False
+        
+        # Check distilled output directory
+        if DISTILL_DIR.exists():
+            check["details"]["distill_dir_exists"] = True
+            check["details"]["distill_dir_path"] = str(DISTILL_DIR)
+            
+            # Count distilled files
+            distilled_files = list(DISTILL_DIR.glob("*.json")) + list(DISTILL_DIR.glob("*.md"))
+            check["details"]["distilled_file_count"] = len(distilled_files)
+            
+            if distilled_files:
+                check["passed"] = True
+            else:
+                check["details"]["warning"] = "Distill directory empty"
+                check["passed"] = True  # Non-blocking
+        else:
+            check["details"]["distill_dir_exists"] = False
+            check["passed"] = True  # Non-blocking, may not have run yet
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_session_archive_tool()
+        self.check_session_archives_dir()
+        self.check_latest_archive()
+        self.check_distill_output()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Session archive system healthy" if all_passed else "Session archive system issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-session-archive", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Session Archive Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = SessionArchiveProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-session-archive")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()
