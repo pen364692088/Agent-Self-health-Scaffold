@@ -23,7 +23,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List
 
-WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+WORKSPACE = Path(os.environ.get("OPENCLAW_WORKSPACE", Path(__file__).parent.parent))
 TOOLS = WORKSPACE / "tools"
 ARTIFACTS = WORKSPACE / "artifacts" / "receipts"
 SCHEMAS = WORKSPACE / "schemas"

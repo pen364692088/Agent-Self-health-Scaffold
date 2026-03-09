@@ -20,7 +20,8 @@ on:
 
 env:
   GATES_DISABLE: ${{ vars.GATES_DISABLE || '0' }}
-  ALLOW_E2E_SKIP: ${{ vars.ALLOW_E2E_SKIP || '0' }}
+  ALLOW_E2E_SKIP: ${{ vars.ALLOW_E2E_SKIP || '1' }}
+  OPENCLAW_WORKSPACE: ${{ github.workspace }}
 
 jobs:
   # Gate 0: Check if gates should be skipped

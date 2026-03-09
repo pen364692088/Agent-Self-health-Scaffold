@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-09T08:32:08.833605+00:00",
+  "timestamp": "2026-03-09T08:36:29.851251+00:00",
   "gate_a": {
     "status": "PASS",
     "missing": [],
@@ -8,10 +8,10 @@
   "gate_b": {
     "status": "PASS",
     "ages_seconds": {
-      "heartbeat": 39.814234256744385,
-      "callback": 39.75542092323303,
-      "mailbox": 39.754698276519775,
-      "summary": 39.75453281402588
+      "heartbeat": 247.96813035011292,
+      "callback": 247.89986515045166,
+      "mailbox": 247.89946866035461,
+      "summary": 247.89929294586182
     },
     "explanation": "runtime telemetry present and fresh"
   },

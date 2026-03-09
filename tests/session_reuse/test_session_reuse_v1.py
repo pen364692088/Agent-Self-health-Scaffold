@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 from __future__ import annotations
 
 import importlib.util
@@ -8,7 +9,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+WORKSPACE = Path(os.environ.get('OPENCLAW_WORKSPACE', Path(__file__).parent.parent))
 LIB_PATH = WORKSPACE / 'tools' / 'session_reuse_lib.py'
 
 import sys

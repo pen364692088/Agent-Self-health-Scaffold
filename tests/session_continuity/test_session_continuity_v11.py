@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 # Add workspace to path
-WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+WORKSPACE = Path(os.environ.get("OPENCLAW_WORKSPACE", Path(__file__).parent.parent))
 sys.path.insert(0, str(WORKSPACE / "tools"))
 
 import pytest

@@ -17,8 +17,8 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any
 
-# Setup paths
-WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+# Setup paths - use environment variable or relative path for CI compatibility
+WORKSPACE = Path(os.environ.get("OPENCLAW_WORKSPACE", Path(__file__).parent.parent))
 TOOLS = WORKSPACE / "tools"
 ARTIFACTS = WORKSPACE / "artifacts" / "receipts"
 WORKFLOW_STATE = WORKSPACE / "WORKFLOW_STATE.json"

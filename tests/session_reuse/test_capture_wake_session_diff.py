@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+import os
 from __future__ import annotations
 
 import json
 import subprocess
 from pathlib import Path
 
-WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+WORKSPACE = Path(os.environ.get('OPENCLAW_WORKSPACE', Path(__file__).parent.parent))
 TOOL = WORKSPACE / 'tools' / 'capture-wake-session-diff'
 PROBE_DIR = WORKSPACE / 'artifacts' / 'session_reuse' / 'probe' / 'real_samples'
 

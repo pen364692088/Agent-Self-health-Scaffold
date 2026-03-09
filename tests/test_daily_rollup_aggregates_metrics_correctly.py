@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+import os
 
 import json
 import subprocess
 from pathlib import Path
 
-WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+WORKSPACE = Path(os.environ.get('OPENCLAW_WORKSPACE', Path(__file__).parent.parent))
 ROLLUP = WORKSPACE / 'scripts' / 'openviking_daily_rollup.py'
 
 

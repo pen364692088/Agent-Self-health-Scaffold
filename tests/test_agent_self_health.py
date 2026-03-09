@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+import os
 import json, subprocess
 from pathlib import Path
 
-W = Path('/home/moonlight/.openclaw/workspace')
+W = Path(os.environ.get('OPENCLAW_WORKSPACE', Path(__file__).parent.parent))
 
 def run(cmd):
     r = subprocess.run(cmd, capture_output=True, text=True)

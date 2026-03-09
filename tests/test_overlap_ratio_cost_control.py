@@ -6,7 +6,7 @@ from openviking.chunking.deterministic_chunker import chunk_with_stats
 
 
 def test_overlap_ratio_rule_cost_control():
-    fixture = Path("/home/moonlight/.openclaw/workspace/tests/fixtures/regression_docs/giant_paragraph_no_punct.txt")
+    fixture = Path(os.environ.get("OPENCLAW_WORKSPACE", Path(__file__).parent.parent)) / "tests/fixtures"/regression_docs/giant_paragraph_no_punct.txt")
     text = fixture.read_text() * 200
 
     max_tokens = 200
