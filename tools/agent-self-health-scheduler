@@ -29,6 +29,7 @@ P0_PROBES = [
 ]
 
 # P1 Probes - High priority system chains
+# P1 Probes - High priority system chains
 P1_PROBES = [
     'probe-openviking-retrieval',
     'probe-longrunkit-state-machine',
@@ -36,6 +37,12 @@ P1_PROBES = [
     'probe-longrunkit-timeout-retry',
     'probe-subagent-orchestration',
     'probe-receipt-pipeline',
+    'probe-task-completion-protocol',
+    'probe-context-shadow',
+    'probe-summary-generation',
+    'probe-execution-degradation',
+    'probe-callback-worker-doctor',
+    'probe-continuity-event-log',
 ]
 
 # All probes to run

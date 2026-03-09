@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "8671",
+  "message_id": "8678",
   "from": "telegram:8420019401",
-  "timestamp": 1773041960000,
+  "timestamp": 1773042339000,
   "decision": {
     "action": "boundary",
-    "decision_id": 586,
+    "decision_id": 588,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 2.2180887040467953e-19,
+        "bond": 2.0886029114896126e-19,
         "grudge": 0,
         "trust": 0.5000000000000003,
         "repair_bank": 0
@@ -132,7 +132,7 @@
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-09T07:39:22.458Z",
+  "generated_at": "2026-03-09T07:45:41.198Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 2.2180887040467953e-19,
+          "bond": 2.0886029114896126e-19,
           "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
@@ -176,7 +176,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1773041962.2357976,
+      "generated_at": 1773042341.0137324,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

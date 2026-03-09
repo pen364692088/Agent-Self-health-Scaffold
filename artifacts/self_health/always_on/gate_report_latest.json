@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-09T07:41:09.901195+00:00",
+  "timestamp": "2026-03-09T08:02:44.242713+00:00",
   "gate_a": {
     "status": "PASS",
     "missing": [],
@@ -8,10 +8,10 @@
   "gate_b": {
     "status": "PASS",
     "ages_seconds": {
-      "heartbeat": 6.460728883743286,
-      "callback": 6.321918964385986,
-      "mailbox": 6.321143627166748,
-      "summary": 6.320809841156006
+      "heartbeat": 386.11293721199036,
+      "callback": 385.9884366989136,
+      "mailbox": 385.98793745040894,
+      "summary": 385.9870340824127
     },
     "explanation": "runtime telemetry present and fresh"
   },
@@ -21,7 +21,7 @@
       "tool_doctor_agent_health_check": "PASS",
       "execution_guard_health": "PASS"
     },
-    "last_gate_run_at": "2026-03-09T07:36:07.741989+00:00",
+    "last_gate_run_at": "2026-03-09T07:56:17.847192+00:00",
     "explanation": "preflight/doctor/execution-guard baseline checks"
   },
   "verdict": "PASS"

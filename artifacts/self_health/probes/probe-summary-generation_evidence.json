@@ -1,0 +1,99 @@
+{
+  "probe_name": "probe-summary-generation",
+  "verification_mode": "artifact_output_check",
+  "checks": [
+    {
+      "name": "tool_exists",
+      "description": "Check agent-health-summary tool exists and is executable",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/tools/agent-health-summary",
+        "executable": true,
+        "health_returncode": 0,
+        "health_status": "healthy"
+      }
+    },
+    {
+      "name": "summary_file_exists",
+      "description": "Check latest summary file exists",
+      "passed": true,
+      "details": {
+        "current_health_exists": true,
+        "current_health_path": "/home/moonlight/.openclaw/workspace/artifacts/self_health/state/current_health.json",
+        "file_age_hours": 0.36,
+        "health_history_exists": true,
+        "history_entries": 304
+      }
+    },
+    {
+      "name": "summary_format",
+      "description": "Check summary format is correct",
+      "passed": true,
+      "details": {
+        "valid_json": true,
+        "summary_type": "dict",
+        "is_object": true,
+        "top_level_keys": [
+          "timestamp",
+          "session_key",
+          "overall_status",
+          "mode",
+          "components",
+          "metrics",
+          "previous_level",
+          "active_incidents",
+          "last_heal_action"
+        ],
+        "has_components": true,
+        "components_count": 6
+      }
+    },
+    {
+      "name": "required_fields",
+      "description": "Check required fields exist (overall_status, timestamp)",
+      "passed": true,
+      "details": {
+        "has_overall_status": true,
+        "overall_status_value": "GREEN",
+        "has_timestamp": true,
+        "timestamp_value": "2026-03-09T07:41:12+00:00",
+        "has_components": true,
+        "has_metrics": true,
+        "found_required": [
+          "overall_status",
+          "timestamp"
+        ],
+        "missing_required": [],
+        "found_optional": [
+          "components",
+          "metrics"
+        ],
+        "status_is_valid": true
+      }
+    },
+    {
+      "name": "tool_output",
+      "description": "Check tool produces valid output",
+      "passed": true,
+      "details": {
+        "returncode": 0,
+        "output_valid": true,
+        "output_keys": [
+          "current_level",
+          "hours_analyzed",
+          "incident_count",
+          "active_incidents",
+          "current_health",
+          "generated_at"
+        ]
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Summary generation system healthy",
+  "check_count": 5,
+  "pass_count": 5,
+  "timestamp": "2026-03-09T08:02:54.295822+00:00"
+}

@@ -1,0 +1,384 @@
+#!/usr/bin/env python3
+"""
+probe-context-shadow - Context Shadow Verification Probe
+
+Verification Mode: probe_check
+
+检查逻辑:
+1. 检查 context-shadow-report 工具存在
+2. 检查 shadow 文件存在
+3. 检查 shadow 与实际 context 的一致性
+4. 检查压缩决策依据
+
+Usage:
+  probe-context-shadow
+  probe-context-shadow --json
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+
+# Shadow-related paths
+SHADOW_TOOL = TOOLS_DIR / "context-shadow-report"
+SHADOW_LOG = WORKSPACE / "artifacts" / "context_compression" / "shadow_log.jsonl"
+MAINLINE_SHADOW_DIR = WORKSPACE / "artifacts" / "context_compression" / "mainline_shadow"
+SESSIONS_SHADOW_DIR = WORKSPACE / "artifacts" / "context_compression" / "sessions"
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class ContextShadowProbe:
+    """Probe for context shadow functionality."""
+    
+    def __init__(self):
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-context-shadow",
+            "verification_mode": "probe_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_tool_exists(self) -> Dict:
+        """Check 1: context-shadow-report tool exists."""
+        check = {
+            "name": "tool_exists",
+            "description": "Check context-shadow-report tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if SHADOW_TOOL.exists():
+            check["passed"] = True
+            check["details"]["path"] = str(SHADOW_TOOL)
+            check["details"]["executable"] = bool(SHADOW_TOOL.stat().st_mode & 0o111)
+            
+            try:
+                result = subprocess.run(
+                    [str(SHADOW_TOOL), "--health"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                check["details"]["health_returncode"] = result.returncode
+                if result.returncode == 0:
+                    check["details"]["health_ok"] = True
+            except Exception as e:
+                check["details"]["health_error"] = str(e)
+        else:
+            check["details"]["error"] = f"Tool not found: {SHADOW_TOOL}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_shadow_files_exist(self) -> Dict:
+        """Check 2: Shadow files exist."""
+        check = {
+            "name": "shadow_files_exist",
+            "description": "Check shadow files exist",
+            "passed": False,
+            "details": {}
+        }
+        
+        shadow_files = []
+        
+        # Check shadow log
+        if SHADOW_LOG.exists():
+            check["details"]["shadow_log_exists"] = True
+            shadow_files.append("shadow_log.jsonl")
+            try:
+                with open(SHADOW_LOG) as f:
+                    count = sum(1 for _ in f)
+                check["details"]["shadow_log_entries"] = count
+            except:
+                pass
+        else:
+            check["details"]["shadow_log_exists"] = False
+        
+        # Check mainline shadow directory
+        if MAINLINE_SHADOW_DIR.exists():
+            check["details"]["mainline_shadow_exists"] = True
+            files = list(MAINLINE_SHADOW_DIR.glob("*.json"))
+            check["details"]["mainline_shadow_files"] = len(files)
+            shadow_files.extend([f.name for f in files])
+        else:
+            check["details"]["mainline_shadow_exists"] = False
+        
+        # Check sessions shadow directory
+        if SESSIONS_SHADOW_DIR.exists():
+            check["details"]["sessions_shadow_exists"] = True
+            files = list(SESSIONS_SHADOW_DIR.glob("**/shadow*.json"))
+            check["details"]["sessions_shadow_files"] = len(files)
+        else:
+            check["details"]["sessions_shadow_exists"] = False
+        
+        check["details"]["shadow_files_found"] = shadow_files
+        
+        # Pass if at least shadow log or mainline shadow exists
+        check["passed"] = (
+            check["details"].get("shadow_log_exists", False) or
+            check["details"].get("mainline_shadow_exists", False)
+        )
+        
+        self.checks.append(check)
+        return check
+    
+    def check_shadow_consistency(self) -> Dict:
+        """Check 3: Shadow vs actual context consistency."""
+        check = {
+            "name": "shadow_consistency",
+            "description": "Check shadow consistency with actual context",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not SHADOW_TOOL.exists():
+            check["details"]["error"] = "context-shadow-report not available"
+            self.checks.append(check)
+            return check
+        
+        try:
+            result = subprocess.run(
+                [str(SHADOW_TOOL), "--days", "7", "--format", "json"],
+                capture_output=True,
+                text=True,
+                timeout=TIMEOUT_SECONDS
+            )
+            
+            check["details"]["returncode"] = result.returncode
+            
+            if result.returncode == 0 and result.stdout:
+                try:
+                    report = json.loads(result.stdout)
+                    check["details"]["report_received"] = True
+                    
+                    if "metrics" in report:
+                        metrics = report["metrics"]
+                        check["details"]["metrics"] = {
+                            "compression_events": metrics.get("compression_events", 0),
+                            "avg_compression_ratio": metrics.get("avg_compression_ratio", 0),
+                            "capsules_created": metrics.get("capsules_created", 0),
+                            "retrieval_triggers": metrics.get("retrieval_triggers", 0)
+                        }
+                    
+                    if "recommendations" in report:
+                        check["details"]["recommendations_count"] = len(report["recommendations"])
+                    
+                    check["passed"] = True
+                    
+                except json.JSONDecodeError as e:
+                    check["details"]["parse_error"] = str(e)
+                    check["details"]["output_preview"] = result.stdout[:500]
+            else:
+                check["details"]["stderr"] = result.stderr[:500] if result.stderr else None
+                
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = f"Timeout after {TIMEOUT_SECONDS}s"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_compression_decision_basis(self) -> Dict:
+        """Check 4: Compression decision basis is documented."""
+        check = {
+            "name": "compression_decision_basis",
+            "description": "Check compression decision basis documentation",
+            "passed": False,
+            "details": {}
+        }
+        
+        utility_audit = MAINLINE_SHADOW_DIR / "shadow_utility_audit.json"
+        if utility_audit.exists():
+            check["details"]["utility_audit_exists"] = True
+            try:
+                with open(utility_audit) as f:
+                    audit = json.load(f)
+                check["details"]["utility_audit_entries"] = len(audit) if isinstance(audit, (list, dict)) else 0
+            except:
+                pass
+        else:
+            check["details"]["utility_audit_exists"] = False
+        
+        path_counters = MAINLINE_SHADOW_DIR / "shadow_path_counters.json"
+        if path_counters.exists():
+            check["details"]["path_counters_exists"] = True
+        else:
+            check["details"]["path_counters_exists"] = False
+        
+        scope_audit = MAINLINE_SHADOW_DIR / "shadow_scope_audit.json"
+        if scope_audit.exists():
+            check["details"]["scope_audit_exists"] = True
+        else:
+            check["details"]["scope_audit_exists"] = False
+        
+        check["passed"] = (
+            check["details"].get("utility_audit_exists", False) or
+            check["details"].get("path_counters_exists", False)
+        )
+        
+        self.checks.append(check)
+        return check
+    
+    def check_recent_events(self) -> Dict:
+        """Check 5: Recent shadow events are logged."""
+        check = {
+            "name": "recent_events",
+            "description": "Check recent shadow events",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not SHADOW_LOG.exists():
+            check["details"]["error"] = "Shadow log not found"
+            self.checks.append(check)
+            return check
+        
+        try:
+            # Parse pretty-printed JSON events
+            with open(SHADOW_LOG) as f:
+                content = f.read()
+            
+            # Parse multi-line JSON objects
+            events = []
+            current_obj = ""
+            brace_depth = 0
+            in_string = False
+            escape_next = False
+            
+            for char in content:
+                if escape_next:
+                    current_obj += char
+                    escape_next = False
+                    continue
+                
+                if char == '\\' and in_string:
+                    current_obj += char
+                    escape_next = True
+                    continue
+                
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    current_obj += char
+                    continue
+                
+                current_obj += char
+                
+                if not in_string:
+                    if char == '{':
+                        brace_depth += 1
+                    elif char == '}':
+                        brace_depth -= 1
+                        if brace_depth == 0 and current_obj.strip():
+                            try:
+                                obj = json.loads(current_obj.strip())
+                                events.append(obj)
+                            except:
+                                pass
+                            current_obj = ""
+            
+            check["details"]["total_events"] = len(events)
+            
+            if events:
+                # Get last 5 events
+                recent = events[-5:]
+                check["details"]["recent_events_count"] = len(recent)
+                
+                valid_entries = 0
+                for entry in recent:
+                    if any(k in entry for k in ["ts", "timestamp", "created_at", "event_id"]):
+                        valid_entries += 1
+                
+                check["details"]["valid_entries"] = valid_entries
+                check["passed"] = valid_entries > 0
+            else:
+                check["details"]["warning"] = "No shadow events found"
+                check["passed"] = True  # Not critical
+                
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_tool_exists()
+        self.check_shadow_files_exist()
+        self.check_shadow_consistency()
+        self.check_compression_decision_basis()
+        self.check_recent_events()
+        
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Context shadow system healthy" if all_passed else "Context shadow system issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        evidence_file = write_evidence("probe-context-shadow", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Context Shadow Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    args = parser.parse_args()
+    
+    probe = ContextShadowProbe()
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-context-shadow")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

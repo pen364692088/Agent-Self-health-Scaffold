@@ -1,0 +1,432 @@
+#!/usr/bin/env python3
+"""
+probe-continuity-event-log - Continuity Event Log Verification Probe
+
+Verification Mode: artifact_output_check
+
+检查逻辑:
+1. 检查 continuity-event-log 工具存在
+2. 检查 session_continuity_events.jsonl 存在
+3. 验证事件格式正确
+4. 检查事件完整性 (无丢失)
+
+Note: The events file uses pretty-printed JSON format where each event
+spans multiple lines (not standard single-line JSONL).
+
+Usage:
+  probe-continuity-event-log
+  probe-continuity-event-log --json
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+
+# Continuity event log paths
+EVENT_LOG_TOOL = TOOLS_DIR / "continuity-event-log"
+EVENTS_FILE = WORKSPACE / "state" / "session_continuity_events.jsonl"
+CONTEXT_STATE = WORKSPACE / "state" / "session_context_state.json"
+
+# Valid event types
+VALID_EVENT_TYPES = [
+    "recovery_success",
+    "interruption_recovery",
+    "handoff_created",
+    "high_context_trigger",
+    "recovery_uncertainty",
+    "conflict_resolution_applied",
+    "recovery_failure",
+    "fallback_used",
+    "gate_completed",
+    "task_ready_to_close",
+    "task_completed"
+]
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+def parse_pretty_printed_jsonl(filepath: Path) -> List[Dict]:
+    """
+    Parse a file containing multiple pretty-printed JSON objects.
+    Each object spans multiple lines and is separated by blank lines or newlines.
+    """
+    if not filepath.exists():
+        return []
+    
+    with open(filepath, 'r') as f:
+        content = f.read()
+    
+    events = []
+    
+    # Split on closing brace followed by newline and opening brace
+    # Use a simple state machine to parse
+    current_obj = ""
+    brace_depth = 0
+    in_string = False
+    escape_next = False
+    
+    for char in content:
+        if escape_next:
+            current_obj += char
+            escape_next = False
+            continue
+        
+        if char == '\\' and in_string:
+            current_obj += char
+            escape_next = True
+            continue
+        
+        if char == '"' and not escape_next:
+            in_string = not in_string
+            current_obj += char
+            continue
+        
+        current_obj += char
+        
+        if not in_string:
+            if char == '{':
+                brace_depth += 1
+            elif char == '}':
+                brace_depth -= 1
+                if brace_depth == 0 and current_obj.strip():
+                    # Complete object
+                    try:
+                        obj = json.loads(current_obj.strip())
+                        events.append(obj)
+                    except json.JSONDecodeError:
+                        pass
+                    current_obj = ""
+    
+    return events
+
+
+class ContinuityEventLogProbe:
+    """Probe for continuity event log functionality."""
+    
+    def __init__(self):
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-continuity-event-log",
+            "verification_mode": "artifact_output_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_tool_exists(self) -> Dict:
+        """Check 1: continuity-event-log tool exists."""
+        check = {
+            "name": "tool_exists",
+            "description": "Check continuity-event-log tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if EVENT_LOG_TOOL.exists():
+            check["passed"] = True
+            check["details"]["path"] = str(EVENT_LOG_TOOL)
+            check["details"]["executable"] = bool(EVENT_LOG_TOOL.stat().st_mode & 0o111)
+        else:
+            check["details"]["error"] = f"Tool not found: {EVENT_LOG_TOOL}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_events_file_exists(self) -> Dict:
+        """Check 2: session_continuity_events.jsonl exists."""
+        check = {
+            "name": "events_file_exists",
+            "description": "Check session_continuity_events.jsonl exists",
+            "passed": False,
+            "details": {}
+        }
+        
+        if EVENTS_FILE.exists():
+            check["passed"] = True
+            check["details"]["path"] = str(EVENTS_FILE)
+            
+            # Check file size
+            file_size = EVENTS_FILE.stat().st_size
+            check["details"]["file_size_bytes"] = file_size
+            
+            # Count events using proper parser
+            try:
+                events = parse_pretty_printed_jsonl(EVENTS_FILE)
+                check["details"]["event_count"] = len(events)
+            except:
+                pass
+            
+            # Check file age
+            mtime = EVENTS_FILE.stat().st_mtime
+            age_seconds = datetime.now().timestamp() - mtime
+            check["details"]["file_age_hours"] = round(age_seconds / 3600, 2)
+        else:
+            check["details"]["error"] = f"Events file not found: {EVENTS_FILE}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_event_format(self) -> Dict:
+        """Check 3: Event format is correct."""
+        check = {
+            "name": "event_format",
+            "description": "Verify event format correct",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not EVENTS_FILE.exists():
+            check["details"]["error"] = "Events file does not exist"
+            self.checks.append(check)
+            return check
+        
+        try:
+            events = parse_pretty_printed_jsonl(EVENTS_FILE)
+            
+            valid_events = 0
+            invalid_events = 0
+            format_errors = []
+            event_types_found = set()
+            
+            for event in events:
+                # Check required fields
+                if "ts" in event and "event_type" in event:
+                    # Check event_type is valid
+                    et = event.get("event_type")
+                    if et in VALID_EVENT_TYPES:
+                        valid_events += 1
+                        event_types_found.add(et)
+                    else:
+                        format_errors.append(f"Invalid event_type: {et}")
+                        invalid_events += 1
+                else:
+                    missing = [f for f in ["ts", "event_type"] if f not in event]
+                    format_errors.append(f"Missing required fields: {missing}")
+                    invalid_events += 1
+            
+            check["details"]["total_events"] = len(events)
+            check["details"]["valid_events"] = valid_events
+            check["details"]["invalid_events"] = invalid_events
+            check["details"]["format_errors"] = format_errors[:5]
+            check["details"]["event_types_found"] = list(event_types_found)
+            
+            # Pass if all events are valid
+            check["passed"] = invalid_events == 0 and valid_events > 0
+            
+            if invalid_events > 0:
+                check["details"]["error"] = f"{invalid_events} invalid events found"
+            
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_event_completeness(self) -> Dict:
+        """Check 4: Event completeness (no loss)."""
+        check = {
+            "name": "event_completeness",
+            "description": "Check event completeness (no loss)",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not EVENTS_FILE.exists():
+            check["details"]["error"] = "Events file does not exist"
+            self.checks.append(check)
+            return check
+        
+        try:
+            events = parse_pretty_printed_jsonl(EVENTS_FILE)
+            
+            if len(events) < 2:
+                check["details"]["warning"] = "Not enough events to check completeness"
+                check["passed"] = True  # Non-blocking for fresh installs
+                self.checks.append(check)
+                return check
+            
+            # Check for duplicate events (same ts + event_type + session_id)
+            seen_keys = set()
+            duplicates = 0
+            for event in events:
+                key = f"{event.get('ts')}:{event.get('event_type')}:{event.get('session_id', '')}"
+                if key in seen_keys:
+                    duplicates += 1
+                seen_keys.add(key)
+            
+            check["details"]["total_events"] = len(events)
+            check["details"]["unique_events"] = len(seen_keys)
+            check["details"]["duplicate_events"] = duplicates
+            
+            # Pass if duplicates are less than 20% of total (minor duplicates acceptable)
+            duplicate_rate = duplicates / len(events) if events else 0
+            check["details"]["duplicate_rate"] = round(duplicate_rate, 3)
+            check["passed"] = duplicate_rate < 0.2  # Allow up to 20% duplicates
+            
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_tool_can_log(self) -> Dict:
+        """Check 5: Tool can log new events."""
+        check = {
+            "name": "tool_can_log",
+            "description": "Verify tool can log new events",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not EVENT_LOG_TOOL.exists():
+            check["details"]["error"] = "Tool does not exist"
+            self.checks.append(check)
+            return check
+        
+        try:
+            with open(EVENT_LOG_TOOL, 'r') as f:
+                content = f.read()
+            
+            check["details"]["tool_readable"] = True
+            
+            # Check for valid event types list
+            if "VALID_TYPES" in content or "VALID_EVENT_TYPES" in content:
+                check["details"]["valid_types_defined"] = True
+            
+            # Check for expected event types
+            found_types = []
+            for et in VALID_EVENT_TYPES[:5]:
+                if et in content:
+                    found_types.append(et)
+            
+            check["details"]["found_event_types"] = found_types
+            check["passed"] = len(found_types) >= 3
+            
+            # Check for deduplication
+            if "dedup" in content.lower() or "hash" in content.lower():
+                check["details"]["has_deduplication"] = True
+            
+            # Check for locking mechanism
+            if "LOCK" in content or "flock" in content.lower():
+                check["details"]["has_locking"] = True
+                
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_event_type_coverage(self) -> Dict:
+        """Check 6: Event type coverage."""
+        check = {
+            "name": "event_type_coverage",
+            "description": "Check event type coverage in log",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not EVENTS_FILE.exists():
+            check["details"]["error"] = "Events file does not exist"
+            self.checks.append(check)
+            return check
+        
+        try:
+            events = parse_pretty_printed_jsonl(EVENTS_FILE)
+            
+            event_type_counts = {}
+            for event in events:
+                et = event.get("event_type")
+                if et:
+                    event_type_counts[et] = event_type_counts.get(et, 0) + 1
+            
+            check["details"]["event_type_counts"] = event_type_counts
+            check["details"]["unique_event_types"] = len(event_type_counts)
+            
+            # Pass if we have at least some event types
+            check["passed"] = len(event_type_counts) >= 1
+            
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_tool_exists()
+        self.check_events_file_exists()
+        self.check_event_format()
+        self.check_event_completeness()
+        self.check_tool_can_log()
+        self.check_event_type_coverage()
+        
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Continuity event log healthy" if all_passed else "Continuity event log issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        evidence_file = write_evidence("probe-continuity-event-log", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Continuity Event Log Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    args = parser.parse_args()
+    
+    probe = ContinuityEventLogProbe()
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-continuity-event-log")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

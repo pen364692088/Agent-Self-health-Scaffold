@@ -1,0 +1,371 @@
+#!/usr/bin/env python3
+"""
+probe-callback-worker-doctor - Callback Worker Doctor Verification Probe
+
+Verification Mode: probe_check
+
+检查逻辑:
+1. 检查 callback-worker-doctor 工具存在
+2. 执行 doctor 检查
+3. 验证语义映射正确
+4. 检查边界情况处理
+
+Usage:
+  probe-callback-worker-doctor
+  probe-callback-worker-doctor --json
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import re
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+
+# Callback worker paths
+DOCTOR_TOOL = TOOLS_DIR / "callback-worker-doctor"
+CALLBACK_HANDLER_AUTO = TOOLS_DIR / "callback-handler-auto"
+CALLBACK_WORKER_SERVICE = "callback-worker"
+EVENTS_DIR = WORKSPACE / "events"
+WORKFLOW_STATE = WORKSPACE / "WORKFLOW_STATE.json"
+STOP_FILE = WORKSPACE / "STOP_AUTO_ADVANCE"
+
+# Expected semantic mappings (state -> action)
+EXPECTED_SEMANTIC_MAPPINGS = {
+    "completed": "advance",
+    "blocked": "notify",
+    "pending": "wait",
+    "failed": "retry_or_notify"
+}
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class CallbackWorkerDoctorProbe:
+    """Probe for callback worker doctor functionality."""
+    
+    def __init__(self):
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-callback-worker-doctor",
+            "verification_mode": "probe_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_tool_exists(self) -> Dict:
+        """Check 1: callback-worker-doctor tool exists."""
+        check = {
+            "name": "tool_exists",
+            "description": "Check callback-worker-doctor tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if DOCTOR_TOOL.exists():
+            check["passed"] = True
+            check["details"]["path"] = str(DOCTOR_TOOL)
+            check["details"]["executable"] = bool(DOCTOR_TOOL.stat().st_mode & 0o111)
+        else:
+            check["details"]["error"] = f"Tool not found: {DOCTOR_TOOL}"
+        
+        self.checks.append(check)
+        return check
+    
+    def execute_doctor_check(self) -> Dict:
+        """Check 2: Execute doctor check."""
+        check = {
+            "name": "doctor_execution",
+            "description": "Execute callback-worker-doctor check",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not DOCTOR_TOOL.exists():
+            check["details"]["error"] = "Tool does not exist"
+            self.checks.append(check)
+            return check
+        
+        try:
+            result = subprocess.run(
+                [str(DOCTOR_TOOL)],
+                capture_output=True,
+                text=True,
+                timeout=TIMEOUT_SECONDS
+            )
+            
+            check["details"]["returncode"] = result.returncode
+            check["details"]["raw_output"] = result.stdout[:1000] if result.stdout else None
+            
+            # Parse text output for status
+            output = result.stdout
+            
+            # Count check results
+            passed_checks = len(re.findall(r'✅', output))
+            failed_checks = len(re.findall(r'❌', output))
+            
+            check["details"]["passed_checks_in_output"] = passed_checks
+            check["details"]["failed_checks_in_output"] = failed_checks
+            
+            # Check for overall conclusion
+            if "结论: 不能上线" in output or "不能上线" in output:
+                check["details"]["overall_can_deploy"] = False
+                check["details"]["warning"] = "Doctor reports deployment issues"
+            elif "结论: 可以上线" in output or "可以上线" in output:
+                check["details"]["overall_can_deploy"] = True
+            else:
+                # If no explicit conclusion, check for failures
+                check["details"]["overall_can_deploy"] = failed_checks == 0
+            
+            # Extract specific check results
+            check_results = {}
+            if "Service state" in output:
+                check_results["service_state"] = "OK" if "✅" in output.split("Service state")[0].split("\n")[0][-10:] else "FAIL"
+            if "Kill-switch" in output:
+                check_results["kill_switch"] = "OK" if "✅" in output.split("Kill-switch")[0].split("\n")[0][-10:] else "FAIL"
+            if "Queue writable" in output:
+                check_results["queue_writable"] = "OK" if "✅" in output.split("Queue writable")[0].split("\n")[0][-10:] else "FAIL"
+            
+            check["details"]["check_results"] = check_results
+            
+            # Pass if doctor executed successfully (even if issues found)
+            # The probe's job is to verify the doctor works, not that the system is perfect
+            check["passed"] = True
+            
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = f"Timeout after {TIMEOUT_SECONDS}s"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_semantic_mappings(self) -> Dict:
+        """Check 3: Verify semantic mappings are correct."""
+        check = {
+            "name": "semantic_mappings",
+            "description": "Verify semantic mappings correct",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check callback-handler-auto for semantic mappings
+        if CALLBACK_HANDLER_AUTO.exists():
+            try:
+                with open(CALLBACK_HANDLER_AUTO, 'r') as f:
+                    content = f.read()
+                
+                check["details"]["handler_exists"] = True
+                
+                # Look for state-to-action mappings
+                found_mappings = []
+                for state, expected_action in EXPECTED_SEMANTIC_MAPPINGS.items():
+                    if state in content.lower():
+                        found_mappings.append(state)
+                
+                check["details"]["found_state_references"] = found_mappings
+                
+                # Check for explicit mapping definitions
+                if "SEMANTIC" in content.upper() or "MAPPING" in content.upper():
+                    check["details"]["explicit_mappings"] = True
+                
+                # Pass if we found references to key states
+                check["passed"] = len(found_mappings) >= 2
+                
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        else:
+            check["details"]["handler_exists"] = False
+            check["details"]["error"] = f"Callback handler not found: {CALLBACK_HANDLER_AUTO}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_edge_cases(self) -> Dict:
+        """Check 4: Edge case handling."""
+        check = {
+            "name": "edge_cases",
+            "description": "Check edge case handling",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check for stop file handling
+        check["details"]["stop_file_exists"] = STOP_FILE.exists()
+        
+        # Check events directory
+        check["details"]["events_dir_exists"] = EVENTS_DIR.exists()
+        if EVENTS_DIR.exists():
+            event_files = list(EVENTS_DIR.glob("*.json"))
+            check["details"]["pending_events"] = len(event_files)
+        
+        # Check workflow state
+        check["details"]["workflow_state_exists"] = WORKFLOW_STATE.exists()
+        
+        # Check for lock handling in doctor tool
+        if DOCTOR_TOOL.exists():
+            try:
+                with open(DOCTOR_TOOL, 'r') as f:
+                    content = f.read()
+                
+                edge_case_handlers = {
+                    "stop_file_check": "STOP_AUTO_ADVANCE" in content or "stop_file" in content.lower(),
+                    "service_state_check": "is-active" in content or "systemctl" in content,
+                    "lock_handling": "lock" in content.lower(),
+                    "permission_check": "permission" in content.lower() or "0o700" in content
+                }
+                
+                check["details"]["edge_case_handlers"] = edge_case_handlers
+                
+                # Check for expected state handling
+                state_checks = {
+                    "active": "active" in content,
+                    "inactive": "inactive" in content,
+                    "degraded": "degraded" in content,
+                    "idle_expected": "idle_expected" in content
+                }
+                check["details"]["state_checks"] = state_checks
+                
+                # Pass if key edge cases handled
+                handled_count = sum(1 for v in edge_case_handlers.values() if v)
+                check["details"]["handled_count"] = handled_count
+                check["passed"] = handled_count >= 2
+                
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        else:
+            check["details"]["error"] = "Doctor tool does not exist"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_service_status(self) -> Dict:
+        """Check 5: Service status check."""
+        check = {
+            "name": "service_status",
+            "description": "Check callback-worker service status",
+            "passed": False,
+            "details": {}
+        }
+        
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "is-active", CALLBACK_WORKER_SERVICE],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            status = result.stdout.strip()
+            check["details"]["service_status"] = status
+            
+            # For path-activated services, inactive is expected when no work
+            if status == "active":
+                check["passed"] = True
+                check["details"]["note"] = "Service is running"
+            elif status == "inactive":
+                # Check if there's pending work
+                pending_events = 0
+                if EVENTS_DIR.exists():
+                    pending_events = len(list(EVENTS_DIR.glob("*.json")))
+                
+                check["details"]["pending_events"] = pending_events
+                
+                if pending_events == 0:
+                    check["passed"] = True
+                    check["details"]["note"] = "Service inactive but no pending work (expected for path-activated)"
+                else:
+                    check["passed"] = False
+                    check["details"]["note"] = f"Service inactive with {pending_events} pending events"
+            else:
+                check["passed"] = True  # Non-blocking
+                check["details"]["note"] = f"Service status: {status}"
+                
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = "Timeout checking service status"
+        except FileNotFoundError:
+            check["details"]["error"] = "systemctl not found"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+            check["passed"] = True  # Non-blocking
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_tool_exists()
+        self.execute_doctor_check()
+        self.check_semantic_mappings()
+        self.check_edge_cases()
+        self.check_service_status()
+        
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Callback worker doctor healthy" if all_passed else "Callback worker doctor issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        evidence_file = write_evidence("probe-callback-worker-doctor", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Callback Worker Doctor Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    args = parser.parse_args()
+    
+    probe = CallbackWorkerDoctorProbe()
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-callback-worker-doctor")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

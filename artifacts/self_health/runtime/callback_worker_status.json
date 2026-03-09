@@ -1,8 +1,8 @@
 {
   "worker_name": "callback-worker",
   "alive": true,
-  "last_progress_at": "2026-03-09T07:41:12.435550+00:00",
-  "last_output_at": "2026-03-09T07:41:12.435550+00:00",
+  "last_progress_at": "2026-03-09T08:02:55.135373+00:00",
+  "last_output_at": "2026-03-09T08:02:55.135373+00:00",
   "pending_count": null,
   "stuck_suspected": false,
   "last_error_at": "2026-03-08T21:39:36.688896+00:00",

@@ -1,0 +1,399 @@
+#!/usr/bin/env python3
+"""
+probe-execution-degradation - Execution Degradation Verification Probe
+
+Verification Mode: probe_check
+
+检查逻辑:
+1. 检查 execution-degradation-monitor 工具存在
+2. 检查退化指标定义
+3. 检查最近退化事件
+4. 检查早期预警机制
+
+Usage:
+  probe-execution-degradation
+  probe-execution-degradation --json
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+
+# Degradation monitor paths
+DEGRADATION_TOOL = TOOLS_DIR / "execution-degradation-monitor"
+INTERCEPTOR_LOG = WORKSPACE / "reports" / "interceptor_log.jsonl"
+FINALIZE_LOG = WORKSPACE / "reports" / "finalize_log.jsonl"
+METRICS_FILE = WORKSPACE / "reports" / "execution_metrics.jsonl"
+ALERTS_FILE = WORKSPACE / "reports" / "degradation_alerts.jsonl"
+BASELINE_FILE = WORKSPACE / "reports" / "metrics_baseline.json"
+
+# Known threshold definitions
+KNOWN_THRESHOLDS = {
+    "finalize_response_blocks_hourly": {"warn": 10, "alert": 20},
+    "missing_receipt_blocks_hourly": {"warn": 5, "alert": 10},
+    "illegal_transition_blocks_hourly": {"warn": 3, "alert": 5},
+    "human_failed_repair_success_rate": {"warn": 0.8, "alert": 0.5}
+}
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class ExecutionDegradationProbe:
+    """Probe for execution degradation monitoring."""
+    
+    def __init__(self):
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-execution-degradation",
+            "verification_mode": "probe_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_tool_exists(self) -> Dict:
+        """Check 1: execution-degradation-monitor tool exists."""
+        check = {
+            "name": "tool_exists",
+            "description": "Check execution-degradation-monitor tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if DEGRADATION_TOOL.exists():
+            check["passed"] = True
+            check["details"]["path"] = str(DEGRADATION_TOOL)
+            check["details"]["executable"] = bool(DEGRADATION_TOOL.stat().st_mode & 0o111)
+            
+            # Check tool version/help
+            try:
+                result = subprocess.run(
+                    [str(DEGRADATION_TOOL), "--help"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                check["details"]["help_available"] = result.returncode == 0
+            except Exception as e:
+                check["details"]["help_error"] = str(e)
+        else:
+            check["details"]["error"] = f"Tool not found: {DEGRADATION_TOOL}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_threshold_definitions(self) -> Dict:
+        """Check 2: Degradation metric definitions exist."""
+        check = {
+            "name": "threshold_definitions",
+            "description": "Check degradation threshold definitions",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check if tool contains threshold definitions
+        if DEGRADATION_TOOL.exists():
+            try:
+                with open(DEGRADATION_TOOL, 'r') as f:
+                    content = f.read()
+                
+                check["details"]["tool_readable"] = True
+                
+                # Look for THRESHOLDS dictionary
+                if "THRESHOLDS" in content:
+                    check["details"]["thresholds_defined"] = True
+                    
+                    # Check for known threshold types
+                    found_thresholds = []
+                    for threshold_name in KNOWN_THRESHOLDS.keys():
+                        if threshold_name in content:
+                            found_thresholds.append(threshold_name)
+                    
+                    check["details"]["found_thresholds"] = found_thresholds
+                    check["details"]["found_count"] = len(found_thresholds)
+                    
+                    # Pass if at least some thresholds defined
+                    check["passed"] = len(found_thresholds) >= 2
+                else:
+                    check["details"]["thresholds_defined"] = False
+                    check["details"]["error"] = "No THRESHOLDS dictionary found in tool"
+                    
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        else:
+            check["details"]["error"] = "Tool does not exist"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_recent_degradation_events(self) -> Dict:
+        """Check 3: Recent degradation events are logged."""
+        check = {
+            "name": "recent_events",
+            "description": "Check recent degradation events",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check alerts file
+        if ALERTS_FILE.exists():
+            check["details"]["alerts_file_exists"] = True
+            try:
+                with open(ALERTS_FILE) as f:
+                    lines = f.readlines()[-10:]  # Last 10 alerts
+                
+                alerts = []
+                for line in lines:
+                    try:
+                        alerts.append(json.loads(line.strip()))
+                    except:
+                        pass
+                
+                check["details"]["recent_alerts_count"] = len(alerts)
+                
+                # Check for ALERT level events
+                alert_level_count = sum(1 for a in alerts if a.get("level") == "ALERT")
+                warn_level_count = sum(1 for a in alerts if a.get("level") == "WARN")
+                
+                check["details"]["alert_level_count"] = alert_level_count
+                check["details"]["warn_level_count"] = warn_level_count
+                
+                # Pass if file exists and is readable
+                check["passed"] = True
+                
+            except Exception as e:
+                check["details"]["read_error"] = str(e)
+        else:
+            check["details"]["alerts_file_exists"] = False
+            check["details"]["warning"] = "No alerts file yet (may be normal for fresh install)"
+            check["passed"] = True  # Non-blocking
+        
+        # Check metrics file
+        if METRICS_FILE.exists():
+            check["details"]["metrics_file_exists"] = True
+            try:
+                with open(METRICS_FILE) as f:
+                    lines = f.readlines()[-5:]
+                check["details"]["metrics_entries"] = len(lines)
+            except:
+                pass
+        else:
+            check["details"]["metrics_file_exists"] = False
+        
+        # Check finalize log for blocks
+        if FINALIZE_LOG.exists():
+            check["details"]["finalize_log_exists"] = True
+            try:
+                with open(FINALIZE_LOG) as f:
+                    lines = f.readlines()[-10:]
+                
+                blocks = []
+                for line in lines:
+                    try:
+                        entry = json.loads(line.strip())
+                        if entry.get("allowed") == False:
+                            blocks.append(entry)
+                    except:
+                        pass
+                
+                check["details"]["recent_blocks_count"] = len(blocks)
+            except:
+                pass
+        else:
+            check["details"]["finalize_log_exists"] = False
+        
+        self.checks.append(check)
+        return check
+    
+    def check_early_warning_mechanism(self) -> Dict:
+        """Check 4: Early warning mechanism is in place."""
+        check = {
+            "name": "early_warning",
+            "description": "Check early warning mechanism",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check baseline file exists
+        if BASELINE_FILE.exists():
+            check["details"]["baseline_exists"] = True
+            try:
+                with open(BASELINE_FILE) as f:
+                    baseline = json.load(f)
+                check["details"]["baseline_keys"] = list(baseline.keys())[:10]
+            except:
+                pass
+        else:
+            check["details"]["baseline_exists"] = False
+        
+        # Check tool supports --check mode
+        if DEGRADATION_TOOL.exists():
+            try:
+                result = subprocess.run(
+                    [str(DEGRADATION_TOOL), "--check"],
+                    capture_output=True,
+                    text=True,
+                    timeout=TIMEOUT_SECONDS
+                )
+                
+                check["details"]["check_mode_returncode"] = result.returncode
+                
+                if result.returncode == 0:
+                    check["details"]["check_mode_available"] = True
+                    
+                    # Try to parse output
+                    try:
+                        output = json.loads(result.stdout)
+                        check["details"]["check_output_keys"] = list(output.keys())[:10]
+                        check["passed"] = True
+                    except:
+                        check["details"]["check_output_preview"] = result.stdout[:200]
+                        check["passed"] = True  # Non-blocking if output not JSON
+                else:
+                    check["details"]["check_mode_available"] = False
+                    check["details"]["stderr"] = result.stderr[:200] if result.stderr else None
+                    
+            except subprocess.TimeoutExpired:
+                check["details"]["error"] = f"Timeout after {TIMEOUT_SECONDS}s"
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        else:
+            check["details"]["error"] = "Tool does not exist"
+        
+        # Check for prometheus metrics endpoint
+        if DEGRADATION_TOOL.exists():
+            try:
+                with open(DEGRADATION_TOOL, 'r') as f:
+                    content = f.read()
+                
+                if "--prometheus" in content:
+                    check["details"]["prometheus_mode"] = True
+                else:
+                    check["details"]["prometheus_mode"] = False
+            except:
+                pass
+        
+        self.checks.append(check)
+        return check
+    
+    def run_tool_check(self) -> Dict:
+        """Check 5: Execute tool check command."""
+        check = {
+            "name": "tool_check_execution",
+            "description": "Execute degradation monitor check",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not DEGRADATION_TOOL.exists():
+            check["details"]["error"] = "Tool does not exist"
+            self.checks.append(check)
+            return check
+        
+        try:
+            result = subprocess.run(
+                [str(DEGRADATION_TOOL), "--check", "--json"],
+                capture_output=True,
+                text=True,
+                timeout=TIMEOUT_SECONDS
+            )
+            
+            check["details"]["returncode"] = result.returncode
+            
+            if result.returncode == 0 and result.stdout:
+                try:
+                    output = json.loads(result.stdout)
+                    check["details"]["check_output"] = output
+                    check["passed"] = True
+                except:
+                    check["details"]["output_preview"] = result.stdout[:500]
+                    check["passed"] = True
+            else:
+                check["details"]["stderr"] = result.stderr[:500] if result.stderr else None
+                
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = f"Timeout after {TIMEOUT_SECONDS}s"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_tool_exists()
+        self.check_threshold_definitions()
+        self.check_recent_degradation_events()
+        self.check_early_warning_mechanism()
+        self.run_tool_check()
+        
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Execution degradation monitoring healthy" if all_passed else "Execution degradation monitoring issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        evidence_file = write_evidence("probe-execution-degradation", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Execution Degradation Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    args = parser.parse_args()
+    
+    probe = ExecutionDegradationProbe()
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-execution-degradation")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

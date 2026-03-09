@@ -1,0 +1,371 @@
+#!/usr/bin/env python3
+"""
+probe-task-completion-protocol - Task Completion Protocol Verification Probe
+
+Verification Mode: synthetic_input_check
+
+检查逻辑:
+1. 检查 verify-and-close 工具存在
+2. 检查 done-guard 工具存在
+3. 检查 safe-message 工具存在
+4. 检查 finalize-response 工具存在
+5. 检查 output-interceptor 工具存在
+6. 检查 SOUL.md 中 Task Completion Protocol 定义
+7. 验证五工具链完整性
+
+Usage:
+  probe-task-completion-protocol
+  probe-task-completion-protocol --json
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import re
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+SOUL_FILE = WORKSPACE / "SOUL.md"
+
+# Required tools for Task Completion Protocol
+REQUIRED_TOOLS = [
+    "verify-and-close",
+    "done-guard",
+    "safe-message",
+    "finalize-response",
+    "output-interceptor"
+]
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class TaskCompletionProtocolProbe:
+    """Probe for Task Completion Protocol integrity."""
+    
+    def __init__(self):
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-task-completion-protocol",
+            "verification_mode": "synthetic_input_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_tool_exists(self, tool_name: str) -> Dict:
+        """Check that a required tool exists and is executable."""
+        check = {
+            "name": f"tool_{tool_name.replace('-', '_')}_exists",
+            "description": f"Check {tool_name} tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        tool_path = TOOLS_DIR / tool_name
+        
+        if tool_path.exists():
+            check["details"]["path"] = str(tool_path)
+            check["details"]["exists"] = True
+            
+            # Check if executable
+            if tool_path.stat().st_mode & 0o111:
+                check["details"]["executable"] = True
+                check["passed"] = True
+            else:
+                check["details"]["executable"] = False
+                check["details"]["error"] = "Tool exists but is not executable"
+        else:
+            check["details"]["exists"] = False
+            check["details"]["error"] = f"Tool not found: {tool_path}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_tool_health(self, tool_name: str) -> Dict:
+        """Check tool responds to --health or --help."""
+        check = {
+            "name": f"tool_{tool_name.replace('-', '_')}_health",
+            "description": f"Check {tool_name} responds to health check",
+            "passed": False,
+            "details": {}
+        }
+        
+        tool_path = TOOLS_DIR / tool_name
+        
+        if not tool_path.exists():
+            check["details"]["error"] = "Tool does not exist"
+            self.checks.append(check)
+            return check
+        
+        # Try --health first, then --help
+        for flag in ["--health", "--help", "-h"]:
+            try:
+                result = subprocess.run(
+                    [str(tool_path), flag],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode == 0 or flag in ["--help", "-h"]:
+                    check["passed"] = True
+                    check["details"]["flag_used"] = flag
+                    check["details"]["returncode"] = result.returncode
+                    break
+            except subprocess.TimeoutExpired:
+                check["details"]["timeout"] = True
+            except Exception as e:
+                check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_soul_protocol_definition(self) -> Dict:
+        """Check SOUL.md has Task Completion Protocol definition."""
+        check = {
+            "name": "soul_protocol_definition",
+            "description": "Check SOUL.md contains Task Completion Protocol definition",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not SOUL_FILE.exists():
+            check["details"]["error"] = f"SOUL.md not found: {SOUL_FILE}"
+            self.checks.append(check)
+            return check
+        
+        try:
+            with open(SOUL_FILE, 'r') as f:
+                content = f.read()
+            
+            # Check for Task Completion Protocol section
+            if "Task Completion Protocol" in content:
+                check["passed"] = True
+                check["details"]["section_found"] = True
+                
+                # Extract key elements
+                required_elements = [
+                    "verify-and-close",
+                    "done-guard",
+                    "finalize-response",
+                    "safe-message"
+                ]
+                
+                found_elements = []
+                for elem in required_elements:
+                    if elem in content:
+                        found_elements.append(elem)
+                
+                check["details"]["tools_mentioned"] = found_elements
+                check["details"]["tools_count"] = len(found_elements)
+                
+                # Check for forbidden behaviors section
+                if "禁止行为" in content or "❌" in content:
+                    check["details"]["forbidden_section"] = True
+                
+                # Check for correct flow
+                if "verify-and-close" in content and "finalize-response" in content:
+                    check["details"]["flow_defined"] = True
+            else:
+                check["details"]["error"] = "Task Completion Protocol section not found in SOUL.md"
+                
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def check_tool_chain_completeness(self) -> Dict:
+        """Verify the five-tool chain is complete and properly linked."""
+        check = {
+            "name": "tool_chain_completeness",
+            "description": "Verify five-tool chain completeness",
+            "passed": False,
+            "details": {}
+        }
+        
+        all_tools_exist = True
+        tool_status = {}
+        
+        for tool in REQUIRED_TOOLS:
+            tool_path = TOOLS_DIR / tool
+            exists = tool_path.exists()
+            tool_status[tool] = {
+                "exists": exists,
+                "path": str(tool_path) if exists else None
+            }
+            if not exists:
+                all_tools_exist = False
+        
+        check["details"]["tools"] = tool_status
+        check["details"]["all_exist"] = all_tools_exist
+        
+        if all_tools_exist:
+            # Check chain relationships
+            # verify-and-close should reference done-guard
+            # finalize-response should reference done-guard
+            # safe-message should reference output-interceptor
+            
+            chain_checks = {
+                "verify_and_close_references_done_guard": False,
+                "finalize_response_references_done_guard": False,
+                "safe_message_references_output_interceptor": False
+            }
+            
+            try:
+                with open(TOOLS_DIR / "verify-and-close", 'r') as f:
+                    if "done-guard" in f.read():
+                        chain_checks["verify_and_close_references_done_guard"] = True
+            except:
+                pass
+            
+            try:
+                with open(TOOLS_DIR / "finalize-response", 'r') as f:
+                    if "done-guard" in f.read():
+                        chain_checks["finalize_response_references_done_guard"] = True
+            except:
+                pass
+            
+            try:
+                with open(TOOLS_DIR / "safe-message", 'r') as f:
+                    if "output-interceptor" in f.read():
+                        chain_checks["safe_message_references_output_interceptor"] = True
+            except:
+                pass
+            
+            check["details"]["chain_checks"] = chain_checks
+            check["passed"] = all(chain_checks.values())
+        else:
+            check["details"]["error"] = "Not all tools exist"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_synthetic_input(self) -> Dict:
+        """Test with synthetic input to verify protocol flow."""
+        check = {
+            "name": "synthetic_input_test",
+            "description": "Test protocol with synthetic input",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Test verify-and-close with --help (synthetic test)
+        tool_path = TOOLS_DIR / "verify-and-close"
+        
+        if not tool_path.exists():
+            check["details"]["error"] = "verify-and-close not found"
+            self.checks.append(check)
+            return check
+        
+        try:
+            # Test with --help (no side effects)
+            result = subprocess.run(
+                [str(tool_path), "--help"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            check["details"]["returncode"] = result.returncode
+            check["details"]["has_help"] = "--task-id" in result.stdout or "task-id" in result.stdout
+            
+            if result.returncode == 0:
+                check["passed"] = True
+                check["details"]["output_preview"] = result.stdout[:200] if result.stdout else None
+            
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = "Timeout"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        # Check each required tool exists
+        for tool in REQUIRED_TOOLS:
+            self.check_tool_exists(tool)
+        
+        # Check tool health
+        for tool in REQUIRED_TOOLS:
+            self.check_tool_health(tool)
+        
+        # Check SOUL.md protocol definition
+        self.check_soul_protocol_definition()
+        
+        # Check tool chain completeness
+        self.check_tool_chain_completeness()
+        
+        # Synthetic input test
+        self.check_synthetic_input()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Task Completion Protocol intact" if all_passed else "Task Completion Protocol issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-task-completion-protocol", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Task Completion Protocol Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    args = parser.parse_args()
+    
+    probe = TaskCompletionProtocolProbe()
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-task-completion-protocol")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

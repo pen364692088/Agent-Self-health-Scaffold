@@ -1,0 +1,91 @@
+{
+  "probe_name": "probe-context-shadow",
+  "verification_mode": "probe_check",
+  "checks": [
+    {
+      "name": "tool_exists",
+      "description": "Check context-shadow-report tool exists and is executable",
+      "passed": true,
+      "details": {
+        "path": "/home/moonlight/.openclaw/workspace/tools/context-shadow-report",
+        "executable": true,
+        "health_returncode": 0,
+        "health_ok": true
+      }
+    },
+    {
+      "name": "shadow_files_exist",
+      "description": "Check shadow files exist",
+      "passed": true,
+      "details": {
+        "shadow_log_exists": true,
+        "shadow_log_entries": 34,
+        "mainline_shadow_exists": true,
+        "mainline_shadow_files": 15,
+        "sessions_shadow_exists": true,
+        "sessions_shadow_files": 1,
+        "shadow_files_found": [
+          "shadow_log.jsonl",
+          "shadow_status.json",
+          "trigger_validation_counters.json",
+          "integration_fix_results.json",
+          "SHADOW_MANIFEST.json",
+          "low_risk_scope_audit.json",
+          "shadow_utility_audit.json",
+          "low_risk_long_session_results.json",
+          "shadow_path_counters.json",
+          "shadow_scope_audit.json",
+          "light_enforced_readiness.json",
+          "gate_status.json",
+          "shadow_integration_results.json",
+          "admissibility_audit.json",
+          "trigger_validation_sessions.json",
+          "hook_runtime_counters.json"
+        ]
+      }
+    },
+    {
+      "name": "shadow_consistency",
+      "description": "Check shadow consistency with actual context",
+      "passed": true,
+      "details": {
+        "returncode": 0,
+        "report_received": true,
+        "metrics": {
+          "compression_events": 10,
+          "avg_compression_ratio": 0.81,
+          "capsules_created": 26,
+          "retrieval_triggers": 4
+        }
+      }
+    },
+    {
+      "name": "compression_decision_basis",
+      "description": "Check compression decision basis documentation",
+      "passed": true,
+      "details": {
+        "utility_audit_exists": true,
+        "utility_audit_entries": 9,
+        "path_counters_exists": true,
+        "scope_audit_exists": true
+      }
+    },
+    {
+      "name": "recent_events",
+      "description": "Check recent shadow events",
+      "passed": true,
+      "details": {
+        "total_events": 13,
+        "recent_events_count": 5,
+        "valid_entries": 5
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Context shadow system healthy",
+  "check_count": 5,
+  "pass_count": 5,
+  "timestamp": "2026-03-09T08:02:54.099520+00:00"
+}

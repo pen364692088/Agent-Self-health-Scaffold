@@ -37,6 +37,6 @@
   "message": "No deadlocks detected",
   "check_count": 3,
   "pass_count": 3,
-  "timestamp": "2026-03-09T07:41:11.927345+00:00",
+  "timestamp": "2026-03-09T08:02:52.865682+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-deadlock_evidence.json"
 }
