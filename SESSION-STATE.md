@@ -1,79 +1,94 @@
 # Session State
 
 ## Current Objective
-Context Compression Pipeline · Auto-Compaction Waterline Control
+Auto-Compaction Waterline Control · READY_FOR_SHADOW_PRODUCTION
 
 ## Phase
-✅ COMPLETE — All 6 Phases Done
+✅ ENGINEERING COMPLETE → Shadow Validation Pending
 
 ## Branch
 main
 
 ## Status
-🟢 READY FOR PRODUCTION (Guarded Enablement)
+🟡 READY_FOR_SHADOW_PRODUCTION
 
 ---
 
-## Final Summary
+## Final Verdict
 
-### Verdict: GUARDED_ENABLEMENT ✅
-
-| Phase | Name | Status | Tests |
-|-------|------|--------|-------|
-| 0 | Gate A Contract | ✅ Done | — |
-| 1 | Ratio Observability | ✅ Done | 4/4 pass |
-| 2 | Trigger Policy + Cooldown | ✅ Done | 10/10 pass |
-| 3 | Executor + Handoff | ✅ Done | 6/6 pass |
-| 4 | Threshold Tests | ✅ Done | 10/10 pass (100%) |
-| 5 | Shadow Validation | ✅ Done | Infrastructure ready |
-| 6 | Default Enablement | ✅ Done | Verdict: GUARDED_ENABLEMENT |
-
-### Tools Created
-
-| Tool | Purpose |
-|------|---------|
-| `context-budget-watcher` | 持续监控 context ratio |
-| `trigger-policy` | 触发决策引擎 |
-| `auto-context-compact` | 自动压缩执行器 |
-| `shadow_watcher` | Shadow 模式监控 |
-| `threshold_test_runner` | 阈值测试运行器 |
-| `post-compaction-handoff` | 压缩后状态持久化 |
-
-### Key Files
-
-- `docs/context_compression/FINAL_AUTO_COMPACTION_VERDICT.md` — 最终验收
-- `docs/context_compression/99_HANDOFF.md` — 交接摘要
-- `docs/context_compression/AUTO_COMPACTION_ROLLBACK.md` — 回滚方案
-- `artifacts/context_compression/AUTO_COMPACTION_BASELINE.json` — 基线指标
-
-### Next Steps (User Action)
-
-1. **Shadow Mode First**:
-   ```bash
-   export AUTO_COMPACTION_SHADOW_MODE=true
-   ```
-   运行至少 1 周收集数据
-
-2. **Monitor Metrics**:
-   ```bash
-   ~/.openclaw/workspace/tools/shadow_watcher --metrics
-   ```
-
-3. **Full Enablement** (after shadow validation):
-   更新 `AUTO_COMPACTION_POLICY.md` 启用自动触发
+| Item | Status |
+|------|--------|
+| 工程实现 | ✅ 完成 |
+| 验收闭环 | ✅ 完成 |
+| 生产默认开启 | ⏳ Shadow 验证后 |
 
 ---
 
-## Gates
+## What We Built
 
-| Gate | Status | Deliverable |
-|------|--------|-------------|
-| A · Contract | ✅ Done | 00_SCOPE_AND_GOALS.md |
-| B · E2E | ✅ Done | All tools operational |
-| C · Preflight | ✅ Done | 20_PREFLIGHT_REPORT.md |
+一条完整可用链路：
+
+```
+budget-watcher → trigger-policy → auto-context-compact → handoff
+```
+
+| Tool | Tests | Purpose |
+|------|-------|---------|
+| context-budget-watcher | 4/4 | 持续监控 ratio |
+| trigger-policy | 10/10 | 触发决策 |
+| auto-context-compact | 6/6 | 执行压缩 |
+| shadow_watcher | Ready | Shadow 验证 |
+| threshold_test_runner | 100% | 阈值测试 |
 
 ---
 
-## Blocker
-none
+## Shadow Exit Criteria (已定义)
+
+必须全部满足：
+
+1. ✅ 触发频率合理 (5-30%)
+2. ✅ 无连续异常触发
+3. ✅ 无抖动/重复压缩
+4. ✅ 压后回落达标 (>80% 到目标区间)
+5. ✅ Recovery Quality 未下降
+6. ✅ Emergency 正常 (<5%)
+7. ✅ Blockers 可解释 (<20%)
+
+详见: `docs/context_compression/SHADOW_EXIT_CRITERIA.md`
+
+---
+
+## Next Actions
+
+### 立即
+```bash
+export AUTO_COMPACTION_SHADOW_MODE=true
+```
+
+### 盯 4 件事
+- 触发频率是否合理
+- blockers 是否过度保守
+- 压后回落是否达标
+- recovery quality 是否正常
+
+### Shadow 通过后
+- 更新 `AUTO_COMPACTION_POLICY.md` → `enabled: true`
+- 继续保留 version logging / rollback path / metrics
+
+---
+
+## Key Files
+
+- `docs/context_compression/FINAL_AUTO_COMPACTION_VERDICT.md`
+- `docs/context_compression/SHADOW_EXIT_CRITERIA.md`
+- `docs/context_compression/99_HANDOFF.md`
+- `docs/context_compression/AUTO_COMPACTION_ROLLBACK.md`
+
+---
+
+## Git
+
+```
+c9e5e8f feat(context-compression): Auto-Compaction Waterline Control v1.0
+```
 
