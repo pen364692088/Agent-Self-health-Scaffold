@@ -1,0 +1,60 @@
+{
+  "probe_name": "probe-subagent-orchestration",
+  "verification_mode": "chain_integrity_check",
+  "checks": [
+    {
+      "name": "subtask_orchestrate_tool",
+      "description": "Check subtask-orchestrate tool exists and is executable",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/subtask-orchestrate",
+        "is_executable": true,
+        "has_inbox_import": true,
+        "has_spawn_import": true
+      }
+    },
+    {
+      "name": "subagent_inbox_tool",
+      "description": "Check subagent-inbox tool exists and is executable",
+      "passed": true,
+      "details": {
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/subagent-inbox",
+        "is_executable": true,
+        "has_write_method": true,
+        "has_check_method": true,
+        "has_process_method": true
+      }
+    },
+    {
+      "name": "orchestration_state_files",
+      "description": "Check orchestration state files exist",
+      "passed": true,
+      "details": {
+        "orchestrator_dir_exists": true,
+        "pending_file_exists": true,
+        "pending_count": 0,
+        "subtasks_dir_exists": true,
+        "processed_receipts_count": 51,
+        "pending_receipts_count": 0
+      }
+    },
+    {
+      "name": "recent_success_rate",
+      "description": "Check recent orchestration success rate",
+      "passed": true,
+      "details": {
+        "total_processed": 45,
+        "successful": 45,
+        "failed": 0,
+        "success_rate": 1.0
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Subagent orchestration chain healthy",
+  "check_count": 4,
+  "pass_count": 4,
+  "timestamp": "2026-03-09T07:33:04.620358+00:00"
+}

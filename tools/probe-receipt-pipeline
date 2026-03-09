@@ -1,0 +1,289 @@
+#!/usr/bin/env python3
+"""
+probe-receipt-pipeline - Receipt Pipeline Chain Verification
+
+Verification Mode: chain_integrity_check
+
+检查逻辑:
+1. 检查 artifacts/receipts/ 目录
+2. 检查 receipt schema 定义
+3. 检查 receipt 生成流程
+4. 检查 verify-and-close 工具存在
+
+Usage:
+  probe-receipt-pipeline
+  probe-receipt-pipeline --json
+  probe-receipt-pipeline --timeout 30
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+from collections import Counter
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+TOOLS_DIR = WORKSPACE / "tools"
+ARTIFACTS_DIR = WORKSPACE / "artifacts"
+RECEIPTS_DIR = ARTIFACTS_DIR / "receipts"
+SCHEMAS_DIR = WORKSPACE / "schemas"
+
+TIMEOUT_SECONDS = 30
+
+# Required receipt types
+REQUIRED_RECEIPT_TYPES = ["contract", "e2e", "preflight", "final"]
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class ReceiptPipelineProbe:
+    """Probe for receipt pipeline chain integrity."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-receipt-pipeline",
+            "verification_mode": "chain_integrity_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_receipts_directory(self) -> Dict:
+        """Check 1: artifacts/receipts/ directory exists and has receipts."""
+        check = {
+            "name": "receipts_directory",
+            "description": "Check artifacts/receipts/ directory",
+            "passed": False,
+            "details": {}
+        }
+        
+        if RECEIPTS_DIR.exists():
+            check["passed"] = True
+            check["details"]["directory_exists"] = True
+            check["details"]["directory_path"] = str(RECEIPTS_DIR)
+            
+            # Count receipt files
+            receipt_files = list(RECEIPTS_DIR.glob("*.json"))
+            check["details"]["receipt_count"] = len(receipt_files)
+            
+            # Analyze receipt types
+            receipt_types = Counter()
+            for f in receipt_files:
+                for rtype in REQUIRED_RECEIPT_TYPES:
+                    if f"_{rtype}_" in f.name or f"_{rtype}." in f.name:
+                        receipt_types[rtype] += 1
+                        break
+            
+            check["details"]["receipt_type_counts"] = dict(receipt_types)
+        else:
+            check["details"]["error"] = f"Receipts directory not found: {RECEIPTS_DIR}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_receipt_schema(self) -> Dict:
+        """Check 2: Receipt schema definition exists."""
+        check = {
+            "name": "receipt_schema",
+            "description": "Check receipt schema definition",
+            "passed": False,
+            "details": {}
+        }
+        
+        schema_file = SCHEMAS_DIR / "task_receipt.v1.schema.json"
+        
+        if schema_file.exists():
+            check["passed"] = True
+            check["details"]["schema_exists"] = True
+            check["details"]["schema_path"] = str(schema_file)
+            
+            try:
+                with open(schema_file) as f:
+                    schema = json.load(f)
+                
+                # Check required fields in schema
+                required_fields = schema.get("required", [])
+                check["details"]["required_fields"] = required_fields
+                
+                # Check receipt types enum
+                props = schema.get("properties", {})
+                receipt_type = props.get("receipt_type", {})
+                if "enum" in receipt_type:
+                    check["details"]["valid_receipt_types"] = receipt_type["enum"]
+                
+            except Exception as e:
+                check["details"]["schema_parse_error"] = str(e)
+        else:
+            check["details"]["error"] = f"Schema file not found: {schema_file}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_receipt_generation_flow(self) -> Dict:
+        """Check 3: Receipt generation flow is complete."""
+        check = {
+            "name": "receipt_generation_flow",
+            "description": "Check receipt generation flow",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check if there are tasks with complete receipt sets
+        receipt_files = list(RECEIPTS_DIR.glob("*_final_receipt.json")) if RECEIPTS_DIR.exists() else []
+        
+        if not receipt_files:
+            check["details"]["warning"] = "No final receipts found"
+            check["passed"] = True  # Non-blocking - may be fresh install
+            self.checks.append(check)
+            return check
+        
+        # Sample some final receipts and check if other types exist
+        complete_tasks = 0
+        incomplete_tasks = 0
+        sample_tasks = []
+        
+        for final_receipt in receipt_files[:20]:  # Check up to 20
+            task_id = final_receipt.name.replace("_final_receipt.json", "")
+            
+            # Check for all required receipt types
+            has_all = True
+            receipt_types_found = []
+            
+            for rtype in REQUIRED_RECEIPT_TYPES:
+                receipt_file = RECEIPTS_DIR / f"{task_id}_{rtype}_receipt.json"
+                if receipt_file.exists():
+                    receipt_types_found.append(rtype)
+                else:
+                    has_all = False
+            
+            if has_all:
+                complete_tasks += 1
+            else:
+                incomplete_tasks += 1
+            
+            if len(sample_tasks) < 5:
+                sample_tasks.append({
+                    "task_id": task_id,
+                    "receipts_found": receipt_types_found,
+                    "complete": has_all
+                })
+        
+        check["details"]["complete_tasks"] = complete_tasks
+        check["details"]["incomplete_tasks"] = incomplete_tasks
+        check["details"]["sample_tasks"] = sample_tasks
+        
+        # Pass if we have any complete tasks
+        check["passed"] = complete_tasks > 0 or len(receipt_files) == 0
+        
+        self.checks.append(check)
+        return check
+    
+    def check_verify_and_close_tool(self) -> Dict:
+        """Check 4: verify-and-close tool exists."""
+        check = {
+            "name": "verify_and_close_tool",
+            "description": "Check verify-and-close tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        tool_path = TOOLS_DIR / "verify-and-close"
+        
+        if tool_path.exists():
+            check["passed"] = True
+            check["details"]["tool_exists"] = True
+            check["details"]["tool_path"] = str(tool_path)
+            check["details"]["is_executable"] = os.access(tool_path, os.X_OK)
+            
+            # Check for key functionality
+            try:
+                content = tool_path.read_text()
+                check["details"]["has_gate_a"] = "Gate A" in content or "gate_a" in content
+                check["details"]["has_gate_b"] = "Gate B" in content or "gate_b" in content
+                check["details"]["has_gate_c"] = "Gate C" in content or "gate_c" in content
+                check["details"]["generates_receipts"] = "receipt" in content.lower()
+                check["details"]["uses_schema"] = "schema" in content.lower()
+            except Exception as e:
+                check["details"]["read_error"] = str(e)
+        else:
+            check["details"]["error"] = f"Tool not found: {tool_path}"
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_receipts_directory()
+        self.check_receipt_schema()
+        self.check_receipt_generation_flow()
+        self.check_verify_and_close_tool()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Receipt pipeline chain healthy" if all_passed else "Receipt pipeline chain issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-receipt-pipeline", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Receipt Pipeline Chain Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = ReceiptPipelineProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-receipt-pipeline")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

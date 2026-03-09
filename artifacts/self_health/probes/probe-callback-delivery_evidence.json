@@ -25,7 +25,7 @@
       "description": "Check recent callback activity",
       "passed": true,
       "details": {
-        "journal_lines": 8,
+        "journal_lines": 4,
         "success_indicators_found": [],
         "has_recent_activity": true
       }
@@ -64,8 +64,8 @@
         "status": {
           "worker_name": "callback-worker",
           "alive": true,
-          "last_progress_at": "2026-03-09T07:05:18.653963+00:00",
-          "last_output_at": "2026-03-09T07:05:18.653963+00:00",
+          "last_progress_at": "2026-03-09T07:31:04.755126+00:00",
+          "last_output_at": "2026-03-09T07:31:04.755126+00:00",
           "pending_count": null,
           "stuck_suspected": false,
           "last_error_at": "2026-03-08T21:39:36.688896+00:00",
@@ -84,5 +84,5 @@
   "status": "fail",
   "message": "Callback delivery chain has issues",
   "backlog_threshold": 10,
-  "timestamp": "2026-03-09T07:05:20.119364+00:00"
+  "timestamp": "2026-03-09T07:32:58.786100+00:00"
 }

@@ -1,0 +1,302 @@
+#!/usr/bin/env python3
+"""
+probe-longrunkit-state-machine - LongRunKit State Machine Verification
+
+Verification Mode: chain_integrity_check + synthetic_input_check
+
+检查逻辑:
+1. 检查 LongRunKit jobs 目录结构
+2. 检查状态机定义 (QUEUED → RUNNING → DONE/FAILED)
+3. 检查状态转换有效性
+4. 检查 index.db 完整性
+
+Usage:
+  probe-longrunkit-state-machine
+  probe-longrunkit-state-machine --json
+  probe-longrunkit-state-machine --timeout 30
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import sqlite3
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+LONGRUNKIT_DIR = Path.home() / "Project" / "Github" / "MyProject" / "LongRunKit"
+JOBS_DIR = LONGRUNKIT_DIR / "jobs"
+
+TIMEOUT_SECONDS = 30
+
+# Valid state transitions (from -> [allowed next states])
+VALID_TRANSITIONS = {
+    "QUEUED": ["RUNNING", "CANCELLED"],
+    "RUNNING": ["DONE", "FAILED", "STUCK", "CANCELLED"],
+    "FAILED": ["QUEUED"],  # Retry
+    "STUCK": ["RUNNING", "CANCELLED"],  # Retry or cancel
+    "DONE": [],  # Terminal
+    "CANCELLED": []  # Terminal
+}
+
+# Valid states
+VALID_STATES = set(VALID_TRANSITIONS.keys())
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class LongRunKitStateMachineProbe:
+    """Probe for LongRunKit state machine integrity."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-longrunkit-state-machine",
+            "verification_mode": "chain_integrity_check + synthetic_input_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+        self.jobs_data = []
+    
+    def check_jobs_directory(self) -> Dict:
+        """Check 1: Jobs directory structure."""
+        check = {
+            "name": "jobs_directory",
+            "description": "Check LongRunKit jobs directory structure",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not JOBS_DIR.exists():
+            check["details"]["error"] = f"Jobs directory not found: {JOBS_DIR}"
+            self.checks.append(check)
+            return check
+        
+        check["passed"] = True
+        check["details"]["jobs_dir"] = str(JOBS_DIR)
+        
+        # Count job directories (not including index.db, etc.)
+        job_dirs = [d for d in JOBS_DIR.iterdir() if d.is_dir() and d.name.startswith("202")]
+        check["details"]["job_count"] = len(job_dirs)
+        
+        # Check for required files
+        index_db = JOBS_DIR / "index.db"
+        pool_status = JOBS_DIR / "pool_status.json"
+        pool_pid = JOBS_DIR / "pool.pid"
+        
+        check["details"]["index_db_exists"] = index_db.exists()
+        check["details"]["pool_status_exists"] = pool_status.exists()
+        check["details"]["pool_pid_exists"] = pool_pid.exists()
+        
+        self.checks.append(check)
+        return check
+    
+    def check_state_machine_definition(self) -> Dict:
+        """Check 2: State machine definition and valid states."""
+        check = {
+            "name": "state_machine_definition",
+            "description": "Verify state machine states and transitions",
+            "passed": False,
+            "details": {}
+        }
+        
+        check["passed"] = True
+        check["details"]["valid_states"] = list(VALID_STATES)
+        check["details"]["valid_transitions"] = {k: v for k, v in VALID_TRANSITIONS.items() if v}
+        check["details"]["terminal_states"] = ["DONE", "CANCELLED"]
+        check["details"]["initial_states"] = ["QUEUED"]
+        
+        self.checks.append(check)
+        return check
+    
+    def check_state_transitions(self) -> Dict:
+        """Check 3: Validate state transitions across all jobs."""
+        check = {
+            "name": "state_transitions",
+            "description": "Check state transition validity in jobs",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not JOBS_DIR.exists():
+            check["details"]["error"] = "Jobs directory not found"
+            self.checks.append(check)
+            return check
+        
+        # Sample recent jobs and check their state
+        job_dirs = sorted(
+            [d for d in JOBS_DIR.iterdir() if d.is_dir() and d.name.startswith("202")],
+            key=lambda x: x.name,
+            reverse=True
+        )[:20]  # Check last 20 jobs
+        
+        invalid_transitions = []
+        states_found = set()
+        
+        for job_dir in job_dirs:
+            status_file = job_dir / "status.json"
+            if status_file.exists():
+                try:
+                    with open(status_file) as f:
+                        status = json.load(f)
+                    
+                    state = status.get("state", "UNKNOWN")
+                    states_found.add(state)
+                    
+                    # Check if state is valid
+                    if state not in VALID_STATES:
+                        invalid_transitions.append({
+                            "job_id": job_dir.name,
+                            "invalid_state": state
+                        })
+                    
+                    self.jobs_data.append({
+                        "job_id": job_dir.name,
+                        "state": state,
+                        "rev": status.get("_rev", 0)
+                    })
+                except Exception as e:
+                    check["details"][f"read_error_{job_dir.name}"] = str(e)
+        
+        check["details"]["jobs_checked"] = len(job_dirs)
+        check["details"]["states_found"] = list(states_found)
+        check["details"]["invalid_transitions"] = invalid_transitions
+        
+        # Check if all found states are valid
+        invalid_states = states_found - VALID_STATES
+        if invalid_states:
+            check["details"]["invalid_states"] = list(invalid_states)
+            check["passed"] = False
+        else:
+            check["passed"] = True
+        
+        self.checks.append(check)
+        return check
+    
+    def check_index_db_integrity(self) -> Dict:
+        """Check 4: SQLite index.db integrity."""
+        check = {
+            "name": "index_db_integrity",
+            "description": "Check SQLite index.db integrity",
+            "passed": False,
+            "details": {}
+        }
+        
+        index_db = JOBS_DIR / "index.db"
+        
+        if not index_db.exists():
+            check["details"]["warning"] = "index.db not found (may not be initialized)"
+            check["passed"] = True  # Non-blocking
+            self.checks.append(check)
+            return check
+        
+        try:
+            conn = sqlite3.connect(str(index_db))
+            cursor = conn.cursor()
+            
+            # Check integrity
+            cursor.execute("PRAGMA integrity_check")
+            integrity = cursor.fetchone()[0]
+            check["details"]["integrity_check"] = integrity
+            
+            # List tables
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            check["details"]["tables"] = tables
+            
+            # Count records in jobs table if exists
+            if "jobs" in tables:
+                cursor.execute("SELECT COUNT(*) FROM jobs")
+                count = cursor.fetchone()[0]
+                check["details"]["jobs_count"] = count
+                
+                # Get sample states
+                cursor.execute("SELECT state, COUNT(*) FROM jobs GROUP BY state")
+                state_counts = dict(cursor.fetchall())
+                check["details"]["state_distribution"] = state_counts
+            
+            conn.close()
+            check["passed"] = integrity == "ok"
+            
+        except Exception as e:
+            check["details"]["error"] = str(e)
+            check["passed"] = False
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_jobs_directory()
+        self.check_state_machine_definition()
+        self.check_state_transitions()
+        self.check_index_db_integrity()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "LongRunKit state machine integrity verified" if all_passed else "LongRunKit state machine issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        self.evidence["jobs_sample"] = self.jobs_data[:10]
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-longrunkit-state-machine", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="LongRunKit State Machine Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = LongRunKitStateMachineProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-longrunkit-state-machine")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

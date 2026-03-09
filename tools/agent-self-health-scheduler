@@ -28,6 +28,19 @@ P0_PROBES = [
     'probe-handoff-integrity',
 ]
 
+# P1 Probes - High priority system chains
+P1_PROBES = [
+    'probe-openviking-retrieval',
+    'probe-longrunkit-state-machine',
+    'probe-longrunkit-deadlock',
+    'probe-longrunkit-timeout-retry',
+    'probe-subagent-orchestration',
+    'probe-receipt-pipeline',
+]
+
+# All probes to run
+ALL_PROBES = P0_PROBES + P1_PROBES
+
 CONFIG = {
     'quick': {'cooldown': 300, 'budget': 15, 'health_args': ['--quick', '--json'], 'run_probes': True},
     'full': {'cooldown': 3600, 'budget': 120, 'health_args': ['--deep', '--json'], 'run_probes': True},
@@ -83,12 +96,12 @@ def parse_json(stdout, fallback=None):
         return fallback if fallback is not None else {'raw_stdout': stdout[:1000]}
 
 
-def run_p0_probes():
+def run_all_probes():
     """Run all P0 probes and collect results."""
     results = {}
     failed_probes = []
     
-    for probe_name in P0_PROBES:
+    for probe_name in ALL_PROBES:
         probe_path = WORKSPACE / 'tools' / probe_name
         if not probe_path.exists():
             results[probe_name] = {'status': 'error', 'message': f'Probe not found: {probe_name}'}
@@ -119,8 +132,8 @@ def run_p0_probes():
     # Write combined probe status
     probe_summary = {
         'timestamp': now_iso(),
-        'total_probes': len(P0_PROBES),
-        'passed': len(P0_PROBES) - len(failed_probes),
+        'total_probes': len(ALL_PROBES),
+        'passed': len(ALL_PROBES) - len(failed_probes),
         'failed': len(failed_probes),
         'failed_probes': failed_probes,
         'results': results
@@ -366,7 +379,7 @@ def main():
         
         # Run P0 probes if configured
         if cfg.get('run_probes') and not args.no_probes:
-            probe_summary, probe_failures = run_p0_probes()
+            probe_summary, probe_failures = run_all_probes()
             extras['probes'] = probe_summary
         
         if args.mode in ('quick','full'):

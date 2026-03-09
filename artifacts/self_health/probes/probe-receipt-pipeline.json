@@ -1,0 +1,127 @@
+{
+  "probe_name": "probe-receipt-pipeline",
+  "verification_mode": "chain_integrity_check",
+  "checks": [
+    {
+      "name": "receipts_directory",
+      "description": "Check artifacts/receipts/ directory",
+      "passed": true,
+      "details": {
+        "directory_exists": true,
+        "directory_path": "/home/moonlight/.openclaw/workspace/artifacts/receipts",
+        "receipt_count": 31,
+        "receipt_type_counts": {
+          "preflight": 7,
+          "final": 7,
+          "contract": 7,
+          "e2e": 7
+        }
+      }
+    },
+    {
+      "name": "receipt_schema",
+      "description": "Check receipt schema definition",
+      "passed": true,
+      "details": {
+        "schema_exists": true,
+        "schema_path": "/home/moonlight/.openclaw/workspace/schemas/task_receipt.v1.schema.json",
+        "required_fields": [
+          "task_id",
+          "receipt_type",
+          "status",
+          "generated_at"
+        ],
+        "valid_receipt_types": [
+          "contract",
+          "e2e",
+          "preflight",
+          "final"
+        ]
+      }
+    },
+    {
+      "name": "receipt_generation_flow",
+      "description": "Check receipt generation flow",
+      "passed": true,
+      "details": {
+        "complete_tasks": 7,
+        "incomplete_tasks": 0,
+        "sample_tasks": [
+          {
+            "task_id": "execution_policy_v2",
+            "receipts_found": [
+              "contract",
+              "e2e",
+              "preflight",
+              "final"
+            ],
+            "complete": true
+          },
+          {
+            "task_id": "bypass_audit_impl",
+            "receipts_found": [
+              "contract",
+              "e2e",
+              "preflight",
+              "final"
+            ],
+            "complete": true
+          },
+          {
+            "task_id": "test-task",
+            "receipts_found": [
+              "contract",
+              "e2e",
+              "preflight",
+              "final"
+            ],
+            "complete": true
+          },
+          {
+            "task_id": "session_reuse_v1_0",
+            "receipts_found": [
+              "contract",
+              "e2e",
+              "preflight",
+              "final"
+            ],
+            "complete": true
+          },
+          {
+            "task_id": "baseline_happy_001",
+            "receipts_found": [
+              "contract",
+              "e2e",
+              "preflight",
+              "final"
+            ],
+            "complete": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "verify_and_close_tool",
+      "description": "Check verify-and-close tool exists and is executable",
+      "passed": true,
+      "details": {
+        "tool_exists": true,
+        "tool_path": "/home/moonlight/.openclaw/workspace/tools/verify-and-close",
+        "is_executable": true,
+        "has_gate_a": true,
+        "has_gate_b": true,
+        "has_gate_c": true,
+        "generates_receipts": true,
+        "uses_schema": true
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Receipt pipeline chain healthy",
+  "check_count": 4,
+  "pass_count": 4,
+  "timestamp": "2026-03-09T07:33:04.680872+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-receipt-pipeline_evidence.json"
+}

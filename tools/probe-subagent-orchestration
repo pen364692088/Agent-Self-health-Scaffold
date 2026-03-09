@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""
+probe-subagent-orchestration - Subagent Orchestration Chain Verification
+
+Verification Mode: chain_integrity_check
+
+检查逻辑:
+1. 检查 subtask-orchestrate 工具存在
+2. 检查 subagent-inbox 工具存在
+3. 检查 orchestration 状态文件
+4. 检查最近 orchestration 成功率
+
+Usage:
+  probe-subagent-orchestration
+  probe-subagent-orchestration --json
+  probe-subagent-orchestration --timeout 30
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+TOOLS_DIR = WORKSPACE / "tools"
+REPORTS_DIR = WORKSPACE / "reports"
+ORCHESTRATOR_DIR = TOOLS_DIR / "orchestrator"
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class SubagentOrchestrationProbe:
+    """Probe for subagent orchestration chain integrity."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-subagent-orchestration",
+            "verification_mode": "chain_integrity_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_subtask_orchestrate_tool(self) -> Dict:
+        """Check 1: subtask-orchestrate tool exists."""
+        check = {
+            "name": "subtask_orchestrate_tool",
+            "description": "Check subtask-orchestrate tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        tool_path = TOOLS_DIR / "subtask-orchestrate"
+        
+        if tool_path.exists():
+            check["passed"] = True
+            check["details"]["tool_path"] = str(tool_path)
+            check["details"]["is_executable"] = os.access(tool_path, os.X_OK)
+            
+            # Check if it imports required modules
+            try:
+                content = tool_path.read_text()
+                check["details"]["has_inbox_import"] = "subagent-inbox" in content or "subagent_inbox" in content
+                check["details"]["has_spawn_import"] = "spawn-with-callback" in content or "spawn_with_callback" in content
+            except Exception as e:
+                check["details"]["read_error"] = str(e)
+        else:
+            check["details"]["error"] = f"Tool not found: {tool_path}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_subagent_inbox_tool(self) -> Dict:
+        """Check 2: subagent-inbox tool exists."""
+        check = {
+            "name": "subagent_inbox_tool",
+            "description": "Check subagent-inbox tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        tool_path = TOOLS_DIR / "subagent-inbox"
+        
+        if tool_path.exists():
+            check["passed"] = True
+            check["details"]["tool_path"] = str(tool_path)
+            check["details"]["is_executable"] = os.access(tool_path, os.X_OK)
+            
+            # Check for key functionality
+            try:
+                content = tool_path.read_text()
+                check["details"]["has_write_method"] = "def write" in content or "write_receipt" in content
+                check["details"]["has_check_method"] = "def check" in content or "check_pending" in content
+                check["details"]["has_process_method"] = "def process" in content or "process_receipt" in content
+            except Exception as e:
+                check["details"]["read_error"] = str(e)
+        else:
+            check["details"]["error"] = f"Tool not found: {tool_path}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_orchestration_state_files(self) -> Dict:
+        """Check 3: Orchestration state files exist."""
+        check = {
+            "name": "orchestration_state_files",
+            "description": "Check orchestration state files exist",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check orchestrator directory
+        if ORCHESTRATOR_DIR.exists():
+            check["details"]["orchestrator_dir_exists"] = True
+            
+            # Check pending subtasks file
+            pending_file = ORCHESTRATOR_DIR / "pending_subtasks.json"
+            if pending_file.exists():
+                check["details"]["pending_file_exists"] = True
+                try:
+                    with open(pending_file) as f:
+                        pending = json.load(f)
+                    check["details"]["pending_count"] = len(pending) if isinstance(pending, list) else 0
+                except Exception as e:
+                    check["details"]["pending_read_error"] = str(e)
+            else:
+                check["details"]["pending_file_exists"] = False
+        else:
+            check["details"]["orchestrator_dir_exists"] = False
+        
+        # Check reports/subtasks directory
+        subtasks_dir = REPORTS_DIR / "subtasks"
+        if subtasks_dir.exists():
+            check["details"]["subtasks_dir_exists"] = True
+            
+            # Count processed receipts
+            processed_files = list(subtasks_dir.glob("*.processed.json"))
+            pending_files = list(subtasks_dir.glob("*.done.json"))
+            
+            check["details"]["processed_receipts_count"] = len(processed_files)
+            check["details"]["pending_receipts_count"] = len(pending_files)
+        else:
+            check["details"]["subtasks_dir_exists"] = False
+        
+        # Overall pass if at least one state location exists
+        check["passed"] = (
+            check["details"].get("orchestrator_dir_exists", False) or
+            check["details"].get("subtasks_dir_exists", False)
+        )
+        
+        self.checks.append(check)
+        return check
+    
+    def check_recent_success_rate(self) -> Dict:
+        """Check 4: Recent orchestration success rate."""
+        check = {
+            "name": "recent_success_rate",
+            "description": "Check recent orchestration success rate",
+            "passed": False,
+            "details": {}
+        }
+        
+        subtasks_dir = REPORTS_DIR / "subtasks"
+        
+        if not subtasks_dir.exists():
+            check["details"]["warning"] = "Subtasks directory not found"
+            check["passed"] = True  # Non-blocking
+            self.checks.append(check)
+            return check
+        
+        # Analyze processed receipts
+        processed_files = list(subtasks_dir.glob("*.processed.json"))
+        
+        if not processed_files:
+            check["details"]["warning"] = "No processed receipts found"
+            check["passed"] = True  # Non-blocking
+            self.checks.append(check)
+            return check
+        
+        # Parse recent receipts
+        successful = 0
+        failed = 0
+        recent_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        
+        for receipt_file in processed_files[-50:]:  # Check last 50
+            try:
+                with open(receipt_file) as f:
+                    receipt = json.load(f)
+                
+                status = receipt.get("status", "unknown")
+                if status == "completed":
+                    successful += 1
+                elif status in ("failed", "timeout"):
+                    failed += 1
+            except Exception:
+                pass
+        
+        total = successful + failed
+        check["details"]["total_processed"] = total
+        check["details"]["successful"] = successful
+        check["details"]["failed"] = failed
+        
+        if total > 0:
+            success_rate = successful / total
+            check["details"]["success_rate"] = round(success_rate, 2)
+            
+            # Consider > 80% success rate as healthy
+            check["passed"] = success_rate >= 0.8 or total < 5  # Low count = no verdict
+        else:
+            check["passed"] = True  # No data = no verdict
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_subtask_orchestrate_tool()
+        self.check_subagent_inbox_tool()
+        self.check_orchestration_state_files()
+        self.check_recent_success_rate()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Subagent orchestration chain healthy" if all_passed else "Subagent orchestration chain issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-subagent-orchestration", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Subagent Orchestration Chain Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = SubagentOrchestrationProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-subagent-orchestration")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

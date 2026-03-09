@@ -1,0 +1,60 @@
+{
+  "probe_name": "probe-longrunkit-timeout-retry",
+  "verification_mode": "synthetic_input_check",
+  "checks": [
+    {
+      "name": "timeout_config",
+      "description": "Check timeout configuration in LongRunKit tools",
+      "passed": true,
+      "details": {
+        "patterns_found": [
+          "TIMEOUT",
+          "timeout",
+          "lease"
+        ],
+        "joblib_exists": true,
+        "timeout_config_present": true,
+        "worker_timeout_handling": true
+      }
+    },
+    {
+      "name": "retry_logic",
+      "description": "Check retry logic in LongRunKit tools",
+      "passed": true,
+      "details": {
+        "patterns_found": [
+          "max_attempts",
+          "retry",
+          "attempt"
+        ],
+        "retry_logic_present": true,
+        "watchdog_retry_handling": true
+      }
+    },
+    {
+      "name": "max_attempts_config",
+      "description": "Check max_attempts configuration in job statuses",
+      "passed": true,
+      "details": {
+        "jobs_checked": 20,
+        "jobs_with_max_attempts": 20,
+        "max_attempts_distribution": {
+          "3": 20
+        },
+        "most_common": [
+          3,
+          20
+        ],
+        "config_present": true
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "LongRunKit timeout/retry configuration verified",
+  "check_count": 3,
+  "pass_count": 3,
+  "timestamp": "2026-03-09T07:33:04.560197+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-timeout-retry_evidence.json"
+}

@@ -1,0 +1,41 @@
+{
+  "probe_name": "probe-longrunkit-deadlock",
+  "verification_mode": "probe_check",
+  "checks": [
+    {
+      "name": "stuck_jobs",
+      "description": "Check for jobs stuck in STUCK state",
+      "passed": true,
+      "details": {
+        "stuck_jobs_count": 0,
+        "stuck_jobs": []
+      }
+    },
+    {
+      "name": "lease_expiry",
+      "description": "Check for jobs with expired lease not released",
+      "passed": true,
+      "details": {
+        "expired_lease_jobs_count": 0,
+        "expired_lease_jobs": []
+      }
+    },
+    {
+      "name": "running_no_heartbeat",
+      "description": "Check RUNNING jobs without recent heartbeat",
+      "passed": true,
+      "details": {
+        "stale_running_jobs_count": 0,
+        "stale_running_jobs": []
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "potential_deadlocks": [],
+  "status": "ok",
+  "message": "No deadlocks detected",
+  "check_count": 3,
+  "pass_count": 3,
+  "timestamp": "2026-03-09T07:33:04.500126+00:00"
+}

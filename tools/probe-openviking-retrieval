@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+"""
+probe-openviking-retrieval - OpenViking Retrieval System Verification
+
+Verification Mode: probe_check + recent_success_check
+
+检查逻辑:
+1. 检查 openviking 服务是否运行
+2. 检查索引文件存在
+3. 检查最近检索成功率
+4. 执行一次测试检索
+
+Usage:
+  probe-openviking-retrieval
+  probe-openviking-retrieval --json
+  probe-openviking-retrieval --timeout 30
+
+Exit codes:
+  0 - PASS (all checks passed)
+  1 - FAIL (one or more checks failed)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+OPENVIKING_TOOL = Path.home() / ".local" / "bin" / "openviking"
+OPENVIKING_DATA = Path.home() / ".openviking-data-local-ollama"
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+OPENVIKING_ARTIFACTS = WORKSPACE / "artifacts" / "openviking"
+
+TIMEOUT_SECONDS = 30
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class OpenVikingRetrievalProbe:
+    """Probe for OpenViking retrieval functionality."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-openviking-retrieval",
+            "verification_mode": "probe_check + recent_success_check",
+            "checks": [],
+            "passed": False,
+            "failures": []
+        }
+    
+    def check_service_running(self) -> Dict:
+        """Check 1: OpenViking service/tool exists and is executable."""
+        check = {
+            "name": "service_running",
+            "description": "Check OpenViking tool exists and is executable",
+            "passed": False,
+            "details": {}
+        }
+        
+        if OPENVIKING_TOOL.exists():
+            check["passed"] = True
+            check["details"]["tool_path"] = str(OPENVIKING_TOOL)
+            check["details"]["is_executable"] = os.access(OPENVIKING_TOOL, os.X_OK)
+            
+            # Check if we can get version
+            try:
+                result = subprocess.run(
+                    [str(OPENVIKING_TOOL), "--version"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode == 0:
+                    check["details"]["version_output"] = result.stdout.strip()[:100]
+            except Exception as e:
+                check["details"]["version_check_error"] = str(e)
+        else:
+            check["details"]["error"] = f"OpenViking tool not found at {OPENVIKING_TOOL}"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_index_exists(self) -> Dict:
+        """Check 2: Index files exist."""
+        check = {
+            "name": "index_exists",
+            "description": "Check OpenViking index/manifest files exist",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check index manifest
+        manifest_file = OPENVIKING_ARTIFACTS / "index_manifest.json"
+        if manifest_file.exists():
+            check["passed"] = True
+            check["details"]["manifest_path"] = str(manifest_file)
+            try:
+                with open(manifest_file) as f:
+                    manifest = json.load(f)
+                check["details"]["manifest_entries"] = len(manifest) if isinstance(manifest, list) else "unknown"
+            except Exception as e:
+                check["details"]["manifest_read_error"] = str(e)
+        else:
+            check["details"]["error"] = f"Index manifest not found: {manifest_file}"
+        
+        # Check OpenViking data directory
+        if OPENVIKING_DATA.exists():
+            check["details"]["data_dir_exists"] = True
+            # Count resources
+            viking_resources = OPENVIKING_DATA / "viking" / "resources"
+            if viking_resources.exists():
+                resource_count = sum(1 for _ in viking_resources.rglob("*") if _.is_file())
+                check["details"]["resource_count"] = resource_count
+        else:
+            check["details"]["data_dir_exists"] = False
+        
+        self.checks.append(check)
+        return check
+    
+    def check_recent_success_rate(self) -> Dict:
+        """Check 3: Recent retrieval success rate."""
+        check = {
+            "name": "recent_success_rate",
+            "description": "Check recent retrieval success rate from logs",
+            "passed": False,
+            "details": {}
+        }
+        
+        # Check for doctor reports (indicates successful operations)
+        doctor_reports = list(OPENVIKING_ARTIFACTS.glob("doctor_report.*.json"))
+        
+        if doctor_reports:
+            check["passed"] = True
+            check["details"]["doctor_reports_count"] = len(doctor_reports)
+            
+            # Parse recent reports
+            recent_reports = []
+            for report_file in doctor_reports[-5:]:  # Last 5 reports
+                try:
+                    with open(report_file) as f:
+                        report = json.load(f)
+                    recent_reports.append({
+                        "file": report_file.name,
+                        "status": report.get("status", "unknown")
+                    })
+                except Exception:
+                    pass
+            
+            check["details"]["recent_reports"] = recent_reports
+        else:
+            check["details"]["warning"] = "No doctor reports found"
+            check["passed"] = True  # Non-blocking - may be first run
+        
+        self.checks.append(check)
+        return check
+    
+    def check_test_retrieval(self) -> Dict:
+        """Check 4: Execute a test retrieval."""
+        check = {
+            "name": "test_retrieval",
+            "description": "Execute a test retrieval query",
+            "passed": False,
+            "details": {}
+        }
+        
+        if not OPENVIKING_TOOL.exists():
+            check["details"]["error"] = "OpenViking tool not available"
+            self.checks.append(check)
+            return check
+        
+        try:
+            # Try a simple ls command first (openviking requires valid scope in URI)
+            # Valid scopes: agent, user, temp, session, queue, resources
+            result = subprocess.run(
+                [str(OPENVIKING_TOOL), "ls", "viking://user/"],
+                capture_output=True,
+                text=True,
+                timeout=self.timeout
+            )
+            
+            check["details"]["returncode"] = result.returncode
+            
+            if result.returncode == 0:
+                check["passed"] = True
+                check["details"]["ls_success"] = True
+                check["details"]["ls_output_preview"] = result.stdout[:200] if result.stdout else None
+                
+                # Try a find query
+                find_result = subprocess.run(
+                    [str(OPENVIKING_TOOL), "find", "test"],
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout
+                )
+                check["details"]["find_returncode"] = find_result.returncode
+                check["details"]["find_success"] = find_result.returncode == 0
+            else:
+                check["details"]["stderr"] = result.stderr[:500] if result.stderr else None
+                
+        except subprocess.TimeoutExpired:
+            check["details"]["error"] = f"Timeout after {self.timeout}s"
+        except Exception as e:
+            check["details"]["error"] = str(e)
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_service_running()
+        self.check_index_exists()
+        self.check_recent_success_rate()
+        self.check_test_retrieval()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "OpenViking retrieval system healthy" if all_passed else "OpenViking retrieval system issues found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-openviking-retrieval", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="OpenViking Retrieval Verification Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = OpenVikingRetrievalProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "FAIL"
+        print(f"[{status}] probe-openviking-retrieval")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nFailed checks: {', '.join(result['failures'])}")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

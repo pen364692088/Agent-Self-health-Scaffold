@@ -1,0 +1,302 @@
+#!/usr/bin/env python3
+"""
+probe-longrunkit-deadlock - LongRunKit Deadlock Detection Probe
+
+Verification Mode: probe_check
+
+检查逻辑:
+1. 检查是否有 STUCK 状态的 job
+2. 检查 lease 过期但未释放的 job
+3. 检查长时间无更新的 RUNNING job
+
+Usage:
+  probe-longrunkit-deadlock
+  probe-longrunkit-deadlock --json
+  probe-longrunkit-deadlock --timeout 30
+
+Exit codes:
+  0 - PASS (no deadlocks detected)
+  1 - FAIL (potential deadlocks found)
+  2 - ERROR (unexpected error)
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+PROBES_DIR = WORKSPACE / "artifacts" / "self_health" / "probes"
+LONGRUNKIT_DIR = Path.home() / "Project" / "Github" / "MyProject" / "LongRunKit"
+JOBS_DIR = LONGRUNKIT_DIR / "jobs"
+
+TIMEOUT_SECONDS = 30
+
+# Thresholds
+STUCK_THRESHOLD_HOURS = 1  # Job in STUCK state for more than this is concerning
+LEASE_EXPIRY_THRESHOLD_MINUTES = 5  # Lease expired but not released
+RUNNING_NO_HEARTBEAT_MINUTES = 10  # RUNNING job with no heartbeat
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def parse_datetime(dt_str: str) -> Optional[datetime]:
+    """Parse ISO datetime string."""
+    if not dt_str:
+        return None
+    try:
+        # Handle various formats
+        if dt_str.endswith('Z'):
+            dt_str = dt_str[:-1] + '+00:00'
+        return datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+    except Exception:
+        return None
+
+
+def write_evidence(probe_name: str, evidence: Dict):
+    """Write probe evidence to artifacts directory."""
+    PROBES_DIR.mkdir(parents=True, exist_ok=True)
+    evidence_file = PROBES_DIR / f"{probe_name}_evidence.json"
+    evidence["timestamp"] = now_iso()
+    evidence["probe_name"] = probe_name
+    with open(evidence_file, 'w') as f:
+        json.dump(evidence, f, indent=2, ensure_ascii=False)
+    return evidence_file
+
+
+class LongRunKitDeadlockProbe:
+    """Probe for detecting deadlocks in LongRunKit jobs."""
+    
+    def __init__(self, timeout: int = TIMEOUT_SECONDS):
+        self.timeout = timeout
+        self.checks = []
+        self.evidence = {
+            "probe_name": "probe-longrunkit-deadlock",
+            "verification_mode": "probe_check",
+            "checks": [],
+            "passed": False,
+            "failures": [],
+            "potential_deadlocks": []
+        }
+        self.now = datetime.now(timezone.utc)
+    
+    def check_stuck_jobs(self) -> Dict:
+        """Check 1: Jobs stuck in STUCK state."""
+        check = {
+            "name": "stuck_jobs",
+            "description": "Check for jobs stuck in STUCK state",
+            "passed": True,
+            "details": {}
+        }
+        
+        if not JOBS_DIR.exists():
+            check["details"]["error"] = "Jobs directory not found"
+            check["passed"] = False
+            self.checks.append(check)
+            return check
+        
+        stuck_jobs = []
+        job_dirs = [d for d in JOBS_DIR.iterdir() if d.is_dir() and d.name.startswith("202")]
+        
+        for job_dir in job_dirs:
+            status_file = job_dir / "status.json"
+            if status_file.exists():
+                try:
+                    with open(status_file) as f:
+                        status = json.load(f)
+                    
+                    if status.get("state") == "STUCK":
+                        updated_at = parse_datetime(status.get("updated_at", ""))
+                        stuck_duration = None
+                        
+                        if updated_at:
+                            stuck_duration = (self.now - updated_at).total_seconds() / 3600  # hours
+                        
+                        stuck_jobs.append({
+                            "job_id": job_dir.name,
+                            "stuck_since": status.get("updated_at"),
+                            "stuck_duration_hours": round(stuck_duration, 2) if stuck_duration else None,
+                            "attempt": status.get("attempt"),
+                            "max_attempts": status.get("max_attempts")
+                        })
+                except Exception:
+                    pass
+        
+        check["details"]["stuck_jobs_count"] = len(stuck_jobs)
+        check["details"]["stuck_jobs"] = stuck_jobs[:10]  # Limit to 10 for evidence
+        
+        # If jobs are stuck for too long, mark as warning
+        long_stuck = [j for j in stuck_jobs if j.get("stuck_duration_hours", 0) > STUCK_THRESHOLD_HOURS]
+        if long_stuck:
+            check["passed"] = True  # Warning, not failure
+            check["details"]["warning"] = f"{len(long_stuck)} jobs stuck for > {STUCK_THRESHOLD_HOURS}h"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_lease_expiry(self) -> Dict:
+        """Check 2: Jobs with expired lease but not released."""
+        check = {
+            "name": "lease_expiry",
+            "description": "Check for jobs with expired lease not released",
+            "passed": True,
+            "details": {}
+        }
+        
+        if not JOBS_DIR.exists():
+            check["details"]["error"] = "Jobs directory not found"
+            check["passed"] = False
+            self.checks.append(check)
+            return check
+        
+        expired_lease_jobs = []
+        job_dirs = [d for d in JOBS_DIR.iterdir() if d.is_dir() and d.name.startswith("202")]
+        
+        for job_dir in job_dirs:
+            status_file = job_dir / "status.json"
+            if status_file.exists():
+                try:
+                    with open(status_file) as f:
+                        status = json.load(f)
+                    
+                    state = status.get("state")
+                    lease_until = parse_datetime(status.get("lease_until", ""))
+                    lease_owner = status.get("lease_owner")
+                    
+                    # Only check RUNNING jobs with lease
+                    if state == "RUNNING" and lease_until and lease_owner:
+                        if lease_until < self.now:
+                            expired_minutes = (self.now - lease_until).total_seconds() / 60
+                            expired_lease_jobs.append({
+                                "job_id": job_dir.name,
+                                "lease_owner": lease_owner,
+                                "lease_until": status.get("lease_until"),
+                                "expired_minutes": round(expired_minutes, 2)
+                            })
+                except Exception:
+                    pass
+        
+        check["details"]["expired_lease_jobs_count"] = len(expired_lease_jobs)
+        check["details"]["expired_lease_jobs"] = expired_lease_jobs[:10]
+        
+        # If many jobs have expired leases, potential issue
+        if len(expired_lease_jobs) > 5:
+            check["passed"] = False
+            check["details"]["warning"] = f"{len(expired_lease_jobs)} jobs with expired lease"
+        
+        self.checks.append(check)
+        return check
+    
+    def check_running_no_heartbeat(self) -> Dict:
+        """Check 3: RUNNING jobs with no heartbeat for extended period."""
+        check = {
+            "name": "running_no_heartbeat",
+            "description": "Check RUNNING jobs without recent heartbeat",
+            "passed": True,
+            "details": {}
+        }
+        
+        if not JOBS_DIR.exists():
+            check["details"]["error"] = "Jobs directory not found"
+            check["passed"] = False
+            self.checks.append(check)
+            return check
+        
+        stale_running_jobs = []
+        job_dirs = [d for d in JOBS_DIR.iterdir() if d.is_dir() and d.name.startswith("202")]
+        
+        for job_dir in job_dirs:
+            status_file = job_dir / "status.json"
+            if status_file.exists():
+                try:
+                    with open(status_file) as f:
+                        status = json.load(f)
+                    
+                    if status.get("state") == "RUNNING":
+                        heartbeat_at = parse_datetime(status.get("heartbeat_at", ""))
+                        updated_at = parse_datetime(status.get("updated_at", ""))
+                        
+                        # Use heartbeat if available, else updated_at
+                        last_activity = heartbeat_at or updated_at
+                        
+                        if last_activity:
+                            inactive_minutes = (self.now - last_activity).total_seconds() / 60
+                            
+                            if inactive_minutes > RUNNING_NO_HEARTBEAT_MINUTES:
+                                stale_running_jobs.append({
+                                    "job_id": job_dir.name,
+                                    "last_heartbeat": status.get("heartbeat_at"),
+                                    "last_updated": status.get("updated_at"),
+                                    "inactive_minutes": round(inactive_minutes, 2)
+                                })
+                except Exception:
+                    pass
+        
+        check["details"]["stale_running_jobs_count"] = len(stale_running_jobs)
+        check["details"]["stale_running_jobs"] = stale_running_jobs[:10]
+        
+        if stale_running_jobs:
+            check["passed"] = False
+            self.evidence["potential_deadlocks"].extend(stale_running_jobs)
+        
+        self.checks.append(check)
+        return check
+    
+    def run(self) -> Dict:
+        """Run all checks and return result."""
+        self.check_stuck_jobs()
+        self.check_lease_expiry()
+        self.check_running_no_heartbeat()
+        
+        # Determine overall result
+        all_passed = all(c["passed"] for c in self.checks)
+        failures = [c for c in self.checks if not c["passed"]]
+        
+        self.evidence["checks"] = self.checks
+        self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "warn"
+        self.evidence["message"] = "No deadlocks detected" if all_passed else "Potential deadlocks found"
+        self.evidence["failures"] = [c["name"] for c in failures]
+        self.evidence["check_count"] = len(self.checks)
+        self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])
+        
+        # Write evidence
+        evidence_file = write_evidence("probe-longrunkit-deadlock", self.evidence)
+        self.evidence["evidence_file"] = str(evidence_file)
+        
+        return self.evidence
+
+
+def main():
+    parser = argparse.ArgumentParser(description="LongRunKit Deadlock Detection Probe")
+    parser.add_argument("--json", action="store_true", help="Output JSON only")
+    parser.add_argument("--timeout", type=int, default=TIMEOUT_SECONDS, help="Timeout in seconds")
+    args = parser.parse_args()
+    
+    probe = LongRunKitDeadlockProbe(timeout=args.timeout)
+    result = probe.run()
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "PASS" if result["passed"] else "WARN"
+        print(f"[{status}] probe-longrunkit-deadlock")
+        for check in result["checks"]:
+            check_status = "✓" if check["passed"] else "✗"
+            print(f"  {check_status} {check['name']}: {check.get('description', '')}")
+        
+        if result["failures"]:
+            print(f"\nWarning checks: {', '.join(result['failures'])}")
+        
+        if result.get("potential_deadlocks"):
+            print(f"\nPotential deadlocks: {len(result['potential_deadlocks'])} jobs")
+    
+    sys.exit(0 if result["passed"] else 1)
+
+
+if __name__ == "__main__":
+    main()

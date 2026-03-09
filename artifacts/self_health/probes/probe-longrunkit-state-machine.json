@@ -1,0 +1,149 @@
+{
+  "probe_name": "probe-longrunkit-state-machine",
+  "verification_mode": "chain_integrity_check + synthetic_input_check",
+  "checks": [
+    {
+      "name": "jobs_directory",
+      "description": "Check LongRunKit jobs directory structure",
+      "passed": true,
+      "details": {
+        "jobs_dir": "/home/moonlight/Project/Github/MyProject/LongRunKit/jobs",
+        "job_count": 20,
+        "index_db_exists": true,
+        "pool_status_exists": true,
+        "pool_pid_exists": true
+      }
+    },
+    {
+      "name": "state_machine_definition",
+      "description": "Verify state machine states and transitions",
+      "passed": true,
+      "details": {
+        "valid_states": [
+          "FAILED",
+          "STUCK",
+          "QUEUED",
+          "CANCELLED",
+          "RUNNING",
+          "DONE"
+        ],
+        "valid_transitions": {
+          "QUEUED": [
+            "RUNNING",
+            "CANCELLED"
+          ],
+          "RUNNING": [
+            "DONE",
+            "FAILED",
+            "STUCK",
+            "CANCELLED"
+          ],
+          "FAILED": [
+            "QUEUED"
+          ],
+          "STUCK": [
+            "RUNNING",
+            "CANCELLED"
+          ]
+        },
+        "terminal_states": [
+          "DONE",
+          "CANCELLED"
+        ],
+        "initial_states": [
+          "QUEUED"
+        ]
+      }
+    },
+    {
+      "name": "state_transitions",
+      "description": "Check state transition validity in jobs",
+      "passed": true,
+      "details": {
+        "jobs_checked": 20,
+        "states_found": [
+          "CANCELLED",
+          "DONE"
+        ],
+        "invalid_transitions": []
+      }
+    },
+    {
+      "name": "index_db_integrity",
+      "description": "Check SQLite index.db integrity",
+      "passed": true,
+      "details": {
+        "integrity_check": "ok",
+        "tables": [
+          "jobs"
+        ],
+        "jobs_count": 12,
+        "state_distribution": {
+          "DONE": 3,
+          "QUEUED": 7,
+          "RUNNING": 2
+        }
+      }
+    }
+  ],
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "LongRunKit state machine integrity verified",
+  "check_count": 4,
+  "pass_count": 4,
+  "jobs_sample": [
+    {
+      "job_id": "20260309_010447_8f044c10",
+      "state": "CANCELLED",
+      "rev": 5
+    },
+    {
+      "job_id": "20260304_035453_fb4c7c0c",
+      "state": "CANCELLED",
+      "rev": 6
+    },
+    {
+      "job_id": "20260304_035453_de44e511",
+      "state": "CANCELLED",
+      "rev": 2
+    },
+    {
+      "job_id": "20260304_035453_d5205a4d",
+      "state": "CANCELLED",
+      "rev": 6
+    },
+    {
+      "job_id": "20260304_035453_5939872e",
+      "state": "CANCELLED",
+      "rev": 2
+    },
+    {
+      "job_id": "20260304_035453_3fe8564a",
+      "state": "CANCELLED",
+      "rev": 2
+    },
+    {
+      "job_id": "20260304_035453_377c22ea",
+      "state": "CANCELLED",
+      "rev": 1
+    },
+    {
+      "job_id": "20260304_035453_10b667a3",
+      "state": "CANCELLED",
+      "rev": 2
+    },
+    {
+      "job_id": "20260303_222910_dea0a7d8",
+      "state": "CANCELLED",
+      "rev": 1
+    },
+    {
+      "job_id": "20260303_222910_d9c4b52a",
+      "state": "CANCELLED",
+      "rev": 6
+    }
+  ],
+  "timestamp": "2026-03-09T07:33:04.440896+00:00",
+  "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-state-machine_evidence.json"
+}

@@ -1,17 +1,17 @@
 {
-  "scheduler_runs_total": 166,
-  "quick_runs_total": 17,
-  "full_runs_total": 12,
-  "gate_runs_total": 137,
-  "skipped_runs_total": 9,
+  "scheduler_runs_total": 172,
+  "quick_runs_total": 18,
+  "full_runs_total": 13,
+  "gate_runs_total": 141,
+  "skipped_runs_total": 10,
   "lock_contention_count": 0,
   "execution_budget_hit_count": 0,
-  "cooldown_blocked_count": 6,
-  "probe_runs_total": 12,
-  "probe_failures_total": 11,
+  "cooldown_blocked_count": 7,
+  "probe_runs_total": 14,
+  "probe_failures_total": 13,
   "incident_total": 2,
   "proposal_total": 1,
-  "deduped_incident_count": 5,
-  "repeated_same_alert_count": 5,
-  "deduped_proposal_count": 6
+  "deduped_incident_count": 7,
+  "repeated_same_alert_count": 7,
+  "deduped_proposal_count": 8
 }
