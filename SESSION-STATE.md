@@ -1,94 +1,79 @@
 # Session State
 
 ## Current Objective
-Auto-Compaction Waterline Control · READY_FOR_SHADOW_PRODUCTION
+Auto-Compaction Waterline Control · SHADOW MODE ACTIVE
 
 ## Phase
-✅ ENGINEERING COMPLETE → Shadow Validation Pending
+✅ SHADOW VALIDATION IN PROGRESS
 
 ## Branch
 main
 
 ## Status
-🟡 READY_FOR_SHADOW_PRODUCTION
+🟢 Shadow Mode Enabled & Operational
 
 ---
 
-## Final Verdict
+## Shadow Mode Status
 
-| Item | Status |
-|------|--------|
-| 工程实现 | ✅ 完成 |
-| 验收闭环 | ✅ 完成 |
-| 生产默认开启 | ⏳ Shadow 验证后 |
+| Item | Value |
+|------|-------|
+| Enabled | ✅ True |
+| Config | shadow_config.json |
+| Trace Entries | 1 |
+| Last Check | 2026-03-09T20:03:21Z |
 
----
-
-## What We Built
-
-一条完整可用链路：
-
-```
-budget-watcher → trigger-policy → auto-context-compact → handoff
-```
-
-| Tool | Tests | Purpose |
-|------|-------|---------|
-| context-budget-watcher | 4/4 | 持续监控 ratio |
-| trigger-policy | 10/10 | 触发决策 |
-| auto-context-compact | 6/6 | 执行压缩 |
-| shadow_watcher | Ready | Shadow 验证 |
-| threshold_test_runner | 100% | 阈值测试 |
+**First Shadow Check**:
+- Ratio: 0.0 (new session)
+- Action: none
+- Reason: below_threshold
+- Status: ✅ Normal
 
 ---
 
-## Shadow Exit Criteria (已定义)
+## Exit Criteria Progress
 
-必须全部满足：
-
-1. ✅ 触发频率合理 (5-30%)
-2. ✅ 无连续异常触发
-3. ✅ 无抖动/重复压缩
-4. ✅ 压后回落达标 (>80% 到目标区间)
-5. ✅ Recovery Quality 未下降
-6. ✅ Emergency 正常 (<5%)
-7. ✅ Blockers 可解释 (<20%)
-
-详见: `docs/context_compression/SHADOW_EXIT_CRITERIA.md`
-
----
-
-## Next Actions
-
-### 立即
-```bash
-export AUTO_COMPACTION_SHADOW_MODE=true
-```
-
-### 盯 4 件事
-- 触发频率是否合理
-- blockers 是否过度保守
-- 压后回落是否达标
-- recovery quality 是否正常
-
-### Shadow 通过后
-- 更新 `AUTO_COMPACTION_POLICY.md` → `enabled: true`
-- 继续保留 version logging / rollback path / metrics
+| # | Criterion | Status |
+|---|-----------|--------|
+| 1 | 触发频率合理 | ⏳ Pending (need more data) |
+| 2 | 无连续异常触发 | ✅ OK (0 errors) |
+| 3 | 无抖动/重复压缩 | ✅ OK |
+| 4 | 压后回落达标 | ⏳ Pending (need trigger) |
+| 5 | Recovery Quality 正常 | ⏳ Pending (need compaction) |
+| 6 | Emergency 正常 | ✅ OK (0 emergency) |
+| 7 | Blockers 可解释 | ✅ OK (BLK-GIT-001: uncommitted WIP) |
 
 ---
 
 ## Key Files
 
-- `docs/context_compression/FINAL_AUTO_COMPACTION_VERDICT.md`
-- `docs/context_compression/SHADOW_EXIT_CRITERIA.md`
-- `docs/context_compression/99_HANDOFF.md`
-- `docs/context_compression/AUTO_COMPACTION_ROLLBACK.md`
+- `artifacts/context_compression/shadow_config.json` — Shadow 配置
+- `artifacts/context_compression/SHADOW_TRACE.jsonl` — Shadow trace
+- `docs/context_compression/SHADOW_EXIT_CRITERIA.md` — 退出门槛
+
+---
+
+## Monitoring Commands
+
+```bash
+# 检查状态
+~/.openclaw/workspace/tools/shadow_watcher --status
+
+# 查看指标
+~/.openclaw/workspace/tools/shadow_watcher --metrics
+
+# 对比基线
+~/.openclaw/workspace/tools/shadow_watcher --compare
+
+# 手动运行一次
+~/.openclaw/workspace/tools/shadow_watcher --run-once
+```
 
 ---
 
 ## Git
 
 ```
-c9e5e8f feat(context-compression): Auto-Compaction Waterline Control v1.0
+f0546a5 fix(context-compression): Handle ratio_unavailable as normal skip
 ```
 
