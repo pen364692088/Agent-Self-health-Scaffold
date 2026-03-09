@@ -1,12 +1,17 @@
 {
-  "scheduler_runs_total": 153,
-  "quick_runs_total": 7,
+  "scheduler_runs_total": 166,
+  "quick_runs_total": 17,
   "full_runs_total": 12,
-  "gate_runs_total": 134,
+  "gate_runs_total": 137,
   "skipped_runs_total": 9,
   "lock_contention_count": 0,
   "execution_budget_hit_count": 0,
   "cooldown_blocked_count": 6,
-  "probe_runs_total": 2,
-  "probe_failures_total": 0
+  "probe_runs_total": 12,
+  "probe_failures_total": 11,
+  "incident_total": 2,
+  "proposal_total": 1,
+  "deduped_incident_count": 5,
+  "repeated_same_alert_count": 5,
+  "deduped_proposal_count": 6
 }

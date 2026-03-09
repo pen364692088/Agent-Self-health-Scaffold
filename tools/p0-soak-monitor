@@ -1,0 +1,374 @@
+#!/usr/bin/env python3
+"""
+p0-soak-monitor - P0 Critical Coverage Soak Monitor
+
+监控 9 个 P0 probes 在 always-on 下的稳定性、噪音、准确性。
+
+用法:
+    p0-soak-monitor run           # 运行一轮检查并记录
+    p0-soak-monitor report        # 生成 soak 报告
+    p0-soak-monitor status        # 显示当前状态
+    p0-soak-monitor verdict       # 生成收口判定
+"""
+
+import argparse
+import json
+import os
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from collections import defaultdict
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+SOAK_DIR = WORKSPACE / 'artifacts' / 'self_health' / 'coverage_audit' / 'soak'
+PROBES_DIR = WORKSPACE / 'artifacts' / 'self_health' / 'probes'
+METRICS_FILE = SOAK_DIR / 'soak_metrics.jsonl'
+REPORT_FILE = SOAK_DIR / 'P0_CRITICAL_COVERAGE_SOAK_REPORT.md'
+VERDICT_FILE = SOAK_DIR / 'P0_CLOSURE_VERDICT.md'
+
+P0_PROBES = [
+    'probe-native-compaction',
+    'probe-context-overflow',
+    'probe-callback-delivery',
+    'probe-mailbox-integrity',
+    'probe-gate-consistency',
+    'probe-session-persistence',
+    'probe-proposal-boundary',
+    'probe-truth-alignment',
+    'probe-handoff-integrity',
+]
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def load_probe_metrics():
+    """加载累计指标"""
+    metrics = defaultdict(lambda: {
+        'run_count': 0,
+        'pass_count': 0,
+        'fail_count': 0,
+        'warn_count': 0,
+        'durations_ms': [],
+        'last_status': None,
+        'last_run_at': None,
+        'status_history': []
+    })
+    
+    if METRICS_FILE.exists():
+        for line in METRICS_FILE.read_text().strip().split('\n'):
+            if line:
+                try:
+                    entry = json.loads(line)
+                    probe = entry['probe_name']
+                    m = metrics[probe]
+                    m['run_count'] += 1
+                    status = entry['status']
+                    m['last_status'] = status
+                    m['last_run_at'] = entry['timestamp']
+                    m['status_history'].append(status)
+                    
+                    if status == 'ok':
+                        m['pass_count'] += 1
+                    elif status == 'fail':
+                        m['fail_count'] += 1
+                    elif status == 'warn':
+                        m['warn_count'] += 1
+                    
+                    if 'duration_ms' in entry:
+                        m['durations_ms'].append(entry['duration_ms'])
+                except:
+                    pass
+    
+    return metrics
+
+
+def load_probe_results():
+    """加载当前 probe 结果"""
+    results = {}
+    for probe_name in P0_PROBES:
+        path = PROBES_DIR / f'{probe_name}.json'
+        if path.exists():
+            try:
+                results[probe_name] = json.loads(path.read_text())
+            except:
+                results[probe_name] = {'error': 'parse_failed'}
+        else:
+            results[probe_name] = {'error': 'not_found'}
+    return results
+
+
+def cmd_run(args):
+    """运行一轮检查并记录"""
+    results = load_probe_results()
+    metrics = load_probe_metrics()
+    
+    ts = now_iso()
+    run_summary = {
+        'timestamp': ts,
+        'probes': {}
+    }
+    
+    for probe_name, result in results.items():
+        if 'error' in result:
+            continue
+        
+        status = result.get('status', 'unknown')
+        checks = result.get('checks', [])
+        
+        # 计算执行时间
+        duration_ms = 0
+        for c in checks:
+            if 'duration_ms' in c.get('details', {}):
+                duration_ms += c['details']['duration_ms']
+        
+        entry = {
+            'timestamp': ts,
+            'probe_name': probe_name,
+            'status': status,
+            'checks_count': len(checks),
+            'checks_passed': sum(1 for c in checks if c.get('passed')),
+            'duration_ms': duration_ms
+        }
+        
+        # 追加到 metrics 文件
+        SOAK_DIR.mkdir(parents=True, exist_ok=True)
+        with METRICS_FILE.open('a') as f:
+            f.write(json.dumps(entry) + '\n')
+        
+        run_summary['probes'][probe_name] = {
+            'status': status,
+            'checks_passed': entry['checks_passed'],
+            'checks_total': entry['checks_count']
+        }
+    
+    # 写入本次运行摘要
+    run_file = SOAK_DIR / f'run_{ts.replace(":", "-").replace(".", "-")}.json'
+    run_file.write_text(json.dumps(run_summary, indent=2))
+    
+    # 输出摘要
+    passed = sum(1 for p in run_summary['probes'].values() if p['status'] == 'ok')
+    total = len(run_summary['probes'])
+    
+    print(f"Soak run completed: {passed}/{total} probes passed")
+    return 0
+
+
+def cmd_report(args):
+    """生成 soak 报告"""
+    metrics = load_probe_metrics()
+    
+    # 计算汇总指标
+    total_runs = sum(m['run_count'] for m in metrics.values())
+    
+    lines = [
+        "# P0 Critical Coverage Soak Report",
+        "",
+        f"**Generated**: {now_iso()}",
+        f"**Total Runs**: {total_runs}",
+        "",
+        "## Per-Probe Summary",
+        "",
+        "| Probe | Runs | Pass | Fail | Warn | Pass Rate | Avg Duration |",
+        "|-------|------|------|------|------|-----------|--------------|",
+    ]
+    
+    for probe_name in P0_PROBES:
+        m = metrics[probe_name]
+        if m['run_count'] == 0:
+            lines.append(f"| {probe_name} | 0 | - | - | - | - | - |")
+        else:
+            pass_rate = m['pass_count'] / m['run_count'] * 100
+            avg_duration = sum(m['durations_ms']) / len(m['durations_ms']) if m['durations_ms'] else 0
+            lines.append(
+                f"| {probe_name} | {m['run_count']} | {m['pass_count']} | {m['fail_count']} | {m['warn_count']} | {pass_rate:.1f}% | {avg_duration:.0f}ms |"
+            )
+    
+    lines.extend([
+        "",
+        "## Status History",
+        "",
+    ])
+    
+    for probe_name in P0_PROBES:
+        m = metrics[probe_name]
+        if m['status_history']:
+            history = ''.join('🟢' if s == 'ok' else '🔴' if s == 'fail' else '🟡' for s in m['status_history'][-20:])
+            lines.append(f"- {probe_name}: {history}")
+    
+    lines.extend([
+        "",
+        "## Noise Assessment",
+        "",
+    ])
+    
+    # 检测 flip-flop (状态频繁切换)
+    flip_flops = []
+    for probe_name in P0_PROBES:
+        m = metrics[probe_name]
+        history = m['status_history']
+        flips = 0
+        for i in range(1, len(history)):
+            if history[i] != history[i-1]:
+                flips += 1
+        if flips > 2 and len(history) > 3:
+            flip_flops.append((probe_name, flips, len(history)))
+    
+    if flip_flops:
+        lines.append("### Probe Flip-Flops (Potential Noise)")
+        for probe, flips, total in flip_flops:
+            lines.append(f"- {probe}: {flips} flips in {total} runs")
+    else:
+        lines.append("No significant flip-flops detected ✅")
+    
+    lines.extend([
+        "",
+        "## Conclusions",
+        "",
+    ])
+    
+    # 生成结论
+    all_stable = all(m['run_count'] >= 3 for m in metrics.values())
+    all_passing = all(m['pass_count'] == m['run_count'] for m in metrics.values() if m['run_count'] > 0)
+    no_noise = len(flip_flops) == 0
+    
+    if all_stable and all_passing and no_noise:
+        lines.append("✅ All probes stable and passing")
+        lines.append("✅ No noise detected")
+        lines.append("✅ Ready for closure")
+    elif all_stable and no_noise:
+        lines.append("⚠️ Probes stable but some failures detected")
+        lines.append("Investigate failures before closure")
+    else:
+        lines.append("⚠️ Additional soak time recommended")
+    
+    # 写入报告
+    SOAK_DIR.mkdir(parents=True, exist_ok=True)
+    REPORT_FILE.write_text('\n'.join(lines))
+    
+    print(f"Report written to: {REPORT_FILE}")
+    print('\n'.join(lines[-10:]))
+    return 0
+
+
+def cmd_status(args):
+    """显示当前状态"""
+    metrics = load_probe_metrics()
+    
+    total_runs = sum(m['run_count'] for m in metrics.values())
+    total_passed = sum(m['pass_count'] for m in metrics.values())
+    total_failed = sum(m['fail_count'] for m in metrics.values())
+    
+    print("P0 Critical Coverage Soak Status")
+    print("=" * 40)
+    print(f"Total Runs: {total_runs}")
+    print(f"Total Passed: {total_passed}")
+    print(f"Total Failed: {total_failed}")
+    print()
+    
+    for probe_name in P0_PROBES:
+        m = metrics[probe_name]
+        if m['run_count'] == 0:
+            status = "⏳ NOT RUN"
+        elif m['last_status'] == 'ok':
+            status = "✅ PASS"
+        elif m['last_status'] == 'warn':
+            status = "⚠️ WARN"
+        else:
+            status = "❌ FAIL"
+        
+        print(f"  {status} {probe_name} ({m['run_count']} runs)")
+    
+    return 0
+
+
+def cmd_verdict(args):
+    """生成收口判定"""
+    metrics = load_probe_metrics()
+    
+    # 评估条件
+    conditions = {
+        'all_probes_run': all(m['run_count'] >= 1 for m in metrics.values()),
+        'minimum_runs': all(m['run_count'] >= 3 for m in metrics.values()),
+        'pass_rate_ok': all(
+            m['pass_count'] / m['run_count'] >= 0.8 
+            for m in metrics.values() 
+            if m['run_count'] > 0
+        ),
+        'no_recent_failures': all(
+            m['last_status'] in ('ok', 'warn', None)
+            for m in metrics.values()
+        ),
+    }
+    
+    lines = [
+        "# P0 Closure Verdict",
+        "",
+        f"**Generated**: {now_iso()}",
+        "",
+        "## Conditions",
+        "",
+    ]
+    
+    for cond, passed in conditions.items():
+        status = "✅ PASS" if passed else "❌ FAIL"
+        lines.append(f"- {cond}: {status}")
+    
+    all_conditions = all(conditions.values())
+    
+    lines.extend([
+        "",
+        "## Verdict",
+        "",
+    ])
+    
+    if all_conditions:
+        verdict = "CLOSED"
+        lines.append("**P0 Critical Coverage: CLOSED ✅**")
+        lines.append("")
+        lines.append("All conditions met. P0 critical probes are stable and reliable.")
+    else:
+        verdict = "PENDING"
+        lines.append("**P0 Critical Coverage: PENDING ⏳**")
+        lines.append("")
+        lines.append("Some conditions not met. Continue soak observation.")
+        lines.append("")
+        lines.append("### Required Actions:")
+        for cond, passed in conditions.items():
+            if not passed:
+                lines.append(f"- Address: {cond}")
+    
+    # 写入判定
+    SOAK_DIR.mkdir(parents=True, exist_ok=True)
+    VERDICT_FILE.write_text('\n'.join(lines))
+    
+    print(f"Verdict: {verdict}")
+    print(f"Written to: {VERDICT_FILE}")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description='P0 Critical Coverage Soak Monitor')
+    subparsers = parser.add_subparsers(dest='command', required=True)
+    
+    subparsers.add_parser('run', help='Run one soak check')
+    subparsers.add_parser('report', help='Generate soak report')
+    subparsers.add_parser('status', help='Show current status')
+    subparsers.add_parser('verdict', help='Generate closure verdict')
+    
+    args = parser.parse_args()
+    
+    commands = {
+        'run': cmd_run,
+        'report': cmd_report,
+        'status': cmd_status,
+        'verdict': cmd_verdict,
+    }
+    
+    return commands[args.command](args)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

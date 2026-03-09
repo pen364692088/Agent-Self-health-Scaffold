@@ -1,8 +1,8 @@
 {
   "probe_name": "probe-truth-alignment",
   "verification_mode": "chain_integrity_check",
-  "status": "ok",
-  "message": "Truth alignment consistent",
+  "status": "warn",
+  "message": "Truth alignment needs attention",
   "checks": [
     {
       "name": "truth_sources_exist",
@@ -21,16 +21,16 @@
     {
       "name": "status_consistency",
       "description": "Check status fields are consistent across sources",
-      "passed": true,
+      "passed": false,
       "details": {
         "statuses": {
           "current_health": "GREEN",
           "gate_report": "PASS",
           "heartbeat_status": "healthy",
-          "probe_summary": "PASS"
+          "probe_summary": "FAIL"
         },
         "has_positive": true,
-        "has_negative": false
+        "has_negative": true
       }
     },
     {
@@ -40,20 +40,20 @@
       "details": {
         "timestamps": {
           "current_health": {
-            "timestamp": "2026-03-09T06:30:39+00:00",
-            "age_minutes": 20.3
+            "timestamp": "2026-03-09T07:05:18+00:00",
+            "age_minutes": 0.1
           },
           "gate_report": {
-            "timestamp": "2026-03-09T06:50:54.185319+00:00",
+            "timestamp": "2026-03-09T07:05:20.338759+00:00",
             "age_minutes": 0.0
           },
           "heartbeat_status": {
-            "timestamp": "2026-03-09T06:50:53.231106+00:00",
+            "timestamp": "2026-03-09T07:05:18.653963+00:00",
             "age_minutes": 0.0
           },
           "probe_summary": {
-            "timestamp": "2026-03-09T06:30:39.573175+00:00",
-            "age_minutes": 20.3
+            "timestamp": "2026-03-09T07:05:18.215164+00:00",
+            "age_minutes": 0.0
           }
         },
         "stale_sources": [],
@@ -77,5 +77,5 @@
       }
     }
   ],
-  "timestamp": "2026-03-09T06:50:55.101148+00:00"
+  "timestamp": "2026-03-09T07:05:21.166413+00:00"
 }

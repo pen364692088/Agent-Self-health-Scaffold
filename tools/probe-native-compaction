@@ -295,6 +295,8 @@ class CompactionProbe:
         
         self.evidence["checks"] = self.checks
         self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Probe checks passed" if all_passed else "Probe checks failed"
         self.evidence["failures"] = [c["name"] for c in failures]
         self.evidence["check_count"] = len(self.checks)
         self.evidence["pass_count"] = len([c for c in self.checks if c["passed"]])

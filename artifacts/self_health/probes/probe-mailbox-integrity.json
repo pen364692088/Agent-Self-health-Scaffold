@@ -9,7 +9,7 @@
       "details": {
         "file_path": "/home/moonlight/.openclaw/workspace/artifacts/self_health/runtime/mailbox_worker_status.json",
         "file_size_bytes": 264,
-        "modified_at": "2026-03-09T06:50:53.374825+00:00"
+        "modified_at": "2026-03-09T07:05:18.783914+00:00"
       }
     },
     {
@@ -18,7 +18,7 @@
       "passed": true,
       "details": {
         "pids_found": [
-          "455116"
+          "532857"
         ],
         "process_count": 1
       }
@@ -31,7 +31,7 @@
         "status": {
           "worker_name": "mailbox-worker",
           "alive": true,
-          "last_poll_at": "2026-03-09T06:50:53.231106+00:00",
+          "last_poll_at": "2026-03-09T07:05:18.653963+00:00",
           "last_progress_at": null,
           "backlog_count": 0,
           "stuck_suspected": false,
@@ -57,9 +57,9 @@
       "description": "Check recent processing activity",
       "passed": true,
       "details": {
-        "last_poll_at": "2026-03-09T06:50:53.231106+00:00",
+        "last_poll_at": "2026-03-09T07:05:18.653963+00:00",
         "last_progress_at": null,
-        "last_poll_age_seconds": 0.826272
+        "last_poll_age_seconds": 1.56999
       }
     },
     {
@@ -73,8 +73,10 @@
   ],
   "passed": true,
   "failures": [],
+  "status": "ok",
+  "message": "Probe checks passed",
   "backlog_threshold": 5,
   "activity_threshold_seconds": 3600,
-  "timestamp": "2026-03-09T06:50:54.057522+00:00",
+  "timestamp": "2026-03-09T07:05:20.224058+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-mailbox-integrity_evidence.json"
 }

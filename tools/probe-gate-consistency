@@ -134,7 +134,7 @@ class GateConsistencyProbe:
                 try:
                     health_result = json.loads(result.stdout)
                     check["details"]["health_result"] = health_result
-                    check["passed"] = health_result.get("passed", False) or health_result.get("ok", False)
+                    check["passed"] = health_result.get("verdict") == "PASS" or health_result.get("passed", False) or health_result.get("ok", False)
                 except json.JSONDecodeError:
                     check["details"]["stdout_preview"] = result.stdout[:500]
                     check["passed"] = True  # Non-blocking
@@ -413,6 +413,8 @@ class GateConsistencyProbe:
         
         self.evidence["checks"] = self.checks
         self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Probe checks passed" if all_passed else "Probe checks failed"
         self.evidence["failures"] = [c["name"] for c in failures]
         
         if self.task_id:

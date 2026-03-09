@@ -31,7 +31,7 @@
       "passed": true,
       "details": {
         "path": "/home/moonlight/.openclaw/workspace/artifacts/self_health/proposals",
-        "proposal_count": 4
+        "proposal_count": 5
       }
     },
     {
@@ -45,5 +45,5 @@
       }
     }
   ],
-  "timestamp": "2026-03-09T06:50:55.042653+00:00"
+  "timestamp": "2026-03-09T07:05:21.114235+00:00"
 }

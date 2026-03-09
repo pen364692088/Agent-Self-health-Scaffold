@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "8627",
+  "message_id": "8644",
   "from": "telegram:8420019401",
-  "timestamp": 1773037237000,
+  "timestamp": 1773039327000,
   "decision": {
-    "action": "repair_offer",
-    "decision_id": 580,
+    "action": "approach",
+    "decision_id": 582,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 4.799814742044831e-19,
+        "bond": 3.4134533032451066e-19,
         "grudge": 0,
         "trust": 0.5000000000000003,
         "repair_bank": 0
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "repair_offer",
+      "selected": "approach",
       "selection_reasons": [
-        "Highest score given current state",
+        "Selected via stochastic process (score: 0.036)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "gentle, conciliatory",
-    "intent": "rebuild trust",
+    "tone": "warm, open, friendly",
+    "intent": "engage warmly",
     "phrases": [
-      "I value our connection",
-      "let me make this right"
+      "glad to hear",
+      "I appreciate"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-09T06:20:38.825Z",
+  "generated_at": "2026-03-09T06:55:28.970Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 4.799814742044831e-19,
+          "bond": 3.4134533032451066e-19,
           "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
@@ -176,7 +176,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1773037238.7997868,
+      "generated_at": 1773039328.9486828,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

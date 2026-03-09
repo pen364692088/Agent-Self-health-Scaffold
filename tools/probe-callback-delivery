@@ -309,6 +309,8 @@ class CallbackDeliveryProbe:
         
         self.evidence["checks"] = self.checks
         self.evidence["passed"] = all_passed
+        self.evidence["status"] = "ok" if all_passed else "fail"
+        self.evidence["message"] = "Callback delivery chain healthy" if all_passed else "Callback delivery chain has issues"
         self.evidence["failures"] = [c["name"] for c in failures]
         self.evidence["backlog_threshold"] = self.backlog_threshold
         
