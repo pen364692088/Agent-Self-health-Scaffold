@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-finalize-response v1.0 - Auto-wrap completion output with done-guard
+finalize-response v1.1 - Auto-wrap completion output with done-guard
 
 遵循 OPENCLAW_EXECUTION_POLICY.md:
 - 任何"完成总结"输出前，自动先过一遍 done-guard
 - 不靠 agent 自己决定何时检查
 - 把"发最终总结"这个动作本身包起来
+
+v1.1: 支持环境变量配置工作区路径（CI 兼容）
 
 Usage:
   finalize-response --task-id <id> --summary "..."
@@ -20,12 +22,35 @@ Exit codes:
 import argparse
 import json
 import sys
+import os
 import re
 from pathlib import Path
 from datetime import datetime
 from typing import Tuple, List
 
-WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+# 动态检测工作区路径
+def _detect_workspace() -> Path:
+    """Detect workspace path from environment or script location."""
+    env_workspace = os.environ.get("OPENCLAW_WORKSPACE")
+    if env_workspace:
+        return Path(env_workspace)
+    
+    script_path = Path(__file__).resolve()
+    possible_workspace = script_path.parent.parent
+    if (possible_workspace / "tools").exists():
+        return possible_workspace
+    
+    cwd = Path.cwd()
+    if (cwd / "tools").exists():
+        return cwd
+    
+    default = Path("/home/moonlight/.openclaw/workspace")
+    if default.exists():
+        return default
+    
+    return possible_workspace
+
+WORKSPACE = _detect_workspace()
 DONE_GUARD = WORKSPACE / "tools" / "done-guard"
 ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
 FINALIZE_LOG = WORKSPACE / "reports" / "finalize_log.jsonl"
@@ -61,105 +86,88 @@ def check_receipts_exist(task_id: str) -> Tuple[bool, List[str]]:
 
 
 def log_finalize(task_id: str, allowed: bool, reason: str, details: dict = None):
-    """Log finalize decision."""
-    FINALIZE_LOG.parent.mkdir(parents=True, exist_ok=True)
-    
-    entry = {
-        "timestamp": datetime.now().isoformat(),
-        "task_id": task_id,
-        "allowed": allowed,
-        "reason": reason
-    }
-    if details:
-        entry["details"] = details
-    
-    with open(FINALIZE_LOG, "a") as f:
-        f.write(json.dumps(entry) + "\n")
+    """Log finalize event."""
+    try:
+        FINALIZE_LOG.parent.mkdir(parents=True, exist_ok=True)
+        
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "task_id": task_id,
+            "allowed": allowed,
+            "reason": reason
+        }
+        if details:
+            entry["details"] = details
+        
+        with open(FINALIZE_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
 
 
 def main():
-    parser = argparse.ArgumentParser(description="finalize-response v1.0")
+    parser = argparse.ArgumentParser(description="finalize-response v1.1")
     parser.add_argument("--task-id", required=True, help="Task identifier")
     parser.add_argument("--summary", help="Summary text to check")
     parser.add_argument("--file", help="File containing summary")
-    parser.add_argument("--force", action="store_true", help="Force allow (dangerous)")
     parser.add_argument("--json", action="store_true", help="JSON output")
     
     args = parser.parse_args()
     
+    result = {
+        "task_id": args.task_id,
+        "action": "ALLOW"
+    }
+    
     # Get summary text
-    summary = ""
+    text = ""
     if args.summary:
-        summary = args.summary
+        text = args.summary
     elif args.file:
-        summary = Path(args.file).read_text()
-    else:
-        # No summary provided, just check receipts
-        pass
-    
-    task_id = args.task_id
-    
-    # Step 1: Check for fake completion phrases
-    if summary:
-        has_fake, patterns = check_fake_completion(summary)
-        if has_fake:
-            log_finalize(task_id, False, "fake_completion_detected", {"patterns": patterns})
-            
-            result = {
-                "action": "BLOCK",
-                "reason": "fake_completion_detected",
-                "patterns": patterns,
-                "message": "Summary contains fake completion phrases. Run verify-and-close first.",
-                "required_action": "verify-and-close --task-id " + task_id
-            }
-            
+        try:
+            text = Path(args.file).read_text()
+        except Exception as e:
+            result = {"action": "error", "message": str(e)}
             if args.json:
                 print(json.dumps(result, indent=2))
-            else:
-                print("❌ BLOCKED: Fake completion detected")
-                print(f"Patterns: {patterns}")
-                print(f"Run: verify-and-close --task-id {task_id}")
-            
-            return 1
+            return 2
     
-    # Step 2: Check receipts exist
-    receipts_ok, missing = check_receipts_exist(task_id)
+    # Check receipts
+    receipts_ok, missing = check_receipts_exist(args.task_id)
+    result["has_receipts"] = receipts_ok
     
     if not receipts_ok:
-        log_finalize(task_id, False, "missing_receipts", {"missing": missing})
-        
-        result = {
-            "action": "BLOCK",
-            "reason": "missing_receipts",
-            "missing": missing,
-            "message": f"Missing receipts: {missing}. Run verify-and-close first.",
-            "required_action": "verify-and-close --task-id " + task_id
-        }
-        
-        if args.json:
-            print(json.dumps(result, indent=2))
-        else:
-            print("❌ BLOCKED: Missing receipts")
-            print(f"Missing: {missing}")
-            print(f"Run: verify-and-close --task-id {task_id}")
-        
-        return 1
+        result["action"] = "BLOCK"
+        result["reason"] = "missing_receipts"
+        result["missing"] = missing
     
-    # Step 3: All checks passed
-    log_finalize(task_id, True, "all_checks_passed")
+    # Check fake completion
+    if text and receipts_ok:
+        has_fake, patterns = check_fake_completion(text)
+        if has_fake:
+            result["action"] = "BLOCK"
+            result["reason"] = "fake_completion_detected"
+            result["patterns"] = patterns
     
-    result = {
-        "action": "ALLOW",
-        "reason": "all_checks_passed",
-        "message": "Safe to output completion summary."
-    }
+    # Log
+    log_finalize(
+        args.task_id,
+        result["action"] == "ALLOW",
+        result.get("reason", "passed"),
+        {"has_receipts": receipts_ok}
+    )
     
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print("✅ ALLOW: Safe to output")
+        if result["action"] == "ALLOW":
+            print(f"✅ ALLOW: {args.task_id}")
+            if text:
+                print(f"\n{text}")
+        else:
+            print(f"❌ BLOCK: {result.get('reason', 'unknown')}")
     
-    return 0
+    return 0 if result["action"] == "ALLOW" else 1
 
 
 if __name__ == "__main__":

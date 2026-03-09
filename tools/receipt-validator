@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-receipt-validator v1.0 - Receipt 同一性校验
+receipt-validator v1.1 - Receipt 同一性校验
 
 从"存在性校验"升级到"同一性校验"：
 
@@ -8,6 +8,8 @@ receipt-validator v1.0 - Receipt 同一性校验
 2. commit 绑定 - receipt 对应当前 workspace snapshot
 3. 时间窗口 - receipt 在合理时间范围内
 4. run_id 关联 - 同一执行上下文
+
+v1.1: 支持环境变量配置工作区路径（CI 兼容）
 
 Usage:
   receipt-validator --task-id <id>
@@ -23,12 +25,35 @@ Exit codes:
 import argparse
 import json
 import sys
+import os
 import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 
-WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+# 动态检测工作区路径
+def _detect_workspace() -> Path:
+    """Detect workspace path from environment or script location."""
+    env_workspace = os.environ.get("OPENCLAW_WORKSPACE")
+    if env_workspace:
+        return Path(env_workspace)
+    
+    script_path = Path(__file__).resolve()
+    possible_workspace = script_path.parent.parent
+    if (possible_workspace / "tools").exists():
+        return possible_workspace
+    
+    cwd = Path.cwd()
+    if (cwd / "tools").exists():
+        return cwd
+    
+    default = Path("/home/moonlight/.openclaw/workspace")
+    if default.exists():
+        return default
+    
+    return possible_workspace
+
+WORKSPACE = _detect_workspace()
 ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
 VALIDATION_LOG = WORKSPACE / "reports" / "receipt_validation.jsonl"
 
@@ -135,7 +160,6 @@ def validate_temporal_consistency(receipts: Dict[str, Dict], max_age: int = DEFA
     
     # 检查时间顺序
     if len(timestamps) >= 2:
-        # contract 应该最早，final 应该最晚
         if "contract" in timestamps and "final" in timestamps:
             if timestamps["contract"] > timestamps["final"]:
                 issues.append(f"Temporal order violation: contract > final")
@@ -147,13 +171,11 @@ def validate_state_transitions(task_id: str, receipts: Dict[str, Dict]) -> Tuple
     """验证状态迁移一致性"""
     issues = []
     
-    # 检查 final receipt 的状态链
     final = receipts.get("final")
     if final:
         state_before = final.get("state_before")
         state_after = final.get("state_after")
         
-        # 应该是合法迁移
         if state_before and state_after:
             if state_after not in ["ready_to_close", "blocked"]:
                 issues.append(f"final receipt state_after invalid: {state_after}")
@@ -171,7 +193,6 @@ def validate_gate_consistency(receipts: Dict[str, Dict]) -> Tuple[bool, List[str
     
     gate_results = final.get("gate_results", {})
     
-    # 如果 final 状态是 pass，所有 gate 应该都是 pass
     if final.get("status") == "pass":
         for gate in ["gate_a", "gate_b", "gate_c"]:
             if gate_results.get(gate) != "pass":
@@ -189,7 +210,6 @@ def validate_all(task_id: str, max_age: int = DEFAULT_MAX_AGE, expected_commit: 
         "issues": []
     }
     
-    # 加载所有 receipts
     receipts = {
         "contract": load_receipt(task_id, "contract"),
         "e2e": load_receipt(task_id, "e2e"),
@@ -242,19 +262,22 @@ def validate_all(task_id: str, max_age: int = DEFAULT_MAX_AGE, expected_commit: 
 
 def log_validation(result: Dict):
     """记录校验日志"""
-    VALIDATION_LOG.parent.mkdir(parents=True, exist_ok=True)
-    
-    entry = {
-        "timestamp": datetime.now().isoformat(),
-        **result
-    }
-    
-    with open(VALIDATION_LOG, "a") as f:
-        f.write(json.dumps(entry) + "\n")
+    try:
+        VALIDATION_LOG.parent.mkdir(parents=True, exist_ok=True)
+        
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            **result
+        }
+        
+        with open(VALIDATION_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
 
 
 def main():
-    parser = argparse.ArgumentParser(description="receipt-validator v1.0")
+    parser = argparse.ArgumentParser(description="receipt-validator v1.1")
     parser.add_argument("--task-id", required=True, help="Task identifier")
     parser.add_argument("--max-age", type=int, default=DEFAULT_MAX_AGE, help="Max receipt age in seconds")
     parser.add_argument("--commit", help="Expected commit SHA")
