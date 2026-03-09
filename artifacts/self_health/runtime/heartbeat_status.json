@@ -1,14 +1,14 @@
 {
-  "last_heartbeat_at": "2026-03-09T07:33:05.117475+00:00",
+  "last_heartbeat_at": "2026-03-09T07:41:12.435550+00:00",
   "heartbeat_lag_seconds": 0,
   "heartbeat_cycle_ok": true,
-  "last_cycle_duration_ms": 7539,
-  "last_quick_check_at": "2026-03-09T07:33:05.117475+00:00",
+  "last_cycle_duration_ms": 7747,
+  "last_quick_check_at": "2026-03-09T07:41:12.435550+00:00",
   "last_full_check_at": "2026-03-09T07:16:00.183438+00:00",
   "heartbeat_status": "healthy",
-  "health_history_age_seconds": 0.05808281898498535,
+  "health_history_age_seconds": 0.05105233192443848,
   "last_probe_summary": {
-    "timestamp": "2026-03-09T07:33:04.689347+00:00",
+    "timestamp": "2026-03-09T07:41:12.115529+00:00",
     "total_probes": 15,
     "passed": 14,
     "failed": 1,
@@ -46,8 +46,8 @@
             "description": "Create test session data for compaction",
             "passed": true,
             "details": {
-              "temp_dir": "/tmp/probe_compaction_smovcmya",
-              "state_file": "/tmp/probe_compaction_smovcmya/test_state.json"
+              "temp_dir": "/tmp/probe_compaction_00ujssvz",
+              "state_file": "/tmp/probe_compaction_00ujssvz/test_state.json"
             }
           },
           {
@@ -55,9 +55,9 @@
             "description": "Execute compaction on test data",
             "passed": true,
             "details": {
-              "elapsed_seconds": 0.12,
+              "elapsed_seconds": 0.13,
               "returncode": 0,
-              "stdout_preview": "{\n  \"compression_triggered\": false,\n  \"mode\": \"shadow\",\n  \"pressure_level\": \"normal\",\n  \"reason\": \"Context pressure is normal, no compression needed\",\n  \"budget\": {\n    \"estimated_tokens\": 114,\n    \"max_tokens\": 100000,\n    \"ratio\": 0.0011,\n    \"pressure_level\": \"normal\",\n    \"threshold_hit\": null,\n    \"snapshot_id\": \"snap_20260309_023257\"\n  }\n}\n"
+              "stdout_preview": "{\n  \"compression_triggered\": false,\n  \"mode\": \"shadow\",\n  \"pressure_level\": \"normal\",\n  \"reason\": \"Context pressure is normal, no compression needed\",\n  \"budget\": {\n    \"estimated_tokens\": 114,\n    \"max_tokens\": 100000,\n    \"ratio\": 0.0011,\n    \"pressure_level\": \"normal\",\n    \"threshold_hit\": null,\n    \"snapshot_id\": \"snap_20260309_024104\"\n  }\n}\n"
             }
           },
           {
@@ -86,7 +86,7 @@
         "message": "Probe checks passed",
         "check_count": 6,
         "pass_count": 6,
-        "timestamp": "2026-03-09T07:32:58.384258+00:00",
+        "timestamp": "2026-03-09T07:41:05.518393+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-native-compaction_evidence.json"
       },
       "probe-context-overflow": {
@@ -108,7 +108,7 @@
             "passed": true,
             "details": {
               "returncode": 0,
-              "stdout_preview": "{\n  \"status\": \"healthy\",\n  \"checks\": {\n    \"snapshots_dir\": \"/home/moonlight/.openclaw/workspace/artifacts/budget_snapshots\",\n    \"token_estimation\": \"ok\"\n  },\n  \"issues\": null,\n  \"timestamp\": \"2026-03-09T02:32:58.517888\"\n}\n"
+              "stdout_preview": "{\n  \"status\": \"healthy\",\n  \"checks\": {\n    \"snapshots_dir\": \"/home/moonlight/.openclaw/workspace/artifacts/budget_snapshots\",\n    \"token_estimation\": \"ok\"\n  },\n  \"issues\": null,\n  \"timestamp\": \"2026-03-09T02:41:05.642177\"\n}\n"
             }
           },
           {
@@ -162,7 +162,7 @@
         "status": "ok",
         "message": "Probe checks passed",
         "threshold": 0.85,
-        "timestamp": "2026-03-09T07:32:58.663852+00:00",
+        "timestamp": "2026-03-09T07:41:05.784154+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-context-overflow_evidence.json"
       },
       "probe-callback-delivery": {
@@ -192,7 +192,7 @@
             "description": "Check recent callback activity",
             "passed": true,
             "details": {
-              "journal_lines": 4,
+              "journal_lines": 1,
               "success_indicators_found": [],
               "has_recent_activity": true
             }
@@ -231,8 +231,8 @@
               "status": {
                 "worker_name": "callback-worker",
                 "alive": true,
-                "last_progress_at": "2026-03-09T07:31:04.755126+00:00",
-                "last_output_at": "2026-03-09T07:31:04.755126+00:00",
+                "last_progress_at": "2026-03-09T07:41:03.437490+00:00",
+                "last_output_at": "2026-03-09T07:41:03.437490+00:00",
                 "pending_count": null,
                 "stuck_suspected": false,
                 "last_error_at": "2026-03-08T21:39:36.688896+00:00",
@@ -251,7 +251,7 @@
         "status": "fail",
         "message": "Callback delivery chain has issues",
         "backlog_threshold": 10,
-        "timestamp": "2026-03-09T07:32:58.786100+00:00",
+        "timestamp": "2026-03-09T07:41:05.902312+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-callback-delivery_evidence.json"
       },
       "probe-mailbox-integrity": {
@@ -265,7 +265,7 @@
             "details": {
               "file_path": "/home/moonlight/.openclaw/workspace/artifacts/self_health/runtime/mailbox_worker_status.json",
               "file_size_bytes": 264,
-              "modified_at": "2026-03-09T07:31:04.862998+00:00"
+              "modified_at": "2026-03-09T07:41:03.580278+00:00"
             }
           },
           {
@@ -274,7 +274,7 @@
             "passed": true,
             "details": {
               "pids_found": [
-                "686975"
+                "733106"
               ],
               "process_count": 1
             }
@@ -287,7 +287,7 @@
               "status": {
                 "worker_name": "mailbox-worker",
                 "alive": true,
-                "last_poll_at": "2026-03-09T07:31:04.755126+00:00",
+                "last_poll_at": "2026-03-09T07:41:03.437490+00:00",
                 "last_progress_at": null,
                 "backlog_count": 0,
                 "stuck_suspected": false,
@@ -313,9 +313,9 @@
             "description": "Check recent processing activity",
             "passed": true,
             "details": {
-              "last_poll_at": "2026-03-09T07:31:04.755126+00:00",
+              "last_poll_at": "2026-03-09T07:41:03.437490+00:00",
               "last_progress_at": null,
-              "last_poll_age_seconds": 114.140548
+              "last_poll_age_seconds": 2.568913
             }
           },
           {
@@ -333,7 +333,7 @@
         "message": "Probe checks passed",
         "backlog_threshold": 5,
         "activity_threshold_seconds": 3600,
-        "timestamp": "2026-03-09T07:32:58.895895+00:00",
+        "timestamp": "2026-03-09T07:41:06.006840+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-mailbox-integrity_evidence.json"
       },
       "probe-gate-consistency": {
@@ -361,7 +361,7 @@
             "details": {
               "returncode": 0,
               "health_result": {
-                "timestamp": "2026-03-09T07:32:59.011714+00:00",
+                "timestamp": "2026-03-09T07:41:06.117352+00:00",
                 "gate_a": {
                   "status": "PASS",
                   "missing": [],
@@ -370,10 +370,10 @@
                 "gate_b": {
                   "status": "PASS",
                   "ages_seconds": {
-                    "heartbeat": 114.25545573234558,
-                    "callback": 114.14965677261353,
-                    "mailbox": 114.14914584159851,
-                    "summary": 114.0454330444336
+                    "heartbeat": 2.6768758296966553,
+                    "callback": 2.5380663871765137,
+                    "mailbox": 2.5372912883758545,
+                    "summary": 2.5369582176208496
                   },
                   "explanation": "runtime telemetry present and fresh"
                 },
@@ -383,7 +383,7 @@
                     "tool_doctor_agent_health_check": "PASS",
                     "execution_guard_health": "PASS"
                   },
-                  "last_gate_run_at": "2026-03-09T07:31:04.493959+00:00",
+                  "last_gate_run_at": "2026-03-09T07:36:07.741989+00:00",
                   "explanation": "preflight/doctor/execution-guard baseline checks"
                 },
                 "verdict": "PASS"
@@ -422,21 +422,21 @@
               "verdict_files": [],
               "metrics_file_exists": true,
               "metrics": {
-                "scheduler_runs_total": 171,
-                "quick_runs_total": 17,
+                "scheduler_runs_total": 177,
+                "quick_runs_total": 22,
                 "full_runs_total": 13,
-                "gate_runs_total": 141,
+                "gate_runs_total": 142,
                 "skipped_runs_total": 10,
                 "lock_contention_count": 0,
                 "execution_budget_hit_count": 0,
                 "cooldown_blocked_count": 7,
-                "probe_runs_total": 13,
-                "probe_failures_total": 12,
-                "incident_total": 2,
+                "probe_runs_total": 18,
+                "probe_failures_total": 17,
+                "incident_total": 3,
                 "proposal_total": 1,
-                "deduped_incident_count": 6,
-                "repeated_same_alert_count": 6,
-                "deduped_proposal_count": 7
+                "deduped_incident_count": 10,
+                "repeated_same_alert_count": 10,
+                "deduped_proposal_count": 12
               }
             }
           },
@@ -482,7 +482,7 @@
         "failures": [],
         "status": "ok",
         "message": "Probe checks passed",
-        "timestamp": "2026-03-09T07:32:59.467283+00:00",
+        "timestamp": "2026-03-09T07:41:06.616235+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-gate-consistency_evidence.json"
       },
       "probe-session-persistence": {
@@ -540,7 +540,7 @@
             }
           }
         ],
-        "timestamp": "2026-03-09T07:32:59.523659+00:00"
+        "timestamp": "2026-03-09T07:41:06.676199+00:00"
       },
       "probe-proposal-boundary": {
         "probe_name": "probe-proposal-boundary",
@@ -589,7 +589,7 @@
             }
           }
         ],
-        "timestamp": "2026-03-09T07:32:59.715650+00:00"
+        "timestamp": "2026-03-09T07:41:06.901074+00:00"
       },
       "probe-truth-alignment": {
         "probe_name": "probe-truth-alignment",
@@ -633,20 +633,20 @@
             "details": {
               "timestamps": {
                 "current_health": {
-                  "timestamp": "2026-03-09T07:05:21+00:00",
-                  "age_minutes": 27.6
+                  "timestamp": "2026-03-09T07:41:03+00:00",
+                  "age_minutes": 0.1
                 },
                 "gate_report": {
-                  "timestamp": "2026-03-09T07:32:59.011714+00:00",
+                  "timestamp": "2026-03-09T07:41:06.117352+00:00",
                   "age_minutes": 0.0
                 },
                 "heartbeat_status": {
-                  "timestamp": "2026-03-09T07:31:04.755126+00:00",
-                  "age_minutes": 1.9
+                  "timestamp": "2026-03-09T07:41:03.437490+00:00",
+                  "age_minutes": 0.1
                 },
                 "probe_summary": {
-                  "timestamp": "2026-03-09T07:15:59.960316+00:00",
-                  "age_minutes": 17.0
+                  "timestamp": "2026-03-09T07:41:03.150082+00:00",
+                  "age_minutes": 0.1
                 }
               },
               "stale_sources": [],
@@ -670,7 +670,7 @@
             }
           }
         ],
-        "timestamp": "2026-03-09T07:32:59.762327+00:00"
+        "timestamp": "2026-03-09T07:41:06.957391+00:00"
       },
       "probe-handoff-integrity": {
         "probe_name": "probe-handoff-integrity",
@@ -751,7 +751,7 @@
             }
           }
         ],
-        "timestamp": "2026-03-09T07:32:59.810674+00:00"
+        "timestamp": "2026-03-09T07:41:07.016848+00:00"
       },
       "probe-openviking-retrieval": {
         "probe_name": "probe-openviking-retrieval",
@@ -827,7 +827,7 @@
         "message": "OpenViking retrieval system healthy",
         "check_count": 4,
         "pass_count": 4,
-        "timestamp": "2026-03-09T07:33:04.380131+00:00",
+        "timestamp": "2026-03-09T07:41:11.802114+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-openviking-retrieval_evidence.json"
       },
       "probe-longrunkit-state-machine": {
@@ -852,12 +852,12 @@
             "passed": true,
             "details": {
               "valid_states": [
-                "FAILED",
-                "STUCK",
-                "QUEUED",
                 "CANCELLED",
                 "RUNNING",
-                "DONE"
+                "DONE",
+                "STUCK",
+                "QUEUED",
+                "FAILED"
               ],
               "valid_transitions": {
                 "QUEUED": [
@@ -894,8 +894,8 @@
             "details": {
               "jobs_checked": 20,
               "states_found": [
-                "CANCELLED",
-                "DONE"
+                "DONE",
+                "CANCELLED"
               ],
               "invalid_transitions": []
             }
@@ -976,7 +976,7 @@
             "rev": 6
           }
         ],
-        "timestamp": "2026-03-09T07:33:04.440896+00:00",
+        "timestamp": "2026-03-09T07:41:11.864661+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-state-machine_evidence.json"
       },
       "probe-longrunkit-deadlock": {
@@ -1018,7 +1018,7 @@
         "message": "No deadlocks detected",
         "check_count": 3,
         "pass_count": 3,
-        "timestamp": "2026-03-09T07:33:04.500126+00:00",
+        "timestamp": "2026-03-09T07:41:11.927345+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-deadlock_evidence.json"
       },
       "probe-longrunkit-timeout-retry": {
@@ -1078,7 +1078,7 @@
         "message": "LongRunKit timeout/retry configuration verified",
         "check_count": 3,
         "pass_count": 3,
-        "timestamp": "2026-03-09T07:33:04.560197+00:00",
+        "timestamp": "2026-03-09T07:41:11.988298+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-longrunkit-timeout-retry_evidence.json"
       },
       "probe-subagent-orchestration": {
@@ -1139,7 +1139,7 @@
         "message": "Subagent orchestration chain healthy",
         "check_count": 4,
         "pass_count": 4,
-        "timestamp": "2026-03-09T07:33:04.620358+00:00",
+        "timestamp": "2026-03-09T07:41:12.048708+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-subagent-orchestration_evidence.json"
       },
       "probe-receipt-pipeline": {
@@ -1266,7 +1266,7 @@
         "message": "Receipt pipeline chain healthy",
         "check_count": 4,
         "pass_count": 4,
-        "timestamp": "2026-03-09T07:33:04.680872+00:00",
+        "timestamp": "2026-03-09T07:41:12.107700+00:00",
         "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-receipt-pipeline_evidence.json"
       }
     }
