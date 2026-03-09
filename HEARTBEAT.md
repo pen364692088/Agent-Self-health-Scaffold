@@ -207,3 +207,83 @@ HEARTBEAT_OK
 - quick mode run history 写入：
   - `artifacts/self_health/runtime/run_history.jsonl`
   - `artifacts/self_health/runtime/heartbeat_status.json`
+
+---
+
+## Route Rebind Guard Check (每次 heartbeat) ⭐⭐⭐⭐⭐
+
+**每次 heartbeat 必须执行**：
+
+```bash
+~/.openclaw/workspace/tools/route-rebind-guard-heartbeat --json
+```
+
+**行为**：
+- 静默检查主路由状态
+- 检测到劫持时自动恢复
+- 记录事件到审计日志
+
+**输出解析**：
+
+| action | 说明 |
+|--------|------|
+| `none` | 路由正常，继续 |
+| `record_primary` | 首次记录主 session |
+| `restored` | 检测到劫持并已恢复 |
+
+**重要**：
+- 此检查静默执行，不改变 heartbeat 输出契约
+- 恢复事件记录到 `logs/route_guard_heartbeat.jsonl`
+- 审计日志记录到 `logs/route_rebind_audit.jsonl`
+
+**集成位置**：在 Self-Health Quick Mode Hook 之前执行
+
+---
+Added: 2026-03-09 09:40 CST
+
+---
+
+## Shadow Mode Check (Conditional, 每 5 分钟) ⭐⭐⭐⭐
+
+### 触发条件
+
+- 环境变量 `AUTO_COMPACTION_SHADOW_MODE=true` 或
+- 配置文件 `artifacts/context_compression/shadow_config.json` 中 `enabled=true`
+- 距离上次检查 >= 5 分钟（通过 cooldown 控制）
+
+### 执行脚本
+
+```bash
+# 静默执行，不改变 heartbeat 输出契约
+~/.openclaw/workspace/tools/shadow_watcher --run-once --quiet 2>/dev/null || true
+```
+
+### 行为
+
+- 运行 `auto-context-compact --dry-run`
+- 记录 "what would happen" 到 `SHADOW_TRACE.jsonl`
+- 不执行实际压缩
+- 收集指标：trigger_count, would_compact_count, blockers_hit
+
+### 输出解析
+
+Shadow watcher 自行处理日志记录，heartbeat 只需调用。
+
+### 重要
+
+- 此检查静默执行，不改变 heartbeat 输出契约
+- 失败不阻断 heartbeat
+- 仅在启用 shadow mode 时运行
+
+### Cooldown 控制
+
+检查频率由 `shadow_watcher` 内部控制：
+- 默认间隔：5 分钟
+- 可通过 `shadow_config.json` 配置 `metrics_interval_seconds`
+
+### 集成位置
+
+在 Route Rebind Guard Check 之后执行（都是静默检查）
+
+---
+Added: 2026-03-09 14:45 CST

@@ -1,0 +1,515 @@
+{
+  "summary": {
+    "timestamp": "2026-03-09T19:41:09.656049+00:00",
+    "duration_ms": 273,
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "pass_rate": 100.0,
+    "critical_total": 6,
+    "critical_passed": 6,
+    "critical_failed": 0,
+    "status": "pass"
+  },
+  "results": [
+    {
+      "scenario_id": 1,
+      "name": "Below threshold",
+      "description": "ratio=0.79 - Should not trigger",
+      "input": {
+        "ratio": 0.79,
+        "cooldown_active": false,
+        "blockers": []
+      },
+      "expected": {
+        "action": "none",
+        "reason": "below_threshold"
+      },
+      "actual": {
+        "action": "none",
+        "reason": "below_threshold"
+      },
+      "pass": true,
+      "critical": false,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.680825+00:00",
+        "ratio": 0.79,
+        "zone": "normal",
+        "previous_zone": null,
+        "action": "none",
+        "reason": "below_threshold",
+        "blockers": [],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": null,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 2,
+      "name": "Normal trigger",
+      "description": "ratio=0.80 - Normal compaction",
+      "input": {
+        "ratio": 0.8,
+        "cooldown_active": false,
+        "blockers": []
+      },
+      "expected": {
+        "action": "normal",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "actual": {
+        "action": "normal",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "pass": true,
+      "critical": true,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.707693+00:00",
+        "ratio": 0.8,
+        "zone": "warning",
+        "previous_zone": null,
+        "action": "normal",
+        "reason": "ratio_threshold_exceeded",
+        "blockers": [],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": 0.6,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 3,
+      "name": "Normal mid-range",
+      "description": "ratio=0.85 - Normal compaction",
+      "input": {
+        "ratio": 0.85,
+        "cooldown_active": false,
+        "blockers": []
+      },
+      "expected": {
+        "action": "normal",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "actual": {
+        "action": "normal",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "pass": true,
+      "critical": true,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.735369+00:00",
+        "ratio": 0.85,
+        "zone": "warning",
+        "previous_zone": null,
+        "action": "normal",
+        "reason": "ratio_threshold_exceeded",
+        "blockers": [],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": 0.6,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 4,
+      "name": "Near emergency with blocker",
+      "description": "ratio=0.88 + blocker - Delayed due to blocker",
+      "input": {
+        "ratio": 0.88,
+        "cooldown_active": false,
+        "blockers": [
+          {
+            "id": "BLK-GIT-001",
+            "severity": "high",
+            "bypass_allowed": true
+          }
+        ]
+      },
+      "expected": {
+        "action": "blocked",
+        "reason": "blockers_present"
+      },
+      "actual": {
+        "action": "blocked",
+        "reason": "blockers_present"
+      },
+      "pass": true,
+      "critical": true,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.762338+00:00",
+        "ratio": 0.88,
+        "zone": "warning",
+        "previous_zone": null,
+        "action": "blocked",
+        "reason": "blockers_present",
+        "blockers": [
+          {
+            "id": "BLK-GIT-001",
+            "severity": "high",
+            "bypass_allowed": true
+          }
+        ],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": 0.6,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 5,
+      "name": "Emergency trigger",
+      "description": "ratio=0.90 - Emergency compaction",
+      "input": {
+        "ratio": 0.9,
+        "cooldown_active": false,
+        "blockers": []
+      },
+      "expected": {
+        "action": "emergency",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "actual": {
+        "action": "emergency",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "pass": true,
+      "critical": true,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.788861+00:00",
+        "ratio": 0.9,
+        "zone": "emergency",
+        "previous_zone": null,
+        "action": "emergency",
+        "reason": "ratio_threshold_exceeded",
+        "blockers": [],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": 0.5,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 6,
+      "name": "Emergency high",
+      "description": "ratio=0.95 - Emergency compaction",
+      "input": {
+        "ratio": 0.95,
+        "cooldown_active": false,
+        "blockers": []
+      },
+      "expected": {
+        "action": "emergency",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "actual": {
+        "action": "emergency",
+        "reason": "ratio_threshold_exceeded"
+      },
+      "pass": true,
+      "critical": true,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.816190+00:00",
+        "ratio": 0.95,
+        "zone": "emergency",
+        "previous_zone": null,
+        "action": "emergency",
+        "reason": "ratio_threshold_exceeded",
+        "blockers": [],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": 0.5,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 7,
+      "name": "Cooldown active",
+      "description": "ratio=0.82 + cooldown - No trigger during cooldown",
+      "input": {
+        "ratio": 0.82,
+        "cooldown_active": true,
+        "blockers": []
+      },
+      "expected": {
+        "action": "none",
+        "reason": "in_cooldown"
+      },
+      "actual": {
+        "action": "none",
+        "reason": "in_cooldown"
+      },
+      "pass": true,
+      "critical": false,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.842984+00:00",
+        "ratio": 0.82,
+        "zone": "warning",
+        "previous_zone": null,
+        "action": "none",
+        "reason": "in_cooldown",
+        "blockers": [],
+        "cooldown": {
+          "active": true,
+          "remaining_seconds": 1200
+        },
+        "target_ratio": 0.6,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 8,
+      "name": "Post-compaction safe",
+      "description": "ratio=0.62 - Already in safe zone",
+      "input": {
+        "ratio": 0.62,
+        "cooldown_active": false,
+        "blockers": []
+      },
+      "expected": {
+        "action": "none",
+        "reason": "below_threshold"
+      },
+      "actual": {
+        "action": "none",
+        "reason": "below_threshold"
+      },
+      "pass": true,
+      "critical": false,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.871126+00:00",
+        "ratio": 0.62,
+        "zone": "normal",
+        "previous_zone": null,
+        "action": "none",
+        "reason": "below_threshold",
+        "blockers": [],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": null,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 9,
+      "name": "Post-compaction marginal",
+      "description": "ratio=0.72 - Marginal but below trigger",
+      "input": {
+        "ratio": 0.72,
+        "cooldown_active": false,
+        "blockers": []
+      },
+      "expected": {
+        "action": "none",
+        "reason": "below_threshold"
+      },
+      "actual": {
+        "action": "none",
+        "reason": "below_threshold"
+      },
+      "pass": true,
+      "critical": false,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.899904+00:00",
+        "ratio": 0.72,
+        "zone": "normal",
+        "previous_zone": null,
+        "action": "none",
+        "reason": "below_threshold",
+        "blockers": [],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": null,
+        "force": false
+      }
+    },
+    {
+      "scenario_id": 10,
+      "name": "Critical blocker",
+      "description": "ratio=0.85 + critical_blocker - Cannot bypass",
+      "input": {
+        "ratio": 0.85,
+        "cooldown_active": false,
+        "blockers": [
+          {
+            "id": "BLK-WFLOW-001",
+            "severity": "critical",
+            "bypass_allowed": false
+          }
+        ]
+      },
+      "expected": {
+        "action": "blocked",
+        "reason": "critical_blockers_present"
+      },
+      "actual": {
+        "action": "blocked",
+        "reason": "critical_blockers_present"
+      },
+      "pass": true,
+      "critical": true,
+      "raw_result": {
+        "timestamp": "2026-03-09T19:41:09.926952+00:00",
+        "ratio": 0.85,
+        "zone": "warning",
+        "previous_zone": null,
+        "action": "blocked",
+        "reason": "critical_blockers_present",
+        "blockers": [
+          {
+            "id": "BLK-WFLOW-001",
+            "severity": "critical",
+            "bypass_allowed": false
+          }
+        ],
+        "cooldown": {
+          "active": false,
+          "remaining_seconds": 0
+        },
+        "target_ratio": 0.6,
+        "force": false
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "Below threshold",
+      "description": "ratio=0.79 - Should not trigger",
+      "input_ratio": 0.79,
+      "cooldown_active": false,
+      "blockers": [],
+      "expected_action": "none",
+      "expected_reason": "below_threshold",
+      "critical": false
+    },
+    {
+      "id": 2,
+      "name": "Normal trigger",
+      "description": "ratio=0.80 - Normal compaction",
+      "input_ratio": 0.8,
+      "cooldown_active": false,
+      "blockers": [],
+      "expected_action": "normal",
+      "expected_reason": "ratio_threshold_exceeded",
+      "critical": true
+    },
+    {
+      "id": 3,
+      "name": "Normal mid-range",
+      "description": "ratio=0.85 - Normal compaction",
+      "input_ratio": 0.85,
+      "cooldown_active": false,
+      "blockers": [],
+      "expected_action": "normal",
+      "expected_reason": "ratio_threshold_exceeded",
+      "critical": true
+    },
+    {
+      "id": 4,
+      "name": "Near emergency with blocker",
+      "description": "ratio=0.88 + blocker - Delayed due to blocker",
+      "input_ratio": 0.88,
+      "cooldown_active": false,
+      "blockers": [
+        {
+          "id": "BLK-GIT-001",
+          "severity": "high",
+          "bypass_allowed": true
+        }
+      ],
+      "expected_action": "blocked",
+      "expected_reason": "blockers_present",
+      "critical": true
+    },
+    {
+      "id": 5,
+      "name": "Emergency trigger",
+      "description": "ratio=0.90 - Emergency compaction",
+      "input_ratio": 0.9,
+      "cooldown_active": false,
+      "blockers": [],
+      "expected_action": "emergency",
+      "expected_reason": "ratio_threshold_exceeded",
+      "critical": true
+    },
+    {
+      "id": 6,
+      "name": "Emergency high",
+      "description": "ratio=0.95 - Emergency compaction",
+      "input_ratio": 0.95,
+      "cooldown_active": false,
+      "blockers": [],
+      "expected_action": "emergency",
+      "expected_reason": "ratio_threshold_exceeded",
+      "critical": true
+    },
+    {
+      "id": 7,
+      "name": "Cooldown active",
+      "description": "ratio=0.82 + cooldown - No trigger during cooldown",
+      "input_ratio": 0.82,
+      "cooldown_active": true,
+      "blockers": [],
+      "expected_action": "none",
+      "expected_reason": "in_cooldown",
+      "critical": false
+    },
+    {
+      "id": 8,
+      "name": "Post-compaction safe",
+      "description": "ratio=0.62 - Already in safe zone",
+      "input_ratio": 0.62,
+      "cooldown_active": false,
+      "blockers": [],
+      "expected_action": "none",
+      "expected_reason": "below_threshold",
+      "critical": false
+    },
+    {
+      "id": 9,
+      "name": "Post-compaction marginal",
+      "description": "ratio=0.72 - Marginal but below trigger",
+      "input_ratio": 0.72,
+      "cooldown_active": false,
+      "blockers": [],
+      "expected_action": "none",
+      "expected_reason": "below_threshold",
+      "critical": false,
+      "notes": "secondary_light would require additional logic - currently below 0.80 threshold"
+    },
+    {
+      "id": 10,
+      "name": "Critical blocker",
+      "description": "ratio=0.85 + critical_blocker - Cannot bypass",
+      "input_ratio": 0.85,
+      "cooldown_active": false,
+      "blockers": [
+        {
+          "id": "BLK-WFLOW-001",
+          "severity": "critical",
+          "bypass_allowed": false
+        }
+      ],
+      "expected_action": "blocked",
+      "expected_reason": "critical_blockers_present",
+      "critical": true
+    }
+  ]
+}

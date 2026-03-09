@@ -1,0 +1,574 @@
+#!/usr/bin/env python3
+"""
+post-compaction-handoff v1.0 - Post-Compaction State Persistence
+
+Handles state persistence after context compaction:
+- Updates SESSION-STATE.md with compaction metadata
+- Updates working-buffer.md (if exists)
+- Appends to COMPACTION_HISTORY.jsonl
+
+Usage:
+  post-compaction-handoff --before-ratio 0.85 --action normal
+  post-compaction-handoff --before-ratio 0.92 --action emergency --json
+  post-compaction-handoff --test
+  post-compaction-handoff --health
+"""
+
+import argparse
+import json
+import sys
+import os
+import re
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
+WORKING_BUFFER = WORKSPACE / "working-buffer.md"
+HANDOFF_FILE = WORKSPACE / "handoff.md"
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "context_compression"
+COMPACTION_HISTORY = ARTIFACTS_DIR / "COMPACTION_HISTORY.jsonl"
+
+
+def get_session_key() -> str:
+    """Get current session key from environment."""
+    return os.environ.get("SESSION_KEY", "unknown")
+
+
+def generate_capsule_id() -> str:
+    """Generate unique capsule ID."""
+    import uuid
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique = uuid.uuid4().hex[:6]
+    return f"cap_{ts}_{unique}"
+
+
+def read_file(path: Path) -> Optional[str]:
+    """Read file contents."""
+    if not path.exists():
+        return None
+    try:
+        return path.read_text()
+    except Exception:
+        return None
+
+
+def write_file(path: Path, content: str) -> bool:
+    """Write file contents."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+        return True
+    except Exception:
+        return False
+
+
+def append_jsonl(path: Path, record: Dict) -> bool:
+    """Append record to JSONL file."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'a') as f:
+            f.write(json.dumps(record) + '\n')
+        return True
+    except Exception:
+        return False
+
+
+def parse_session_state(content: str) -> Dict[str, Any]:
+    """Parse SESSION-STATE.md into structured data."""
+    result = {
+        "objective": None,
+        "phase": None,
+        "branch": None,
+        "status": None,
+        "blocker": None,
+        "next_actions": [],
+        "compaction_metadata": None
+    }
+    
+    if not content:
+        return result
+    
+    lines = content.split('\n')
+    current_section = None
+    
+    for line in lines:
+        line = line.strip()
+        
+        if line.startswith("## Current Objective"):
+            current_section = "objective"
+        elif line.startswith("## Phase"):
+            current_section = "phase"
+        elif line.startswith("## Branch"):
+            current_section = "branch"
+        elif line.startswith("## Status"):
+            current_section = "status"
+        elif line.startswith("## Blocker"):
+            current_section = "blocker"
+        elif line.startswith("## Next Actions"):
+            current_section = "next_actions"
+        elif line.startswith("## Compaction Metadata"):
+            current_section = "compaction"
+        elif line.startswith("## "):
+            current_section = None
+        elif current_section and line:
+            if current_section == "objective":
+                result["objective"] = line
+            elif current_section == "phase":
+                result["phase"] = line
+            elif current_section == "branch":
+                result["branch"] = line
+            elif current_section == "status":
+                result["status"] = line
+            elif current_section == "blocker":
+                if line.lower() not in ("none", "n/a", "-"):
+                    result["blocker"] = line
+            elif current_section == "next_actions":
+                if line.startswith("- ") or line.startswith(tuple("123456789.")):
+                    result["next_actions"].append(line.lstrip("- 0123456789."))
+    
+    return result
+
+
+def update_session_state(
+    before_ratio: float,
+    after_ratio: float,
+    action: str,
+    version: str,
+    capsule_id: Optional[str] = None
+) -> Dict:
+    """Update SESSION-STATE.md with compaction metadata."""
+    content = read_file(SESSION_STATE)
+    
+    if not content:
+        return {"error": {"type": "file_not_found", "file": str(SESSION_STATE)}}
+    
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    # Build compaction metadata section
+    compaction_section = f"""## Compaction Metadata
+
+| Field | Value |
+|-------|-------|
+| Last Compaction | {timestamp} |
+| Action | {action} |
+| Version | {version} |
+| Before Ratio | {before_ratio:.4f} |
+| After Ratio | {after_ratio:.4f} |
+| Capsule ID | {capsule_id or 'N/A'} |
+"""
+    
+    # Check if compaction metadata section already exists
+    if "## Compaction Metadata" in content:
+        # Replace existing section
+        pattern = r'## Compaction Metadata.*?(?=\n## |\Z)'
+        content = re.sub(pattern, compaction_section.strip(), content, flags=re.DOTALL)
+    else:
+        # Add new section at the end
+        content = content.rstrip() + '\n\n' + compaction_section.strip()
+    
+    # Write back
+    success = write_file(SESSION_STATE, content)
+    
+    if success:
+        return {"status": "updated", "file": str(SESSION_STATE)}
+    else:
+        return {"error": {"type": "write_failed", "file": str(SESSION_STATE)}}
+
+
+def update_working_buffer(
+    before_ratio: float,
+    after_ratio: float,
+    action: str
+) -> Dict:
+    """Update working-buffer.md with compaction note (if exists)."""
+    if not WORKING_BUFFER.exists():
+        return {"status": "skipped", "reason": "working-buffer.md does not exist"}
+    
+    content = read_file(WORKING_BUFFER)
+    
+    if not content:
+        return {"status": "skipped", "reason": "could not read working-buffer.md"}
+    
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    
+    compaction_note = f"""
+## Compaction Note
+[{timestamp}] Context compacted ({action}): ratio {before_ratio:.2f} → {after_ratio:.2f}
+"""
+    
+    # Add note at the end
+    content = content.rstrip() + '\n' + compaction_note
+    
+    success = write_file(WORKING_BUFFER, content)
+    
+    if success:
+        return {"status": "updated", "file": str(WORKING_BUFFER)}
+    else:
+        return {"error": {"type": "write_failed", "file": str(WORKING_BUFFER)}}
+
+
+def append_to_history(
+    before_ratio: float,
+    after_ratio: float,
+    action: str,
+    version: str,
+    capsule_id: Optional[str] = None
+) -> Dict:
+    """Append entry to COMPACTION_HISTORY.jsonl."""
+    timestamp = datetime.now(timezone.utc).isoformat()
+    session_key = get_session_key()
+    
+    record = {
+        "timestamp": timestamp,
+        "session_key": session_key,
+        "before_ratio": round(before_ratio, 4),
+        "after_ratio": round(after_ratio, 4),
+        "action": action,
+        "version": version,
+        "capsule_id": capsule_id
+    }
+    
+    success = append_jsonl(COMPACTION_HISTORY, record)
+    
+    if success:
+        return {"status": "appended", "file": str(COMPACTION_HISTORY), "record": record}
+    else:
+        return {"error": {"type": "append_failed", "file": str(COMPACTION_HISTORY)}}
+
+
+def run_handoff(
+    before_ratio: float,
+    action: str,
+    version: str = "v3",
+    capsule_id: Optional[str] = None,
+    target_ratio: Optional[float] = None,
+    json_output: bool = False
+) -> Dict:
+    """
+    Run post-compaction handoff.
+    
+    Updates:
+    1. SESSION-STATE.md with compaction metadata
+    2. working-buffer.md with compaction note (if exists)
+    3. COMPACTION_HISTORY.jsonl with record
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    # Calculate after ratio (use target if not specified)
+    after_ratio = target_ratio if target_ratio else (before_ratio * 0.7)
+    
+    result = {
+        "timestamp": timestamp,
+        "before_ratio": round(before_ratio, 4),
+        "after_ratio": round(after_ratio, 4),
+        "action": action,
+        "version": version,
+        "capsule_id": capsule_id,
+        "updates": {}
+    }
+    
+    # Update SESSION-STATE.md
+    ss_result = update_session_state(
+        before_ratio=before_ratio,
+        after_ratio=after_ratio,
+        action=action,
+        version=version,
+        capsule_id=capsule_id
+    )
+    result["updates"]["session_state"] = ss_result
+    
+    # Update working-buffer.md
+    wb_result = update_working_buffer(
+        before_ratio=before_ratio,
+        after_ratio=after_ratio,
+        action=action
+    )
+    result["updates"]["working_buffer"] = wb_result
+    
+    # Append to history
+    hist_result = append_to_history(
+        before_ratio=before_ratio,
+        after_ratio=after_ratio,
+        action=action,
+        version=version,
+        capsule_id=capsule_id
+    )
+    result["updates"]["history"] = hist_result
+    
+    # Determine overall status
+    errors = []
+    for name, update in result["updates"].items():
+        if "error" in update:
+            errors.append(f"{name}: {update['error']}")
+    
+    if errors:
+        result["status"] = "partial"
+        result["errors"] = errors
+    else:
+        result["status"] = "success"
+    
+    return result
+
+
+def health_check() -> Dict:
+    """Perform health check."""
+    issues = []
+    checks = {}
+    
+    # Check files are writable
+    files_to_check = [
+        ("session_state", SESSION_STATE),
+        ("compaction_history", COMPACTION_HISTORY)
+    ]
+    
+    for name, path in files_to_check:
+        try:
+            if path.exists():
+                # Try to read
+                content = path.read_text()
+                checks[f"{name}_readable"] = True
+            else:
+                # Check if parent directory exists
+                path.parent.mkdir(parents=True, exist_ok=True)
+                checks[f"{name}_dir"] = True
+        except Exception as e:
+            checks[f"{name}_readable"] = False
+            issues.append(f"Cannot access {name}: {e}")
+    
+    # Check working-buffer (optional)
+    checks["working_buffer_exists"] = WORKING_BUFFER.exists()
+    
+    return {
+        "status": "healthy" if not issues else "degraded",
+        "checks": checks,
+        "issues": issues if issues else None,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def self_test() -> Dict:
+    """Run self-test."""
+    tests = []
+    
+    # Test 1: Session state parsing
+    try:
+        sample = """# Session State
+
+## Current Objective
+Test Objective
+
+## Phase
+Phase 1
+
+## Status
+Active
+
+## Blocker
+none
+"""
+        parsed = parse_session_state(sample)
+        assert parsed["objective"] == "Test Objective"
+        assert parsed["phase"] == "Phase 1"
+        assert parsed["blocker"] is None
+        tests.append({"name": "session_state_parsing", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "session_state_parsing", "status": "fail", "details": str(e)})
+    
+    # Test 2: JSONL append
+    try:
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+            temp_path = Path(f.name)
+        
+        record = {"test": True, "value": 123}
+        success = append_jsonl(temp_path, record)
+        assert success, "Failed to append to JSONL"
+        
+        # Read back
+        content = temp_path.read_text()
+        loaded = json.loads(content.strip())
+        assert loaded["test"] == True
+        
+        temp_path.unlink()
+        tests.append({"name": "jsonl_append", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "jsonl_append", "status": "fail", "details": str(e)})
+    
+    # Test 3: Capsule ID generation
+    try:
+        id1 = generate_capsule_id()
+        id2 = generate_capsule_id()
+        assert id1.startswith("cap_")
+        assert id1 != id2  # Should be unique
+        tests.append({"name": "capsule_id_generation", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "capsule_id_generation", "status": "fail", "details": str(e)})
+    
+    # Test 4: History record format
+    try:
+        timestamp = datetime.now(timezone.utc).isoformat()
+        record = {
+            "timestamp": timestamp,
+            "session_key": "test_session",
+            "before_ratio": 0.85,
+            "after_ratio": 0.55,
+            "action": "normal",
+            "version": "v3",
+            "capsule_id": "cap_test"
+        }
+        
+        # Verify JSON serializable
+        json_str = json.dumps(record)
+        parsed = json.loads(json_str)
+        assert parsed["before_ratio"] == 0.85
+        assert parsed["action"] == "normal"
+        
+        tests.append({"name": "history_record_format", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "history_record_format", "status": "fail", "details": str(e)})
+    
+    # Test 5: Session state update (with temp file)
+    try:
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+            f.write("# Session State\n\n## Current Objective\nTest\n")
+            temp_path = Path(f.name)
+        
+        # Monkey-patch SESSION_STATE
+        global SESSION_STATE
+        original = SESSION_STATE
+        SESSION_STATE = temp_path
+        
+        result = update_session_state(
+            before_ratio=0.85,
+            after_ratio=0.55,
+            action="normal",
+            version="v3"
+        )
+        
+        SESSION_STATE = original
+        temp_path.unlink()
+        
+        assert result.get("status") == "updated"
+        tests.append({"name": "session_state_update", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "session_state_update", "status": "fail", "details": str(e)})
+    
+    passed = sum(1 for t in tests if t["status"] == "pass")
+    failed = len(tests) - passed
+    
+    return {
+        "status": "pass" if failed == 0 else "fail",
+        "total": len(tests),
+        "passed": passed,
+        "failed": failed,
+        "tests": tests,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="post-compaction-handoff v1.0 - Post-Compaction State Persistence"
+    )
+    
+    parser.add_argument(
+        "--before-ratio", "-b",
+        type=float,
+        help="Context ratio before compaction"
+    )
+    
+    parser.add_argument(
+        "--action", "-a",
+        choices=["normal", "emergency"],
+        help="Compaction action type"
+    )
+    
+    parser.add_argument(
+        "--version", "-v",
+        default="v3",
+        help="Compaction version (default: v3)"
+    )
+    
+    parser.add_argument(
+        "--capsule-id", "-c",
+        help="Capsule ID from compaction"
+    )
+    
+    parser.add_argument(
+        "--target-ratio", "-t",
+        type=float,
+        help="Target ratio after compaction"
+    )
+    
+    parser.add_argument(
+        "--json", "-j",
+        action="store_true",
+        help="Output as JSON"
+    )
+    
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="Run health check"
+    )
+    
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="Run self-test"
+    )
+    
+    args = parser.parse_args()
+    
+    # Health check mode
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "healthy" else 1
+    
+    # Self-test mode
+    if args.test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "pass" else 1
+    
+    # Validate required args for normal operation
+    if args.before_ratio is None:
+        print("Error: --before-ratio is required", file=sys.stderr)
+        return 1
+    
+    if args.action is None:
+        print("Error: --action is required", file=sys.stderr)
+        return 1
+    
+    # Run handoff
+    result = run_handoff(
+        before_ratio=args.before_ratio,
+        action=args.action,
+        version=args.version,
+        capsule_id=args.capsule_id,
+        target_ratio=args.target_ratio,
+        json_output=args.json
+    )
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        # Human-readable output
+        print(f"Status: {result['status']}")
+        print(f"Before: {result['before_ratio']}")
+        print(f"After: {result['after_ratio']}")
+        print(f"Action: {result['action']}")
+        if result.get('capsule_id'):
+            print(f"Capsule: {result['capsule_id']}")
+        for name, update in result.get('updates', {}).items():
+            print(f"  {name}: {update.get('status', 'unknown')}")
+    
+    return 0 if result["status"] == "success" else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

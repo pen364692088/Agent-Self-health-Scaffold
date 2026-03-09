@@ -1,0 +1,478 @@
+#!/usr/bin/env python3
+"""
+shadow_watcher v1.0 - Shadow Mode Observer
+
+Runs auto-context-compact in shadow mode, recording what WOULD happen
+without executing actual compression.
+
+Usage:
+  shadow_watcher --run-once
+  shadow_watcher --status
+  shadow_watcher --metrics
+  shadow_watcher --json
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+from collections import defaultdict
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "context_compression"
+AUTO_CONTEXT_COMPACT = TOOLS_DIR / "auto-context-compact"
+TRACE_FILE = ARTIFACTS_DIR / "SHADOW_TRACE.jsonl"
+BASELINE_FILE = ARTIFACTS_DIR / "AUTO_COMPACTION_BASELINE.json"
+SHADOW_CONFIG = ARTIFACTS_DIR / "shadow_config.json"
+
+# Version
+VERSION = "v1.0"
+
+
+def is_shadow_enabled() -> bool:
+    """Check if shadow mode is enabled."""
+    # Check environment variable
+    if os.environ.get("AUTO_COMPACTION_SHADOW_MODE", "").lower() == "true":
+        return True
+    
+    # Check config file
+    if SHADOW_CONFIG.exists():
+        try:
+            config = json.loads(SHADOW_CONFIG.read_text())
+            return config.get("enabled", False)
+        except Exception:
+            pass
+    
+    return False
+
+
+def run_shadow_check(verbose: bool = False) -> Dict:
+    """
+    Run a single shadow check.
+    
+    Executes auto-context-compact in dry-run mode and records results.
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    if verbose:
+        print(f"[{timestamp}] Running shadow check...")
+    
+    # Run auto-context-compact in dry-run mode
+    try:
+        result = subprocess.run(
+            [str(AUTO_CONTEXT_COMPACT), "--dry-run", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode not in (0, 2):  # 0 = success, 2 = blocked
+            return {
+                "timestamp": timestamp,
+                "status": "error",
+                "error": {
+                    "type": "tool_failed",
+                    "returncode": result.returncode,
+                    "stderr": result.stderr
+                }
+            }
+        
+        # Parse result
+        try:
+            data = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            return {
+                "timestamp": timestamp,
+                "status": "error",
+                "error": {
+                    "type": "json_parse_error",
+                    "output": result.stdout[:500]
+                }
+            }
+        
+        # Extract shadow metrics
+        shadow_entry = {
+            "timestamp": timestamp,
+            "version": VERSION,
+            "ratio": data.get("before_ratio"),
+            "zone": data.get("zone", "unknown"),
+            "trend": data.get("trend", "unknown"),
+            "action": data.get("trigger_action", data.get("action_taken", "none")),
+            "reason": data.get("trigger_reason", data.get("message", "")),
+            "blockers": data.get("blockers", []),
+            "target_ratio": data.get("target_ratio"),
+            "duration_ms": data.get("duration_ms", 0),
+            "would_compact": data.get("trigger_action") in ("normal", "emergency"),
+            "dry_run": True
+        }
+        
+        # Log to trace file
+        log_trace_entry(shadow_entry)
+        
+        if verbose:
+            print(f"  Ratio: {shadow_entry['ratio']}")
+            print(f"  Zone: {shadow_entry['zone']}")
+            print(f"  Action: {shadow_entry['action']}")
+            print(f"  Would Compact: {shadow_entry['would_compact']}")
+            if shadow_entry['blockers']:
+                print(f"  Blockers: {len(shadow_entry['blockers'])}")
+        
+        return shadow_entry
+        
+    except subprocess.TimeoutExpired:
+        return {
+            "timestamp": timestamp,
+            "status": "error",
+            "error": {"type": "timeout"}
+        }
+    except Exception as e:
+        return {
+            "timestamp": timestamp,
+            "status": "error",
+            "error": {"type": "exception", "message": str(e)}
+        }
+
+
+def log_trace_entry(entry: Dict) -> bool:
+    """Log entry to SHADOW_TRACE.jsonl."""
+    try:
+        ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+        
+        with open(TRACE_FILE, 'a') as f:
+            f.write(json.dumps(entry) + '\n')
+        
+        return True
+    except Exception as e:
+        print(f"Warning: Failed to log trace: {e}", file=sys.stderr)
+        return False
+
+
+def load_trace() -> List[Dict]:
+    """Load all trace entries."""
+    if not TRACE_FILE.exists():
+        return []
+    
+    entries = []
+    try:
+        with open(TRACE_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+    except Exception:
+        pass
+    
+    return entries
+
+
+def calculate_metrics(trace: List[Dict] = None) -> Dict:
+    """Calculate metrics from trace entries."""
+    if trace is None:
+        trace = load_trace()
+    
+    if not trace:
+        return {
+            "total_checks": 0,
+            "message": "No shadow checks recorded yet"
+        }
+    
+    # Basic counts
+    total = len(trace)
+    errors = sum(1 for e in trace if e.get("status") == "error")
+    
+    valid_entries = [e for e in trace if e.get("status") != "error"]
+    valid_count = len(valid_entries)
+    
+    # Trigger metrics
+    trigger_count = sum(1 for e in valid_entries if e.get("action") in ("normal", "emergency"))
+    normal_count = sum(1 for e in valid_entries if e.get("action") == "normal")
+    emergency_count = sum(1 for e in valid_entries if e.get("action") == "emergency")
+    blocked_count = sum(1 for e in valid_entries if e.get("action") == "blocked")
+    none_count = sum(1 for e in valid_entries if e.get("action") == "none")
+    
+    # Would compact count
+    would_compact_count = sum(1 for e in valid_entries if e.get("would_compact", False))
+    
+    # Blocker metrics
+    blockers_hit = sum(len(e.get("blockers", [])) for e in valid_entries)
+    
+    # Ratio distribution
+    ratios = [e.get("ratio") for e in valid_entries if e.get("ratio") is not None]
+    ratio_distribution = {}
+    if ratios:
+        sorted_ratios = sorted(ratios)
+        ratio_distribution = {
+            "min": round(min(ratios), 4),
+            "max": round(max(ratios), 4),
+            "p50": round(sorted_ratios[len(sorted_ratios) // 2], 4),
+            "p95": round(sorted_ratios[int(len(sorted_ratios) * 0.95)] if len(sorted_ratios) > 1 else sorted_ratios[0], 4),
+            "mean": round(sum(ratios) / len(ratios), 4)
+        }
+    
+    # Zone distribution
+    zones = defaultdict(int)
+    for e in valid_entries:
+        zones[e.get("zone", "unknown")] += 1
+    
+    # Calculated rates
+    trigger_rate = trigger_count / valid_count if valid_count > 0 else 0
+    blocker_rate = blocked_count / trigger_count if trigger_count > 0 else 0
+    error_rate = errors / total if total > 0 else 0
+    
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "total_checks": total,
+        "valid_checks": valid_count,
+        "error_count": errors,
+        "error_rate": round(error_rate, 4),
+        "trigger_count": trigger_count,
+        "would_compact_count": would_compact_count,
+        "normal_trigger_count": normal_count,
+        "emergency_trigger_count": emergency_count,
+        "blocked_count": blocked_count,
+        "none_count": none_count,
+        "blockers_hit": blockers_hit,
+        "trigger_rate": round(trigger_rate, 4),
+        "blocker_rate": round(blocker_rate, 4),
+        "ratio_distribution": ratio_distribution,
+        "zone_distribution": dict(zones)
+    }
+
+
+def compare_with_baseline(metrics: Dict) -> Dict:
+    """Compare current metrics with baseline."""
+    if not BASELINE_FILE.exists():
+        return {
+            "baseline_exists": False,
+            "message": "No baseline file found. Run shadow_watcher --init-baseline first."
+        }
+    
+    try:
+        baseline = json.loads(BASELINE_FILE.read_text())
+    except Exception as e:
+        return {
+            "baseline_exists": True,
+            "error": str(e)
+        }
+    
+    comparison = {
+        "baseline_exists": True,
+        "trigger_rate": {
+            "baseline": baseline.get("expected_trigger_rate"),
+            "current": metrics.get("trigger_rate"),
+            "status": "ok" if abs(metrics.get("trigger_rate", 0) - baseline.get("expected_trigger_rate", 0)) < 0.1 else "warn"
+        },
+        "blocker_rate": {
+            "baseline": baseline.get("expected_blocker_rate"),
+            "current": metrics.get("blocker_rate"),
+            "status": "ok" if metrics.get("blocker_rate", 0) <= baseline.get("expected_blocker_rate", 1) else "warn"
+        },
+        "ratio_p95": {
+            "baseline_range": baseline.get("target_ratio_range", {}),
+            "current": metrics.get("ratio_distribution", {}).get("p95"),
+            "status": "ok"
+        }
+    }
+    
+    # Check ratio p95 against baseline range
+    if comparison["ratio_p95"]["current"] is not None:
+        target_range = baseline.get("target_ratio_range", {})
+        min_target = target_range.get("min", 0)
+        max_target = target_range.get("max", 1)
+        p95 = comparison["ratio_p95"]["current"]
+        
+        if p95 > max_target:
+            comparison["ratio_p95"]["status"] = "warn"
+            comparison["ratio_p95"]["message"] = f"P95 ratio {p95} exceeds target max {max_target}"
+    
+    return comparison
+
+
+def get_status() -> Dict:
+    """Get shadow mode status."""
+    return {
+        "enabled": is_shadow_enabled(),
+        "config_file": str(SHADOW_CONFIG) if SHADOW_CONFIG.exists() else None,
+        "env_var": os.environ.get("AUTO_COMPACTION_SHADOW_MODE", "not set"),
+        "trace_file": str(TRACE_FILE) if TRACE_FILE.exists() else None,
+        "trace_entries": len(load_trace()) if TRACE_FILE.exists() else 0,
+        "baseline_exists": BASELINE_FILE.exists()
+    }
+
+
+def init_baseline() -> Dict:
+    """Initialize baseline metrics file."""
+    baseline = {
+        "created": datetime.now(timezone.utc).isoformat(),
+        "version": "1.0",
+        "expected_trigger_rate": 0.15,
+        "expected_blocker_rate": 0.10,
+        "target_ratio_range": {
+            "min": 0.45,
+            "max": 0.75,
+            "target": 0.60
+        },
+        "notes": [
+            "trigger_rate: Expected ~15% of checks would trigger compaction",
+            "blocker_rate: Expected <10% of triggers blocked by issues",
+            "ratio_range: Target compaction output 0.45-0.75, ideally 0.60"
+        ]
+    }
+    
+    try:
+        ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+        BASELINE_FILE.write_text(json.dumps(baseline, indent=2))
+        return {
+            "status": "created",
+            "path": str(BASELINE_FILE),
+            "baseline": baseline
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="shadow_watcher v1.0 - Shadow Mode Observer"
+    )
+    
+    parser.add_argument(
+        "--run-once", "-r",
+        action="store_true",
+        help="Run a single shadow check"
+    )
+    
+    parser.add_argument(
+        "--status", "-s",
+        action="store_true",
+        help="Show shadow mode status"
+    )
+    
+    parser.add_argument(
+        "--metrics", "-m",
+        action="store_true",
+        help="Show current metrics"
+    )
+    
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        help="Compare current metrics with baseline"
+    )
+    
+    parser.add_argument(
+        "--init-baseline",
+        action="store_true",
+        help="Initialize baseline metrics file"
+    )
+    
+    parser.add_argument(
+        "--json", "-j",
+        action="store_true",
+        help="Output as JSON"
+    )
+    
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Verbose output"
+    )
+    
+    parser.add_argument(
+        "--quiet", "-q",
+        action="store_true",
+        help="Quiet mode (no output unless error)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Status mode
+    if args.status:
+        status = get_status()
+        if args.json:
+            print(json.dumps(status, indent=2))
+        else:
+            print("Shadow Mode Status")
+            print("=" * 40)
+            print(f"Enabled: {status['enabled']}")
+            print(f"Environment: {status['env_var']}")
+            print(f"Config File: {status['config_file'] or 'not found'}")
+            print(f"Trace File: {status['trace_file'] or 'not found'}")
+            print(f"Trace Entries: {status['trace_entries']}")
+            print(f"Baseline: {'exists' if status['baseline_exists'] else 'not found'}")
+        return 0
+    
+    # Metrics mode
+    if args.metrics:
+        metrics = calculate_metrics()
+        if args.json:
+            print(json.dumps(metrics, indent=2))
+        else:
+            print("Shadow Mode Metrics")
+            print("=" * 40)
+            print(f"Total Checks: {metrics.get('total_checks', 0)}")
+            print(f"Trigger Count: {metrics.get('trigger_count', 0)}")
+            print(f"Would Compact: {metrics.get('would_compact_count', 0)}")
+            print(f"Blockers Hit: {metrics.get('blockers_hit', 0)}")
+            print(f"Trigger Rate: {metrics.get('trigger_rate', 0):.2%}")
+            print(f"Blocker Rate: {metrics.get('blocker_rate', 0):.2%}")
+            if metrics.get('ratio_distribution'):
+                rd = metrics['ratio_distribution']
+                print(f"Ratio P50: {rd.get('p50', 'N/A')}")
+                print(f"Ratio P95: {rd.get('p95', 'N/A')}")
+        return 0
+    
+    # Compare mode
+    if args.compare:
+        metrics = calculate_metrics()
+        comparison = compare_with_baseline(metrics)
+        if args.json:
+            print(json.dumps(comparison, indent=2))
+        else:
+            print("Baseline Comparison")
+            print("=" * 40)
+            print(json.dumps(comparison, indent=2))
+        return 0
+    
+    # Init baseline mode
+    if args.init_baseline:
+        result = init_baseline()
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            if result["status"] == "created":
+                print(f"Baseline created: {result['path']}")
+            else:
+                print(f"Error: {result['error']}")
+        return 0 if result["status"] == "created" else 1
+    
+    # Run once mode (default)
+    if args.run_once or (not args.status and not args.metrics and not args.compare and not args.init_baseline):
+        result = run_shadow_check(verbose=args.verbose and not args.quiet)
+        
+        if args.json:
+            print(json.dumps(result, indent=2))
+        elif not args.quiet:
+            if result.get("status") == "error":
+                print(f"Error: {result.get('error', {}).get('type', 'unknown')}")
+            else:
+                print(f"Shadow check complete: {result.get('action', 'unknown')}")
+        
+        return 0 if result.get("status") != "error" else 1
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

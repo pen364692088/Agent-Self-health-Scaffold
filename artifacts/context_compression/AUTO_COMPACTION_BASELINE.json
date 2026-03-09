@@ -1,0 +1,16 @@
+{
+  "created": "2026-03-09T19:44:17.143007+00:00",
+  "version": "1.0",
+  "expected_trigger_rate": 0.15,
+  "expected_blocker_rate": 0.1,
+  "target_ratio_range": {
+    "min": 0.45,
+    "max": 0.75,
+    "target": 0.6
+  },
+  "notes": [
+    "trigger_rate: Expected ~15% of checks would trigger compaction",
+    "blocker_rate: Expected <10% of triggers blocked by issues",
+    "ratio_range: Target compaction output 0.45-0.75, ideally 0.60"
+  ]
+}

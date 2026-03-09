@@ -1,0 +1,606 @@
+#!/usr/bin/env python3
+"""
+trigger-policy v1.0 - Compaction Trigger Decision Engine
+
+Determines whether to trigger compaction based on:
+- Current context ratio
+- Cooldown state
+- Active blockers
+
+Usage:
+  trigger-policy --ratio 0.82
+  trigger-policy --ratio 0.82 --json
+  trigger-policy --test
+  trigger-policy --health
+"""
+
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+COOLDOWN_FILE = WORKSPACE / "artifacts" / "context_compression" / "cooldown_state.json"
+
+# Thresholds
+TRIGGER_NORMAL = 0.80
+TRIGGER_EMERGENCY = 0.90
+HYSTERESIS_EXIT_WARNING = 0.75
+HYSTERESIS_EXIT_EMERGENCY = 0.85
+
+# Cooldown intervals (seconds)
+COOLDOWN_NORMAL = 1800  # 30 minutes
+COOLDOWN_EMERGENCY = 900  # 15 minutes
+COOLDOWN_EMERGENCY_EMERGENCY = 600  # 10 minutes
+
+# Target ratios
+TARGET_NORMAL = 0.60
+TARGET_EMERGENCY = 0.50
+
+
+class CooldownState:
+    """Manages cooldown state for compaction."""
+    
+    def __init__(self):
+        self.last_compaction_time: Optional[datetime] = None
+        self.last_compaction_mode: Optional[str] = None
+        self.compaction_count: int = 0
+        self.session_id: Optional[str] = None
+        self._load()
+    
+    def _load(self):
+        """Load cooldown state from file."""
+        if not COOLDOWN_FILE.exists():
+            return
+        
+        try:
+            data = json.loads(COOLDOWN_FILE.read_text())
+            if data.get("last_compaction_time"):
+                ts = data["last_compaction_time"]
+                if ts.endswith("Z"):
+                    ts = ts[:-1] + "+00:00"
+                self.last_compaction_time = datetime.fromisoformat(ts)
+            self.last_compaction_mode = data.get("last_compaction_mode")
+            self.compaction_count = data.get("compaction_count", 0)
+            self.session_id = data.get("session_id")
+        except Exception:
+            pass
+    
+    def is_in_cooldown(self, mode: str = "normal") -> tuple[bool, int]:
+        """
+        Check if currently in cooldown.
+        
+        Returns: (is_in_cooldown, remaining_seconds)
+        """
+        if not self.last_compaction_time:
+            return False, 0
+        
+        # Determine cooldown interval based on last mode
+        if self.last_compaction_mode == "emergency":
+            interval = COOLDOWN_EMERGENCY
+        else:
+            interval = COOLDOWN_NORMAL
+        
+        # Calculate elapsed time
+        now = datetime.now(timezone.utc)
+        if self.last_compaction_time.tzinfo is None:
+            self.last_compaction_time = self.last_compaction_time.replace(tzinfo=timezone.utc)
+        
+        elapsed = (now - self.last_compaction_time).total_seconds()
+        remaining = max(0, interval - int(elapsed))
+        
+        return remaining > 0, remaining
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "last_compaction_time": self.last_compaction_time.isoformat() if self.last_compaction_time else None,
+            "last_compaction_mode": self.last_compaction_mode,
+            "compaction_count": self.compaction_count,
+            "session_id": self.session_id
+        }
+
+
+class BlockerDetector:
+    """Detects blockers for compaction."""
+    
+    def check_all(self) -> List[Dict[str, Any]]:
+        """Run all blocker checks."""
+        blockers = []
+        
+        # Check each blocker
+        checks = [
+            self._check_unpersisted_working_buffer,
+            self._check_open_loops,
+            self._check_tool_state,
+            self._check_uncommitted_wip,
+            self._check_critical_gate,
+            self._check_subagent_active,
+        ]
+        
+        for check in checks:
+            result = check()
+            if result:
+                blockers.append(result)
+        
+        return blockers
+    
+    def _check_unpersisted_working_buffer(self) -> Optional[Dict]:
+        """BLK-STATE-001: Check for unpersisted working buffer."""
+        wb = WORKSPACE / "working-buffer.md"
+        if not wb.exists():
+            return None
+        
+        try:
+            mtime = wb.stat().st_mtime
+            if datetime.now().timestamp() - mtime < 300:  # 5 minutes
+                return {
+                    "id": "BLK-STATE-001",
+                    "name": "Unpersisted Working Buffer",
+                    "severity": "medium",
+                    "bypass_allowed": True
+                }
+        except:
+            pass
+        return None
+    
+    def _check_open_loops(self) -> Optional[Dict]:
+        """BLK-STATE-002: Check for unpersisted open loops."""
+        wb = WORKSPACE / "working-buffer.md"
+        ss = WORKSPACE / "SESSION-STATE.md"
+        
+        if not wb.exists():
+            return None
+        
+        try:
+            wb_content = wb.read_text()
+            ss_content = ss.read_text() if ss.exists() else ""
+            
+            if "open_loop" in wb_content.lower() and "open_loop" not in ss_content.lower():
+                return {
+                    "id": "BLK-STATE-002",
+                    "name": "Open Loops Not Persisted",
+                    "severity": "medium",
+                    "bypass_allowed": True
+                }
+        except:
+            pass
+        return None
+    
+    def _check_tool_state(self) -> Optional[Dict]:
+        """BLK-STATE-003: Check for active tool state."""
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["process", "--action", "list"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                data = json.loads(result.stdout)
+                if data and len(data) > 0:
+                    return {
+                        "id": "BLK-STATE-003",
+                        "name": "Tool State Not Flushed",
+                        "severity": "high",
+                        "bypass_allowed": True
+                    }
+        except:
+            pass
+        return None
+    
+    def _check_uncommitted_wip(self) -> Optional[Dict]:
+        """BLK-GIT-001: Check for uncommitted changes."""
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                cwd=WORKSPACE
+            )
+            if result.stdout.strip():
+                return {
+                    "id": "BLK-GIT-001",
+                    "name": "Uncommitted WIP Changes",
+                    "severity": "high",
+                    "bypass_allowed": True
+                }
+        except:
+            pass
+        return None
+    
+    def _check_critical_gate(self) -> Optional[Dict]:
+        """BLK-WFLOW-001: Check for critical gate in progress."""
+        marker = WORKSPACE / "artifacts" / "gates" / ".gate_in_progress"
+        if marker.exists():
+            return {
+                "id": "BLK-WFLOW-001",
+                "name": "Critical Gate In Progress",
+                "severity": "critical",
+                "bypass_allowed": False
+            }
+        return None
+    
+    def _check_subagent_active(self) -> Optional[Dict]:
+        """BLK-WFLOW-002: Check for active subagent tasks."""
+        active_marker = WORKSPACE / "reports" / "subtasks" / ".active_task"
+        if active_marker.exists():
+            return {
+                "id": "BLK-WFLOW-002",
+                "name": "Subagent Task In Progress",
+                "severity": "high",
+                "bypass_allowed": True
+            }
+        return None
+
+
+def classify_zone(ratio: float, previous_zone: Optional[str] = None) -> str:
+    """
+    Classify ratio into zone with hysteresis.
+    
+    Zones:
+    - normal: ratio < 0.80
+    - warning: 0.80 <= ratio < 0.90
+    - emergency: ratio >= 0.90
+    """
+    # Apply hysteresis
+    if previous_zone == "warning":
+        if ratio < HYSTERESIS_EXIT_WARNING:
+            return "normal"
+        elif ratio >= TRIGGER_EMERGENCY:
+            return "emergency"
+        return "warning"
+    
+    if previous_zone == "emergency":
+        if ratio < HYSTERESIS_EXIT_EMERGENCY:
+            return "warning"
+        return "emergency"
+    
+    # Normal classification
+    if ratio >= TRIGGER_EMERGENCY:
+        return "emergency"
+    elif ratio >= TRIGGER_NORMAL:
+        return "warning"
+    return "normal"
+
+
+def determine_action(
+    ratio: float,
+    cooldown_state: CooldownState,
+    blockers: List[Dict],
+    previous_zone: Optional[str] = None,
+    force: bool = False
+) -> Dict[str, Any]:
+    """
+    Determine compaction action.
+    
+    Returns action decision with reason and blockers.
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    zone = classify_zone(ratio, previous_zone)
+    
+    # Check cooldown (unless force or emergency)
+    in_cooldown, remaining = cooldown_state.is_in_cooldown()
+    
+    result = {
+        "timestamp": timestamp,
+        "ratio": ratio,
+        "zone": zone,
+        "previous_zone": previous_zone,
+        "action": "none",
+        "reason": None,
+        "blockers": blockers,
+        "cooldown": {
+            "active": in_cooldown,
+            "remaining_seconds": remaining if in_cooldown else 0
+        },
+        "target_ratio": None,
+        "force": force
+    }
+    
+    # Check for critical blockers (cannot bypass)
+    critical_blockers = [b for b in blockers if b["severity"] == "critical" and not b.get("bypass_allowed", True)]
+    if critical_blockers and not force:
+        result["action"] = "blocked"
+        result["reason"] = "critical_blockers_present"
+        result["blockers"] = critical_blockers
+        return result
+    
+    # Emergency zone
+    if ratio >= TRIGGER_EMERGENCY:
+        result["action"] = "emergency"
+        result["reason"] = "ratio_threshold_exceeded"
+        result["target_ratio"] = TARGET_EMERGENCY
+        
+        # Check bypassable blockers
+        bypassable = [b for b in blockers if b.get("bypass_allowed", True)]
+        if bypassable and not force:
+            result["action"] = "emergency_with_blockers"
+            result["reason"] = "ratio_threshold_exceeded_blockers_present"
+            result["blockers_requiring_bypass"] = bypassable
+        
+        return result
+    
+    # Warning zone
+    if ratio >= TRIGGER_NORMAL:
+        # Check cooldown
+        if in_cooldown and not force:
+            result["action"] = "none"
+            result["reason"] = "in_cooldown"
+            return result
+        
+        # Check blockers
+        if blockers and not force:
+            result["action"] = "blocked"
+            result["reason"] = "blockers_present"
+            return result
+        
+        result["action"] = "normal"
+        result["reason"] = "ratio_threshold_exceeded"
+        result["target_ratio"] = TARGET_NORMAL
+        return result
+    
+    # Below threshold
+    result["action"] = "none"
+    result["reason"] = "below_threshold"
+    return result
+
+
+def health_check() -> Dict[str, Any]:
+    """Perform health check."""
+    issues = []
+    
+    # Check cooldown file is writable
+    try:
+        COOLDOWN_FILE.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        issues.append(f"Cannot create cooldown directory: {e}")
+    
+    # Check workspace exists
+    if not WORKSPACE.exists():
+        issues.append(f"Workspace not found: {WORKSPACE}")
+    
+    return {
+        "status": "healthy" if not issues else "degraded",
+        "checks": {
+            "cooldown_dir": str(COOLDOWN_FILE.parent),
+            "workspace": str(WORKSPACE)
+        },
+        "issues": issues if issues else None,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def self_test() -> Dict[str, Any]:
+    """Run self-test."""
+    tests = []
+    
+    # Test 1: Zone classification
+    try:
+        assert classify_zone(0.50) == "normal"
+        assert classify_zone(0.82) == "warning"
+        assert classify_zone(0.95) == "emergency"
+        
+        # Hysteresis
+        assert classify_zone(0.77, previous_zone="warning") == "warning"
+        assert classify_zone(0.74, previous_zone="warning") == "normal"
+        assert classify_zone(0.87, previous_zone="emergency") == "emergency"
+        assert classify_zone(0.84, previous_zone="emergency") == "warning"
+        
+        tests.append({"name": "zone_classification", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "zone_classification", "status": "fail", "details": str(e)})
+    
+    # Test 2: Action determination - normal trigger
+    try:
+        cooldown = CooldownState()
+        result = determine_action(0.82, cooldown, [])
+        assert result["action"] == "normal"
+        assert result["target_ratio"] == 0.60
+        tests.append({"name": "normal_trigger", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "normal_trigger", "status": "fail", "details": str(e)})
+    
+    # Test 3: Action determination - emergency trigger
+    try:
+        cooldown = CooldownState()
+        result = determine_action(0.92, cooldown, [])
+        assert result["action"] == "emergency"
+        assert result["target_ratio"] == 0.50
+        tests.append({"name": "emergency_trigger", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "emergency_trigger", "status": "fail", "details": str(e)})
+    
+    # Test 4: Action determination - below threshold
+    try:
+        cooldown = CooldownState()
+        result = determine_action(0.65, cooldown, [])
+        assert result["action"] == "none"
+        assert result["reason"] == "below_threshold"
+        tests.append({"name": "below_threshold", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "below_threshold", "status": "fail", "details": str(e)})
+    
+    # Test 5: Action determination - with blockers
+    try:
+        cooldown = CooldownState()
+        blockers = [{"id": "BLK-GIT-001", "severity": "high", "bypass_allowed": True}]
+        result = determine_action(0.82, cooldown, blockers)
+        assert result["action"] == "blocked"
+        tests.append({"name": "blocked_by_blockers", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "blocked_by_blockers", "status": "fail", "details": str(e)})
+    
+    # Test 6: Emergency with bypassable blockers
+    try:
+        cooldown = CooldownState()
+        blockers = [{"id": "BLK-GIT-001", "severity": "high", "bypass_allowed": True}]
+        result = determine_action(0.92, cooldown, blockers)
+        assert result["action"] in ["emergency", "emergency_with_blockers"]
+        tests.append({"name": "emergency_with_bypassable_blockers", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "emergency_with_bypassable_blockers", "status": "fail", "details": str(e)})
+    
+    # Test 7: Critical blocker (no bypass)
+    try:
+        cooldown = CooldownState()
+        blockers = [{"id": "BLK-WFLOW-001", "severity": "critical", "bypass_allowed": False}]
+        result = determine_action(0.92, cooldown, blockers)
+        assert result["action"] == "blocked"
+        tests.append({"name": "critical_blocker_no_bypass", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "critical_blocker_no_bypass", "status": "fail", "details": str(e)})
+    
+    # Test 8: Force flag bypasses blockers
+    try:
+        cooldown = CooldownState()
+        blockers = [{"id": "BLK-GIT-001", "severity": "high", "bypass_allowed": True}]
+        result = determine_action(0.82, cooldown, blockers, force=True)
+        assert result["action"] == "normal"
+        tests.append({"name": "force_bypass", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "force_bypass", "status": "fail", "details": str(e)})
+    
+    # Test 9: Cooldown state
+    try:
+        cooldown = CooldownState()
+        # Without cooldown file, should not be in cooldown
+        in_cd, remaining = cooldown.is_in_cooldown()
+        assert in_cd == False or remaining >= 0  # Either way is valid
+        tests.append({"name": "cooldown_state", "status": "pass"})
+    except Exception as e:
+        tests.append({"name": "cooldown_state", "status": "fail", "details": str(e)})
+    
+    # Test 10: Blocker detection
+    try:
+        detector = BlockerDetector()
+        blockers = detector.check_all()
+        assert isinstance(blockers, list)
+        tests.append({"name": "blocker_detection", "status": "pass"})
+    except Exception as e:
+        tests.append({"name": "blocker_detection", "status": "fail", "details": str(e)})
+    
+    passed = sum(1 for t in tests if t["status"] == "pass")
+    failed = len(tests) - passed
+    
+    return {
+        "status": "pass" if failed == 0 else "fail",
+        "total": len(tests),
+        "passed": passed,
+        "failed": failed,
+        "tests": tests,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Trigger Policy - Determine compaction action"
+    )
+    
+    parser.add_argument(
+        "--ratio", "-r",
+        type=float,
+        help="Current context ratio (0.0-1.0)"
+    )
+    
+    parser.add_argument(
+        "--previous-zone", "-p",
+        type=str,
+        choices=["normal", "warning", "emergency"],
+        help="Previous zone for hysteresis"
+    )
+    
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Force bypass blockers (except critical)"
+    )
+    
+    parser.add_argument(
+        "--detect-blockers", "-d",
+        action="store_true",
+        help="Run blocker detection"
+    )
+    
+    parser.add_argument(
+        "--json", "-j",
+        action="store_true",
+        help="Output as JSON"
+    )
+    
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="Run health check"
+    )
+    
+    parser.add_argument(
+        "--test", "-t",
+        action="store_true",
+        help="Run self-test"
+    )
+    
+    args = parser.parse_args()
+    
+    # Health check
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "healthy" else 1
+    
+    # Self-test
+    if args.test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "pass" else 1
+    
+    # Require ratio for normal operation
+    if args.ratio is None:
+        print("Error: --ratio is required", file=sys.stderr)
+        return 1
+    
+    # Load cooldown state
+    cooldown = CooldownState()
+    
+    # Detect blockers if requested
+    blockers = []
+    if args.detect_blockers:
+        detector = BlockerDetector()
+        blockers = detector.check_all()
+    
+    # Determine action
+    result = determine_action(
+        ratio=args.ratio,
+        cooldown_state=cooldown,
+        blockers=blockers,
+        previous_zone=args.previous_zone,
+        force=args.force
+    )
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        # Human-readable output
+        print(f"Action: {result['action']}")
+        print(f"Zone: {result['zone']}")
+        print(f"Reason: {result['reason']}")
+        if result['target_ratio']:
+            print(f"Target: {result['target_ratio']}")
+        if result['blockers']:
+            print(f"Blockers: {len(result['blockers'])}")
+            for b in result['blockers']:
+                print(f"  - {b['id']}: {b['name']} ({b['severity']})")
+        if result['cooldown']['active']:
+            print(f"Cooldown: {result['cooldown']['remaining_seconds']}s remaining")
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

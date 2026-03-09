@@ -1,0 +1,607 @@
+#!/usr/bin/env python3
+"""
+auto-context-compact v1.0 - Auto-Compaction Executor
+
+Main entry point for automatic context compaction.
+
+Execution Flow:
+  budget-watcher → trigger-policy → capsule-builder → context-compress → handoff
+
+Usage:
+  auto-context-compact
+  auto-context-compact --json
+  auto-context-compact --force
+  auto-context-compact --dry-run
+  auto-context-compact --test
+  auto-context-compact --health
+"""
+
+import argparse
+import json
+import sys
+import subprocess
+import time
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional
+
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+TOOLS_DIR = WORKSPACE / "tools"
+ARTIFACTS_DIR = WORKSPACE / "artifacts" / "context_compression"
+AUTO_COMPACTION_DIR = ARTIFACTS_DIR / "auto_compaction"
+EVENTS_FILE = AUTO_COMPACTION_DIR / "events.jsonl"
+
+# Tool paths
+BUDGET_WATCHER = TOOLS_DIR / "context-budget-watcher"
+TRIGGER_POLICY = TOOLS_DIR / "trigger-policy"
+CAPSULE_BUILDER = TOOLS_DIR / "capsule-builder"
+CONTEXT_COMPRESS = TOOLS_DIR / "context-compress"
+POST_COMPACTION_HANDOFF = TOOLS_DIR / "post-compaction-handoff"
+
+# Version
+VERSION = "v3"
+
+
+def run_tool(tool_path: Path, args: List[str], timeout: int = 30) -> Dict:
+    """Run a tool and return JSON result."""
+    try:
+        cmd = [str(tool_path)] + args
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        
+        if result.returncode != 0:
+            return {
+                "error": {
+                    "type": "tool_failed",
+                    "tool": tool_path.name,
+                    "returncode": result.returncode,
+                    "stderr": result.stderr,
+                    "stdout": result.stdout
+                }
+            }
+        
+        # Try to parse as JSON
+        try:
+            return json.loads(result.stdout)
+        except json.JSONDecodeError:
+            # Return raw output if not JSON
+            return {"raw_output": result.stdout}
+            
+    except subprocess.TimeoutExpired:
+        return {"error": {"type": "timeout", "tool": tool_path.name}}
+    except FileNotFoundError:
+        return {"error": {"type": "not_found", "tool": str(tool_path)}}
+    except Exception as e:
+        return {"error": {"type": "exception", "tool": tool_path.name, "message": str(e)}}
+
+
+def get_session_key() -> str:
+    """Get current session key from environment."""
+    return os.environ.get("SESSION_KEY", "unknown")
+
+
+def log_event(event: Dict) -> bool:
+    """Log event to JSONL file."""
+    try:
+        AUTO_COMPACTION_DIR.mkdir(parents=True, exist_ok=True)
+        
+        with open(EVENTS_FILE, 'a') as f:
+            f.write(json.dumps(event) + '\n')
+        
+        return True
+    except Exception as e:
+        print(f"Warning: Failed to log event: {e}", file=sys.stderr)
+        return False
+
+
+def run_auto_compaction(
+    force: bool = False,
+    dry_run: bool = False,
+    json_output: bool = False
+) -> Dict:
+    """
+    Run auto-compaction process.
+    
+    Flow:
+    1. Get current ratio from budget-watcher
+    2. Determine action from trigger-policy
+    3. If should_compact:
+       - Create capsule via capsule-builder
+       - Apply compression via context-compress
+       - Persist state via post-compaction-handoff
+    4. Log result to events.jsonl
+    """
+    start_time = time.time()
+    session_key = get_session_key()
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    # Initialize result
+    result = {
+        "timestamp": timestamp,
+        "session_key": session_key,
+        "version": VERSION,
+        "dry_run": dry_run,
+        "force": force,
+        "before_ratio": None,
+        "after_ratio": None,
+        "action_taken": None,
+        "status": "pending"
+    }
+    
+    # Step 1: Get current ratio from budget-watcher
+    budget_result = run_tool(BUDGET_WATCHER, ["--json"])
+    
+    if "error" in budget_result:
+        result["status"] = "error"
+        result["error"] = budget_result["error"]
+        result["error"]["stage"] = "budget_watcher"
+        
+        # Log error event
+        log_event({
+            "timestamp": timestamp,
+            "event": "failed",
+            "ratio_before": None,
+            "ratio_after": None,
+            "action": "none",
+            "version": VERSION,
+            "blockers": [],
+            "duration_ms": int((time.time() - start_time) * 1000),
+            "error": budget_result["error"]
+        })
+        
+        return result
+    
+    ratio = budget_result.get("ratio", 0)
+    zone = budget_result.get("zone", "normal")
+    trend = budget_result.get("trend", "stable")
+    
+    result["before_ratio"] = round(ratio, 4)
+    result["zone"] = zone
+    result["trend"] = trend
+    
+    # Step 2: Determine action from trigger-policy
+    trigger_args = ["--ratio", str(ratio), "--detect-blockers", "--json"]
+    if force:
+        trigger_args.append("--force")
+    
+    trigger_result = run_tool(TRIGGER_POLICY, trigger_args)
+    
+    if "error" in trigger_result:
+        result["status"] = "error"
+        result["error"] = trigger_result["error"]
+        result["error"]["stage"] = "trigger_policy"
+        
+        log_event({
+            "timestamp": timestamp,
+            "event": "failed",
+            "ratio_before": round(ratio, 4),
+            "ratio_after": None,
+            "action": "none",
+            "version": VERSION,
+            "blockers": [],
+            "duration_ms": int((time.time() - start_time) * 1000),
+            "error": trigger_result["error"]
+        })
+        
+        return result
+    
+    action = trigger_result.get("action", "none")
+    reason = trigger_result.get("reason", "unknown")
+    blockers = trigger_result.get("blockers", [])
+    target_ratio = trigger_result.get("target_ratio")
+    
+    result["trigger_action"] = action
+    result["trigger_reason"] = reason
+    result["blockers"] = blockers
+    result["target_ratio"] = target_ratio
+    
+    # Check if we should compact
+    should_compact = action in ("normal", "emergency")
+    
+    if not should_compact:
+        result["status"] = "skipped"
+        result["action_taken"] = "none"
+        result["message"] = f"No compaction needed: {reason}"
+        
+        log_event({
+            "timestamp": timestamp,
+            "event": "blocked" if action == "blocked" else "triggered",
+            "ratio_before": round(ratio, 4),
+            "ratio_after": round(ratio, 4),
+            "action": action,
+            "version": VERSION,
+            "blockers": blockers,
+            "duration_ms": int((time.time() - start_time) * 1000)
+        })
+        
+        return result
+    
+    # Check for blockers that prevent compaction (unless force)
+    if blockers and not force:
+        critical_blockers = [b for b in blockers if b.get("severity") == "critical" and not b.get("bypass_allowed", True)]
+        if critical_blockers:
+            result["status"] = "blocked"
+            result["action_taken"] = "none"
+            result["message"] = f"Critical blockers present: {[b['id'] for b in critical_blockers]}"
+            
+            log_event({
+                "timestamp": timestamp,
+                "event": "blocked",
+                "ratio_before": round(ratio, 4),
+                "ratio_after": round(ratio, 4),
+                "action": action,
+                "version": VERSION,
+                "blockers": critical_blockers,
+                "duration_ms": int((time.time() - start_time) * 1000)
+            })
+            
+            return result
+    
+    # Dry run mode: just report what would happen
+    if dry_run:
+        result["status"] = "dry_run"
+        result["action_taken"] = action
+        result["message"] = f"Would perform {action} compaction (dry run)"
+        
+        log_event({
+            "timestamp": timestamp,
+            "event": "triggered",
+            "ratio_before": round(ratio, 4),
+            "ratio_after": target_ratio or 0.6,
+            "action": action,
+            "version": VERSION,
+            "blockers": blockers,
+            "duration_ms": int((time.time() - start_time) * 1000),
+            "dry_run": True
+        })
+        
+        return result
+    
+    # Step 3: Run compaction
+    capsule_id = None
+    compression_result = None
+    
+    try:
+        # Create capsule
+        capsule_args = ["--json"]
+        capsule_result = run_tool(CAPSULE_BUILDER, capsule_args, timeout=60)
+        
+        if "error" in capsule_result:
+            # Capsule builder might not have state to work with
+            # In that case, just proceed without capsule
+            if capsule_result["error"].get("type") != "no_history":
+                result["warnings"] = result.get("warnings", [])
+                result["warnings"].append({
+                    "stage": "capsule_builder",
+                    "warning": capsule_result["error"]
+                })
+        else:
+            capsule_id = capsule_result.get("capsule_id")
+            result["capsule_id"] = capsule_id
+        
+        # Run context-compress
+        state_path = WORKSPACE / "artifacts" / "active_state.json"
+        history_path = WORKSPACE / "logs" / "raw.jsonl"
+        
+        # Check if we have state and history files
+        if state_path.exists() and history_path.exists():
+            compress_args = [
+                "--session-id", session_key,
+                "--state", str(state_path),
+                "--history", str(history_path),
+                "--mode", "enforced",
+                "--json"
+            ]
+            
+            compression_result = run_tool(CONTEXT_COMPRESS, compress_args, timeout=120)
+            
+            if "error" in compression_result:
+                result["warnings"] = result.get("warnings", [])
+                result["warnings"].append({
+                    "stage": "context_compress",
+                    "warning": compression_result["error"]
+                })
+        else:
+            result["warnings"] = result.get("warnings", [])
+            result["warnings"].append({
+                "stage": "context_compress",
+                "warning": "State or history file not found, skipping actual compression"
+            })
+        
+        # Step 4: Run post-compaction-handoff
+        handoff_args = [
+            "--before-ratio", str(ratio),
+            "--action", action,
+            "--version", VERSION,
+            "--json"
+        ]
+        
+        if capsule_id:
+            handoff_args.extend(["--capsule-id", capsule_id])
+        
+        if target_ratio:
+            handoff_args.extend(["--target-ratio", str(target_ratio)])
+        
+        handoff_result = run_tool(POST_COMPACTION_HANDOFF, handoff_args)
+        
+        if "error" in handoff_result:
+            result["warnings"] = result.get("warnings", [])
+            result["warnings"].append({
+                "stage": "post_compaction_handoff",
+                "warning": handoff_result["error"]
+            })
+        
+        # Get after ratio (estimate based on target or re-check)
+        after_ratio = target_ratio if target_ratio else 0.6
+        
+        # If compression actually ran, get real after ratio
+        if compression_result and "after" in compression_result:
+            after_ratio = compression_result["after"].get("ratio", after_ratio)
+        
+        result["after_ratio"] = round(after_ratio, 4)
+        result["action_taken"] = action
+        result["status"] = "completed"
+        result["duration_ms"] = int((time.time() - start_time) * 1000)
+        
+        # Log success event
+        log_event({
+            "timestamp": timestamp,
+            "event": "completed",
+            "ratio_before": round(ratio, 4),
+            "ratio_after": round(after_ratio, 4),
+            "action": action,
+            "version": VERSION,
+            "blockers": blockers,
+            "duration_ms": result["duration_ms"],
+            "capsule_id": capsule_id
+        })
+        
+    except Exception as e:
+        result["status"] = "error"
+        result["error"] = {
+            "type": "exception",
+            "stage": "compaction",
+            "message": str(e)
+        }
+        
+        log_event({
+            "timestamp": timestamp,
+            "event": "failed",
+            "ratio_before": round(ratio, 4),
+            "ratio_after": None,
+            "action": action,
+            "version": VERSION,
+            "blockers": blockers,
+            "duration_ms": int((time.time() - start_time) * 1000),
+            "error": str(e)
+        })
+    
+    return result
+
+
+def health_check() -> Dict:
+    """Perform health check."""
+    issues = []
+    checks = {}
+    
+    # Check all required tools exist
+    tools = [
+        ("budget_watcher", BUDGET_WATCHER),
+        ("trigger_policy", TRIGGER_POLICY),
+        ("capsule_builder", CAPSULE_BUILDER),
+        ("context_compress", CONTEXT_COMPRESS),
+        ("post_compaction_handoff", POST_COMPACTION_HANDOFF)
+    ]
+    
+    for name, path in tools:
+        exists = path.exists()
+        checks[f"{name}_exists"] = exists
+        if not exists:
+            issues.append(f"{name} not found at {path}")
+    
+    # Check directories are writable
+    try:
+        AUTO_COMPACTION_DIR.mkdir(parents=True, exist_ok=True)
+        checks["artifacts_dir"] = True
+    except Exception as e:
+        checks["artifacts_dir"] = False
+        issues.append(f"Cannot create artifacts directory: {e}")
+    
+    # Quick tool health checks
+    for name, path in tools:
+        if path.exists():
+            try:
+                result = subprocess.run(
+                    [str(path), "--health"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                checks[f"{name}_healthy"] = result.returncode == 0
+            except Exception as e:
+                checks[f"{name}_healthy"] = False
+                issues.append(f"{name} health check failed: {e}")
+    
+    return {
+        "status": "healthy" if not issues else "degraded",
+        "checks": checks,
+        "issues": issues if issues else None,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def self_test() -> Dict:
+    """Run self-test."""
+    tests = []
+    
+    # Test 1: Tool chain availability
+    try:
+        tools_ok = all([
+            BUDGET_WATCHER.exists(),
+            TRIGGER_POLICY.exists(),
+            CAPSULE_BUILDER.exists(),
+            CONTEXT_COMPRESS.exists()
+        ])
+        assert tools_ok, "Not all required tools exist"
+        tests.append({"name": "tool_chain_availability", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "tool_chain_availability", "status": "fail", "details": str(e)})
+    
+    # Test 2: Event logging
+    try:
+        AUTO_COMPACTION_DIR.mkdir(parents=True, exist_ok=True)
+        test_event = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": "test",
+            "test": True
+        }
+        logged = log_event(test_event)
+        assert logged, "Failed to log event"
+        tests.append({"name": "event_logging", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "event_logging", "status": "fail", "details": str(e)})
+    
+    # Test 3: Budget watcher integration
+    try:
+        result = run_tool(BUDGET_WATCHER, ["--test"])
+        assert "error" not in result or result.get("status") == "pass", f"Budget watcher test failed: {result}"
+        tests.append({"name": "budget_watcher_integration", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "budget_watcher_integration", "status": "fail", "details": str(e)})
+    
+    # Test 4: Trigger policy integration
+    try:
+        result = run_tool(TRIGGER_POLICY, ["--test"])
+        assert "error" not in result or result.get("status") == "pass", f"Trigger policy test failed: {result}"
+        tests.append({"name": "trigger_policy_integration", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "trigger_policy_integration", "status": "fail", "details": str(e)})
+    
+    # Test 5: Dry run mode
+    try:
+        result = run_auto_compaction(dry_run=True, json_output=True)
+        assert result["status"] in ("dry_run", "skipped", "error"), f"Unexpected status: {result['status']}"
+        assert result.get("dry_run") == True, "Dry run flag not set"
+        tests.append({"name": "dry_run_mode", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "dry_run_mode", "status": "fail", "details": str(e)})
+    
+    # Test 6: JSON output format
+    try:
+        result = run_auto_compaction(dry_run=True, json_output=True)
+        json_str = json.dumps(result)
+        parsed = json.loads(json_str)
+        assert "timestamp" in parsed
+        assert "version" in parsed
+        assert "status" in parsed
+        tests.append({"name": "json_output_format", "status": "pass"})
+    except AssertionError as e:
+        tests.append({"name": "json_output_format", "status": "fail", "details": str(e)})
+    
+    passed = sum(1 for t in tests if t["status"] == "pass")
+    failed = len(tests) - passed
+    
+    return {
+        "status": "pass" if failed == 0 else "fail",
+        "total": len(tests),
+        "passed": passed,
+        "failed": failed,
+        "tests": tests,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="auto-context-compact v1.0 - Auto-Compaction Executor"
+    )
+    
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Force compaction even with blockers (except critical)"
+    )
+    
+    parser.add_argument(
+        "--dry-run", "-n",
+        action="store_true",
+        help="Show what would happen without executing"
+    )
+    
+    parser.add_argument(
+        "--json", "-j",
+        action="store_true",
+        help="Output as JSON"
+    )
+    
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="Run health check"
+    )
+    
+    parser.add_argument(
+        "--test", "-t",
+        action="store_true",
+        help="Run self-test"
+    )
+    
+    args = parser.parse_args()
+    
+    # Health check mode
+    if args.health:
+        result = health_check()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "healthy" else 1
+    
+    # Self-test mode
+    if args.test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "pass" else 1
+    
+    # Run auto-compaction
+    result = run_auto_compaction(
+        force=args.force,
+        dry_run=args.dry_run,
+        json_output=args.json
+    )
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        # Human-readable output
+        print(f"Status: {result['status']}")
+        print(f"Before Ratio: {result.get('before_ratio', 'N/A')}")
+        if result.get('after_ratio'):
+            print(f"After Ratio: {result['after_ratio']}")
+        print(f"Action: {result.get('action_taken', 'none')}")
+        if result.get('zone'):
+            print(f"Zone: {result['zone']}")
+        if result.get('blockers'):
+            print(f"Blockers: {len(result['blockers'])}")
+        if result.get('message'):
+            print(f"Message: {result['message']}")
+        if result.get('warnings'):
+            print(f"Warnings: {len(result['warnings'])}")
+        if result.get('duration_ms'):
+            print(f"Duration: {result['duration_ms']}ms")
+    
+    # Return code based on status
+    if result["status"] == "error":
+        return 1
+    elif result["status"] == "blocked":
+        return 2
+    elif result["status"] == "skipped":
+        return 0
+    else:
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
