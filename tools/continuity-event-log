@@ -8,7 +8,31 @@
 
 set -e
 
-WORKSPACE="$HOME/.openclaw/workspace"
+# Detect workspace (env var > script location > default)
+detect_workspace() {
+    if [ -n "$OPENCLAW_WORKSPACE" ]; then
+        echo "$OPENCLAW_WORKSPACE"
+        return
+    fi
+    
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local possible_workspace="$(dirname "$script_dir")"
+    
+    if [ -d "$possible_workspace/tools" ]; then
+        echo "$possible_workspace"
+        return
+    fi
+    
+    if [ -d "$(pwd)/tools" ]; then
+        echo "$(pwd)"
+        return
+    fi
+    
+    echo "$HOME/.openclaw/workspace"
+}
+
+WORKSPACE="$(detect_workspace)"
 EVENTS_FILE="$WORKSPACE/state/session_continuity_events.jsonl"
 LOCK_DIR="$WORKSPACE/state/locks"
 CONTEXT_STATE="$WORKSPACE/state/session_context_state.json"
