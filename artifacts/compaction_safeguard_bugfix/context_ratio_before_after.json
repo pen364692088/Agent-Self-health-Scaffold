@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-03-09T02:20:00Z",
+  "scope": "live targeted revalidation after adoption verification",
+  "before": {
+    "session": "agent:main:telegram:direct:8420019401",
+    "usedTokens": 18593,
+    "maxTokens": 200000,
+    "ratio": 0.092965
+  },
+  "after": {
+    "session": "agent:main:telegram:direct:8420019401",
+    "usedTokens": 18593,
+    "maxTokens": 200000,
+    "ratio": 0.092965
+  },
+  "delta": 0.0,
+  "interpretation": "no context rollback attributable to native compaction was observed"
+}
