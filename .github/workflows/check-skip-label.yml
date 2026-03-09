@@ -2,7 +2,7 @@ name: Check Skip Gates Label
 
 on:
   pull_request:
-    types: [labeled, unlabeled]
+    types: [labeled]
 
 env:
   PROTECTED_LABELS: "skip-gates,hotfix"
@@ -12,7 +12,7 @@ jobs:
   check-label-permission:
     name: Check Label Permission
     runs-on: ubuntu-latest
-    if: contains(env.PROTECTED_LABELS, github.event.label.name)
+    if: github.event.label.name == 'skip-gates' || github.event.label.name == 'hotfix'
     
     steps:
       - name: Check actor permission
