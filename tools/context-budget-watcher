@@ -272,11 +272,14 @@ def watch(state_path: Optional[Path] = None,
         ratio = get_ratio_from_budget_check(state_path, history_path, max_tokens)
     
     if ratio is None:
+        # Ratio unavailable is normal for new/empty sessions
         return {
-            "error": {
-                "type": "ratio_unavailable",
-                "message": "Could not determine context ratio"
-            }
+            "status": "skipped",
+            "reason": "ratio_unavailable",
+            "message": "Could not determine context ratio (new session or empty context)",
+            "zone": "normal",
+            "trend": "stable",
+            "ratio": 0.0
         }
     
     # Load previous samples for trend analysis
@@ -582,6 +585,11 @@ def main():
     if "error" in result:
         print(json.dumps(result, indent=2))
         return 1
+    
+    # status: skipped is success (exit 0)
+    if result.get("status") == "skipped":
+        print(json.dumps(result, indent=2))
+        return 0
     
     if args.json:
         print(json.dumps(result, indent=2))

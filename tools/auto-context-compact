@@ -137,6 +137,30 @@ def run_auto_compaction(
     budget_result = run_tool(BUDGET_WATCHER, ["--json"])
     
     if "error" in budget_result:
+        error_type = budget_result["error"].get("type", "")
+        
+        # ratio_unavailable is normal for new/empty sessions - treat as skipped
+        if error_type == "ratio_unavailable":
+            result["status"] = "skipped"
+            result["action_taken"] = "none"
+            result["message"] = "Context ratio unavailable (new session or empty context)"
+            
+            log_event({
+                "timestamp": timestamp,
+                "event": "skipped",
+                "ratio_before": None,
+                "ratio_after": None,
+                "action": "none",
+                "version": VERSION,
+                "blockers": [],
+                "duration_ms": int((time.time() - start_time) * 1000),
+                "reason": "ratio_unavailable"
+            })
+            
+            # Return success (exit code 0) for normal skip
+            return result
+        
+        # Other errors are real errors
         result["status"] = "error"
         result["error"] = budget_result["error"]
         result["error"]["stage"] = "budget_watcher"
