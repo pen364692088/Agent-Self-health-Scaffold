@@ -56,13 +56,17 @@ jobs:
           gh api repos/$REPO/issues/$PR_NUMBER/labels/$LABEL -X DELETE
           
           # Add comment explaining why label was removed
-          gh api repos/$REPO/issues/$PR_NUMBER/comments -f body="⚠️ Label \`$LABEL\` was removed because ${{ github.actor }} does not have maintainer permission.
-
-Only repository owners and maintainers can add the \`$LABEL\` label.
-
-To request this label:
-1. Add a comment: \`@maintainers please add $LABEL label with reason: <your reason>\`
-2. Wait for maintainer approval"
+          COMMENT_BODY=$(cat <<'EOF'
+          ⚠️ Label `${{ github.event.label.name }}` was removed because ${{ github.actor }} does not have maintainer permission.
+          
+          Only repository owners and maintainers can add the `${{ github.event.label.name }}` label.
+          
+          To request this label:
+          1. Add a comment: `@maintainers please add ${{ github.event.label.name }} label with reason: <your reason>`
+          2. Wait for maintainer approval
+          EOF
+          )
+          gh api repos/$REPO/issues/$PR_NUMBER/comments -f body="$COMMENT_BODY"
 
       - name: Log label usage
         if: steps.check.outputs.allowed == 'true'
