@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-verify-and-close v1.1 - Unified Task Completion Entry Point
+verify-and-close v1.2 - Unified Task Completion Entry Point
 
 遵循 OPENCLAW_EXECUTION_POLICY.md:
 - 唯一合法收尾入口
@@ -9,6 +9,7 @@ verify-and-close v1.1 - Unified Task Completion Entry Point
 - 只输出 READY_TO_CLOSE 或 BLOCKED
 
 v1.1: Gate A 对独立任务宽松处理（不强制要求 WORKFLOW_STATE.json）
+v1.2: 支持环境变量配置工作区路径（CI 兼容）
 
 Usage:
   verify-and-close --task-id <id>
@@ -20,11 +21,39 @@ import argparse
 import json
 import subprocess
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 
-WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+# 动态检测工作区路径 (优先级: 环境变量 > 脚本位置 > 默认路径)
+def _detect_workspace() -> Path:
+    """Detect workspace path from environment or script location."""
+    # 1. 环境变量优先
+    env_workspace = os.environ.get("OPENCLAW_WORKSPACE")
+    if env_workspace:
+        return Path(env_workspace)
+    
+    # 2. 从脚本位置推断 (tools/verify-and-close -> workspace/)
+    script_path = Path(__file__).resolve()
+    possible_workspace = script_path.parent.parent  # tools/.. = workspace
+    if (possible_workspace / "tools").exists():
+        return possible_workspace
+    
+    # 3. 当前工作目录
+    cwd = Path.cwd()
+    if (cwd / "tools").exists():
+        return cwd
+    
+    # 4. 默认路径 (本地开发环境)
+    default = Path("/home/moonlight/.openclaw/workspace")
+    if default.exists():
+        return default
+    
+    # 5. 最后回退: 使用脚本位置
+    return possible_workspace
+
+WORKSPACE = _detect_workspace()
 ARTIFACTS_DIR = WORKSPACE / "artifacts" / "receipts"
 WORKFLOW_STATE = WORKSPACE / "WORKFLOW_STATE.json"
 SCHEMA_PATH = WORKSPACE / "schemas" / "task_receipt.v1.schema.json"
@@ -220,7 +249,7 @@ def generate_receipt(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="verify-and-close v1.1")
+    parser = argparse.ArgumentParser(description="verify-and-close v1.2")
     parser.add_argument("--task-id", required=True, help="Task identifier")
     parser.add_argument("--artifacts", help="Comma-separated artifact paths")
     parser.add_argument("--scope", help="Comma-separated scope paths")

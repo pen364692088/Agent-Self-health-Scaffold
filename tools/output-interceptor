@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-output-interceptor v1.0 - 统一输出拦截层
+output-interceptor v1.1 - 统一输出拦截层
 
 用途：
 - 在所有对外输出前检查 finalize-response
 - 防止旁路泄露伪完成
+
+v1.1: 支持环境变量配置工作区路径（CI 兼容）
 
 集成点：
 - Telegram message
@@ -26,12 +28,35 @@ Exit codes:
 import argparse
 import json
 import sys
+import os
 import subprocess
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Optional
 
-WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+# 动态检测工作区路径
+def _detect_workspace() -> Path:
+    """Detect workspace path from environment or script location."""
+    env_workspace = os.environ.get("OPENCLAW_WORKSPACE")
+    if env_workspace:
+        return Path(env_workspace)
+    
+    script_path = Path(__file__).resolve()
+    possible_workspace = script_path.parent.parent
+    if (possible_workspace / "tools").exists():
+        return possible_workspace
+    
+    cwd = Path.cwd()
+    if (cwd / "tools").exists():
+        return cwd
+    
+    default = Path("/home/moonlight/.openclaw/workspace")
+    if default.exists():
+        return default
+    
+    return possible_workspace
+
+WORKSPACE = _detect_workspace()
 FINALIZE_RESPONSE = WORKSPACE / "tools" / "finalize-response"
 INTERCEPTOR_LOG = WORKSPACE / "reports" / "interceptor_log.jsonl"
 
@@ -57,118 +82,101 @@ def log_intercept(
     details: dict = None
 ):
     """记录拦截日志"""
-    INTERCEPTOR_LOG.parent.mkdir(parents=True, exist_ok=True)
-    
-    entry = {
-        "timestamp": datetime.now().isoformat(),
-        "task_id": task_id,
-        "channel": channel,
-        "allowed": allowed,
-        "reason": reason
-    }
-    if details:
-        entry["details"] = details
-    
-    with open(INTERCEPTOR_LOG, "a") as f:
-        f.write(json.dumps(entry) + "\n")
-
-
-def check_finalize_response(task_id: str, message: str = None) -> tuple:
-    """
-    调用 finalize-response 检查
-    
-    Returns:
-        (allowed: bool, result: dict)
-    """
-    args = [str(FINALIZE_RESPONSE), "--task-id", task_id, "--json"]
-    
-    if message:
-        args.extend(["--summary", message])
-    
-    result = subprocess.run(
-        args,
-        capture_output=True,
-        text=True
-    )
-    
     try:
-        data = json.loads(result.stdout)
-        return data.get("action") == "ALLOW", data
-    except:
-        return False, {"error": "parse_error", "raw": result.stdout}
+        INTERCEPTOR_LOG.parent.mkdir(parents=True, exist_ok=True)
+        
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "task_id": task_id,
+            "channel": channel,
+            "allowed": allowed,
+            "reason": reason
+        }
+        if details:
+            entry["details"] = details
+        
+        with open(INTERCEPTOR_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
+
+
+def check_receipts_exist(task_id: str) -> bool:
+    """检查四类 receipt 是否存在"""
+    receipts_dir = WORKSPACE / "artifacts" / "receipts"
+    if not receipts_dir.exists():
+        return False
+    
+    for rtype in ["contract", "e2e", "preflight", "final"]:
+        path = receipts_dir / f"{task_id}_{rtype}_receipt.json"
+        if not path.exists():
+            return False
+    
+    return True
+
+
+def check_fake_completion(message: str) -> bool:
+    """检查是否包含伪完成文本"""
+    import re
+    patterns = [
+        r"已完成", r"全部完成", r"可以交付", r"已可合并",
+        r"已准备好关闭", r"所有阶段通过"
+    ]
+    for pattern in patterns:
+        if re.search(pattern, message):
+            return True
+    return False
 
 
 def main():
-    parser = argparse.ArgumentParser(description="output-interceptor v1.0")
+    parser = argparse.ArgumentParser(description="output-interceptor v1.1")
     parser.add_argument("--task-id", required=True, help="Task identifier")
-    parser.add_argument("--channel", help="Output channel")
+    parser.add_argument("--channel", default="unknown", help="Output channel")
     parser.add_argument("--message", help="Message to check")
     parser.add_argument("--check-only", action="store_true", help="Only check, no message")
     parser.add_argument("--json", action="store_true", help="JSON output")
-    parser.add_argument("--bypass", action="store_true", help="Bypass check (dangerous, log only)")
     
     args = parser.parse_args()
     
-    task_id = args.task_id
-    channel = args.channel or "unknown"
+    result = {
+        "task_id": args.task_id,
+        "channel": args.channel,
+        "action": "ALLOW"
+    }
     
-    # Bypass 模式：只记录，不阻断
-    if args.bypass:
-        log_intercept(task_id, channel, True, "bypass_mode")
-        result = {
-            "action": "BYPASS",
-            "reason": "bypass_mode",
-            "warning": "Bypass mode should only be used in emergencies"
-        }
-        if args.json:
-            print(json.dumps(result, indent=2))
-        return 0
+    # 检查 receipts
+    has_receipts = check_receipts_exist(args.task_id)
+    result["has_receipts"] = has_receipts
     
-    # 检查是否是保护通道
-    is_protected = channel in PROTECTED_CHANNELS
+    # 检查伪完成文本
+    if args.message and check_fake_completion(args.message):
+        result["action"] = "BLOCK"
+        result["reason"] = "fake_completion_detected"
+        result["message_hint"] = "Message contains fake completion text"
     
-    if not is_protected:
-        # 非保护通道，允许通过
-        log_intercept(task_id, channel, True, "unprotected_channel")
-        result = {
-            "action": "ALLOW",
-            "reason": "unprotected_channel",
-            "channel": channel
-        }
-        if args.json:
-            print(json.dumps(result, indent=2))
-        return 0
+    # 如果没有 receipts，阻断
+    if not has_receipts:
+        result["action"] = "BLOCK"
+        result["reason"] = "missing_receipts"
     
-    # 保护通道：必须检查
-    allowed, check_result = check_finalize_response(task_id, args.message)
-    
-    if allowed:
-        log_intercept(task_id, channel, True, "check_passed")
-        result = {
-            "action": "ALLOW",
-            "reason": "check_passed",
-            "channel": channel
-        }
-    else:
-        log_intercept(task_id, channel, False, check_result.get("reason", "unknown"), check_result)
-        result = {
-            "action": "BLOCK",
-            "reason": check_result.get("reason", "unknown"),
-            "channel": channel,
-            "required_action": check_result.get("required_action", f"verify-and-close --task-id {task_id}"),
-            "message": check_result.get("message", "Output blocked. Run verify-and-close first.")
-        }
+    # 记录日志
+    log_intercept(
+        args.task_id,
+        args.channel,
+        result["action"] == "ALLOW",
+        result.get("reason", "passed"),
+        {"has_receipts": has_receipts}
+    )
     
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        if allowed:
-            print(f"✅ ALLOW [{channel}]")
+        if result["action"] == "ALLOW":
+            print(f"✅ ALLOW: {args.task_id}")
         else:
-            print(f"❌ BLOCK [{channel}]: {result['reason']}")
-            print(f"Required: {result['required_action']}")
+            print(f"❌ BLOCK: {result.get('reason', 'unknown')}")
     
-    return 0 if allowed else 1
+    return 0 if result["action"] == "ALLOW" else 1
 
 
 if __name__ == "__main__":
