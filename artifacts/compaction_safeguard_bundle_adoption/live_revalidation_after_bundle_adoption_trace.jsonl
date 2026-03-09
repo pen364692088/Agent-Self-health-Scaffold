@@ -1,0 +1,4 @@
+{"ts":"2026-03-09T03:32:00Z","type":"bundle_adoption_confirmed","path":"/home/moonlight/.npm-global/lib/node_modules/openclaw/dist/reply-C5LKjXcC.js","sha256":"480d8e23b30768dc4a34ec5f151f0e681eb8964153b62731dbaa7788fc44a025","has_InvalidCutPointEmptyPreparationError":true,"has_invalid_cut_point_empty_preparation":true,"has_guard_marker":true}
+{"ts":"2026-03-09T03:32:10Z","type":"gateway_status_after_redeploy","runtime":"running","rpc_probe":"ok"}
+{"ts":"2026-03-09T03:33:00Z","type":"manual_compact_trigger_attempt","sessionKey":"agent:main:telegram:direct:8420019401","result":"sessions_send_timeout"}
+{"ts":"2026-03-09T03:33:20Z","type":"post_adoption_log_probe","matched_lines":0,"note":"no fresh compaction semantic lines observed in minimal probe window"}
