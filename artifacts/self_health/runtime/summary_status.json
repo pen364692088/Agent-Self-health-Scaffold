@@ -1,9 +1,9 @@
 {
-  "last_health_summary_at": "2026-03-08T21:29:30.028215+00:00",
+  "last_health_summary_at": "2026-03-09T02:15:22.516286+00:00",
   "last_recovery_summary_at": null,
-  "last_capability_summary_at": "2026-03-08T21:29:30.028215+00:00",
+  "last_capability_summary_at": "2026-03-09T02:15:22.516286+00:00",
   "last_proposal_summary_at": "2026-03-08T15:39:27.586015+00:00",
   "last_incident_recorded_at": "2026-03-08T15:39:27.620015+00:00",
   "summary_pipeline_status": "healthy",
-  "last_health_summary_epoch": 1773005369.971869
+  "last_health_summary_epoch": 1773022522.4254112
 }

@@ -9483,3 +9483,216 @@
     "real_main_agent_count": 8
   }
 }
+{
+  "historical_replay": [],
+  "real_main_agent": [
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-05.jsonl",
+      "size": 40605
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401.jsonl",
+      "size": 57139
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-04.jsonl",
+      "size": 40763
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-08.jsonl",
+      "size": 33821
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-07.jsonl",
+      "size": 28930
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:test123-2026-03-06.jsonl",
+      "size": 219
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-06.jsonl",
+      "size": 52672
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-03.jsonl",
+      "size": 19161
+    }
+  ],
+  "stats": {
+    "historical_replay_count": 0,
+    "real_main_agent_count": 8
+  }
+}
+{
+  "historical_replay": [],
+  "real_main_agent": [
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-05.jsonl",
+      "size": 40605
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401.jsonl",
+      "size": 57139
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-04.jsonl",
+      "size": 40763
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-08.jsonl",
+      "size": 37084
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-07.jsonl",
+      "size": 28930
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:test123-2026-03-06.jsonl",
+      "size": 219
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-06.jsonl",
+      "size": 52672
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-03.jsonl",
+      "size": 19161
+    }
+  ],
+  "stats": {
+    "historical_replay_count": 0,
+    "real_main_agent_count": 8
+  }
+}
+{
+  "historical_replay": [],
+  "real_main_agent": [
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-05.jsonl",
+      "size": 40605
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401.jsonl",
+      "size": 57139
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-04.jsonl",
+      "size": 40763
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-08.jsonl",
+      "size": 39556
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-07.jsonl",
+      "size": 28930
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:test123-2026-03-06.jsonl",
+      "size": 219
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-06.jsonl",
+      "size": 52672
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-03.jsonl",
+      "size": 19161
+    }
+  ],
+  "stats": {
+    "historical_replay_count": 0,
+    "real_main_agent_count": 8
+  }
+}
+{
+  "historical_replay": [],
+  "real_main_agent": [
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-05.jsonl",
+      "size": 40605
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401.jsonl",
+      "size": 57139
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-04.jsonl",
+      "size": 40763
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-08.jsonl",
+      "size": 40948
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-07.jsonl",
+      "size": 28930
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:test123-2026-03-06.jsonl",
+      "size": 219
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-09.jsonl",
+      "size": 2128
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-06.jsonl",
+      "size": 52672
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-03.jsonl",
+      "size": 19161
+    }
+  ],
+  "stats": {
+    "historical_replay_count": 0,
+    "real_main_agent_count": 9
+  }
+}
+{
+  "historical_replay": [],
+  "real_main_agent": [
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-05.jsonl",
+      "size": 40605
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401.jsonl",
+      "size": 57139
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-04.jsonl",
+      "size": 40763
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-08.jsonl",
+      "size": 40948
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-07.jsonl",
+      "size": 28930
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:test123-2026-03-06.jsonl",
+      "size": 219
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-09.jsonl",
+      "size": 6573
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-06.jsonl",
+      "size": 52672
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-03.jsonl",
+      "size": 19161
+    }
+  ],
+  "stats": {
+    "historical_replay_count": 0,
+    "real_main_agent_count": 9
+  }
+}

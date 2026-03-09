@@ -85,3 +85,60 @@
 从现在到 24h verdict 前，严格遵守冻结规则。除非出现阻断性问题，否则不做任何结构性修改。
 
 **最终 verdict 由数据驱动，不凭感觉。**
+
+---
+
+## Final Verdict Logic (固定)
+
+### 第一层：是否满足最低"接线已生效"
+
+满足以下全部 → 进入最终判定区（超过 WIRING_ACTIVE_BUT_SOAK_PENDING）：
+
+- [ ] quick/full/gate 都持续运行过
+- [ ] Gate A/B/C 持续 PASS
+- [ ] telemetry 持续写入
+- [ ] 无 lock/budget 异常
+- [ ] 无明显风暴
+
+### 第二层：能否升到 MAIN_SYSTEM_ALWAYS_ON_ACTIVE
+
+满足以下全部 → 升：
+
+- [ ] 24h 窗口完成
+- [ ] soak-verdict-check 通过
+- [ ] Gate 持续 100% PASS 或接近满分且无实质异常
+- [ ] telemetry continuity 达标
+- [ ] incident/proposal 没有异常累积
+- [ ] callback 语义修正后，Gate/callback 一致性仍稳定
+- [ ] mailbox caveat 没有污染最终结论
+- [ ] 主循环影响仍在阈值内
+
+### 第三层：是否落 ACTIVE_WITH_CAVEATS
+
+满足以下 → 不硬升，落此状态：
+
+- [ ] 主链路是稳的
+- [ ] always-on 确实在跑
+- [ ] 但 mailbox caveat 或 telemetry 某块让结论不够干净
+- [ ] continuity/consistency 勉强过线但解释成本高
+
+### 第四层：不能升
+
+出现以下任一 → 不升：
+
+- [ ] telemetry continuity 明显不稳
+- [ ] Gate consistency 被污染
+- [ ] soak 中途有实际风暴
+- [ ] 主循环影响超阈值
+- [ ] verdict 主要靠解释而不是靠数据成立
+
+---
+
+## 明天输出格式
+
+1. `soak-verdict-check` 输出
+2. 24h 关键指标摘要
+3. final report 摘要
+4. 建议 verdict + 理由
+
+**不发散，不解释，按数据说话。**

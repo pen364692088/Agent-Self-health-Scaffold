@@ -1,8 +1,8 @@
 {
-  "scheduler_runs_total": 38,
+  "scheduler_runs_total": 96,
   "quick_runs_total": 4,
-  "full_runs_total": 3,
-  "gate_runs_total": 31,
+  "full_runs_total": 8,
+  "gate_runs_total": 84,
   "skipped_runs_total": 7,
   "lock_contention_count": 0,
   "execution_budget_hit_count": 0,

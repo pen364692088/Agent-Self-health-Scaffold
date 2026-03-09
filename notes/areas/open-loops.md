@@ -15,3 +15,8 @@
 - [x] OpenEmotion MVP11.3.2：nightly dashboard + 7-day trend（heatmap/sparkline/drift）已落地并写入 Actions summary。
 - [ ] 连续观察 7 次 nightly trend，确认 sentinel 轮换下 Gate 波动是否稳定可解释。
 - [ ] 评估是否加 scenario-split trend（baseline/focused/wide 分层）以减少轮换噪声误判。
+
+## 2026-03-08
+- Native compaction safeguard bug remains OPEN.
+- Next step: apply/verify root fix in actual live runtime path and revalidate native compaction end-to-end.
+- Phase D / Natural Validation remains BLOCKED pending real live compaction success evidence.

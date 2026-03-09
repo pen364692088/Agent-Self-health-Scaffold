@@ -1,0 +1,72 @@
+{
+  "policy_version": "1.0",
+  "created": "2026-03-08T00:40:00-06:00",
+  "status": "ACTIVE",
+  
+  "context_window": 200000,
+  "thresholds": {
+    "observe": 0.75,
+    "candidate": 0.75,
+    "enforced": 0.85,
+    "strong": 0.92
+  },
+  
+  "pressure_levels": {
+    "normal": {"max_ratio": 0.75, "action": "observe"},
+    "light": {"min_ratio": 0.75, "max_ratio": 0.85, "action": "candidate"},
+    "standard": {"min_ratio": 0.85, "max_ratio": 0.92, "action": "enforced"},
+    "strong": {"min_ratio": 0.92, "action": "strong_compression"}
+  },
+  
+  "critical_rule": "不允许跨过 0.85 后继续拖延",
+  
+  "execution_point": "prompt_assemble",
+  
+  "layers": {
+    "resident_budget_ratio": 0.10,
+    "active_budget_ratio": 0.70,
+    "recall_budget_ratio": 0.10
+  },
+  
+  "safety": {
+    "min_preserve_turns": 5,
+    "max_evict_ratio": 0.60,
+    "protected_fields": [
+      "task_goal",
+      "open_loops",
+      "hard_constraints",
+      "response_contract",
+      "recent_commitments",
+      "tool_execution_state"
+    ]
+  },
+  
+  "tools": {
+    "budget_check": "~/.openclaw/workspace/tools/context-budget-check",
+    "compress": "~/.openclaw/workspace/tools/context-compress",
+    "assemble": "~/.openclaw/workspace/tools/prompt-assemble",
+    "retrieve": "~/.openclaw/workspace/tools/context-retrieve"
+  },
+  
+  "scope": {
+    "mode": "light_enforced",
+    "allowed_sessions": [
+      "single_topic_daily_chat",
+      "non_critical_task",
+      "simple_tool_context"
+    ],
+    "excluded_sessions": [
+      "multi_file_debug",
+      "high_commitment_task",
+      "critical_execution",
+      "multi_agent_collaboration",
+      "high_risk_scenario"
+    ]
+  },
+  
+  "rollout": {
+    "kill_switch_available": true,
+    "replay_guardrail_active": true,
+    "rollback_capability": "available"
+  }
+}

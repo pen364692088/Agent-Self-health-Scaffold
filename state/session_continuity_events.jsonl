@@ -165,3 +165,55 @@
     "recovery_id": "unknown:2026-03-08T13:46:35.813740"
   }
 }
+{
+  "ts": "2026-03-08T16:50:51-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T16:50:51.633596",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "🧊 FROZENOBSERVATION (2026-03-08 16:44 → 2026-03-09 14:00 CDT) - ✅ OAI-5/3/4 baseline landed - ✅ Tele",
+    "recovery_id": "unknown:2026-03-08T16:50:51.633596"
+  }
+}
+{
+  "ts": "2026-03-08T16:50:57-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T16:50:57.612262",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "🧊 FROZENOBSERVATION (2026-03-08 16:44 → 2026-03-09 14:00 CDT) - ✅ OAI-5/3/4 baseline landed - ✅ Tele",
+    "recovery_id": "unknown:2026-03-08T16:50:57.612262"
+  }
+}
+{
+  "ts": "2026-03-08T19:27:00-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T19:27:00.273533",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "🧊 FROZENOBSERVATION (2026-03-08 16:44 → 2026-03-09 14:00 CDT) - ✅ OAI-5/3/4 baseline landed - ✅ Tele",
+    "recovery_id": "unknown:2026-03-08T19:27:00.273533"
+  }
+}
+{
+  "ts": "2026-03-08T20:23:53-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-08T20:23:53.285368",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "🧊 FROZENOBSERVATION (2026-03-08 16:44 → 2026-03-09 14:00 CDT) - ✅ OAI-5/3/4 baseline landed - ✅ Tele",
+    "recovery_id": "unknown:2026-03-08T20:23:53.285368"
+  }
+}
