@@ -1,0 +1,967 @@
+{
+  "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63::session_slicing": [],
+  "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63::message_normalization": [],
+  "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63::turn_extraction": [],
+  "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63::pre_compaction_filtering": [],
+  "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63::safeguard_handoff": [],
+  "agent:main:cron:54851166-9586-4f62-9360-b484c368664d::session_slicing": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:54851166-9586-4f62-9360-b484c368664d::message_normalization": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:54851166-9586-4f62-9360-b484c368664d::turn_extraction": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:54851166-9586-4f62-9360-b484c368664d::pre_compaction_filtering": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:54851166-9586-4f62-9360-b484c368664d::safeguard_handoff": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:24cd41da-94b6-4873-a6af-207e0e490a76::session_slicing": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:24cd41da-94b6-4873-a6af-207e0e490a76::message_normalization": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:24cd41da-94b6-4873-a6af-207e0e490a76::turn_extraction": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:24cd41da-94b6-4873-a6af-207e0e490a76::pre_compaction_filtering": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:cron:24cd41da-94b6-4873-a6af-207e0e490a76::safeguard_handoff": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:telegram:direct:8420019401::session_slicing": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 2,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 3,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 4,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:telegram:direct:8420019401::message_normalization": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 2,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 3,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 4,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:telegram:direct:8420019401::turn_extraction": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 2,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 3,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 4,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:telegram:direct:8420019401::pre_compaction_filtering": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 2,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 3,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 4,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    }
+  ],
+  "agent:main:telegram:direct:8420019401::safeguard_handoff": [
+    {
+      "index": 0,
+      "topKeys": [
+        "role",
+        "content",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "user",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 1,
+      "topKeys": [
+        "role",
+        "content",
+        "api",
+        "provider",
+        "model",
+        "usage",
+        "stopReason",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "assistant",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 2,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 3,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    },
+    {
+      "index": 4,
+      "topKeys": [
+        "role",
+        "toolCallId",
+        "toolName",
+        "content",
+        "isError",
+        "timestamp"
+      ],
+      "has_role": true,
+      "has_content": true,
+      "has_message": false,
+      "has_message_role": false,
+      "has_message_content": false,
+      "has_message_message": false,
+      "has_message_message_role": false,
+      "type": null,
+      "role_if_any": "toolResult",
+      "nested_role_if_any": null
+    }
+  ]
+}
