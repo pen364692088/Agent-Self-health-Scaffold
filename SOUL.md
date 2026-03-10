@@ -60,8 +60,15 @@ cc-godmode 只用于：
 **所有工程类任务的完成必须通过五工具链：**
 
 ```
-verify-and-close → finalize-response → safe-message → 输出给用户
+verify-and-close → finalize-response → enforce-task-completion → 输出给用户
 ```
+
+**强制执行规则**:
+1. 任何包含"完成/已交付/验收通过"等关键词的消息
+2. 必须先通过 `enforce-task-completion` 检查
+3. 无 receipt 的任务将被 BLOCK
+
+**检测关键词**: 完成, 已完成, 全部完成, 可以交付, closed, complete, done, ✅, 🎉
 
 **禁止行为：**
 - ❌ 直接输出"已完成" / "全部完成" / "可以交付"

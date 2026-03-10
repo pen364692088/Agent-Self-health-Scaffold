@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""
+enforce-task-completion - 强制任务完成协议执行
+
+在发送任何"完成"类消息前，检查 receipt 是否存在。
+
+Usage:
+  enforce-task-completion --task-id <id> --message "..."
+  enforce-task-completion --check-only --task-id <id>
+  
+Exit codes:
+  0 - ALLOW: 有 receipt，可以发送
+  1 - BLOCK: 无 receipt，必须先运行 verify-and-close
+"""
+
+import argparse
+import json
+import sys
+import os
+from pathlib import Path
+from datetime import datetime
+
+WORKSPACE = Path(os.environ.get("OPENCLAW_WORKSPACE", "/home/moonlight/.openclaw/workspace"))
+RECEIPTS_DIR = WORKSPACE / "artifacts" / "receipts"
+
+# 完成关键词（触发检查）
+COMPLETION_KEYWORDS = [
+    "完成", "已完成", "全部完成", "可以交付", "验收通过",
+    "closed", "complete", "done", "finished", "delivered",
+    "✅", "🎉", "交付"
+]
+
+def check_receipts(task_id: str) -> dict:
+    """检查任务是否有完整的 receipt 文件。"""
+    required = ["contract", "e2e", "preflight", "final"]
+    found = {}
+    for r in required:
+        pattern = f"{task_id}*{r}_receipt.json"
+        matches = list(RECEIPTS_DIR.glob(pattern))
+        found[r] = len(matches) > 0
+    
+    return {
+        "has_all": all(found.values()),
+        "found": found,
+        "task_id": task_id
+    }
+
+def detect_completion_intent(message: str) -> bool:
+    """检测消息是否包含完成意图。"""
+    msg_lower = message.lower()
+    for kw in COMPLETION_KEYWORDS:
+        if kw.lower() in msg_lower:
+            return True
+    return False
+
+def main():
+    parser = argparse.ArgumentParser(description="Enforce task completion protocol")
+    parser.add_argument("--task-id", required=True, help="Task ID to check")
+    parser.add_argument("--message", help="Message to check for completion intent")
+    parser.add_argument("--check-only", action="store_true", help="Only check, don't validate message")
+    parser.add_argument("--json", action="store_true", help="JSON output")
+    args = parser.parse_args()
+    
+    # Check receipts
+    receipt_status = check_receipts(args.task_id)
+    
+    # If message provided, check for completion intent
+    has_completion_intent = False
+    if args.message:
+        has_completion_intent = detect_completion_intent(args.message)
+    
+    # Determine action
+    if args.check_only:
+        # Just check receipts
+        action = "ALLOW" if receipt_status["has_all"] else "BLOCK"
+    elif args.message and has_completion_intent:
+        # Message has completion intent, require receipts
+        action = "ALLOW" if receipt_status["has_all"] else "BLOCK"
+    else:
+        # No completion intent, allow
+        action = "ALLOW"
+    
+    result = {
+        "task_id": args.task_id,
+        "action": action,
+        "receipt_status": receipt_status,
+        "has_completion_intent": has_completion_intent,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        if action == "BLOCK":
+            print(f"BLOCK: Task {args.task_id} missing receipts")
+            print(f"  Required: verify-and-close --task-id {args.task_id}")
+            for r, found in receipt_status["found"].items():
+                print(f"  {r}: {'✅' if found else '❌'}")
+        else:
+            print(f"ALLOW: Task {args.task_id} has required receipts")
+    
+    sys.exit(0 if action == "ALLOW" else 1)
+
+if __name__ == "__main__":
+    main()

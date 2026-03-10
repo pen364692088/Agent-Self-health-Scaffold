@@ -1,0 +1,2 @@
+{"ts": "2026-03-09T22:24:00Z", "rule_id": "OPENCLAW_PATH_NO_EDIT", "action": "deny", "path": "~/.openclaw/workspace/SOUL.md", "tool": "edit", "decision": "DENY", "fallback": "safe-write"}
+{"ts": "2026-03-09T22:24:01Z", "rule_id": "PERSIST_BEFORE_REPLY", "action": "warn", "path": "~/.openclaw/workspace/test-boundary.md", "tool": "safe-write", "decision": "ALLOW"}

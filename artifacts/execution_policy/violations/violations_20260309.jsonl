@@ -19,3 +19,4 @@
 {"timestamp": "2026-03-09T21:22:52.270297", "rule_id": "OPENCLAW_PATH_NO_EDIT", "decision": "deny", "path": "/home/moonlight/.openclaw/workspace/SOUL.md", "tool": "edit", "session_key": ""}
 {"timestamp": "2026-03-09T21:39:33.597256", "rule_id": "OPENCLAW_PATH_NO_EDIT", "decision": "deny", "path": "/home/moonlight/.openclaw/workspace/SOUL.md", "tool": "edit", "session_key": ""}
 {"timestamp": "2026-03-09T22:12:10.460668", "rule_id": "OPENCLAW_PATH_NO_EDIT", "decision": "deny", "path": "/home/moonlight/.openclaw/workspace/SOUL.md", "tool": "edit", "session_key": ""}
+{"timestamp": "2026-03-09T22:23:23.827785", "rule_id": "OPENCLAW_PATH_NO_EDIT", "decision": "deny", "path": "/home/moonlight/.openclaw/workspace/SOUL.md", "tool": "edit", "session_key": ""}

@@ -1134,3 +1134,29 @@
     "checks": "3"
   }
 }
+{
+  "ts": "2026-03-09T22:16:07-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T22:16:07.446620",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T22:16:07.446620"
+  }
+}
+{
+  "ts": "2026-03-09T22:17:16-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T22:17:16.778574",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T22:17:16.778574"
+  }
+}

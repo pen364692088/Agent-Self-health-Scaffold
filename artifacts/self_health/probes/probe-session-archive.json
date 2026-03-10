@@ -55,6 +55,6 @@
   "message": "Session archive system healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T03:04:12.448975+00:00",
+  "timestamp": "2026-03-10T03:16:33.312906+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-session-archive_evidence.json"
 }
