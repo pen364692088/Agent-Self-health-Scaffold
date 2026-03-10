@@ -5,17 +5,29 @@
     {
       "name": "openclaw_message_available",
       "description": "Check openclaw message send command available",
-      "passed": false,
+      "passed": true,
       "details": {
-        "error": "openclaw command not found"
+        "command_available": true,
+        "send_available": true
       }
     },
     {
       "name": "telegram_channel_config",
       "description": "Check Telegram channel configuration",
-      "passed": false,
+      "passed": true,
       "details": {
-        "error": "[Errno 2] No such file or directory: 'openclaw'"
+        "channels_list_success": true,
+        "telegram_channels": [
+          "- Telegram audit: configured, token=config, enabled",
+          "- Telegram ceo: configured, token=config, enabled",
+          "- Telegram coder: configured, token=config, enabled",
+          "- Telegram default: not configured, token=none, enabled",
+          "- Telegram manager: configured, token=config, enabled",
+          "- Telegram skadi: configured, token=config, enabled",
+          "- Telegram testbot: configured, token=config, enabled",
+          "- Telegram yuno: configured, token=config, enabled"
+        ],
+        "telegram_channel_count": 8
       }
     },
     {
@@ -38,14 +50,11 @@
       }
     }
   ],
-  "passed": false,
-  "failures": [
-    "openclaw_message_available",
-    "telegram_channel_config"
-  ],
-  "status": "fail",
-  "message": "Telegram notification system issues found",
+  "passed": true,
+  "failures": [],
+  "status": "ok",
+  "message": "Telegram notification system healthy",
   "check_count": 4,
-  "pass_count": 2,
-  "timestamp": "2026-03-10T03:16:33.267663+00:00"
+  "pass_count": 4,
+  "timestamp": "2026-03-10T03:29:58.818202+00:00"
 }
