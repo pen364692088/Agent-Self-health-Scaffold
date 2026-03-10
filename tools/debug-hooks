@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""
+debug-hooks - 检查 OpenClaw Gateway 的 hook 注册状态
+
+Usage:
+  debug-hooks [--json]
+"""
+
+import argparse
+import subprocess
+import json
+import sys
+
+def check_hooks_from_logs():
+    """从日志中提取已注册的 hooks"""
+    result = subprocess.run(
+        ['journalctl', '--user', '-u', 'openclaw-gateway', '--since', '2 hours ago'],
+        capture_output=True, text=True
+    )
+    
+    hooks = []
+    for line in result.stdout.split('\n'):
+        if 'Registered hook:' in line:
+            # 提取 hook 名称
+            parts = line.split('Registered hook:')
+            if len(parts) > 1:
+                hook_info = parts[1].strip().split('->')
+                if len(hook_info) >= 2:
+                    hooks.append({
+                        'name': hook_info[0].strip(),
+                        'event': hook_info[1].strip() if len(hook_info) > 1 else 'unknown',
+                        'source': 'hooks:loader'
+                    })
+    
+    return hooks
+
+def check_memory_lancedb_hooks():
+    """检查 memory-lancedb 插件的 hook 注册"""
+    result = subprocess.run(
+        ['journalctl', '--user', '-u', 'openclaw-gateway', '--since', '2 hours ago'],
+        capture_output=True, text=True
+    )
+    
+    hooks = []
+    for line in result.stdout.split('\n'):
+        if 'memory-lancedb' in line.lower():
+            if 'plugin registered' in line.lower():
+                hooks.append({
+                    'plugin': 'memory-lancedb',
+                    'status': 'registered',
+                    'line': line
+                })
+            elif 'recall' in line.lower():
+                hooks.append({
+                    'plugin': 'memory-lancedb',
+                    'hook': 'before_agent_start (recall)',
+                    'status': 'triggered'
+                })
+            elif 'auto-captured' in line.lower():
+                hooks.append({
+                    'plugin': 'memory-lancedb',
+                    'hook': 'agent_end (capture)',
+                    'status': 'triggered'
+                })
+    
+    return hooks
+
+def main():
+    parser = argparse.ArgumentParser(description="Debug OpenClaw hooks")
+    parser.add_argument('--json', action='store_true', help='JSON output')
+    args = parser.parse_args()
+    
+    # 检查 hooks:loader 注册的 hooks
+    loader_hooks = check_hooks_from_logs()
+    
+    # 检查 memory-lancedb
+    memory_hooks = check_memory_lancedb_hooks()
+    
+    # 分析
+    agent_end_registered = any(
+        h.get('event') == 'agent_end' or h.get('hook') == 'agent_end'
+        for h in loader_hooks + memory_hooks
+    )
+    
+    result = {
+        'hooks_loader': loader_hooks,
+        'memory_lancedb': memory_hooks,
+        'agent_end_registered': agent_end_registered,
+        'diagnosis': {
+            'has_hooks_loader_hooks': len(loader_hooks) > 0,
+            'has_memory_lancedb_recall': any('recall' in str(h) for h in memory_hooks),
+            'has_memory_lancedb_capture': any('capture' in str(h) for h in memory_hooks),
+            'agent_end_issue': 'agent_end hook not registered via hooks:loader' if not agent_end_registered else 'OK'
+        }
+    }
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print("=== Hooks:Loader 注册的 hooks ===")
+        for h in loader_hooks:
+            print(f"  {h['name']} -> {h['event']}")
+        
+        print("\n=== memory-lancedb 状态 ===")
+        for h in memory_hooks:
+            print(f"  {h}")
+        
+        print("\n=== 诊断 ===")
+        for k, v in result['diagnosis'].items():
+            print(f"  {k}: {v}")
+        
+        print(f"\n=== 结论 ===")
+        if not agent_end_registered:
+            print("❌ agent_end hook 未通过 hooks:loader 注册")
+            print("   memory-lancedb 的 api.on('agent_end') 可能未注册到 typedHooks")
+        else:
+            print("✅ agent_end hook 已注册")
+
+if __name__ == "__main__":
+    main()

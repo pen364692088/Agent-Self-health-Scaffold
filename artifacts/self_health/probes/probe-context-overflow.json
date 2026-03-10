@@ -17,7 +17,7 @@
       "passed": true,
       "details": {
         "returncode": 0,
-        "stdout_preview": "{\n  \"status\": \"healthy\",\n  \"checks\": {\n    \"snapshots_dir\": \"/home/moonlight/.openclaw/workspace/artifacts/budget_snapshots\",\n    \"token_estimation\": \"ok\"\n  },\n  \"issues\": null,\n  \"timestamp\": \"2026-03-09T22:36:10.218692\"\n}\n"
+        "stdout_preview": "{\n  \"status\": \"healthy\",\n  \"checks\": {\n    \"snapshots_dir\": \"/home/moonlight/.openclaw/workspace/artifacts/budget_snapshots\",\n    \"token_estimation\": \"ok\"\n  },\n  \"issues\": null,\n  \"timestamp\": \"2026-03-09T23:01:50.769388\"\n}\n"
       }
     },
     {
@@ -71,6 +71,6 @@
   "status": "ok",
   "message": "Probe checks passed",
   "threshold": 0.85,
-  "timestamp": "2026-03-10T03:36:10.291608+00:00",
+  "timestamp": "2026-03-10T04:01:50.874318+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-context-overflow_evidence.json"
 }

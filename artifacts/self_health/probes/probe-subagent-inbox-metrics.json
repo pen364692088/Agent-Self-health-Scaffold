@@ -66,6 +66,6 @@
   "message": "Subagent inbox metrics healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T03:36:20.945789+00:00",
+  "timestamp": "2026-03-10T04:02:07.038474+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-subagent-inbox-metrics_evidence.json"
 }
