@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""
+Execution Policy Doctor
+
+Health check for execution policy system.
+Usage: policy-doctor [--json] [--fix]
+"""
+
+import argparse
+import json
+import os
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Optional
+
+RULES_FILE = Path.home() / ".openclaw" / "workspace" / "POLICIES" / "EXECUTION_POLICY_RULES.yaml"
+SCHEMA_FILE = Path.home() / ".openclaw" / "workspace" / "POLICIES" / "EXECUTION_POLICY_SCHEMA.json"
+POLICY_FILE = Path.home() / ".openclaw" / "workspace" / "POLICIES" / "EXECUTION_POLICY.md"
+VIOLATIONS_DIR = Path.home() / ".openclaw" / "workspace" / "artifacts" / "execution_policy" / "violations"
+BASELINE_DIR = Path.home() / ".openclaw" / "workspace" / "artifacts" / "execution_policy" / "baseline"
+
+
+def check_rules_file() -> dict:
+    """Check if rules file exists and is valid."""
+    result = {"name": "rules_file", "status": "unknown", "details": ""}
+    
+    if not RULES_FILE.exists():
+        result["status"] = "fail"
+        result["details"] = "Rules file not found"
+        return result
+    
+    try:
+        import yaml
+        with open(RULES_FILE) as f:
+            data = yaml.safe_load(f)
+        
+        if not data.get("rules"):
+            result["status"] = "fail"
+            result["details"] = "No rules defined"
+        else:
+            active_rules = [r for r in data["rules"] if r.get("status") == "active"]
+            result["status"] = "pass"
+            result["details"] = f"{len(active_rules)} active rules"
+    except Exception as e:
+        result["status"] = "fail"
+        result["details"] = f"Parse error: {e}"
+    
+    return result
+
+
+def check_schema_file() -> dict:
+    """Check if schema file exists and is valid."""
+    result = {"name": "schema_file", "status": "unknown", "details": ""}
+    
+    if not SCHEMA_FILE.exists():
+        result["status"] = "fail"
+        result["details"] = "Schema file not found"
+        return result
+    
+    try:
+        with open(SCHEMA_FILE) as f:
+            data = json.load(f)
+        
+        if "$schema" not in data:
+            result["status"] = "warn"
+            result["details"] = "Schema missing $schema field"
+        else:
+            result["status"] = "pass"
+            result["details"] = "Valid JSON Schema"
+    except Exception as e:
+        result["status"] = "fail"
+        result["details"] = f"Parse error: {e}"
+    
+    return result
+
+
+def check_policy_file() -> dict:
+    """Check if policy document exists."""
+    result = {"name": "policy_document", "status": "unknown", "details": ""}
+    
+    if not POLICY_FILE.exists():
+        result["status"] = "fail"
+        result["details"] = "Policy document not found"
+    else:
+        result["status"] = "pass"
+        result["details"] = "Policy document exists"
+    
+    return result
+
+
+def check_violations_dir() -> dict:
+    """Check violations logging directory."""
+    result = {"name": "violations_dir", "status": "unknown", "details": ""}
+    
+    if not VIOLATIONS_DIR.exists():
+        result["status"] = "warn"
+        result["details"] = "Violations directory not created yet"
+    else:
+        # Count recent violations
+        today = datetime.now().strftime("%Y%m%d")
+        today_file = VIOLATIONS_DIR / f"violations_{today}.jsonl"
+        
+        if today_file.exists():
+            with open(today_file) as f:
+                count = sum(1 for _ in f)
+            result["status"] = "pass"
+            result["details"] = f"{count} violations today"
+        else:
+            result["status"] = "pass"
+            result["details"] = "No violations today"
+    
+    return result
+
+
+def check_baseline_dir() -> dict:
+    """Check baseline directory."""
+    result = {"name": "baseline_dir", "status": "unknown", "details": ""}
+    
+    if not BASELINE_DIR.exists():
+        result["status"] = "warn"
+        result["details"] = "Baseline directory not created"
+    else:
+        files = list(BASELINE_DIR.glob("*.md"))
+        result["status"] = "pass"
+        result["details"] = f"{len(files)} baseline files"
+    
+    return result
+
+
+def check_tools() -> dict:
+    """Check required tools exist."""
+    result = {"name": "tools", "status": "unknown", "details": ""}
+    
+    tools_dir = Path.home() / ".openclaw" / "workspace" / "tools"
+    required_tools = ["policy-eval", "policy-doctor", "policy-violations-report"]
+    
+    missing = []
+    for tool in required_tools:
+        tool_path = tools_dir / tool
+        if not tool_path.exists():
+            missing.append(tool)
+    
+    if missing:
+        result["status"] = "fail"
+        result["details"] = f"Missing tools: {', '.join(missing)}"
+    else:
+        result["status"] = "pass"
+        result["details"] = "All tools present"
+    
+    return result
+
+
+def check_gate_integration() -> dict:
+    """Check Gate A/B/C integration."""
+    result = {"name": "gate_integration", "status": "unknown", "details": ""}
+    
+    # Check if tests exist
+    tests_dir = Path.home() / ".openclaw" / "workspace" / "tests" / "policy"
+    
+    if not tests_dir.exists():
+        result["status"] = "warn"
+        result["details"] = "No policy tests found"
+    else:
+        test_files = list(tests_dir.glob("test_*.py"))
+        if test_files:
+            result["status"] = "pass"
+            result["details"] = f"{len(test_files)} test files"
+        else:
+            result["status"] = "warn"
+            result["details"] = "No test files found"
+    
+    return result
+
+
+def run_all_checks() -> list:
+    """Run all health checks."""
+    return [
+        check_rules_file(),
+        check_schema_file(),
+        check_policy_file(),
+        check_violations_dir(),
+        check_baseline_dir(),
+        check_tools(),
+        check_gate_integration()
+    ]
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Execution policy health check")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument("--fix", action="store_true", help="Attempt to fix issues")
+    
+    args = parser.parse_args()
+    
+    checks = run_all_checks()
+    
+    # Summary
+    passed = sum(1 for c in checks if c["status"] == "pass")
+    warned = sum(1 for c in checks if c["status"] == "warn")
+    failed = sum(1 for c in checks if c["status"] == "fail")
+    
+    summary = {
+        "passed": passed,
+        "warned": warned,
+        "failed": failed,
+        "total": len(checks),
+        "healthy": failed == 0
+    }
+    
+    if args.json:
+        output = {
+            "summary": summary,
+            "checks": checks
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        print("=== Execution Policy Doctor ===\n")
+        for check in checks:
+            status_icon = {"pass": "✓", "warn": "⚠", "fail": "✗"}.get(check["status"], "?")
+            print(f"[{status_icon}] {check['name']}: {check['details']}")
+        
+        print(f"\nSummary: {passed} passed, {warned} warnings, {failed} failed")
+        
+        if failed > 0:
+            print("\nStatus: UNHEALTHY")
+            sys.exit(1)
+        else:
+            print("\nStatus: HEALTHY")
+    
+    sys.exit(0 if failed == 0 else 1)
+
+
+if __name__ == "__main__":
+    main()

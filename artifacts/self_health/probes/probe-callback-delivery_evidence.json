@@ -25,7 +25,7 @@
       "description": "Check recent callback activity",
       "passed": true,
       "details": {
-        "journal_lines": 7,
+        "journal_lines": 20,
         "success_indicators_found": [
           "processed"
         ],
@@ -37,8 +37,8 @@
       "description": "Check subtasks reports directory",
       "passed": true,
       "details": {
-        "total_files": 57,
-        "processed_files": 51,
+        "total_files": 16,
+        "processed_files": 15,
         "pending_backlog": 0,
         "backlog_threshold": 10
       }
@@ -54,8 +54,7 @@
           "callback-worker": "/home/moonlight/.openclaw/workspace/tools/callback-worker"
         },
         "components_missing": [],
-        "workflow_state_exists": true,
-        "workflow_phase": null
+        "workflow_state_exists": false
       }
     },
     {
@@ -66,14 +65,14 @@
         "status": {
           "worker_name": "callback-worker",
           "alive": true,
-          "last_progress_at": "2026-03-09T08:31:29.018910+00:00",
-          "last_output_at": "2026-03-09T08:31:29.018910+00:00",
+          "last_progress_at": "2026-03-10T01:15:12.486571+00:00",
+          "last_output_at": "2026-03-10T01:15:12.486571+00:00",
           "pending_count": null,
           "stuck_suspected": false,
           "last_error_at": "2026-03-08T21:39:36.688896+00:00",
           "last_error_type": null,
           "worker_status": "healthy",
-          "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n✅ Service state: OK (idle, no pending work)\n✅ Kill-switch: Disabled (normal)\n❌ Queue writable: events/ permissions incorrect: 0o775 (should be 0o700)\n✅ State read/write + lock: OK\n✅ Spawn backend: OK (health check passed)",
+          "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n✅ Service state: OK (idle, no pending work)\n✅ Kill-switch: Disabled (normal)\n❌ Queue writable: events/ permissions incorrect: 0o775 (should be 0o700)\n✅ State read/write + lock: No active workflow (OK)\n✅ Spawn backend: OK (health check passed)",
           "service_state": "idle_expected"
         }
       }
@@ -84,5 +83,5 @@
   "status": "ok",
   "message": "Callback delivery chain healthy",
   "backlog_threshold": 10,
-  "timestamp": "2026-03-09T08:32:08.720144+00:00"
+  "timestamp": "2026-03-10T01:16:26.486664+00:00"
 }

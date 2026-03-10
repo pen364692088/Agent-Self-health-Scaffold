@@ -1,0 +1,36 @@
+# Sessions.json Structure Analysis
+
+## Key Finding
+
+sessions.json 格式是扁平的 key-value 结构：
+```
+{
+  "sessionKey1": { sessionData },
+  "sessionKey2": { sessionData },
+  ...
+}
+```
+
+**不是** `{ "sessions": [...] }` 数组格式。
+
+## Current Session Data
+
+```json
+{
+  "totalTokens": null,
+  "totalTokensFresh": false,
+  "contextTokens": 200000,
+  "sessionId": "7da68c0d-7614-43df-9826-2d2f22968f2a",
+  "sessionFile": "/home/moonlight/.openclaw/agents/main/sessions/7da68c0d-7614-43df-9826-2d2f22968f2a.jsonl"
+}
+```
+
+## Root Cause of "unknown"
+
+`totalTokens: null` → 显示为 `unknown`
+
+## Questions to Investigate
+
+1. 为什么 totalTokens 是 null？
+2. 谁负责更新 totalTokens？
+3. 是否有 token counting 机制？

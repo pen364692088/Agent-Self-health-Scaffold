@@ -1,0 +1,127 @@
+{
+  "timestamp": "2026-03-09T12:20:00",
+  "phase": "D4A",
+  "samples": [
+    {
+      "sample_id": "long_technical_1",
+      "bucket": "long_technical",
+      "v2": {
+        "readiness": 0.0,
+        "signals": {},
+        "decision_context": false,
+        "outcome": "fail"
+      },
+      "v3": {
+        "readiness": 0.0,
+        "signals": {},
+        "decision_context": false,
+        "outcome": "fail"
+      },
+      "delta": {
+        "readiness": -0.65,
+        "decision_context": "No change",
+        "outcome": "fail -> fail"
+      },
+      "dc_extraction": null
+    },
+    {
+      "sample_id": "long_technical_2",
+      "bucket": "long_technical",
+      "v2": {
+        "readiness": 0.65,
+        "signals": {
+          "next_action": true,
+          "decision_context": false,
+          "tool_state": true
+        },
+        "decision_context": false,
+        "outcome": "partial"
+      },
+      "v3": {
+        "readiness": 0.85,
+        "signals": {
+          "next_action": true,
+          "decision_context": true,
+          "tool_state": true
+        },
+        "decision_context": true,
+        "outcome": "partial_plus"
+      },
+      "delta": {
+        "readiness": 0.19999999999999996,
+        "decision_context": "False -> True",
+        "outcome": "partial -> partial_plus"
+      },
+      "dc_extraction": {
+        "present": true,
+        "decisions": [
+          {
+            "what": "采用双写策略：同时更新状态文件和 WAL",
+            "why": null,
+            "pattern_type": "simple_marker",
+            "confidence": 0.6
+          }
+        ],
+        "last_decision": {
+          "what": "采用双写策略：同时更新状态文件和 WAL",
+          "why": null
+        },
+        "extraction_confidence": 0.6
+      }
+    },
+    {
+      "sample_id": "long_technical_3",
+      "bucket": "long_technical",
+      "v2": {
+        "readiness": 0.65,
+        "signals": {
+          "next_action": true,
+          "decision_context": false,
+          "tool_state": true
+        },
+        "decision_context": false,
+        "outcome": "partial"
+      },
+      "v3": {
+        "readiness": 0.85,
+        "signals": {
+          "next_action": true,
+          "decision_context": true,
+          "tool_state": true
+        },
+        "decision_context": true,
+        "outcome": "partial_plus"
+      },
+      "delta": {
+        "readiness": 0.19999999999999996,
+        "decision_context": "False -> True",
+        "outcome": "partial -> partial_plus"
+      },
+      "dc_extraction": {
+        "present": true,
+        "decisions": [
+          {
+            "what": "选择先修复 decision_context",
+            "why": null,
+            "pattern_type": "simple_marker",
+            "confidence": 0.6
+          }
+        ],
+        "last_decision": {
+          "what": "选择先修复 decision_context",
+          "why": null
+        },
+        "extraction_confidence": 0.6
+      }
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "v2_avg_readiness": 0.43333333333333335,
+    "v3_avg_readiness": 0.5666666666666667,
+    "v2_dc_coverage": 0.0,
+    "v3_dc_coverage": 0.6666666666666666,
+    "v2_partial_plus_rate": 0.0,
+    "v3_partial_plus_rate": 0.6666666666666666
+  }
+}

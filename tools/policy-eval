@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""
+Execution Policy Evaluator
+
+Evaluates tool calls against execution policies.
+Usage: policy-eval --path <path> --tool <tool> [--operation <op>] [--json]
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+# Policy rules file location
+RULES_FILE = Path.home() / ".openclaw" / "workspace" / "POLICIES" / "EXECUTION_POLICY_RULES.yaml"
+VIOLATIONS_DIR = Path.home() / ".openclaw" / "workspace" / "artifacts" / "execution_policy" / "violations"
+
+
+def load_rules() -> dict:
+    """Load policy rules from YAML file."""
+    import yaml
+    
+    if not RULES_FILE.exists():
+        return {"metadata": {"version": "1.0.0"}, "rules": []}
+    
+    with open(RULES_FILE) as f:
+        return yaml.safe_load(f)
+
+
+def expand_path(path: str) -> str:
+    """Expand path with home directory."""
+    return os.path.expanduser(path)
+
+
+def match_path_pattern(path: str, pattern: str) -> bool:
+    """Check if path matches pattern."""
+    expanded_path = expand_path(path)
+    expanded_pattern = expand_path(pattern)
+    
+    # Handle negation pattern
+    if pattern.startswith("!"):
+        inner_pattern = pattern[1:]
+        return not match_path_pattern(path, inner_pattern)
+    
+    # Handle ** glob pattern
+    if "**" in expanded_pattern:
+        # Convert glob to regex
+        regex_pattern = expanded_pattern.replace("**", ".*")
+        regex_pattern = regex_pattern.replace("*", "[^/]*")
+        return bool(re.match(f"^{regex_pattern}", expanded_path))
+    
+    # Simple prefix match for non-glob patterns
+    return expanded_path.startswith(expanded_pattern.rstrip("*"))
+
+
+def evaluate_rule(rule: dict, path: str, tool: str, operation: str = "write") -> dict:
+    """Evaluate a single rule against the input."""
+    trigger = rule.get("trigger", {})
+    
+    # Skip rules that don't apply to path/tool evaluation
+    # Only process rules with path_pattern for path-based evaluation
+    if "path_pattern" not in trigger:
+        return {"matched": False}
+    
+    # Check path pattern
+    if "path_pattern" in trigger:
+        if not match_path_pattern(path, trigger["path_pattern"]):
+            return {"matched": False}
+    
+    # Check tools
+    if "tools" in trigger:
+        if tool not in trigger["tools"]:
+            return {"matched": False}
+    
+    if "tool" in trigger:
+        if tool != trigger["tool"]:
+            return {"matched": False}
+    
+    # Check operation
+    if "operation" in trigger:
+        if operation != trigger["operation"]:
+            return {"matched": False}
+    
+    return {
+        "matched": True,
+        "rule_id": rule["id"],
+        "priority": rule["priority"],
+        "action": rule["action"],
+        "fallback": rule.get("fallback", ""),
+        "reason": rule.get("reason", "")
+    }
+
+
+def log_violation(rule_id: str, decision: str, path: str, tool: str, session_key: str = ""):
+    """Log violation to file."""
+    VIOLATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "rule_id": rule_id,
+        "decision": decision,
+        "path": path,
+        "tool": tool,
+        "session_key": session_key
+    }
+    
+    log_file = VIOLATIONS_DIR / f"violations_{datetime.now().strftime('%Y%m%d')}.jsonl"
+    with open(log_file, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
+
+def evaluate(path: str, tool: str, operation: str = "write", session_key: str = "") -> dict:
+    """Evaluate tool call against all rules."""
+    rules_data = load_rules()
+    rules = rules_data.get("rules", [])
+    
+    # Sort by priority (P0 first)
+    priority_order = {"P0": 0, "P1": 1, "P2": 2}
+    rules.sort(key=lambda r: priority_order.get(r.get("priority", "P2"), 2))
+    
+    matched_rules = []
+    
+    for rule in rules:
+        if rule.get("status") != "active":
+            continue
+            
+        result = evaluate_rule(rule, path, tool, operation)
+        if result["matched"]:
+            matched_rules.append(result)
+    
+    if not matched_rules:
+        return {
+            "decision": "allow",
+            "rule_id": None,
+            "message": "No policy violations detected",
+            "matched_rules": []
+        }
+    
+    # Return highest priority match
+    top_match = matched_rules[0]
+    
+    # Log violation if deny or warn
+    if top_match["action"] in ["deny", "warn"]:
+        log_violation(top_match["rule_id"], top_match["action"], path, tool, session_key)
+    
+    return {
+        "decision": top_match["action"],
+        "rule_id": top_match["rule_id"],
+        "reason": top_match["reason"],
+        "fallback": top_match["fallback"],
+        "matched_rules": matched_rules
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Evaluate execution policies")
+    parser.add_argument("--path", required=True, help="Target path")
+    parser.add_argument("--tool", required=True, help="Tool name")
+    parser.add_argument("--operation", default="write", help="Operation type")
+    parser.add_argument("--session-key", default="", help="Session key for logging")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    
+    args = parser.parse_args()
+    
+    result = evaluate(args.path, args.tool, args.operation, args.session_key)
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(f"Decision: {result['decision'].upper()}")
+        if result.get("rule_id"):
+            print(f"Rule: {result['rule_id']}")
+        if result.get("reason"):
+            print(f"Reason: {result['reason']}")
+        if result.get("fallback"):
+            print(f"Fallback: {result['fallback']}")
+    
+    # Exit with error code if denied
+    sys.exit(1 if result["decision"] == "deny" else 0)
+
+
+if __name__ == "__main__":
+    main()

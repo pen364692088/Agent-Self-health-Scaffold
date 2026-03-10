@@ -9,12 +9,12 @@
       "details": {
         "directory_exists": true,
         "directory_path": "/home/moonlight/.openclaw/workspace/artifacts/receipts",
-        "receipt_count": 31,
+        "receipt_count": 39,
         "receipt_type_counts": {
-          "preflight": 7,
-          "final": 7,
-          "contract": 7,
-          "e2e": 7
+          "preflight": 9,
+          "contract": 9,
+          "final": 9,
+          "e2e": 9
         }
       }
     },
@@ -44,7 +44,7 @@
       "description": "Check receipt generation flow",
       "passed": true,
       "details": {
-        "complete_tasks": 7,
+        "complete_tasks": 9,
         "incomplete_tasks": 0,
         "sample_tasks": [
           {
@@ -68,27 +68,27 @@
             "complete": true
           },
           {
+            "task_id": "task_20260309_035430_600f5e2f",
+            "receipts_found": [
+              "contract",
+              "e2e",
+              "preflight",
+              "final"
+            ],
+            "complete": true
+          },
+          {
+            "task_id": "daily-briefing-7am",
+            "receipts_found": [
+              "contract",
+              "e2e",
+              "preflight",
+              "final"
+            ],
+            "complete": true
+          },
+          {
             "task_id": "test-task",
-            "receipts_found": [
-              "contract",
-              "e2e",
-              "preflight",
-              "final"
-            ],
-            "complete": true
-          },
-          {
-            "task_id": "session_reuse_v1_0",
-            "receipts_found": [
-              "contract",
-              "e2e",
-              "preflight",
-              "final"
-            ],
-            "complete": true
-          },
-          {
-            "task_id": "baseline_happy_001",
             "receipts_found": [
               "contract",
               "e2e",
@@ -122,5 +122,5 @@
   "message": "Receipt pipeline chain healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-09T08:32:12.557424+00:00"
+  "timestamp": "2026-03-10T01:16:31.153122+00:00"
 }

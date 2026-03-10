@@ -1,0 +1,166 @@
+{
+  "version": "2.1-decision-context-enhanced",
+  "established_at": "2026-03-09T12:42:19.826568",
+  "window": "V3_production_kickoff",
+  "metrics": {
+    "agreement_rate": {
+      "value": 0.92,
+      "threshold_low": 0.8,
+      "threshold_high": 1.0,
+      "alert_direction": "below"
+    },
+    "fp_rate": {
+      "value": 0.0,
+      "threshold_low": 0.0,
+      "threshold_high": 0.2,
+      "alert_direction": "above"
+    },
+    "fn_rate": {
+      "value": 0.02,
+      "threshold_low": 0.0,
+      "threshold_high": 0.15,
+      "alert_direction": "above"
+    },
+    "decision_context_coverage": {
+      "value": 0.667,
+      "threshold_low": 0.5,
+      "threshold_high": 1.0,
+      "alert_direction": "below"
+    },
+    "create_action_ambiguity_rate": {
+      "value": 0.08,
+      "threshold_low": 0.0,
+      "threshold_high": 0.15,
+      "alert_direction": "above",
+      "notes": "4/50 samples, track trend"
+    }
+  },
+  "buckets": {
+    "user_correction": {
+      "samples": 7,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0,
+      "status": "healthy"
+    },
+    "multi_topic_switch": {
+      "samples": 3,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0,
+      "status": "healthy"
+    },
+    "post_tool_chat": {
+      "samples": 4,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0,
+      "status": "healthy"
+    },
+    "historical": {
+      "samples": 5,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 1,
+      "status": "healthy"
+    },
+    "old_topic_recall": {
+      "samples": 6,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0,
+      "status": "healthy"
+    },
+    "real_main_agent": {
+      "samples": 15,
+      "agreement_rate": 0.93,
+      "fp_count": 1,
+      "fn_count": 1,
+      "status": "healthy"
+    },
+    "open_loops": {
+      "samples": 7,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0,
+      "status": "healthy"
+    },
+    "long_technical": {
+      "samples": 3,
+      "agreement_rate": "N/A",
+      "fp_count": 0,
+      "fn_count": 0,
+      "dc_coverage": 0.667,
+      "status": "healthy",
+      "notes": "V3 resolved baseline FP issue"
+    }
+  },
+  "tail_risks": {
+    "create_action_ambiguity": {
+      "current_count": 4,
+      "current_rate": 0.08,
+      "status": "watch",
+      "escalation_rules": [
+        "\u8fde\u7eed 2 \u4e2a window \u4e0a\u5347",
+        "\u4e0e recovery failure/partial \u76f8\u5173",
+        "\u67d0 bucket \u5360\u6bd4\u6301\u7eed\u504f\u9ad8",
+        "\u89e6\u53d1\u65b0 FP/disagreement \u805a\u96c6"
+      ],
+      "impact_tracking": {
+        "impact_types": [
+          "recovery_failure",
+          "recovery_partial",
+          "disagreement",
+          "FP"
+        ],
+        "weights": {
+          "recovery_failure": "high",
+          "recovery_partial": "medium",
+          "disagreement": "low",
+          "FP": "medium"
+        },
+        "current_samples": [
+          {
+            "sample_id": "sample_synthetic_stress_long_technical_d63722cc",
+            "impact": "disagreement",
+            "weight": "low"
+          },
+          {
+            "sample_id": "sample_synthetic_stress_long_technical_697e5f82",
+            "impact": "disagreement",
+            "weight": "low"
+          },
+          {
+            "sample_id": "sample_real_main_agent_old_topic_recall_f268e9be",
+            "impact": "disagreement",
+            "weight": "low"
+          },
+          {
+            "sample_id": "sample_synthetic_stress_long_technical_d9843c56",
+            "impact": "disagreement",
+            "weight": "low"
+          }
+        ],
+        "impact_summary": {
+          "recovery_failure": 0,
+          "recovery_partial": 0,
+          "disagreement": 4,
+          "FP": 0
+        },
+        "assessment": "\u9ad8\u9891\u4f4e\u5f71\u54cd - \u76ee\u524d\u53ea\u6709 disagreement\uff0c\u65e0\u4e1a\u52a1\u6740\u4f24"
+      }
+    },
+    "long_technical_variants": {
+      "current_count": 3,
+      "status": "observe",
+      "notes": "Synthetic samples only, no real-world impact yet"
+    }
+  },
+  "total_samples": 50,
+  "sample_thresholds": {
+    "min_total_samples": 20,
+    "min_bucket_samples": 3,
+    "note": "\u4f4e\u4e8e\u9608\u503c\u4e0d\u5224\u5b9a\u8d8b\u52bf\uff0c\u6807\u8bb0 insufficient_data"
+  },
+  "last_updated": "2026-03-09T13:10:40.434371"
+}

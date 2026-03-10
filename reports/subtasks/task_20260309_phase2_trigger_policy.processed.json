@@ -1,0 +1,19 @@
+{
+  "task_id": "task_20260309_phase2_trigger_policy",
+  "run_id": "task_20260309_phase2_trigger_policy",
+  "session_key": "agent:main:subagent:31c48fbe-d1f0-45d5-ad8a-8f16ab424faf",
+  "parent_session_key": "",
+  "status": "completed",
+  "summary": "Phase 2: Trigger Policy + Cooldown implemented",
+  "artifacts": [
+    "docs/context_compression/AUTO_COMPACTION_POLICY.md",
+    "docs/context_compression/COMPACTION_BLOCKERS.md",
+    "tools/trigger-policy",
+    "docs/context_compression/02_TRIGGER_POLICY_REPORT.md"
+  ],
+  "error": null,
+  "notify_user": true,
+  "written_at": "2026-03-09T14:33:41.105128",
+  "retry_count": 0,
+  "metadata": {}
+}

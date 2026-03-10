@@ -45,7 +45,7 @@
         "distill_tool_path": "/home/moonlight/.openclaw/workspace/tools/distill-content",
         "distill_dir_exists": true,
         "distill_dir_path": "/home/moonlight/.openclaw/workspace/artifacts/distilled",
-        "distilled_file_count": 2
+        "distilled_file_count": 3
       }
     }
   ],
@@ -55,5 +55,5 @@
   "message": "Session archive system healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-09T08:32:17.885105+00:00"
+  "timestamp": "2026-03-10T01:16:32.157534+00:00"
 }

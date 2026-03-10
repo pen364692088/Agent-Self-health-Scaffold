@@ -31,6 +31,7 @@ P0_PROBES = [
 # P1 Probes - High priority system chains
 # P1 Probes - High priority system chains
 P1_PROBES = [
+    'probe-execution-policy-v2',
     'probe-openviking-retrieval',
     'probe-longrunkit-state-machine',
     'probe-longrunkit-deadlock',

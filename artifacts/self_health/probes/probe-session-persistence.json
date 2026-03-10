@@ -10,10 +10,8 @@
       "passed": true,
       "details": {
         "path": "/home/moonlight/.openclaw/workspace/SESSION-STATE.md",
-        "size_bytes": 948,
-        "fields_found": [
-          "status"
-        ]
+        "size_bytes": 1289,
+        "fields_found": []
       }
     },
     {
@@ -39,7 +37,7 @@
       "passed": true,
       "details": {
         "path": "/home/moonlight/.openclaw/workspace/state/session_continuity_events.jsonl",
-        "total_lines": 297,
+        "total_lines": 676,
         "valid_entries": 0
       }
     },
@@ -49,9 +47,9 @@
       "passed": true,
       "details": {
         "path": "/home/moonlight/.openclaw/workspace/working-buffer.md",
-        "size_bytes": 907
+        "size_bytes": 1710
       }
     }
   ],
-  "timestamp": "2026-03-09T08:32:09.113322+00:00"
+  "timestamp": "2026-03-10T01:16:26.895776+00:00"
 }

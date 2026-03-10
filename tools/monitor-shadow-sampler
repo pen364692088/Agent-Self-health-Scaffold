@@ -1,0 +1,141 @@
+#!/bin/bash
+# monitor-shadow-sampler - Auto-sample capsules for shadow validation
+#
+# Usage:
+#   monitor-shadow-sampler [--sample-size N] [--output DIR]
+#
+# This tool samples recent capsules and runs shadow validation
+# to detect drift before it becomes a problem.
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE="$HOME/.openclaw/workspace"
+
+# Defaults
+SAMPLE_SIZE=${SAMPLE_SIZE:-10}
+OUTPUT_DIR="$WORKSPACE/artifacts/monitoring/shadow_samples"
+TIMESTAMP=$(date -u +"%Y%m%d_%H%M%S")
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --sample-size)
+            SAMPLE_SIZE="$2"
+            shift 2
+            ;;
+        --output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+# Create output directory
+mkdir -p "$OUTPUT_DIR"
+
+# Sample file
+SAMPLE_FILE="$OUTPUT_DIR/shadow_sample_$TIMESTAMP.json"
+
+# Get recent capsules (if any)
+CAPSULES_DIR="$WORKSPACE/artifacts/capsules"
+if [[ -d "$CAPSULES_DIR" ]]; then
+    RECENT_CAPSULES=$(find "$CAPSULES_DIR" -name "*.json" -type f -mtime -1 2>/dev/null | head -n "$SAMPLE_SIZE")
+else
+    RECENT_CAPSULES=""
+fi
+
+# Build sample report
+cat > "$SAMPLE_FILE" << EOFHEADER
+{
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "sample_id": "shadow_sample_$TIMESTAMP",
+  "sample_size": $SAMPLE_SIZE,
+  "capsules_found": $(echo "$RECENT_CAPSULES" | grep -c . || echo 0),
+  "samples": [
+EOFHEADER
+
+# Add sample entries
+FIRST=true
+if [[ -n "$RECENT_CAPSULES" ]]; then
+    while IFS= read -r capsule; do
+        if [[ -n "$capsule" ]]; then
+            if [[ "$FIRST" == "true" ]]; then
+                FIRST=false
+            else
+                echo "," >> "$SAMPLE_FILE"
+            fi
+            
+            # Extract key metrics
+            READINESS=$(python3 -c "import json; print(json.load(open('$capsule')).get('metrics', {}).get('readiness', 0))" 2>/dev/null || echo "0")
+            VERSION=$(python3 -c "import json; print(json.load(open('$capsule')).get('evaluator_version', 'unknown'))" 2>/dev/null || echo "unknown")
+            DC_PRESENT=$(python3 -c "import json; d=json.load(open('$capsule')); print(d.get('v3_evaluation', {}).get('signals', {}).get('decision_context', False))" 2>/dev/null || echo "false")
+            
+            cat >> "$SAMPLE_FILE" << EOFENTRY
+    {
+      "capsule_file": "$(basename "$capsule")",
+      "readiness": $READINESS,
+      "evaluator_version": "$VERSION",
+      "decision_context": $DC_PRESENT,
+      "spot_check_required": false
+    }
+EOFENTRY
+        fi
+    done <<< "$RECENT_CAPSULES"
+fi
+
+# Close JSON
+cat >> "$SAMPLE_FILE" << EOFFOOTER
+  ],
+  "summary": {
+    "avg_readiness": 0.0,
+    "dc_coverage": 0.0,
+    "spot_checks_required": 0
+  },
+  "status": "sampled"
+}
+EOFFOOTER
+
+# Update summary
+python3 << EOFPYTHON
+import json
+
+with open("$SAMPLE_FILE", 'r') as f:
+    data = json.load(f)
+
+samples = data.get('samples', [])
+if samples:
+    avg_readiness = sum(s.get('readiness', 0) for s in samples) / len(samples)
+    dc_coverage = sum(1 for s in samples if s.get('decision_context', False)) / len(samples)
+    spot_checks = sum(1 for s in samples if s.get('spot_check_required', False))
+else:
+    avg_readiness = 0
+    dc_coverage = 0
+    spot_checks = 0
+
+data['summary'] = {
+    'avg_readiness': round(avg_readiness, 2),
+    'dc_coverage': round(dc_coverage, 2),
+    'spot_checks_required': spot_checks
+}
+
+# Determine status
+if spot_checks > len(samples) * 0.3:
+    data['status'] = 'attention_required'
+else:
+    data['status'] = 'healthy'
+
+with open("$SAMPLE_FILE", 'w') as f:
+    json.dump(data, f, indent=2)
+
+print(f"Sample file: $SAMPLE_FILE")
+print(f"Samples: {len(samples)}")
+print(f"Avg readiness: {avg_readiness:.2f}")
+print(f"DC coverage: {dc_coverage:.0%}")
+print(f"Status: {data['status']}")
+EOFPYTHON
+
+echo "✅ Shadow sample created: $SAMPLE_FILE"

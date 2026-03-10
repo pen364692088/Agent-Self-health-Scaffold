@@ -1,6 +1,8 @@
 {
-  "last_run_at": "2026-03-09T08:32:08.102936+00:00",
-  "last_run_epoch": 1773045141.9524658,
+  "last_run_at": "2026-03-10T00:18:20.086141+00:00",
+  "last_run_epoch": 1773101916.2435277,
   "last_run_result": "ok",
-  "last_run_duration_ms": 13777
+  "last_run_duration_ms": 16084,
+  "last_skipped_reason": "cooldown",
+  "last_skipped_at": "2026-03-09T15:58:01.014091+00:00"
 }

@@ -1,110 +1,49 @@
 # Handoff Summary
 
-**Created**: 2026-03-09T14:59:00-06:00
+## Timestamp
+2026-03-09 18:24 CST
 
----
+## Completed Task
+Execution Policy Enforcement & Anti-Forgetting Framework v1
 
-## Completed Objective
+## Status
+✅ 完成
 
-### Auto-Compaction Waterline Control v1.0
+## 交付物
 
-**Verdict**: GUARDED_ENABLEMENT ✅
+**POLICIES 文档**：
+- EXECUTION_POLICY.md - 核心原则与架构
+- EXECUTION_POLICY_RULES.yaml - 40+ 条规则定义
+- EXECUTION_POLICY_SCHEMA.json - 规则 Schema
+- EXECUTION_POLICY_RUNBOOK.md - 运维手册
 
-实现自动压缩水位控制，使系统能在 context ratio 进入高水位时自动触发压缩，回落到安全区。
+**执行工具**：
+- tools/policy-eval - 规则评估器
+- tools/policy-doctor - 健康检查
+- tools/policy-violations-report - 违规报告
 
----
+**安全写入工具**：
+- tools/safe-write - 完整文件写入
+- tools/safe-replace - 精确内容替换
 
-## What Was Built
+**Hook 系统**：
+- hooks/execution-policy-enforcer/ - Git hooks + Pre-action guard
 
-### 6 New Tools
+**测试套件**：
+- tests/policy/test_execution_policy.py - 20/20 通过
+- tests/e2e/test_execution_policy_e2e.py - 16/16 通过
 
-| Tool | Purpose | Tests |
-|------|---------|-------|
-| `context-budget-watcher` | 持续监控 ratio + 区间判定 | 4/4 |
-| `trigger-policy` | 触发决策引擎 | 10/10 |
-| `auto-context-compact` | 自动压缩执行器 | 6/6 |
-| `shadow_watcher` | Shadow 模式监控 | Ready |
-| `threshold_test_runner` | 阈值测试 | 100% |
-| `post-compaction-handoff` | 状态持久化 | 5/5 |
+## Gate 验证
+- Gate A: ✅ 通过 (Policy 验证)
+- Gate B: ✅ 通过 (工具可用性)
+- Gate C: ✅ 通过 (测试覆盖)
 
-### 27 Documentation Files
+## 下一步
+1. 接入 agent-self-health-scaffold 监控
+2. 更新 SOUL.md 引用新规则
+3. 归档本次会话
 
-- `docs/context_compression/FINAL_AUTO_COMPACTION_VERDICT.md` — 最终验收
-- `docs/context_compression/99_HANDOFF.md` — 使用指南
-- `docs/context_compression/AUTO_COMPACTION_ROLLBACK.md` — 回滚方案
-- 详见 `docs/context_compression/` 目录
-
----
-
-## Key Thresholds
-
-| Zone | Trigger | Target |
-|------|---------|--------|
-| Normal | ratio >= 0.80 | 0.55-0.65 |
-| Emergency | ratio >= 0.90 | 0.45-0.55 |
-
-**Cooldown**: 30min (normal), 15min (emergency)
-
----
-
-## How to Use
-
-### Shadow Mode (推荐先运行 1 周)
-```bash
-export AUTO_COMPACTION_SHADOW_MODE=true
-~/.openclaw/workspace/tools/shadow_watcher --metrics
-```
-
-### Manual Trigger
-```bash
-~/.openclaw/workspace/tools/auto-context-compact --dry-run  # 预览
-~/.openclaw/workspace/tools/auto-context-compact           # 执行
-```
-
-### Check Status
-```bash
-~/.openclaw/workspace/tools/context-budget-watcher --json
-~/.openclaw/workspace/tools/trigger-policy --ratio 0.85
-```
-
----
-
-## Git Commit
-
-```
-c9e5e8f feat(context-compression): Auto-Compaction Waterline Control v1.0
-39 files changed, 9264 insertions(+), 26 deletions(-)
-```
-
----
-
-## Previous Context (Archived)
-
-- V3 Compression Pipeline: Production default
-- Monitoring: Drift watch + Tail-risk scan active
-- Baseline: DC Coverage 66.7%, FP 0%
-
-
----
-
-## 2026-03-09 Update: Shadow Mode Enabled
-
-**Status**: 🟢 SHADOW MODE ACTIVE
-
-### What Changed
-- Fixed `context-budget-watcher` to handle ratio_unavailable correctly
-- Fixed `auto-context-compact` to treat skipped status as success
-- Enabled shadow mode via `shadow_config.json`
-- First shadow trace recorded successfully
-
-### Current State
-- Shadow mode: ENABLED
-- Trace entries: 1
-- All tools: Operational
-- Exit criteria: Tracking (7 criteria defined)
-
-### Next Steps
-1. Let shadow run for 3-7 days
-2. Monitor metrics with `shadow_watcher --metrics`
-3. Review exit criteria before enabling production default
-
+## Receipt
+- Task ID: task_20260309_181637_b8a12ca9
+- Run ID: run_665fc3de
+- Session Key: agent:main:subagent:1544d35d-e6ce-4e5e-9724-d81cb205281f

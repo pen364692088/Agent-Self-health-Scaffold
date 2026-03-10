@@ -1,0 +1,30 @@
+{
+  "version": "openviking_metrics.v1",
+  "generated_at": "2026-03-09T16:42:01.627452+00:00",
+  "source": "backfill",
+  "doc_count": 1,
+  "coverage": {
+    "min": 1.0,
+    "p50": 1.0,
+    "p95": 1.0
+  },
+  "skipped_chunks_count": 0,
+  "fallback_trigger_count": 61,
+  "dual_guard_trim_count": 58,
+  "offenders_topN": [
+    {
+      "doc_id": "viking://resources/user/sessions/daily/2026-03-09_distilled_1/2026-03-09_distilled.md",
+      "doc_hash": "290e7ff93d011d8cd4e6e29607cae7a6c12d62db9238c3c981f118f828d96a63",
+      "embedding_coverage_pct": 1.0,
+      "max_chunk_tokens_seen": 788,
+      "max_chunk_chars_seen": 608,
+      "max_chunk_bytes_seen": 788,
+      "skipped_chunks_count": 0,
+      "truncated_chunks_count": 0,
+      "embedding_status": "ok",
+      "token_count_method": "safe_fallback",
+      "fallback_trigger_count": 61,
+      "dual_guard_trim_count": 58
+    }
+  ]
+}

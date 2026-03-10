@@ -1,0 +1,125 @@
+#!/bin/bash
+# monitor-bucket-metrics - Track agreement and FP rate per bucket
+
+set -e
+
+WORKSPACE="$HOME/.openclaw/workspace"
+OUTPUT_FILE="$WORKSPACE/artifacts/monitoring/bucket_metrics.json"
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+mkdir -p "$(dirname "$OUTPUT_FILE")"
+
+python3 << 'PYEOF'
+import json
+from pathlib import Path
+from collections import defaultdict
+
+workspace = Path("/home/moonlight/.openclaw/workspace")
+output_file = Path("/home/moonlight/.openclaw/workspace/artifacts/monitoring/bucket_metrics.json")
+
+# Load calibration data
+calibration_file = workspace / "artifacts/context_compression/calibration/REVALIDATION_RESULTS.json"
+if not calibration_file.exists():
+    print("WARNING: Calibration file not found")
+    samples = []
+else:
+    with open(calibration_file) as f:
+        calibration_data = json.load(f)
+    samples = calibration_data.get('samples', [])
+
+# Group by bucket
+buckets = defaultdict(lambda: {
+    'samples': 0,
+    'agreement_count': 0,
+    'fp': 0,
+    'fn': 0,
+    'dc_present': 0
+})
+
+for s in samples:
+    sample_id = s.get('sample_id', '')
+    
+    # Determine bucket
+    if 'long_technical' in sample_id:
+        bucket = 'long_technical'
+    elif 'real_main_agent' in sample_id:
+        bucket = 'real_main_agent'
+    elif 'historical' in sample_id:
+        bucket = 'historical'
+    elif 'old_topic_recall' in sample_id:
+        bucket = 'old_topic_recall'
+    elif 'user_correction' in sample_id:
+        bucket = 'user_correction'
+    elif 'open_loops' in sample_id:
+        bucket = 'open_loops'
+    elif 'post_tool_chat' in sample_id:
+        bucket = 'post_tool_chat'
+    elif 'multi_topic_switch' in sample_id:
+        bucket = 'multi_topic_switch'
+    else:
+        bucket = 'other'
+    
+    buckets[bucket]['samples'] += 1
+    
+    if s.get('v2_agreement'):
+        buckets[bucket]['agreement_count'] += 1
+    
+    v2_score = s.get('v2_score', 0)
+    human_score = s.get('human_score', 0)
+    if v2_score > 0.5 and human_score == 0:
+        buckets[bucket]['fp'] += 1
+    if v2_score < 0.3 and human_score > 0:
+        buckets[bucket]['fn'] += 1
+    
+    signals = s.get('v2_signals', {})
+    if signals.get('decision_context', False):
+        buckets[bucket]['dc_present'] += 1
+
+# Build output
+output = {
+    "timestamp": "2026-03-09T12:30:00Z",
+    "buckets": {}
+}
+
+for bucket_name, data in buckets.items():
+    count = data['samples']
+    if count == 0:
+        continue
+    
+    agreement_rate = data['agreement_count'] / count if count > 0 else 0
+    fp_rate = data['fp'] / count if count > 0 else 0
+    dc_coverage = data['dc_present'] / count if count > 0 else 0
+    
+    status = 'healthy'
+    if agreement_rate < 0.8:
+        status = 'warning'
+    if agreement_rate < 0.7 or fp_rate > 0.2:
+        status = 'critical'
+    
+    output['buckets'][bucket_name] = {
+        'samples': count,
+        'agreement_rate': round(agreement_rate, 2),
+        'fp_count': data['fp'],
+        'fn_count': data['fn'],
+        'dc_coverage': round(dc_coverage, 2),
+        'status': status
+    }
+
+# Summary
+total_samples = sum(b['samples'] for b in output['buckets'].values())
+output['summary'] = {
+    'total_samples': total_samples,
+    'bucket_count': len(output['buckets']),
+    'healthy_buckets': sum(1 for b in output['buckets'].values() if b['status'] == 'healthy')
+}
+
+# Save
+output_file.parent.mkdir(parents=True, exist_ok=True)
+with open(output_file, 'w') as f:
+    json.dump(output, f, indent=2)
+
+print(f"✅ Bucket metrics saved to: {output_file}")
+print(f"   Total samples: {total_samples}")
+print(f"   Buckets: {len(output['buckets'])}")
+print(f"   Healthy: {output['summary']['healthy_buckets']}")
+PYEOF

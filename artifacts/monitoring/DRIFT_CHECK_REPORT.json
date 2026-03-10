@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-03-09T12:37:01.324881",
+  "baseline_version": "V2",
+  "current_version": "V3 (2.1-decision-context-enhanced)",
+  "checks": {
+    "agreement_rate": {
+      "baseline": 0.92,
+      "current": 0.92,
+      "threshold": 0.8,
+      "status": "PASS"
+    },
+    "dc_coverage": {
+      "baseline": 0.0,
+      "current": 0.6666666666666666,
+      "threshold": 0.5,
+      "status": "PASS"
+    },
+    "long_technical_fp": {
+      "baseline_fp": 3,
+      "current_fp": 0,
+      "threshold": 0,
+      "status": "PASS"
+    },
+    "fp_rate": {
+      "baseline": 0.08,
+      "current": 0,
+      "threshold": 0.2,
+      "status": "PASS"
+    }
+  },
+  "summary": {
+    "overall": "CLEAN",
+    "alerts": [],
+    "warnings": [],
+    "improvements": [
+      "decision_context coverage: 0% -> 66.7%",
+      "long_technical FP: 3 -> 0",
+      "long_technical bucket: critical -> healthy"
+    ]
+  }
+}

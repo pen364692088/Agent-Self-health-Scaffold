@@ -295,3 +295,382 @@
     "recovery_id": "unknown:2026-03-09T01:00:20.761376"
   }
 }
+{
+  "ts": "2026-03-09T03:49:18-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T03:49:18.297524",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "CLOSED",
+    "recovery_id": "unknown:2026-03-09T03:49:18.297524"
+  }
+}
+{
+  "ts": "2026-03-09T04:01:49-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773046909",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "task_20260309_035430_600f5e2f",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773046909",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T04:01:49-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:task_20260309_035430_600f5e2f:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "task_20260309_035430_600f5e2f",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "8ee43a2b6b1c7ee5"
+  }
+}
+{
+  "ts": "2026-03-09T07:00:11-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T07:00:11.698607",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "CLOSED",
+    "recovery_id": "unknown:2026-03-09T07:00:11.698607"
+  }
+}
+{
+  "ts": "2026-03-09T07:00:25-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773057625",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "daily-briefing-7am",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773057625",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T07:00:25-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:daily-briefing-7am:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "daily-briefing-7am",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "6018178d95da680b"
+  }
+}
+{
+  "ts": "2026-03-09T10:05:53-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T10:05:53.173320",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "CLOSED - 观察期",
+    "recovery_id": "unknown:2026-03-09T10:05:53.173320"
+  }
+}
+{
+  "ts": "2026-03-09T11:12:10-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T11:12:10.694470",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "构建 OpenClaw Agent 自观测 / 异常汇报 / 分级自愈机制。",
+    "phase": "CLOSED - Gate 1 Partial Pass",
+    "recovery_id": "unknown:2026-03-09T11:12:10.694470"
+  }
+}
+{
+  "ts": "2026-03-09T11:45:05-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T11:45:05.479406",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "Context Compression Pipeline · Gate 1 + Promotion ",
+    "phase": "CLOSED",
+    "recovery_id": "unknown:2026-03-09T11:45:05.479406"
+  }
+}
+{
+  "ts": "2026-03-09T14:24:27-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T14:24:27.591601",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "Context Compression Pipeline · Stability / Drift W",
+    "phase": "POST-PRODUCTION · MONITORING",
+    "recovery_id": "unknown:2026-03-09T14:24:27.591601"
+  }
+}
+{
+  "ts": "2026-03-09T15:08:33-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773086913",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_happy_path_001",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773086913",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T15:08:33-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:test_happy_path_001:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_happy_path_001",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "0793279e84b05a65"
+  }
+}
+{
+  "ts": "2026-03-09T15:08:33-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:test_receipt_fields_001:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_receipt_fields_001",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "50e520cabcaaacb7"
+  }
+}
+{
+  "ts": "2026-03-09T15:08:33-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:test_partial_receipts_001:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_partial_receipts_001",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "709ded3aa3105bc3"
+  }
+}
+{
+  "ts": "2026-03-09T15:09:15-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773086955",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_happy_path_001",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773086955",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T15:09:16-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773086956",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_human_failed_001",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773086956",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T15:09:16-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:test_human_failed_001:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_human_failed_001",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "395dcbb2976d7b6f"
+  }
+}
+{
+  "ts": "2026-03-09T15:09:16-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:test_validator_001:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_validator_001",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "23a4427710a90159"
+  }
+}
+{
+  "ts": "2026-03-09T15:09:16-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:test_interceptor_002:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_interceptor_002",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "0bb8d29ffd9fe1ee"
+  }
+}
+{
+  "ts": "2026-03-09T15:12:20-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773087140",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_happy_path_001",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773087140",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T15:12:21-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773087141",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_happy_path_001",
+    "gate": "gate_b",
+    "result": "pass",
+    "gate_id": "1773087141",
+    "checks": "2"
+  }
+}
+{
+  "ts": "2026-03-09T15:12:22-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773087142",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_validator_001",
+    "gate": "gate_b",
+    "result": "pass",
+    "gate_id": "1773087142",
+    "checks": "2"
+  }
+}
+{
+  "ts": "2026-03-09T15:12:51-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773087171",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_happy_path_001",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773087171",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T15:12:52-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773087172",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test_human_failed_001",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773087172",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T15:25:10-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T15:25:10.633293",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "Auto-Compaction Waterline Control · SHADOW MODE AC",
+    "phase": "✅ SHADOW VALIDATION IN PROGRESS",
+    "recovery_id": "unknown:2026-03-09T15:25:10.633293"
+  }
+}
+{
+  "ts": "2026-03-09T16:00:18-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T16:00:18.280178",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "实现 CEO + main 双 agent 的\"共享知识库 + 私有记忆\"架构",
+    "phase": "✅ 全部完成（含工程化补强）",
+    "recovery_id": "unknown:2026-03-09T16:00:18.280178"
+  }
+}
+{
+  "ts": "2026-03-09T18:13:30-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T18:13:30.557859",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "实现 CEO + main 双 agent 的\"共享知识库 + 私有记忆\"架构",
+    "phase": "✅ 全部完成（含工程化补强）",
+    "recovery_id": "unknown:2026-03-09T18:13:30.557859"
+  }
+}

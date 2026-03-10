@@ -1,0 +1,148 @@
+#!/bin/bash
+# route-rebind-guard - 检测并防止异常路由劫持
+# 用法: route-rebind-guard [--check | --audit | --restore]
+
+set -e
+
+SESSIONS_FILE="$HOME/.openclaw/agents/main/sessions/sessions.json"
+AUDIT_LOG="$HOME/.openclaw/workspace/logs/route_rebind_audit.jsonl"
+PRIMARY_SESSION_FILE="$HOME/.openclaw/workspace/state/primary_session.json"
+
+# 确保目录存在
+mkdir -p "$(dirname "$AUDIT_LOG")"
+mkdir -p "$(dirname "$PRIMARY_SESSION_FILE")"
+
+log_audit() {
+    local event="$1"
+    local route_key="$2"
+    local old_session="$3"
+    local new_session="$4"
+    local reason="$5"
+    local allowed="$6"
+    
+    echo "{
+  \"timestamp\": \"$(date -Iseconds)\",
+  \"event\": \"$event\",
+  \"route_key\": \"$route_key\",
+  \"old_session\": \"$old_session\",
+  \"new_session\": \"$new_session\",
+  \"reason\": \"$reason\",
+  \"allowed\": $allowed
+}" >> "$AUDIT_LOG"
+}
+
+get_current_session() {
+    local route_key="$1"
+    if [ -f "$SESSIONS_FILE" ]; then
+        python3 -c "
+import json
+with open('$SESSIONS_FILE', 'r') as f:
+    data = json.load(f)
+route = data.get('$route_key', {})
+print(route.get('sessionId', ''))
+" 2>/dev/null || echo ""
+    fi
+}
+
+get_session_metadata() {
+    local session_id="$1"
+    local field="$2"
+    local session_file="$HOME/.openclaw/agents/main/sessions/${session_id}.jsonl"
+    if [ -f "$session_file" ]; then
+        head -1 "$session_file" | python3 -c "
+import sys, json
+try:
+    data = json.loads(sys.stdin.read())
+    print(data.get('$field', ''))
+except:
+    print('')
+" 2>/dev/null || echo ""
+    else
+        echo ""
+    fi
+}
+
+case "${1:-check}" in
+    check)
+        # 检查主路由是否有异常切换
+        ROUTE_KEY="agent:main:telegram:direct:8420019401"
+        CURRENT_SESSION=$(get_current_session "$ROUTE_KEY")
+        
+        # 如果有记录的主 session，比较是否一致
+        if [ -f "$PRIMARY_SESSION_FILE" ]; then
+            PRIMARY_SESSION=$(python3 -c "import json; print(json.load(open('$PRIMARY_SESSION_FILE')).get('sessionId', ''))" 2>/dev/null || echo "")
+            
+            if [ -n "$PRIMARY_SESSION" ] && [ "$CURRENT_SESSION" != "$PRIMARY_SESSION" ]; then
+                # 记录审计日志
+                log_audit "route_rebind_detected" "$ROUTE_KEY" "$PRIMARY_SESSION" "$CURRENT_SESSION" "unknown" "true"
+                echo "⚠️  路由异常切换检测:"
+                echo "  原主 session: $PRIMARY_SESSION"
+                echo "  当前 session: $CURRENT_SESSION"
+                echo ""
+                echo "运行 'route-rebind-guard --restore' 恢复主 session"
+            else
+                echo "✅ 主路由正常"
+            fi
+        else
+            # 记录当前 session 为主 session
+            if [ -n "$CURRENT_SESSION" ]; then
+                echo "{\"sessionId\": \"$CURRENT_SESSION\", \"recordedAt\": \"$(date -Iseconds)\"}" > "$PRIMARY_SESSION_FILE"
+                echo "✅ 已记录主 session: $CURRENT_SESSION"
+            fi
+        fi
+        ;;
+        
+    restore)
+        # 恢复主 session
+        if [ -f "$PRIMARY_SESSION_FILE" ]; then
+            PRIMARY_SESSION=$(python3 -c "import json; print(json.load(open('$PRIMARY_SESSION_FILE')).get('sessionId', ''))" 2>/dev/null || echo "")
+            
+            if [ -n "$PRIMARY_SESSION" ]; then
+                ROUTE_KEY="agent:main:telegram:direct:8420019401"
+                # 更新 sessions.json
+                python3 << EOF
+import json
+with open('$SESSIONS_FILE', 'r') as f:
+    data = json.load(f)
+
+if '$ROUTE_KEY' in data:
+    old_session = data['$ROUTE_KEY'].get('sessionId', '')
+    data['$ROUTE_KEY']['sessionId'] = '$PRIMARY_SESSION'
+    with open('$SESSIONS_FILE', 'w') as f:
+        json.dump(data, f, indent=2)
+    print(f"✅ 已恢复主 session: $PRIMARY_SESSION")
+    print(f"  旧 session: {old_session}")
+else:
+    print("❌ 路由键不存在")
+EOF
+            else
+                echo "❌ 没有记录的主 session"
+            fi
+        else
+            echo "❌ 没有主 session 记录文件"
+        fi
+        ;;
+        
+    audit)
+        # 显示最近的审计日志
+        if [ -f "$AUDIT_LOG" ]; then
+            echo "最近的路由变更记录:"
+            tail -10 "$AUDIT_LOG" | python3 -c "
+import sys, json
+for line in sys.stdin:
+    try:
+        data = json.loads(line.strip())
+        print(f\"  {data['timestamp']}: {data['event']} - {data['reason']}\")
+        print(f\"    old: {data['old_session'][:8]}... -> new: {data['new_session'][:8]}... ({data['allowed']})\")
+    except:
+        pass
+"
+        else
+            echo "暂无审计日志"
+        fi
+        ;;
+        
+    *)
+        echo "用法: route-rebind-guard [--check | --audit | --restore]"
+        ;;
+esac

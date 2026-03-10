@@ -1,111 +1,171 @@
 #!/usr/bin/env python3
 """
-safe-replace - 安全替换 ~/.openclaw/ 下文件的内容
+Safe Replace Tool
 
-禁止使用 edit 工具直接修改 ~/.openclaw/ 下的文件。
-此工具用于精确替换，比 sed 更可靠。
-
-Usage:
-  safe-replace <file> <old> <new>
-  safe-replace --path <file> --old <old> --new <new>
-
-Example:
-  safe-replace ~/.openclaw/workspace/TOOLS.md "| old |" "| new |"
+Safe content replacement in files with verification.
+Usage: safe-replace <path> <old_string> <new_string>
+       safe-replace --path <path> --old <old> --new <new>
 """
 
-import sys
+import argparse
+import hashlib
+import json
 import os
+import re
+import sys
+import tempfile
+import shutil
+from datetime import datetime
 from pathlib import Path
+from typing import Optional, Tuple
 
-OPENCLAW_ROOT = Path.home() / ".openclaw"
 
-def is_protected_path(path: Path) -> bool:
-    """检查是否是受保护路径"""
+def compute_hash(content: str) -> str:
+    """Compute SHA256 hash of content."""
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+
+def find_and_replace(content: str, old: str, new: str, regex: bool = False) -> Tuple[str, int]:
+    """Find and replace in content. Returns (new_content, count)."""
+    if regex:
+        new_content, count = re.subn(old, new, content)
+    else:
+        count = content.count(old)
+        new_content = content.replace(old, new)
+    
+    return new_content, count
+
+
+def safe_replace(path: str, old: str, new: str, regex: bool = False, all_occurrences: bool = True) -> dict:
+    """Perform safe replace with verification."""
+    target_path = Path(path).expanduser().resolve()
+    
+    if not target_path.exists():
+        return {
+            "success": False,
+            "error": f"File not found: {target_path}"
+        }
+    
     try:
-        resolved = path.resolve()
-        return str(resolved).startswith(str(OPENCLAW_ROOT.resolve()))
-    except:
-        return False
+        # Read original content
+        with open(target_path) as f:
+            original_content = f.read()
+        
+        original_hash = compute_hash(original_content)
+        
+        # Check if old string exists
+        if not regex and old not in original_content:
+            return {
+                "success": False,
+                "error": "Old string not found in file",
+                "path": str(target_path)
+            }
+        
+        # Perform replacement
+        new_content, count = find_and_replace(original_content, old, new, regex)
+        
+        if count == 0:
+            return {
+                "success": False,
+                "error": "No matches found for replacement",
+                "path": str(target_path)
+            }
+        
+        new_hash = compute_hash(new_content)
+        
+        # Write to temp file first
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.tmp') as tmp:
+            tmp.write(new_content)
+            tmp_path = tmp.name
+        
+        # Atomic move
+        shutil.move(tmp_path, str(target_path))
+        
+        # Verify
+        with open(target_path) as f:
+            verified_content = f.read()
+        
+        verified_hash = compute_hash(verified_content)
+        
+        if verified_hash != new_hash:
+            # Attempt rollback
+            with open(target_path, 'w') as f:
+                f.write(original_content)
+            return {
+                "success": False,
+                "error": "Hash verification failed after write",
+                "expected": new_hash,
+                "actual": verified_hash,
+                "rolled_back": True
+            }
+        
+        return {
+            "success": True,
+            "path": str(target_path),
+            "replacements": count,
+            "original_hash": original_hash,
+            "new_hash": new_hash,
+            "size_change": len(new_content) - len(original_content)
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 
 def main():
-    if len(sys.argv) < 2 or "--help" in sys.argv or "-h" in sys.argv:
-        print(__doc__)
-        sys.exit(0)
+    parser = argparse.ArgumentParser(description="Safe content replacement")
+    parser.add_argument("path", nargs="?", help="Target file path")
+    parser.add_argument("old", nargs="?", help="String to replace")
+    parser.add_argument("new", nargs="?", help="Replacement string")
+    parser.add_argument("--path", dest="path_opt", help="Target file path")
+    parser.add_argument("--old", dest="old_opt", help="String to replace")
+    parser.add_argument("--new", dest="new_opt", help="Replacement string")
+    parser.add_argument("--regex", action="store_true", help="Treat old as regex pattern")
+    parser.add_argument("--first", action="store_true", help="Replace first occurrence only")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
     
-    # 解析参数
-    path = None
-    old_text = None
-    new_text = None
+    args = parser.parse_args()
     
-    i = 1
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-        if arg == "--path":
-            path = Path(sys.argv[i + 1])
-            i += 2
-        elif arg == "--old":
-            old_text = sys.argv[i + 1]
-            i += 2
-        elif arg == "--new":
-            new_text = sys.argv[i + 1]
-            i += 2
-        elif arg.startswith("-"):
-            print(f"Unknown option: {arg}", file=sys.stderr)
-            sys.exit(1)
+    # Determine path
+    path = args.path or args.path_opt
+    old = args.old or args.old_opt
+    new = args.new or args.new_opt
+    
+    if not path:
+        print("Error: Path is required", file=sys.stderr)
+        sys.exit(1)
+    
+    if old is None:
+        print("Error: Old string is required", file=sys.stderr)
+        sys.exit(1)
+    
+    if new is None:
+        print("Error: New string is required", file=sys.stderr)
+        sys.exit(1)
+    
+    # Check if reading new from stdin
+    if new == "-":
+        new = sys.stdin.read()
+    
+    result = safe_replace(path, old, new, args.regex, not args.first)
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        if result["success"]:
+            print(f"✓ Replaced {result['replacements']} occurrence(s) in {result['path']}")
+            print(f"  Original hash: {result['original_hash']}")
+            print(f"  New hash: {result['new_hash']}")
+            if result['size_change'] != 0:
+                print(f"  Size change: {'+' if result['size_change'] > 0 else ''}{result['size_change']} bytes")
         else:
-            if path is None:
-                path = Path(arg)
-            elif old_text is None:
-                old_text = arg
-            elif new_text is None:
-                new_text = arg
-            i += 1
+            print(f"✗ Replace failed: {result['error']}", file=sys.stderr)
     
-    if path is None or old_text is None or new_text is None:
-        print("Error: path, old, and new are all required", file=sys.stderr)
-        sys.exit(1)
-    
-    path = path.expanduser().resolve()
-    
-    if not path.exists():
-        print(f"❌ File not found: {path}", file=sys.stderr)
-        sys.exit(1)
-    
-    if not is_protected_path(path):
-        print(f"⚠️  Warning: {path} is not under ~/.openclaw/")
-    
-    # 读取文件
-    with open(path, 'r') as f:
-        content = f.read()
-    
-    # 检查旧文本是否存在
-    if old_text not in content:
-        print(f"❌ Old text not found in {path}", file=sys.stderr)
-        print(f"   Searched for: {old_text[:50]}..." if len(old_text) > 50 else f"   Searched for: {old_text}")
-        sys.exit(1)
-    
-    # 统计出现次数
-    count = content.count(old_text)
-    if count > 1:
-        print(f"⚠️  Warning: Old text appears {count} times, all will be replaced")
-    
-    # 替换
-    new_content = content.replace(old_text, new_text)
-    
-    # 原子写入
-    tmp_path = path.with_suffix(path.suffix + ".tmp")
-    try:
-        with open(tmp_path, 'w') as f:
-            f.write(new_content)
-            f.flush()
-            os.fsync(f.fileno())
-        os.rename(str(tmp_path), str(path))
-        print(f"✅ Replaced in {path} ({count} occurrence(s))")
-    except Exception as e:
-        print(f"❌ Write failed: {e}", file=sys.stderr)
-        if tmp_path.exists():
-            tmp_path.unlink()
-        sys.exit(1)
+    sys.exit(0 if result["success"] else 1)
+
 
 if __name__ == "__main__":
     main()

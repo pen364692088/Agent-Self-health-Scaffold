@@ -86,3 +86,6 @@
 {"timestamp":"2026-03-09T05:39:04.618Z","reason":"compress_failed","session_key":"agent:testbot:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-09T05:39:37.566Z","reason":"compress_failed","session_key":"agent:yuno:main","details":{"mode":"light_enforced"}}
 {"timestamp":"2026-03-09T05:39:57.815Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-09T13:27:56.527Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-09T13:36:18.294Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}
+{"timestamp":"2026-03-09T14:18:36.718Z","reason":"compress_failed","session_key":"agent:main:main","details":{"mode":"light_enforced"}}

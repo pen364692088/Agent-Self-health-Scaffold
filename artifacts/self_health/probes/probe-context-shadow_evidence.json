@@ -52,10 +52,10 @@
         "returncode": 0,
         "report_received": true,
         "metrics": {
-          "compression_events": 10,
-          "avg_compression_ratio": 0.81,
-          "capsules_created": 26,
-          "retrieval_triggers": 4
+          "compression_events": 8,
+          "avg_compression_ratio": 0.8,
+          "capsules_created": 21,
+          "retrieval_triggers": 3
         }
       }
     },
@@ -87,5 +87,5 @@
   "message": "Context shadow system healthy",
   "check_count": 5,
   "pass_count": 5,
-  "timestamp": "2026-03-09T08:32:13.058412+00:00"
+  "timestamp": "2026-03-10T01:16:31.677937+00:00"
 }

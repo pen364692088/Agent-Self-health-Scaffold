@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""
+Probe: Execution Policy System Health Check v2
+Includes sample maturity verification
+"""
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+def run_violation_summary():
+    """Get violation summary with sample maturity."""
+    try:
+        result = subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-violation-summary'), 
+             '--hours', '168', '--json'],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+    except:
+        pass
+    return {'sample_maturity': {'has_minimum_samples': False}}
+
+def run_policy_doctor():
+    try:
+        result = subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-doctor'), '--json'],
+            capture_output=True, text=True, timeout=30
+        )
+        return json.loads(result.stdout), result.returncode
+    except Exception as e:
+        return {'error': str(e)}, 1
+
+def run_shadow_summary():
+    try:
+        result = subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-shadow-tracker'), 
+             '--summarize', '--json'],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+    except:
+        pass
+    return {}
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--json', action='store_true')
+    args = ap.parse_args()
+    
+    issues = []
+    
+    # Check 1: policy-doctor
+    doctor_result, rc = run_policy_doctor()
+    if rc != 0 or not doctor_result.get('summary', {}).get('healthy', False):
+        issues.append({
+            'check': 'policy_doctor',
+            'status': 'fail',
+            'message': 'policy-doctor unhealthy'
+        })
+    
+    # Check 2: sample maturity
+    violation_summary = run_violation_summary()
+    maturity = violation_summary.get('sample_maturity', {})
+    
+    if not maturity.get('has_minimum_samples', False):
+        issues.append({
+            'check': 'sample_maturity',
+            'status': 'warning',
+            'message': f"Samples: deny={maturity.get('deny_samples', 0)}/5, warn={maturity.get('warn_samples', 0)}/10"
+        })
+    
+    # Check 3: shadow tracking
+    shadow = run_shadow_summary()
+    shadow_total = sum(s.get('hit_count', 0) for s in shadow.values())
+    
+    result = {
+        'probe': 'probe-execution-policy-v2',
+        'timestamp': now_iso(),
+        'status': 'pass' if not any(i['status'] == 'fail' for i in issues) else 'fail',
+        'conclusion_type': 'A-candidate' if not maturity.get('has_minimum_samples') else 'A-confirmed',
+        'policy_doctor_healthy': doctor_result.get('summary', {}).get('healthy', False),
+        'sample_maturity': maturity,
+        'shadow_tracking': {
+            'total_hits': shadow_total,
+            'rules': shadow
+        },
+        'issues': issues
+    }
+    
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        status = result['status'].upper()
+        conclusion = result['conclusion_type']
+        print(f"[{status}] Execution Policy ({conclusion})")
+        if issues:
+            for i in issues:
+                print(f"  - {i['check']}: {i['message']}")
+    
+    return 0 if result['status'] == 'pass' else 1
+
+if __name__ == '__main__':
+    sys.exit(main())
+
+def save_daily_report_if_needed():
+    """Save daily report once per day."""
+    from pathlib import Path
+    import time
+    
+    report_marker = WORKSPACE / 'artifacts' / 'execution_policy' / 'daily_reports' / '.last_run'
+    
+    # Check if already run today
+    if report_marker.exists():
+        last_run = report_marker.read_text().strip()
+        today = datetime.now().strftime('%Y-%m-%d')
+        if last_run == today:
+            return
+    
+    # Run daily report
+    try:
+        import subprocess
+        subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-daily-report'), '--save'],
+            capture_output=True, timeout=30
+        )
+        report_marker.write_text(today)
+    except:
+        pass
+
+# Call at the end of main()

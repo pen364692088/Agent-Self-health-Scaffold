@@ -1,0 +1,1 @@
+/home/moonlight/.openclaw/shared/skills/shared-workflow/SKILL.md

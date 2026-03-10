@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""
+Policy Violations Report Generator
+
+Generate reports from violation logs.
+Usage: policy-violations-report [--today] [--summary] [--rule-id <id>] [--detail] [--export <format>]
+"""
+
+import argparse
+import csv
+import json
+import os
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+from collections import defaultdict
+from typing import Optional
+
+VIOLATIONS_DIR = Path.home() / ".openclaw" / "workspace" / "artifacts" / "execution_policy" / "violations"
+
+
+def load_violations(days: int = 7) -> list:
+    """Load violations from log files."""
+    violations = []
+    
+    if not VIOLATIONS_DIR.exists():
+        return violations
+    
+    for i in range(days):
+        date = datetime.now() - timedelta(days=i)
+        log_file = VIOLATIONS_DIR / f"violations_{date.strftime('%Y%m%d')}.jsonl"
+        
+        if log_file.exists():
+            with open(log_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            violations.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+    
+    return violations
+
+
+def generate_summary(violations: list) -> dict:
+    """Generate summary statistics."""
+    by_rule = defaultdict(int)
+    by_decision = defaultdict(int)
+    by_tool = defaultdict(int)
+    
+    for v in violations:
+        by_rule[v.get("rule_id", "unknown")] += 1
+        by_decision[v.get("decision", "unknown")] += 1
+        by_tool[v.get("tool", "unknown")] += 1
+    
+    return {
+        "total": len(violations),
+        "by_rule": dict(by_rule),
+        "by_decision": dict(by_decision),
+        "by_tool": dict(by_tool)
+    }
+
+
+def filter_by_rule(violations: list, rule_id: str) -> list:
+    """Filter violations by rule ID."""
+    return [v for v in violations if v.get("rule_id") == rule_id]
+
+
+def format_detail(violation: dict) -> str:
+    """Format a single violation for detail view."""
+    return f"""
+Timestamp: {violation.get('timestamp', 'N/A')}
+Rule ID: {violation.get('rule_id', 'N/A')}
+Decision: {violation.get('decision', 'N/A')}
+Path: {violation.get('path', 'N/A')}
+Tool: {violation.get('tool', 'N/A')}
+Session: {violation.get('session_key', 'N/A')}
+"""
+
+
+def export_csv(violations: list, output_path: str):
+    """Export violations to CSV."""
+    with open(output_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=[
+            'timestamp', 'rule_id', 'decision', 'path', 'tool', 'session_key'
+        ])
+        writer.writeheader()
+        writer.writerows(violations)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate policy violations report")
+    parser.add_argument("--today", action="store_true", help="Only today's violations")
+    parser.add_argument("--days", type=int, default=7, help="Number of days to include")
+    parser.add_argument("--summary", action="store_true", help="Show summary only")
+    parser.add_argument("--rule-id", help="Filter by rule ID")
+    parser.add_argument("--detail", action="store_true", help="Show detailed violations")
+    parser.add_argument("--export", choices=["csv", "json"], help="Export format")
+    parser.add_argument("--output", help="Output file path")
+    
+    args = parser.parse_args()
+    
+    days = 1 if args.today else args.days
+    violations = load_violations(days)
+    
+    if args.rule_id:
+        violations = filter_by_rule(violations, args.rule_id)
+    
+    if args.export:
+        output_path = args.output or f"violations_export.{args.export}"
+        if args.export == "csv":
+            export_csv(violations, output_path)
+        else:
+            with open(output_path, 'w') as f:
+                json.dump(violations, f, indent=2)
+        print(f"Exported {len(violations)} violations to {output_path}")
+        return
+    
+    if args.summary:
+        summary = generate_summary(violations)
+        print(f"=== Violations Summary (last {days} days) ===\n")
+        print(f"Total violations: {summary['total']}\n")
+        
+        print("By Rule:")
+        for rule, count in sorted(summary['by_rule'].items(), key=lambda x: -x[1]):
+            print(f"  {rule}: {count}")
+        
+        print("\nBy Decision:")
+        for decision, count in summary['by_decision'].items():
+            print(f"  {decision}: {count}")
+        
+        print("\nBy Tool:")
+        for tool, count in sorted(summary['by_tool'].items(), key=lambda x: -x[1]):
+            print(f"  {tool}: {count}")
+        
+        return
+    
+    if args.detail:
+        print(f"=== Detailed Violations ({len(violations)} total) ===\n")
+        for v in violations[:50]:  # Limit to 50
+            print(format_detail(v))
+            print("-" * 40)
+        return
+    
+    # Default: list violations
+    print(f"=== Policy Violations Report ===\n")
+    print(f"Period: Last {days} days")
+    print(f"Total: {len(violations)}\n")
+    
+    if not violations:
+        print("No violations found.")
+        return
+    
+    # Show recent violations
+    print("Recent violations:")
+    for v in violations[:10]:
+        print(f"  [{v.get('timestamp', 'N/A')}] {v.get('rule_id', 'N/A')}: {v.get('decision', 'N/A')}")
+
+
+if __name__ == "__main__":
+    main()

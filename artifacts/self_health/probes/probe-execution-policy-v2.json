@@ -1,0 +1,34 @@
+{
+  "probe": "probe-execution-policy-v2",
+  "timestamp": "2026-03-10T01:16:27.187287+00:00",
+  "status": "pass",
+  "conclusion_type": "A-candidate",
+  "policy_doctor_healthy": true,
+  "sample_maturity": {
+    "deny_samples": 0,
+    "warn_samples": 0,
+    "fallback_samples": 0,
+    "has_minimum_samples": false
+  },
+  "shadow_tracking": {
+    "total_hits": 0,
+    "rules": {
+      "PERSIST_BEFORE_REPLY": {
+        "hit_count": 0
+      },
+      "FRAGILE_REPLACE_BLOCK": {
+        "hit_count": 0
+      },
+      "CHECKPOINT_REQUIRED_BEFORE_CLOSE": {
+        "hit_count": 0
+      }
+    }
+  },
+  "issues": [
+    {
+      "check": "sample_maturity",
+      "status": "warning",
+      "message": "Samples: deny=0/5, warn=0/10"
+    }
+  ]
+}

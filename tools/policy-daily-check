@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+"""
+Policy Daily Check - 5 Key Indicators
+每天只看这五项，足够判断观察窗是否有价值
+"""
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+def check_violations():
+    """检查 deny/warn 样本"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-violation-summary'), 
+             '--hours', '24', '--json'],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return {
+                'deny_count': data.get('summary', {}).get('by_decision', {}).get('deny', 0),
+                'warn_count': data.get('summary', {}).get('by_decision', {}).get('warn', 0),
+                'top_rules': data.get('distribution', {}).get('top_rule_ids', [])[:3],
+                'top_paths': data.get('distribution', {}).get('top_paths', [])[:3]
+            }
+    except:
+        pass
+    return {'deny_count': 0, 'warn_count': 0, 'top_rules': [], 'top_paths': []}
+
+def check_fallback():
+    """检查 fallback 成功样本"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-violation-summary'), 
+             '--hours', '24', '--json'],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return {
+                'success_count': data.get('effectiveness', {}).get('fallback_success_count', 0),
+                'success_rate': data.get('effectiveness', {}).get('fallback_success_rate')
+            }
+    except:
+        pass
+    return {'success_count': 0, 'success_rate': None}
+
+def check_shadow():
+    """检查 shadow rules 命中"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-shadow-tracker'), 
+             '--summarize', '--json'],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            hits = {k: v.get('hit_count', 0) for k, v in data.items()}
+            return {
+                'total_hits': sum(hits.values()),
+                'by_rule': hits
+            }
+    except:
+        pass
+    return {'total_hits': 0, 'by_rule': {}}
+
+def check_repeated():
+    """检查 repeat offenders"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['python3', str(WORKSPACE / 'tools' / 'policy-violation-summary'), 
+             '--hours', '24', '--json'],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            repeat = data.get('distribution', {}).get('repeat_offenders', [])
+            return {
+                'count': len(repeat),
+                'top': repeat[:3]
+            }
+    except:
+        pass
+    return {'count': 0, 'top': []}
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--json', action='store_true')
+    args = ap.parse_args() if hasattr(ap, 'parse_args') else ap.parse_args()
+    
+    print(f"=== Policy Daily Check ({datetime.now().strftime('%Y-%m-%d')}) ===\n")
+    
+    # 1. Deny 样本
+    vio = check_violations()
+    deny_count = vio['deny_count']
+    deny_target = 5
+    deny_status = '✅' if deny_count >= deny_target else '❌'
+    print(f"1. 第一批 deny 样本: {deny_count}/{deny_target} {deny_status}")
+    
+    # 2. Warn 样本
+    warn_count = vio['warn_count']
+    warn_target = 10
+    warn_status = '✅' if warn_count >= warn_target else '❌'
+    print(f"2. 第一批 warn 样本: {warn_count}/{warn_target} {warn_status}")
+    
+    # 3. Fallback 成功
+    fb = check_fallback()
+    fb_count = fb['success_count']
+    fb_target = 3
+    fb_status = '✅' if fb_count >= fb_target else '❌'
+    rate_str = f" ({fb['success_rate']:.0f}%)" if fb['success_rate'] else ""
+    print(f"3. Fallback 成功样本: {fb_count}/{fb_target}{rate_str} {fb_status}")
+    
+    # 4. Top repeated
+    repeat = check_repeated()
+    if repeat['count'] > 0:
+        print(f"4. Top repeated rule/path: 开始集中 ({repeat['count']} 个)")
+        for r in repeat['top']:
+            print(f"   - {r['key']}: {r['count']}x")
+    else:
+        print(f"4. Top repeated rule/path: 无数据 ❌")
+    
+    # 5. Shadow hits
+    shadow = check_shadow()
+    shadow_total = shadow['total_hits']
+    shadow_status = '✅' if shadow_total > 0 else '❌'
+    print(f"5. Shadow rules 首次命中: {shadow_total} {shadow_status}")
+    if shadow['by_rule']:
+        for rule, count in shadow['by_rule'].items():
+            print(f"   - {rule}: {count}")
+    
+    # Summary
+    print(f"\n=== 状态判定 ===")
+    all_met = (
+        deny_count >= deny_target and
+        warn_count >= warn_target and
+        fb_count >= fb_target and
+        shadow_total > 0
+    )
+    
+    if all_met:
+        print("✅ 样本成熟度达标，可进入 A-confirmed 评估")
+    elif deny_count > 0 or warn_count > 0:
+        print("⏳ 样本开始积累，继续观察")
+    else:
+        print("❌ 样本尚未开始积累")
+        print("   - 如果真实任务有敏感路径操作，检查检测链路")
+        print("   - 如果没有，等待自然触发")
+    
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())

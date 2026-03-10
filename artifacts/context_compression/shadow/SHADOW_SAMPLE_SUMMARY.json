@@ -1,0 +1,70 @@
+{
+  "schema": "openclaw.shadow_sample_summary.v1",
+  "generated_at": "2026-03-09T20:25:00Z",
+  "shadow_period": {
+    "start": "2026-03-09T20:03:21Z",
+    "end": "2026-03-09T20:25:00Z",
+    "duration_hours": 0.35
+  },
+  "sample_counts": {
+    "total_observed_windows": 0,
+    "total_eligible_triggers": 0,
+    "blocked_triggers": 0,
+    "emergency_candidates": 0,
+    "near_threshold_windows": 0,
+    "ratio_unavailable_count": 0
+  },
+  "action_distribution": {
+    "none_below_threshold": 1,
+    "none_blocked": 0,
+    "none_cooldown": 0,
+    "none_ratio_unavailable": 0,
+    "compact_normal": 0,
+    "compact_emergency": 0
+  },
+  "blocker_distribution": {},
+  "ratio_distribution": {
+    "pre_trigger": {
+      "0.00-0.50": 1,
+      "0.50-0.65": 0,
+      "0.65-0.80": 0,
+      "0.80-0.90": 0,
+      "0.90-1.00": 0
+    },
+    "post_compact": {
+      "0.00-0.45": 0,
+      "0.45-0.55": 0,
+      "0.55-0.65": 0,
+      "0.65-0.80": 0,
+      "0.80+": 0
+    }
+  },
+  "anomaly_counts": {
+    "A01_ratio_unavailable": 0,
+    "A02_should_trigger_skip": 0,
+    "A03_blocker_overfire": 0,
+    "A04_repeated_oscillation": 0,
+    "A05_insufficient_drop": 0,
+    "A06_emergency_anomaly": 0
+  },
+  "cooldown_stats": {
+    "normal_cooldown_hits": 0,
+    "emergency_cooldown_hits": 0,
+    "emergency_bypass": 0,
+    "avg_time_between_compactions_min": null
+  },
+  "notes": [
+    "Shadow mode enabled 2026-03-09T20:03:21Z",
+    "First check: ratio=0.0 (new session, expected)",
+    "Waiting for data accumulation (recommend 3-7 days)"
+  ],
+  "exit_criteria_progress": {
+    "1_trigger_frequency_reasonable": "pending",
+    "2_no_consecutive_errors": "pass",
+    "3_no_oscillation": "pass",
+    "4_post_compact_drop_ok": "pending",
+    "5_recovery_quality_ok": "pending",
+    "6_emergency_normal": "pass",
+    "7_blockers_explainable": "pass"
+  }
+}

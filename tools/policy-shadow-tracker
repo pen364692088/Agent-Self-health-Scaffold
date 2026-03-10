@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+"""
+Policy Shadow Tracker for v1.1 Candidate Rules
+Track rule hits without enforcing, to evaluate before runtime integration
+"""
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+SHADOW_DIR = WORKSPACE / 'artifacts' / 'execution_policy' / 'shadow_tracking'
+
+SHADOW_DIR.mkdir(parents=True, exist_ok=True)
+
+# v1.1 Candidate Rules to shadow track
+CANDIDATE_RULES = {
+    'PERSIST_BEFORE_REPLY': {
+        'description': 'Stateful tasks should persist before replying',
+        'priority': 'P1',
+        'scope': 'stateful_tasks',
+        'action': 'warn',
+        'shadow_only': True
+    },
+    'FRAGILE_REPLACE_BLOCK': {
+        'description': 'Managed files should not use fragile replace',
+        'priority': 'P0',
+        'scope': '~/.openclaw/**',
+        'action': 'deny',
+        'shadow_only': True
+    },
+    'CHECKPOINT_REQUIRED_BEFORE_CLOSE': {
+        'description': 'Formal deliveries require checkpoint before close',
+        'priority': 'P0',
+        'scope': 'formal_delivery',
+        'action': 'deny',
+        'shadow_only': True
+    }
+}
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+def record_shadow_hit(rule_id, context):
+    """Record a shadow hit for a candidate rule."""
+    if rule_id not in CANDIDATE_RULES:
+        return {'error': f'Unknown rule: {rule_id}'}
+    
+    hit = {
+        'timestamp': now_iso(),
+        'rule_id': rule_id,
+        'rule_info': CANDIDATE_RULES[rule_id],
+        'context': context,
+        'action_taken': 'shadow_only',
+        'would_block': CANDIDATE_RULES[rule_id]['action'] in ['deny', 'reroute']
+    }
+    
+    # Append to rule-specific log
+    log_file = SHADOW_DIR / f'{rule_id}.jsonl'
+    with log_file.open('a', encoding='utf-8') as f:
+        f.write(json.dumps(hit, ensure_ascii=False) + '\n')
+    
+    # Update summary
+    update_summary(rule_id)
+    
+    return hit
+
+def update_summary(rule_id):
+    """Update summary statistics for a rule."""
+    log_file = SHADOW_DIR / f'{rule_id}.jsonl'
+    
+    hit_count = 0
+    would_block_count = 0
+    
+    if log_file.exists():
+        with log_file.open('r', encoding='utf-8') as f:
+            for line in f:
+                try:
+                    hit = json.loads(line)
+                    hit_count += 1
+                    if hit.get('would_block'):
+                        would_block_count += 1
+                except:
+                    pass
+    
+    summary = {
+        'rule_id': rule_id,
+        'rule_info': CANDIDATE_RULES[rule_id],
+        'hit_count': hit_count,
+        'would_block_count': would_block_count,
+        'last_updated': now_iso()
+    }
+    
+    summary_file = SHADOW_DIR / f'{rule_id}_summary.json'
+    tmp = summary_file.with_suffix('.tmp')
+    tmp.write_text(json.dumps(summary, indent=2, ensure_ascii=False))
+    tmp.replace(summary_file)
+
+def get_all_summaries():
+    """Get summaries for all shadow-tracked rules."""
+    summaries = {}
+    
+    for rule_id in CANDIDATE_RULES:
+        summary_file = SHADOW_DIR / f'{rule_id}_summary.json'
+        if summary_file.exists():
+            try:
+                summaries[rule_id] = json.loads(summary_file.read_text())
+            except:
+                summaries[rule_id] = {'hit_count': 0}
+        else:
+            summaries[rule_id] = {'hit_count': 0}
+    
+    return summaries
+
+def evaluate_readiness(rule_id):
+    """Evaluate if a rule is ready for runtime integration."""
+    summary_file = SHADOW_DIR / f'{rule_id}_summary.json'
+    
+    if not summary_file.exists():
+        return {'ready': False, 'reason': 'no_shadow_data'}
+    
+    summary = json.loads(summary_file.read_text())
+    hit_count = summary.get('hit_count', 0)
+    
+    # Criteria for readiness
+    criteria = {
+        'minimum_hits': 5,
+        'noise_threshold': 0.3,  # If >30% would_block but no real issue, might be noisy
+    }
+    
+    if hit_count < criteria['minimum_hits']:
+        return {
+            'ready': False,
+            'reason': f'insufficient_hits ({hit_count}/{criteria["minimum_hits"]})',
+            'hit_count': hit_count
+        }
+    
+    # Check if the rule would have caught real issues
+    would_block = summary.get('would_block_count', 0)
+    block_rate = would_block / hit_count if hit_count > 0 else 0
+    
+    if block_rate > 0.8:
+        recommendation = 'proceed_to_runtime'
+    elif block_rate > 0.5:
+        recommendation = 'review_before_runtime'
+    else:
+        recommendation = 'may_be_too_noisy'
+    
+    return {
+        'ready': True,
+        'hit_count': hit_count,
+        'would_block_count': would_block,
+        'block_rate': block_rate,
+        'recommendation': recommendation
+    }
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--record', metavar='RULE_ID', help='Record a shadow hit')
+    ap.add_argument('--context', type=str, default='{}', help='JSON context for record')
+    ap.add_argument('--summarize', action='store_true', help='Show all summaries')
+    ap.add_argument('--evaluate', metavar='RULE_ID', help='Evaluate readiness for runtime')
+    ap.add_argument('--json', action='store_true')
+    args = ap.parse_args()
+    
+    if args.record:
+        try:
+            context = json.loads(args.context)
+        except:
+            context = {'raw': args.context}
+        
+        result = record_shadow_hit(args.record, context)
+        
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"Shadow hit recorded for {args.record}")
+            if result.get('would_block'):
+                print(f"  Would have blocked this action")
+        return 0
+    
+    if args.summarize:
+        summaries = get_all_summaries()
+        
+        if args.json:
+            print(json.dumps(summaries, indent=2))
+        else:
+            print("=== Shadow Tracking Summary ===\n")
+            for rule_id, summary in summaries.items():
+                print(f"{rule_id}:")
+                print(f"  Hits: {summary.get('hit_count', 0)}")
+                print(f"  Would block: {summary.get('would_block_count', 0)}")
+                print()
+        return 0
+    
+    if args.evaluate:
+        result = evaluate_readiness(args.evaluate)
+        
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"=== Readiness Evaluation: {args.evaluate} ===")
+            print(f"Ready for runtime: {result.get('ready', False)}")
+            if 'reason' in result:
+                print(f"Reason: {result['reason']}")
+            if 'recommendation' in result:
+                print(f"Recommendation: {result['recommendation']}")
+        return 0
+    
+    # Default: show all summaries
+    summaries = get_all_summaries()
+    if args.json:
+        print(json.dumps(summaries, indent=2))
+    else:
+        for rule_id, summary in summaries.items():
+            print(f"{rule_id}: {summary.get('hit_count', 0)} hits")
+    
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,0 +1,239 @@
+{
+    "incident_id": "INC-20260309-211627-034a872f",
+    "title": "always_on_health incident",
+    "timestamp": "2026-03-09T21:16:27+00:00",
+    "severity": "ERROR",
+    "category": "always_on_health",
+    "summary": "probe:probe-telegram-notification=fail",
+    "symptoms": [
+        "probe:probe-telegram-notification=fail"
+    ],
+    "impact_scope": [
+        "agent_health"
+    ],
+    "most_likely_root_cause": null,
+    "evidence": [
+        {
+            "type": "health_state_before",
+            "value": {
+                "timestamp": "2026-03-09T21:16:27+00:00",
+                "session_key": "agent:main:main",
+                "overall_status": "GREEN",
+                "mode": "deep",
+                "components": [
+                    {
+                        "component": "liveness",
+                        "status": "ok",
+                        "severity": "INFO",
+                        "last_ok_at": "2026-03-09T21:16:27+00:00",
+                        "last_fail_at": null,
+                        "fail_count": 0,
+                        "recovery_attempts": 0,
+                        "latest_evidence": {
+                            "message": "Agent responsive"
+                        },
+                        "recommended_action": "none",
+                        "message": "Agent responsive"
+                    },
+                    {
+                        "component": "memory",
+                        "status": "ok",
+                        "severity": "INFO",
+                        "last_ok_at": "2026-03-09T21:16:27+00:00",
+                        "last_fail_at": null,
+                        "fail_count": 0,
+                        "recovery_attempts": 0,
+                        "latest_evidence": {
+                            "memory_usage_percent": 47.9
+                        },
+                        "recommended_action": "none",
+                        "message": "Memory usage 47.9%"
+                    },
+                    {
+                        "component": "context",
+                        "status": "ok",
+                        "severity": "INFO",
+                        "last_ok_at": "2026-03-09T21:16:27+00:00",
+                        "last_fail_at": null,
+                        "fail_count": 0,
+                        "recovery_attempts": 0,
+                        "latest_evidence": {
+                            "context_usage_percent": 0
+                        },
+                        "recommended_action": "none",
+                        "message": "Context budget normal"
+                    },
+                    {
+                        "component": "subagents",
+                        "status": "ok",
+                        "severity": "INFO",
+                        "last_ok_at": "2026-03-09T21:16:27+00:00",
+                        "last_fail_at": null,
+                        "fail_count": 0,
+                        "recovery_attempts": 0,
+                        "latest_evidence": {
+                            "failed_subagents_last_hour": 0,
+                            "pending_inbox_items": 1
+                        },
+                        "recommended_action": "none",
+                        "message": "Subagents healthy"
+                    },
+                    {
+                        "component": "storage",
+                        "status": "ok",
+                        "severity": "INFO",
+                        "last_ok_at": "2026-03-09T21:16:27+00:00",
+                        "last_fail_at": null,
+                        "fail_count": 0,
+                        "recovery_attempts": 0,
+                        "latest_evidence": {
+                            "disk_usage_percent": 61
+                        },
+                        "recommended_action": "none",
+                        "message": "Disk usage 61%"
+                    },
+                    {
+                        "component": "network",
+                        "status": "ok",
+                        "severity": "INFO",
+                        "last_ok_at": "2026-03-09T21:16:27+00:00",
+                        "last_fail_at": null,
+                        "fail_count": 0,
+                        "recovery_attempts": 0,
+                        "latest_evidence": {},
+                        "recommended_action": "none",
+                        "message": "Network check skipped-passive"
+                    }
+                ],
+                "metrics": {
+                    "context_usage_percent": 0,
+                    "memory_usage_percent": 47.9,
+                    "disk_usage_percent": 61,
+                    "failed_subagents_last_hour": 0,
+                    "pending_inbox_items": 1
+                },
+                "previous_level": "GREEN",
+                "active_incidents": [],
+                "last_heal_action": null
+            }
+        }
+    ],
+    "actions_taken": [],
+    "action_results": [],
+    "current_system_state": {
+        "timestamp": "2026-03-09T21:16:27+00:00",
+        "session_key": "agent:main:main",
+        "overall_status": "GREEN",
+        "mode": "deep",
+        "components": [
+            {
+                "component": "liveness",
+                "status": "ok",
+                "severity": "INFO",
+                "last_ok_at": "2026-03-09T21:16:27+00:00",
+                "last_fail_at": null,
+                "fail_count": 0,
+                "recovery_attempts": 0,
+                "latest_evidence": {
+                    "message": "Agent responsive"
+                },
+                "recommended_action": "none",
+                "message": "Agent responsive"
+            },
+            {
+                "component": "memory",
+                "status": "ok",
+                "severity": "INFO",
+                "last_ok_at": "2026-03-09T21:16:27+00:00",
+                "last_fail_at": null,
+                "fail_count": 0,
+                "recovery_attempts": 0,
+                "latest_evidence": {
+                    "memory_usage_percent": 47.9
+                },
+                "recommended_action": "none",
+                "message": "Memory usage 47.9%"
+            },
+            {
+                "component": "context",
+                "status": "ok",
+                "severity": "INFO",
+                "last_ok_at": "2026-03-09T21:16:27+00:00",
+                "last_fail_at": null,
+                "fail_count": 0,
+                "recovery_attempts": 0,
+                "latest_evidence": {
+                    "context_usage_percent": 0
+                },
+                "recommended_action": "none",
+                "message": "Context budget normal"
+            },
+            {
+                "component": "subagents",
+                "status": "ok",
+                "severity": "INFO",
+                "last_ok_at": "2026-03-09T21:16:27+00:00",
+                "last_fail_at": null,
+                "fail_count": 0,
+                "recovery_attempts": 0,
+                "latest_evidence": {
+                    "failed_subagents_last_hour": 0,
+                    "pending_inbox_items": 1
+                },
+                "recommended_action": "none",
+                "message": "Subagents healthy"
+            },
+            {
+                "component": "storage",
+                "status": "ok",
+                "severity": "INFO",
+                "last_ok_at": "2026-03-09T21:16:27+00:00",
+                "last_fail_at": null,
+                "fail_count": 0,
+                "recovery_attempts": 0,
+                "latest_evidence": {
+                    "disk_usage_percent": 61
+                },
+                "recommended_action": "none",
+                "message": "Disk usage 61%"
+            },
+            {
+                "component": "network",
+                "status": "ok",
+                "severity": "INFO",
+                "last_ok_at": "2026-03-09T21:16:27+00:00",
+                "last_fail_at": null,
+                "fail_count": 0,
+                "recovery_attempts": 0,
+                "latest_evidence": {},
+                "recommended_action": "none",
+                "message": "Network check skipped-passive"
+            }
+        ],
+        "metrics": {
+            "context_usage_percent": 0,
+            "memory_usage_percent": 47.9,
+            "disk_usage_percent": 61,
+            "failed_subagents_last_hour": 0,
+            "pending_inbox_items": 1
+        },
+        "previous_level": "GREEN",
+        "active_incidents": [],
+        "last_heal_action": null
+    },
+    "next_recommended_step": "Review incident and decide on Level A/B/C response",
+    "needs_human_intervention": false,
+    "status": "active",
+    "session_key": "agent:main:main",
+    "context": {
+        "source": "agent-self-health-scheduler",
+        "overall_status": "ORANGE",
+        "probe_failures": [
+            {
+                "probe": "probe-telegram-notification",
+                "status": "fail",
+                "message": "Telegram notification system issues found"
+            }
+        ]
+    }
+}

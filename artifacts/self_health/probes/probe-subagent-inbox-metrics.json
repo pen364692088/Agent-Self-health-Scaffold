@@ -22,8 +22,8 @@
         "inbox_dir_path": "/home/moonlight/.openclaw/workspace/reports/subtasks",
         "pending_count": 0,
         "claimed_count": 0,
-        "processed_count": 51,
-        "total_files": 51
+        "processed_count": 15,
+        "total_files": 15
       }
     },
     {
@@ -34,7 +34,7 @@
         "metrics": {
           "pending_count": 0,
           "claimed_count": 0,
-          "processed_count": 51,
+          "processed_count": 15,
           "receipt_ages": [],
           "stuck_claimed_count": 0,
           "stuck_threshold_seconds": 300,
@@ -42,7 +42,7 @@
         },
         "pending_count": 0,
         "claimed_count": 0,
-        "processed_count": 51,
+        "processed_count": 15,
         "receipt_age_p95": 0,
         "stuck_claimed_count": 0
       }
@@ -66,6 +66,6 @@
   "message": "Subagent inbox metrics healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-09T08:32:17.959654+00:00",
+  "timestamp": "2026-03-10T01:16:32.235531+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-subagent-inbox-metrics_evidence.json"
 }

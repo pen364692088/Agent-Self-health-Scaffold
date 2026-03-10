@@ -1,79 +1,61 @@
 # Session State
 
 ## Current Objective
-Auto-Compaction Waterline Control · SHADOW MODE ACTIVE
+✅ Execution Policy Framework v1 + 受控观察体系已完成
 
 ## Phase
-✅ SHADOW VALIDATION IN PROGRESS
+CONTROLLED OBSERVATION - 等待样本成熟
 
-## Branch
-main
-
-## Status
-🟢 Shadow Mode Enabled & Operational
-
----
-
-## Shadow Mode Status
-
-| Item | Value |
-|------|-------|
-| Enabled | ✅ True |
-| Config | shadow_config.json |
-| Trace Entries | 1 |
-| Last Check | 2026-03-09T20:03:21Z |
-
-**First Shadow Check**:
-- Ratio: 0.0 (new session)
-- Action: none
-- Reason: below_threshold
-- Status: ✅ Normal
+## 观察窗状态
+- **启动**: 2026-03-09 18:30 UTC
+- **当前**: Day 0
+- **状态**: A-candidate (样本未成熟)
 
 ---
 
-## Exit Criteria Progress
-
-| # | Criterion | Status |
-|---|-----------|--------|
-| 1 | 触发频率合理 | ⏳ Pending (need more data) |
-| 2 | 无连续异常触发 | ✅ OK (0 errors) |
-| 3 | 无抖动/重复压缩 | ✅ OK |
-| 4 | 压后回落达标 | ⏳ Pending (need trigger) |
-| 5 | Recovery Quality 正常 | ⏳ Pending (need compaction) |
-| 6 | Emergency 正常 | ✅ OK (0 emergency) |
-| 7 | Blockers 可解释 | ✅ OK (BLK-GIT-001: uncommitted WIP) |
-
----
-
-## Key Files
-
-- `artifacts/context_compression/shadow_config.json` — Shadow 配置
-- `artifacts/context_compression/SHADOW_TRACE.jsonl` — Shadow trace
-- `docs/context_compression/SHADOW_EXIT_CRITERIA.md` — 退出门槛
-
----
-
-## Monitoring Commands
+## 每日巡检工具
 
 ```bash
-# 检查状态
-~/.openclaw/workspace/tools/shadow_watcher --status
+# 完整每日报告 (自动保存)
+~/.openclaw/workspace/tools/policy-daily-report --save
 
-# 查看指标
-~/.openclaw/workspace/tools/shadow_watcher --metrics
+# 快速检查 (5件事)
+~/.openclaw/workspace/tools/policy-daily-check
 
-# 对比基线
-~/.openclaw/workspace/tools/shadow_watcher --compare
+# 分布分析
+~/.openclaw/workspace/tools/policy-violation-summary --hours 24
 
-# 手动运行一次
-~/.openclaw/workspace/tools/shadow_watcher --run-once
+# Shadow tracking
+~/.openclaw/workspace/tools/policy-shadow-tracker --summarize
 ```
 
 ---
 
-## Git
+## 今日报告 (2026-03-09)
 
 ```
-f0546a5 fix(context-compression): Handle ratio_unavailable as normal skip
+健康状态: PASS (7/7 checks)
+样本成熟度: Deny 0/5, Warn 0/10, Fallback 0/3
+核心指标: N/A (样本不足)
+异常: 无
+Shadow: 0 hits
+
+结论: A-candidate, 样本未成熟
+动作: 继续观察, 不扩 v1.1, 保持阈值冻结
 ```
 
+---
+
+## 下次会话提醒
+
+1. 每天运行 `policy-daily-report --save`
+2. 重点盯 5 件事 (deny/warn/fallback/repeated/shadow)
+3. 如果长期 0 hits，考虑人工复核检测链路
+4. 样本成熟后再宣布 A-confirmed
+5. v1.1 继续_shadow tracking，不急着上 runtime
+
+---
+
+## 报告位置
+
+`artifacts/execution_policy/daily_reports/daily_YYYY-MM-DD.md`

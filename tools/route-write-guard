@@ -1,0 +1,332 @@
+#!/usr/bin/env python3
+"""
+route-write-guard - 路由写入前/后保护层
+
+使用 Linux inotify 监控 sessions.json 变化，
+检测到写入时立即执行劫持检测和恢复。
+
+目标：将"检测+恢复"窗口压缩到 <100ms
+"""
+
+import os
+import sys
+import json
+import ctypes
+import struct
+import time
+import signal
+from pathlib import Path
+from datetime import datetime
+from threading import Thread
+from ctypes import cdll, CDLL
+
+# Linux inotify 常量
+IN_ACCESS = 0x00000001
+IN_MODIFY = 0x00000002
+IN_ATTRIB = 0x00000004
+IN_CLOSE_WRITE = 0x00000008
+IN_CLOSE_NOWRITE = 0x00000010
+IN_OPEN = 0x00000020
+IN_MOVED_FROM = 0x00000040
+IN_MOVED_TO = 0x00000080
+IN_CREATE = 0x00000100
+IN_DELETE = 0x00000200
+IN_DELETE_SELF = 0x00000400
+IN_MOVE_SELF = 0x00000800
+
+# 关键监控事件
+WATCH_EVENTS = IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO
+
+# libc
+libc = cdll.LoadLibrary("libc.so.6")
+
+class RouteWriteGuard:
+    def __init__(self, sessions_file, primary_session_file, audit_log):
+        self.sessions_file = Path(sessions_file)
+        self.primary_session_file = Path(primary_session_file)
+        self.audit_log = Path(audit_log)
+        self.running = True
+        
+        # 确保目录存在
+        self.audit_log.parent.mkdir(parents=True, exist_ok=True)
+        self.primary_session_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # 上次检查时间（防抖）
+        self.last_check_time = 0
+        self.debounce_ms = 50  # 50ms 防抖
+        
+        # 统计
+        self.check_count = 0
+        self.restore_count = 0
+        
+    def log_audit(self, event, details):
+        """记录审计日志"""
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "event": event,
+            **details
+        }
+        with open(self.audit_log, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+            
+    def get_current_session(self, route_key):
+        """获取当前路由绑定"""
+        if not self.sessions_file.exists():
+            return None
+        try:
+            with open(self.sessions_file) as f:
+                data = json.load(f)
+            return data.get(route_key, {}).get("sessionId")
+        except:
+            return None
+            
+    def get_primary_session(self):
+        """获取主 session ID"""
+        if not self.primary_session_file.exists():
+            return None
+        try:
+            with open(self.primary_session_file) as f:
+                return json.load(f).get("sessionId")
+        except:
+            return None
+            
+    def set_primary_session(self, session_id):
+        """设置主 session"""
+        with open(self.primary_session_file, "w") as f:
+            json.dump({
+                "sessionId": session_id,
+                "recordedAt": datetime.now().isoformat()
+            }, f)
+            
+    def get_session_metadata(self, session_id):
+        """获取 session 元数据"""
+        session_file = self.sessions_file.parent / f"{session_id}.jsonl"
+        if not session_file.exists():
+            return {}
+        try:
+            with open(session_file) as f:
+                first_line = f.readline()
+                return json.loads(first_line)
+        except:
+            return {}
+            
+    def restore_route(self, route_key, target_session):
+        """恢复路由绑定"""
+        try:
+            with open(self.sessions_file) as f:
+                data = json.load(f)
+                
+            if route_key in data:
+                old_session = data[route_key].get("sessionId")
+                data[route_key]["sessionId"] = target_session
+                data[route_key]["restoredAt"] = time.time() * 1000
+                
+                with open(self.sessions_file, "w") as f:
+                    json.dump(data, f, indent=2)
+                    
+                return old_session
+        except Exception as e:
+            print(f"恢复失败: {e}", file=sys.stderr)
+        return None
+        
+    def check_and_restore(self, route_key):
+        """检查并恢复路由"""
+        now = time.time() * 1000
+        
+        # 防抖
+        if now - self.last_check_time < self.debounce_ms:
+            return {"action": "debounce"}
+        self.last_check_time = now
+        self.check_count += 1
+        
+        current = self.get_current_session(route_key)
+        primary = self.get_primary_session()
+        
+        # 如果没有主 session 记录，记录当前
+        if not primary:
+            if current:
+                self.set_primary_session(current)
+                return {"action": "record_primary", "session": current}
+            return {"action": "no_session"}
+            
+        # 检查是否被劫持
+        if current and current != primary:
+            # 获取 session 元数据
+            current_meta = self.get_session_metadata(current)
+            primary_meta = self.get_session_metadata(primary)
+            
+            # 判断是否为 isolated 劫持
+            current_target = current_meta.get("sessionTarget", "")
+            primary_target = primary_meta.get("sessionTarget", "")
+            
+            is_isolated_hijack = (
+                current_target == "isolated" and 
+                primary_target in ["main", "default", ""]
+            )
+            
+            if is_isolated_hijack:
+                # 恢复路由
+                old = self.restore_route(route_key, primary)
+                self.restore_count += 1
+                
+                self.log_audit("route_restored", {
+                    "route_key": route_key,
+                    "from": old,
+                    "to": primary,
+                    "hijacker_target": current_target
+                })
+                
+                return {
+                    "action": "restored",
+                    "from": old,
+                    "to": primary
+                }
+            else:
+                # 非劫持，可能是正常切换
+                return {
+                    "action": "legitimate_change",
+                    "from": primary,
+                    "to": current
+                }
+                
+        return {"action": "ok"}
+        
+    def monitor_with_inotify(self):
+        """使用 inotify 监控"""
+        # 创建 inotify 实例
+        fd = libc.inotify_init()
+        if fd < 0:
+            print("❌ inotify_init 失败", file=sys.stderr)
+            return False
+            
+        # 监控 sessions.json 所在目录
+        watch_dir = str(self.sessions_file.parent)
+        wd = libc.inotify_add_watch(fd, watch_dir.encode(), WATCH_EVENTS)
+        
+        if wd < 0:
+            print(f"❌ inotify_add_watch 失败: {watch_dir}", file=sys.stderr)
+            libc.close(fd)
+            return False
+            
+        print(f"🔍 监控中: {watch_dir}")
+        print(f"📝 目标文件: {self.sessions_file.name}")
+        print(f"⏱️  防抖: {self.debounce_ms}ms")
+        print(f"🔑 主路由: agent:main:telegram:direct:8420019401")
+        print()
+        
+        route_key = "agent:main:telegram:direct:8420019401"
+        
+        # 读取事件
+        buf = ctypes.create_string_buffer(4096)
+        
+        while self.running:
+            # 阻塞读取
+            n = libc.read(fd, buf, 4096)
+            if n < 0:
+                continue
+                
+            # 解析事件
+            offset = 0
+            while offset < n:
+                # inotify_event 结构: wd(4) mask(4) cookie(4) len(4) name(var)
+                wd_val, mask, cookie, length = struct.unpack_from("iiii", buf, offset)
+                name = bytes(buf[offset+16:offset+16+length]).rstrip(b'\x00').decode('utf-8', errors='ignore')
+                
+                # 只关注 sessions.json
+                if name == self.sessions_file.name or (mask & IN_MOVED_TO and name == self.sessions_file.name):
+                    # 触发检查
+                    result = self.check_and_restore(route_key)
+                    
+                    if result["action"] == "restored":
+                        ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                        print(f"[{ts}] 🔄 已恢复: {result['from'][:8]}... → {result['to'][:8]}...")
+                    elif result["action"] == "record_primary":
+                        ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                        print(f"[{ts}] 📌 记录主 session: {result['session'][:8]}...")
+                        
+                offset += 16 + length
+                
+        libc.close(fd)
+        return True
+        
+    def monitor_with_polling(self, interval=0.1):
+        """轮询监控（备选方案）"""
+        print(f"🔍 轮询监控中 (间隔: {interval}s)")
+        print(f"📝 目标文件: {self.sessions_file}")
+        print()
+        
+        route_key = "agent:main:telegram:direct:8420019401"
+        last_mtime = 0
+        
+        while self.running:
+            try:
+                mtime = self.sessions_file.stat().st_mtime
+                if mtime != last_mtime:
+                    last_mtime = mtime
+                    result = self.check_and_restore(route_key)
+                    
+                    if result["action"] == "restored":
+                        ts = datetime.now().strftime("%H:%M:%S")
+                        print(f"[{ts}] 🔄 已恢复: {result['from'][:8]}... → {result['to'][:8]}...")
+                        
+            except Exception as e:
+                pass
+                
+            time.sleep(interval)
+            
+    def stop(self):
+        self.running = False
+        
+    def run(self):
+        """运行监控"""
+        # 先尝试 inotify
+        try:
+            self.monitor_with_inotify()
+        except Exception as e:
+            print(f"⚠️  inotify 失败，使用轮询: {e}", file=sys.stderr)
+            self.monitor_with_polling()
+
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="路由写入保护层")
+    parser.add_argument("--json", action="store_true", help="JSON 输出")
+    parser.add_argument("--poll", action="store_true", help="使用轮询模式")
+    parser.add_argument("--check", action="store_true", help="单次检查模式")
+    parser.add_argument("--interval", type=float, default=0.1, help="轮询间隔(秒)")
+    args = parser.parse_args()
+    
+    sessions_file = os.path.expanduser("~/.openclaw/agents/main/sessions/sessions.json")
+    primary_file = os.path.expanduser("~/.openclaw/workspace/state/primary_session.json")
+    audit_log = os.path.expanduser("~/.openclaw/workspace/logs/route_write_guard.jsonl")
+    
+    guard = RouteWriteGuard(sessions_file, primary_file, audit_log)
+    
+    # 单次检查模式
+    if args.check:
+        route_key = "agent:main:telegram:direct:8420019401"
+        result = guard.check_and_restore(route_key)
+        
+        if args.json:
+            print(json.dumps(result))
+        else:
+            if result["action"] == "ok":
+                print("✅ 路由正常")
+            elif result["action"] == "restored":
+                print(f"✅ 已恢复: {result['from']} → {result['to']}")
+            elif result["action"] == "record_primary":
+                print(f"📌 已记录主 session: {result['session']}")
+            else:
+                print(f"ℹ️  {result}")
+        return
+        
+    # 持续监控模式
+    if args.poll:
+        guard.monitor_with_polling(args.interval)
+    else:
+        guard.run()
+
+
+if __name__ == "__main__":
+    main()

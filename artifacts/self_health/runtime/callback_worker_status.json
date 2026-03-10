@@ -1,13 +1,13 @@
 {
   "worker_name": "callback-worker",
   "alive": true,
-  "last_progress_at": "2026-03-09T08:36:29.976948+00:00",
-  "last_output_at": "2026-03-09T08:36:29.976948+00:00",
+  "last_progress_at": "2026-03-10T01:20:12.964121+00:00",
+  "last_output_at": "2026-03-10T01:20:12.964121+00:00",
   "pending_count": null,
   "stuck_suspected": false,
   "last_error_at": "2026-03-08T21:39:36.688896+00:00",
   "last_error_type": null,
   "worker_status": "healthy",
-  "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n✅ Service state: OK (idle, no pending work)\n✅ Kill-switch: Disabled (normal)\n❌ Queue writable: events/ permissions incorrect: 0o775 (should be 0o700)\n✅ State read/write + lock: OK\n✅ Spawn backend: OK (health check passed)",
+  "doctor_excerpt": "============================================================\nCallback Worker Doctor\n============================================================\n✅ Service state: OK (idle, no pending work)\n✅ Kill-switch: Disabled (normal)\n❌ Queue writable: events/ permissions incorrect: 0o775 (should be 0o700)\n✅ State read/write + lock: No active workflow (OK)\n✅ Spawn backend: OK (health check passed)",
   "service_state": "idle_expected"
 }

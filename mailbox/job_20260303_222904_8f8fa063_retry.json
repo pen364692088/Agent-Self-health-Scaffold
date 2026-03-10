@@ -1,5 +1,0 @@
-{
-  "target": "agent:main",
-  "message": "{\"type\": \"job_done_retry\", \"job_id\": \"20260303_222904_8f8fa063\", \"state\": \"DONE\", \"title\": \"Notification Test\", \"result_path\": \"/home/moonlight/Project/Github/MyProject/LongRunKit/jobs/20260303_222904_8f8fa063/result.md\", \"attempt\": 1, \"error\": null, \"note\": \"Retried by watchdog\"}",
-  "ts": "2026-03-04T09:54:53.997583+00:00"
-}

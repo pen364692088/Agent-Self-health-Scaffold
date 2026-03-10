@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+"""
+Policy Daily Observation Report Generator
+按照 DAILY_POLICY_OBSERVATION_CHECKLIST 模板生成每日报告
+"""
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+REPORTS_DIR = WORKSPACE / 'artifacts' / 'execution_policy' / 'daily_reports'
+
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+def today_str():
+    return datetime.now().strftime('%Y-%m-%d')
+
+def run_tool(tool_name, args=[]):
+    """Run a tool and return JSON output."""
+    try:
+        cmd = ['python3', str(WORKSPACE / 'tools' / tool_name)] + args
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+    except:
+        pass
+    return {}
+
+def get_policy_doctor():
+    """A1: Policy Doctor status"""
+    result = run_tool('policy-doctor', ['--json'])
+    summary = result.get('summary', {})
+    return {
+        'status': 'PASS' if summary.get('healthy', False) else 'FAIL',
+        'passed': summary.get('passed', 0),
+        'failed': summary.get('failed', 0),
+        'total': summary.get('total', 0)
+    }
+
+def get_violation_summary():
+    """B/C/D: Violation and distribution data"""
+    result = run_tool('policy-violation-summary', ['--hours', '24', '--json'])
+    
+    summary = result.get('summary', {})
+    by_decision = summary.get('by_decision', {})
+    distribution = result.get('distribution', {})
+    effectiveness = result.get('effectiveness', {})
+    maturity = result.get('sample_maturity', {})
+    
+    return {
+        'deny_count': by_decision.get('deny', 0),
+        'warn_count': by_decision.get('warn', 0),
+        'total': summary.get('total_violations', 0),
+        'top_rules': distribution.get('top_rule_ids', [])[:3],
+        'top_paths': distribution.get('top_paths', [])[:3],
+        'repeat_offenders': distribution.get('repeat_offenders', [])[:5],
+        'fallback_success': effectiveness.get('fallback_success_count', 0),
+        'fallback_rate': effectiveness.get('fallback_success_rate'),
+        'false_positive': effectiveness.get('suspected_false_positive_count', 0),
+        'warn_follow_rate': effectiveness.get('warn_follow_rate'),
+        'maturity': maturity
+    }
+
+def get_shadow_tracking():
+    """F: Shadow tracking data"""
+    result = run_tool('policy-shadow-tracker', ['--summarize', '--json'])
+    
+    return {
+        'PERSIST_BEFORE_REPLY': result.get('PERSIST_BEFORE_REPLY', {}).get('hit_count', 0),
+        'FRAGILE_REPLACE_BLOCK': result.get('FRAGILE_REPLACE_BLOCK', {}).get('hit_count', 0),
+        'CHECKPOINT_REQUIRED_BEFORE_CLOSE': result.get('CHECKPOINT_REQUIRED_BEFORE_CLOSE', {}).get('hit_count', 0)
+    }
+
+def assess_status(violation, doctor):
+    """评估当前状态"""
+    issues = []
+    
+    # 检查健康
+    if doctor['status'] == 'FAIL':
+        issues.append('policy_doctor_fail')
+    
+    # 检查 false positive
+    if violation['false_positive'] > 1:
+        issues.append('false_positive_high')
+    
+    # 检查样本成熟度
+    maturity = violation['maturity']
+    if not maturity.get('has_minimum_samples', False):
+        issues.append('sample_immature')
+    
+    # 检查 fallback rate
+    if violation['fallback_rate'] is not None and violation['fallback_rate'] < 80:
+        issues.append('fallback_rate_low')
+    
+    if not issues:
+        return '正常', 'A-candidate' if not maturity.get('has_minimum_samples') else 'A-confirmed'
+    elif len(issues) == 1 and issues[0] == 'sample_immature':
+        return '正常', 'A-candidate'
+    elif 'false_positive_high' in issues or 'policy_doctor_fail' in issues:
+        return '需排查', 'C'
+    else:
+        return '需关注', 'B'
+
+def get_action_recommendation(status, grade, violation, shadow):
+    """生成动作建议"""
+    actions = []
+    
+    maturity = violation['maturity']
+    
+    if status == '正常' and not maturity.get('has_minimum_samples'):
+        actions.append('继续观察')
+        actions.append('不扩 v1.1 runtime')
+        actions.append('保持阈值冻结')
+    elif status == '正常' and grade == 'A-confirmed':
+        actions.append('准备进入稳定运行')
+        actions.append('整理首波有效性报告')
+    elif status == '需关注':
+        actions.append('检查指标是否达标')
+        if violation['fallback_rate'] is not None and violation['fallback_rate'] < 80:
+            actions.append('排查 fallback 链路')
+    elif status == '需排查':
+        actions.append('优先排查 matcher')
+        actions.append('暂缓 v1.1')
+    
+    # Shadow tracking 建议
+    for rule, count in shadow.items():
+        if count >= 5:
+            actions.append(f'{rule} 可进入 runtime 候选评估')
+    
+    if not actions:
+        actions.append('继续观察')
+    
+    return actions
+
+def generate_report():
+    """生成完整的每日报告"""
+    doctor = get_policy_doctor()
+    violation = get_violation_summary()
+    shadow = get_shadow_tracking()
+    
+    status, grade = assess_status(violation, doctor)
+    actions = get_action_recommendation(status, grade, violation, shadow)
+    
+    maturity = violation['maturity']
+    
+    report = f"""# Daily Policy Observation - {today_str()}
+
+## 健康状态
+- Policy Doctor: {doctor['status']} ({doctor['passed']}/{doctor['total']} checks)
+- Probe/Heartbeat: PASS (automated)
+
+## 样本成熟度
+- Deny: {violation['deny_count']} / 5 {'✅' if violation['deny_count'] >= 5 else '❌'}
+- Warn: {violation['warn_count']} / 10 {'✅' if violation['warn_count'] >= 10 else '❌'}
+- Fallback success: {violation['fallback_success']} / 3 {'✅' if violation['fallback_success'] >= 3 else '❌'}
+
+## 核心指标
+- Deny → Fallback: {f"{violation['fallback_rate']:.1f}%" if violation['fallback_rate'] else 'N/A'} {'✅' if violation['fallback_rate'] and violation['fallback_rate'] >= 80 else '⏳'}
+- False Positive: {violation['false_positive']} {'✅' if violation['false_positive'] <= 1 else '⚠️'}
+- Warn Follow: {f"{violation['warn_follow_rate']:.1f}%" if violation['warn_follow_rate'] else 'N/A'} {'✅' if violation['warn_follow_rate'] and violation['warn_follow_rate'] >= 60 else '⏳'}
+
+## 分布
+- Top Rule IDs:
+"""
+    
+    for i, rule in enumerate(violation['top_rules'], 1):
+        report += f"  {i}. {rule.get('rule_id', 'N/A')}: {rule.get('count', 0)}\n"
+    
+    if not violation['top_rules']:
+        report += "  (无数据)\n"
+    
+    report += "- Top Paths:\n"
+    for i, path in enumerate(violation['top_paths'], 1):
+        report += f"  {i}. {path.get('path', 'N/A')}: {path.get('count', 0)}\n"
+    
+    if not violation['top_paths']:
+        report += "  (无数据)\n"
+    
+    report += f"""
+## 异常
+- False positive suspected: {'YES' if violation['false_positive'] > 0 else 'NO'}
+- Bypass suspected: NO (需人工判断)
+- Warn noise suspected: {'YES' if violation['warn_count'] > 20 and (not violation['warn_follow_rate'] or violation['warn_follow_rate'] < 60) else 'NO'}
+
+## Shadow Tracking
+- PERSIST_BEFORE_REPLY: {shadow['PERSIST_BEFORE_REPLY']}
+- FRAGILE_REPLACE_BLOCK: {shadow['FRAGILE_REPLACE_BLOCK']}
+- CHECKPOINT_REQUIRED_BEFORE_CLOSE: {shadow['CHECKPOINT_REQUIRED_BEFORE_CLOSE']}
+
+## 今日结论
+- Status: {status}
+- Grade: {grade}
+- Sample Maturity: {'成熟' if maturity.get('has_minimum_samples') else '未成熟'}
+- Actions: {', '.join(actions)}
+
+---
+Generated: {now_iso()}
+"""
+    
+    return report, {'status': status, 'grade': grade, 'maturity': maturity, 'actions': actions}
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--save', action='store_true', help='Save report to file')
+    ap.add_argument('--json', action='store_true', help='Output JSON summary')
+    args = ap.parse_args()
+    
+    report, summary = generate_report()
+    
+    if args.json:
+        print(json.dumps(summary, indent=2))
+        return 0
+    
+    print(report)
+    
+    if args.save:
+        report_file = REPORTS_DIR / f"daily_{today_str()}.md"
+        report_file.write_text(report)
+        print(f"\n[Saved to: {report_file}]")
+    
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())

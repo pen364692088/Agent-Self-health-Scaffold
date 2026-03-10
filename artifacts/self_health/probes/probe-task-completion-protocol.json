@@ -156,7 +156,7 @@
       "details": {
         "returncode": 0,
         "has_help": true,
-        "output_preview": "usage: verify-and-close [-h] --task-id TASK_ID [--artifacts ARTIFACTS]\n                        [--scope SCOPE] [--skip-e2e] [--json]\n\nverify-and-close v1.1\n\noptions:\n  -h, --help            show this "
+        "output_preview": "usage: verify-and-close [-h] --task-id TASK_ID [--artifacts ARTIFACTS]\n                        [--scope SCOPE] [--skip-e2e] [--json]\n\nverify-and-close v1.2\n\noptions:\n  -h, --help            show this "
       }
     }
   ],
@@ -166,6 +166,6 @@
   "message": "Task Completion Protocol intact",
   "check_count": 13,
   "pass_count": 13,
-  "timestamp": "2026-03-09T08:32:12.945355+00:00",
+  "timestamp": "2026-03-10T01:16:31.560710+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-task-completion-protocol_evidence.json"
 }

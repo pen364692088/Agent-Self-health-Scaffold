@@ -1,0 +1,812 @@
+{
+  "timestamp": "2026-03-09T11:18:02.741589",
+  "total_samples": 50,
+  "v1_agreement_rate": 0.28,
+  "v2_agreement_rate": 0.92,
+  "improvement": 0.64,
+  "samples": [
+    {
+      "sample_id": "sample_synthetic_stress_user_correction_c8ccae62",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_multi_topic_switch_1f2fab5e",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_user_correction_41f34b5b",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_post_tool_chat_23477a7c",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_historical_old_topic_recall_bc615b44",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": false,
+        "passed": false,
+        "failed_at": "task_completed"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_old_topic_recall_04320e7f",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_ee7ad8b2",
+      "v1_score": 0.75,
+      "v2_score": 0.35,
+      "human_score": 0.25,
+      "human_reason": "topic清晰",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": false,
+        "decision_context": false,
+        "tool_state": false,
+        "open_loops": true
+      },
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_user_correction_49d2fc9c",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_old_topic_recall_12408b95",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_4b65cacc",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_multi_topic_switch_dcb80c7c",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_old_topic_recall_1516cf78",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_user_correction_e19c2aa0",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_with_open_loops_42292beb",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_1fb6b1ae75",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": false,
+        "passed": false,
+        "failed_at": "task_completed"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_old_topic_recall_b21c060b",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5bb819de",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_long_technical_d63722cc",
+      "v1_score": 0.25,
+      "v2_score": 0.65,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": true,
+        "decision_context": false,
+        "tool_state": true,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": false
+    },
+    {
+      "sample_id": "sample_synthetic_stress_old_topic_recall_c81bcb76",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_user_correction_9696d528",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_3cc19cbd",
+      "v1_score": 0.75,
+      "v2_score": 0.2,
+      "human_score": 0.25,
+      "human_reason": "topic清晰",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": false,
+        "decision_context": false,
+        "tool_state": false,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_44e7af1d",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_4aad1fa5",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_long_technical_697e5f82",
+      "v1_score": 0.25,
+      "v2_score": 0.65,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": true,
+        "decision_context": false,
+        "tool_state": true,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": false
+    },
+    {
+      "sample_id": "sample_synthetic_stress_old_topic_recall_2ce55bbf",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_user_correction_a1de2ef9",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_5ea9eb36",
+      "v1_score": 0.75,
+      "v2_score": 0.17,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": false,
+        "decision_context": false,
+        "tool_state": true,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_f268e9be",
+      "v1_score": 0.75,
+      "v2_score": 0.65,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": true,
+        "decision_context": false,
+        "tool_state": true,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": false
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_ffa55a7e",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_2052f252",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_with_open_loops_734c60ff",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_post_tool_chat_44dc24b9",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_historical_old_topic_focus_c5ec44456c",
+      "v1_score": 0.25,
+      "v2_score": 0.2,
+      "human_score": 0.25,
+      "human_reason": "下一步明确",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": false,
+        "decision_context": false,
+        "tool_state": false,
+        "open_loops": false
+      },
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_with_open_loops_2431a421",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_historical_with_open_loops_58c4cfbc",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": false,
+        "passed": false,
+        "failed_at": "task_completed"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_multi_topic_switch_3a1b35ee",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_post_tool_chat_55d5b51f",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_user_correction_d129b4f1",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_with_open_loops_b211cc82",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_long_technical_d9843c56",
+      "v1_score": 0.25,
+      "v2_score": 0.65,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": true,
+        "decision_context": false,
+        "tool_state": true,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": false
+    },
+    {
+      "sample_id": "sample_synthetic_stress_with_open_loops_3633409c",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_post_tool_chat_e8beb8a2",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_32115ccb",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_90bda5d7",
+      "v1_score": 0.5,
+      "v2_score": 0.2,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": false,
+        "decision_context": false,
+        "tool_state": false,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_e90ff040",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_c921cd9e",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_with_open_loops_07eb7515",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_synthetic_stress_with_open_loops_0b3fce9f",
+      "v1_score": 0.25,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": false,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_real_main_agent_old_topic_recall_4e781246",
+      "v1_score": 0,
+      "v2_score": 0.0,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": false,
+        "passed": false,
+        "failed_at": "topic"
+      },
+      "v2_signals": {},
+      "v1_agreement": true,
+      "v2_agreement": true
+    },
+    {
+      "sample_id": "sample_historical_old_topic_recall_eb5e5b1c",
+      "v1_score": 0.25,
+      "v2_score": 0.2,
+      "human_score": 0,
+      "human_reason": "信息不足",
+      "v2_gates": {
+        "topic_present": true,
+        "task_active": true,
+        "passed": true
+      },
+      "v2_signals": {
+        "next_action": false,
+        "decision_context": false,
+        "tool_state": false,
+        "open_loops": false
+      },
+      "v1_agreement": false,
+      "v2_agreement": true
+    }
+  ]
+}

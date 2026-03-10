@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-03-09T09:39:52-05:00",
+  "event": "hijack_detected_and_restored",
+  "route_key": "agent:main:telegram:direct:8420019401",
+  "primary_session": "ee931bff-6fce-4682-930e-44f23cb8382a",
+  "hijacker_session": "",
+  "restore_result": {"success": false, "error": "route_key_not_found"}
+}
+{
+  "timestamp": "2026-03-09T09:40:33-05:00",
+  "event": "hijack_detected_and_restored",
+  "route_key": "agent:main:telegram:direct:8420019401",
+  "primary_session": "ee931bff-6fce-4682-930e-44f23cb8382a",
+  "hijacker_session": "",
+  "restore_result": {"success": false, "error": "route_key_not_found"}
+}
+{
+  "timestamp": "2026-03-09T09:42:52-05:00",
+  "event": "hijack_detected_and_restored",
+  "route_key": "agent:main:telegram:direct:8420019401",
+  "primary_session": "ee931bff-6fce-4682-930e-44f23cb8382a",
+  "hijacker_session": "b92feb93-8a2b-4b57-95c8-09526aa3e937",
+  "restore_result": {"success": true, "old_session": "b92feb93-8a2b-4b57-95c8-09526aa3e937", "new_session": "ee931bff-6fce-4682-930e-44f23cb8382a"}
+}
+{
+  "timestamp": "2026-03-09T11:12:36-05:00",
+  "event": "hijack_detected_and_restored",
+  "route_key": "agent:main:telegram:direct:8420019401",
+  "primary_session": "ee931bff-6fce-4682-930e-44f23cb8382a",
+  "hijacker_session": "8857e465-43f1-48d3-abb6-35178772f511",
+  "restore_result": {"success": true, "old_session": "8857e465-43f1-48d3-abb6-35178772f511", "new_session": "ee931bff-6fce-4682-930e-44f23cb8382a"}
+}
+{
+  "timestamp": "2026-03-09T12:01:24-05:00",
+  "event": "hijack_detected_and_restored",
+  "route_key": "agent:main:telegram:direct:8420019401",
+  "primary_session": "ee931bff-6fce-4682-930e-44f23cb8382a",
+  "hijacker_session": "a66f1007-bd89-45c3-893a-3912dd939e67",
+  "restore_result": {"success": true, "old_session": "a66f1007-bd89-45c3-893a-3912dd939e67", "new_session": "ee931bff-6fce-4682-930e-44f23cb8382a"}
+}
+{
+  "timestamp": "2026-03-09T16:00:18-05:00",
+  "event": "hijack_detected_and_restored",
+  "route_key": "agent:main:telegram:direct:8420019401",
+  "primary_session": "ee931bff-6fce-4682-930e-44f23cb8382a",
+  "hijacker_session": "727ed589-118d-439b-9c60-01cc6d47bfa3",
+  "restore_result": {"success": true, "old_session": "727ed589-118d-439b-9c60-01cc6d47bfa3", "new_session": "ee931bff-6fce-4682-930e-44f23cb8382a"}
+}

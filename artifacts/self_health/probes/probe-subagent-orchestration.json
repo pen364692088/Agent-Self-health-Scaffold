@@ -34,7 +34,7 @@
         "pending_file_exists": true,
         "pending_count": 0,
         "subtasks_dir_exists": true,
-        "processed_receipts_count": 51,
+        "processed_receipts_count": 15,
         "pending_receipts_count": 0
       }
     },
@@ -43,8 +43,8 @@
       "description": "Check recent orchestration success rate",
       "passed": true,
       "details": {
-        "total_processed": 45,
-        "successful": 45,
+        "total_processed": 10,
+        "successful": 10,
         "failed": 0,
         "success_rate": 1.0
       }
@@ -56,6 +56,6 @@
   "message": "Subagent orchestration chain healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-09T08:32:12.524041+00:00",
+  "timestamp": "2026-03-10T01:16:31.120252+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-subagent-orchestration_evidence.json"
 }

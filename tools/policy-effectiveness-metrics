@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""
+Policy Effectiveness Metrics Collector
+Collects metrics for First Wave Policy Effectiveness Criteria
+"""
+import argparse
+import json
+import os
+import sys
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+from collections import defaultdict
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+VIOLATIONS_DIR = WORKSPACE / 'artifacts' / 'execution_policy' / 'violations'
+METRICS_DIR = WORKSPACE / 'artifacts' / 'execution_policy' / 'metrics'
+GATE_DIR = WORKSPACE / 'artifacts' / 'receipts'
+
+METRICS_DIR.mkdir(parents=True, exist_ok=True)
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+def parse_jsonl(path):
+    """Parse JSONL file and return list of records."""
+    if not path.exists():
+        return []
+    records = []
+    try:
+        with path.open('r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        records.append(json.loads(line))
+                    except:
+                        pass
+    except:
+        pass
+    return records
+
+def collect_violation_metrics(hours=168):
+    """Collect violation metrics for the specified time window."""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    
+    metrics = {
+        'total_violations': 0,
+        'by_rule': defaultdict(int),
+        'by_decision': defaultdict(int),
+        'deny_then_fallback_success': 0,
+        'deny_then_fallback_failed': 0,
+        'false_positive_reports': 0,
+        'deny_count': 0,
+        'warn_count': 0,
+        'allow_count': 0,
+    }
+    
+    if not VIOLATIONS_DIR.exists():
+        return metrics
+    
+    for jsonl_file in VIOLATIONS_DIR.glob('*.jsonl'):
+        for record in parse_jsonl(jsonl_file):
+            try:
+                ts = datetime.fromisoformat(record.get('timestamp', '').replace('Z', '+00:00'))
+                if ts < cutoff:
+                    continue
+                
+                metrics['total_violations'] += 1
+                
+                rule_id = record.get('rule_id', 'unknown')
+                decision = record.get('decision', 'unknown')
+                
+                metrics['by_rule'][rule_id] += 1
+                metrics['by_decision'][decision] += 1
+                
+                if decision == 'deny':
+                    metrics['deny_count'] += 1
+                    # Check if followed by fallback success
+                    if record.get('fallback_used') and record.get('fallback_success'):
+                        metrics['deny_then_fallback_success'] += 1
+                    elif record.get('fallback_used') and not record.get('fallback_success'):
+                        metrics['deny_then_fallback_failed'] += 1
+                elif decision == 'warn':
+                    metrics['warn_count'] += 1
+                    if record.get('warn_followed'):
+                        metrics['warn_followed_count'] = metrics.get('warn_followed_count', 0) + 1
+                elif decision == 'allow':
+                    metrics['allow_count'] += 1
+                
+                if record.get('false_positive'):
+                    metrics['false_positive_reports'] += 1
+                    
+            except Exception as e:
+                pass
+    
+    metrics['by_rule'] = dict(metrics['by_rule'])
+    metrics['by_decision'] = dict(metrics['by_decision'])
+    
+    return metrics
+
+def collect_gate_metrics(hours=168):
+    """Collect Gate-related metrics."""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    
+    metrics = {
+        'total_gate_checks': 0,
+        'gate_denied': 0,
+        'gate_passed': 0,
+        'gate_deny_then_recover': 0,
+        'close_without_gate': 0,
+    }
+    
+    # Check gate receipts
+    if GATE_DIR.exists():
+        for receipt_file in GATE_DIR.glob('*_final_receipt.json'):
+            try:
+                receipt = json.loads(receipt_file.read_text())
+                ts_str = receipt.get('timestamp', '')
+                if ts_str:
+                    ts = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                    if ts < cutoff:
+                        continue
+                
+                metrics['total_gate_checks'] += 1
+                if receipt.get('verdict') == 'PASS':
+                    metrics['gate_passed'] += 1
+                else:
+                    metrics['gate_denied'] += 1
+            except:
+                pass
+    
+    return metrics
+
+def calculate_effectiveness_scores(violation_metrics, gate_metrics):
+    """Calculate effectiveness scores based on First Wave criteria."""
+    scores = {}
+    
+    # A2: deny_then_success_via_fallback_rate
+    total_deny_with_fallback = (
+        violation_metrics['deny_then_fallback_success'] + 
+        violation_metrics['deny_then_fallback_failed']
+    )
+    if total_deny_with_fallback > 0:
+        scores['deny_then_success_via_fallback_rate'] = (
+            violation_metrics['deny_then_fallback_success'] / total_deny_with_fallback * 100
+        )
+    else:
+        scores['deny_then_success_via_fallback_rate'] = None
+    
+    # A3: false_positive_deny_count
+    scores['false_positive_deny_count'] = violation_metrics['false_positive_reports']
+    
+    # B2: gate_deny_then_recover_rate (placeholder - needs more data)
+    scores['gate_deny_then_recover_rate'] = None
+    
+    # C1: warn_followed_by_safe_tool_rate
+    warn_count = violation_metrics['warn_count']
+    if warn_count > 0:
+        scores['warn_followed_by_safe_tool_rate'] = (
+            violation_metrics.get('warn_followed_count', 0) / warn_count * 100
+        )
+    else:
+        scores['warn_followed_by_safe_tool_rate'] = None
+    
+    return scores
+
+def assess_conclusion(scores, violation_metrics, gate_metrics):
+    """Assess which conclusion applies based on criteria."""
+    issues = []
+    
+    # Check A2: fallback rate
+    fallback_rate = scores.get('deny_then_success_via_fallback_rate')
+    if fallback_rate is not None and fallback_rate < 80:
+        issues.append({
+            'criterion': 'A2',
+            'issue': f'fallback_rate {fallback_rate:.1f}% < 80%',
+            'severity': 'warning'
+        })
+    
+    # Check A3: false positive
+    if scores.get('false_positive_deny_count', 0) > 1:
+        issues.append({
+            'criterion': 'A3',
+            'issue': f'false_positive_count {scores["false_positive_deny_count"]} > 1',
+            'severity': 'warning'
+        })
+    
+    # Check C1: warn effectiveness
+    warn_rate = scores.get('warn_followed_by_safe_tool_rate')
+    if warn_rate is not None and warn_rate < 60:
+        issues.append({
+            'criterion': 'C1',
+            'issue': f'warn_followed_rate {warn_rate:.1f}% < 60%',
+            'severity': 'warning'
+        })
+    
+    # Determine conclusion
+    if not issues:
+        conclusion = 'A'  # Pass, stable operation
+    elif all(i['severity'] == 'warning' for i in issues) and len(issues) <= 2:
+        conclusion = 'B'  # Pass with minor fixes
+    elif len(issues) <= 4:
+        conclusion = 'C'  # Partial pass, needs contraction
+    else:
+        conclusion = 'D'  # Not passed
+    
+    return {
+        'conclusion': conclusion,
+        'issues': issues,
+        'interpretation': {
+            'A': '通过，进入稳定运行',
+            'B': '通过，但需小修',
+            'C': '部分通过，需收缩',
+            'D': '未通过'
+        }.get(conclusion, 'Unknown')
+    }
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--hours', type=int, default=168, help='Time window in hours (default 168 = 7 days)')
+    ap.add_argument('--json', action='store_true')
+    ap.add_argument('--save', action='store_true', help='Save metrics to file')
+    args = ap.parse_args()
+    
+    violation_metrics = collect_violation_metrics(args.hours)
+    gate_metrics = collect_gate_metrics(args.hours)
+    scores = calculate_effectiveness_scores(violation_metrics, gate_metrics)
+    conclusion = assess_conclusion(scores, violation_metrics, gate_metrics)
+    
+    result = {
+        'timestamp': now_iso(),
+        'window_hours': args.hours,
+        'metrics': {
+            'violations': violation_metrics,
+            'gates': gate_metrics,
+        },
+        'effectiveness_scores': scores,
+        'conclusion': conclusion,
+        'thresholds': {
+            'deny_then_success_via_fallback_rate': '>= 80%',
+            'false_positive_deny_count': '<= 1',
+            'warn_followed_by_safe_tool_rate': '>= 60%',
+        }
+    }
+    
+    if args.save:
+        output_path = METRICS_DIR / f"effectiveness_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        output_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+        result['saved_to'] = str(output_path)
+    
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"=== Policy Effectiveness Report ({args.hours}h window) ===")
+        print(f"\nConclusion: {conclusion['conclusion']} - {conclusion['interpretation']}")
+        print(f"\nViolation Summary:")
+        print(f"  Total: {violation_metrics['total_violations']}")
+        print(f"  Deny: {violation_metrics['deny_count']}")
+        print(f"  Warn: {violation_metrics['warn_count']}")
+        print(f"\nEffectiveness Scores:")
+        for k, v in scores.items():
+            if v is not None:
+                print(f"  {k}: {v:.1f}" if isinstance(v, float) else f"  {k}: {v}")
+            else:
+                print(f"  {k}: N/A (no data)")
+    
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())

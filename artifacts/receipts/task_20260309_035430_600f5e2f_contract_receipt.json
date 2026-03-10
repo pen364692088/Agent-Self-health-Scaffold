@@ -1,0 +1,25 @@
+{
+  "task_id": "task_20260309_035430_600f5e2f",
+  "receipt_type": "contract",
+  "status": "pass",
+  "generated_at": "2026-03-09T04:01:49.134960",
+  "checks": [
+    {
+      "name": "task_in_workflow",
+      "status": "skip",
+      "details": "standalone task"
+    },
+    {
+      "name": "task_id_valid",
+      "status": "pass",
+      "details": "task_20260309_035430_600f5e2f"
+    },
+    {
+      "name": "scope_valid",
+      "status": "skip",
+      "details": "no scope specified"
+    }
+  ],
+  "state_before": "standalone",
+  "state_after": "self_verify"
+}

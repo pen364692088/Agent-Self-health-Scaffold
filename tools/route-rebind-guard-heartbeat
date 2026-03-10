@@ -1,0 +1,149 @@
+#!/bin/bash
+# route-rebind-guard-heartbeat - heartbeat 集成版本
+# 用法: route-rebind-guard-heartbeat [--json]
+# 
+# 行为：
+# - 静默检查路由状态
+# - 检测到劫持时自动恢复
+# - 记录事件到审计日志
+# - 输出 JSON 供 heartbeat 解析
+
+set -e
+
+SESSIONS_FILE="$HOME/.openclaw/agents/main/sessions/sessions.json"
+AUDIT_LOG="$HOME/.openclaw/workspace/logs/route_rebind_audit.jsonl"
+PRIMARY_SESSION_FILE="$HOME/.openclaw/workspace/state/primary_session.json"
+HEARTBEAT_LOG="$HOME/.openclaw/workspace/logs/route_guard_heartbeat.jsonl"
+
+# 确保目录存在
+mkdir -p "$(dirname "$AUDIT_LOG")"
+mkdir -p "$(dirname "$PRIMARY_SESSION_FILE")"
+mkdir -p "$(dirname "$HEARTBEAT_LOG")"
+
+log_heartbeat_event() {
+    local event="$1"
+    local details="$2"
+    
+    echo "{
+  \"timestamp\": \"$(date -Iseconds)\",
+  \"event\": \"$event\",
+  \"details\": $details
+}" >> "$HEARTBEAT_LOG"
+}
+
+get_current_session() {
+    local route_key="$1"
+    if [ -f "$SESSIONS_FILE" ]; then
+        python3 -c "
+import json
+with open('$SESSIONS_FILE', 'r') as f:
+    data = json.load(f)
+route = data.get('$route_key', {})
+print(route.get('sessionId', ''))
+" 2>/dev/null || echo ""
+    fi
+}
+
+restore_route() {
+    local route_key="$1"
+    local target_session="$2"
+    
+    python3 << PYEOF
+import json
+import os
+
+sessions_file = os.path.expanduser('$SESSIONS_FILE')
+route_key = '$route_key'
+target_session = '$target_session'
+
+with open(sessions_file, 'r') as f:
+    data = json.load(f)
+
+if route_key in data:
+    old_session = data[route_key].get('sessionId', '')
+    data[route_key]['sessionId'] = target_session
+    with open(sessions_file, 'w') as f:
+        json.dump(data, f, indent=2)
+    print(json.dumps({
+        "success": True,
+        "old_session": old_session,
+        "new_session": target_session
+    }))
+else:
+    print(json.dumps({"success": False, "error": "route_key_not_found"}))
+PYEOF
+}
+
+# 主逻辑
+ROUTE_KEY="agent:main:telegram:direct:8420019401"
+CURRENT_SESSION=$(get_current_session "$ROUTE_KEY")
+
+# 场景 1: 没有主 session 记录 - 记录当前为主
+if [ ! -f "$PRIMARY_SESSION_FILE" ]; then
+    if [ -n "$CURRENT_SESSION" ]; then
+        echo "{\"sessionId\": \"$CURRENT_SESSION\", \"recordedAt\": \"$(date -Iseconds)\"}" > "$PRIMARY_SESSION_FILE"
+        
+        log_heartbeat_event "primary_recorded" "{\"session_id\": \"$CURRENT_SESSION\"}"
+        
+        if [ "${1:-}" = "--json" ]; then
+            echo "{\"action\": \"record_primary\", \"session_id\": \"$CURRENT_SESSION\"}"
+        fi
+    else
+        if [ "${1:-}" = "--json" ]; then
+            echo "{\"action\": \"none\", \"reason\": \"no_current_session\"}"
+        fi
+    fi
+    exit 0
+fi
+
+# 场景 2: 有主 session 记录 - 检查是否被劫持
+PRIMARY_SESSION=$(python3 -c "import json; print(json.load(open('$PRIMARY_SESSION_FILE')).get('sessionId', ''))" 2>/dev/null || echo "")
+
+if [ -z "$PRIMARY_SESSION" ]; then
+    # 记录损坏，重新记录
+    if [ -n "$CURRENT_SESSION" ]; then
+        echo "{\"sessionId\": \"$CURRENT_SESSION\", \"recordedAt\": \"$(date -Iseconds)\"}" > "$PRIMARY_SESSION_FILE"
+        log_heartbeat_event "primary_rerecorded" "{\"session_id\": \"$CURRENT_SESSION\"}"
+    fi
+    [ "${1:-}" = "--json" ] && echo "{\"action\": \"none\", \"reason\": \"primary_file_corrupted\"}"
+    exit 0
+fi
+
+# 检查是否被劫持
+# 如果路由键不存在，不算劫持（可能是新系统或路由未建立）
+if [ -z "$CURRENT_SESSION" ]; then
+    # 路由未建立，跳过检查
+    if [ "${1:-}" = "--json" ]; then
+        echo "{\"action\": \"none\", \"status\": \"route_not_established\"}"
+    fi
+    exit 0
+fi
+
+if [ "$CURRENT_SESSION" != "$PRIMARY_SESSION" ]; then
+    # 检测到劫持，自动恢复
+    RESTORE_RESULT=$(restore_route "$ROUTE_KEY" "$PRIMARY_SESSION")
+    
+    # 记录审计日志
+    echo "{
+  \"timestamp\": \"$(date -Iseconds)\",
+  \"event\": \"hijack_detected_and_restored\",
+  \"route_key\": \"$ROUTE_KEY\",
+  \"primary_session\": \"$PRIMARY_SESSION\",
+  \"hijacker_session\": \"$CURRENT_SESSION\",
+  \"restore_result\": $RESTORE_RESULT
+}" >> "$AUDIT_LOG"
+    
+    # 记录 heartbeat 事件
+    log_heartbeat_event "hijack_restored" "{\"primary\": \"$PRIMARY_SESSION\", \"hijacker\": \"$CURRENT_SESSION\"}"
+    
+    if [ "${1:-}" = "--json" ]; then
+        echo "{\"action\": \"restored\", \"primary_session\": \"$PRIMARY_SESSION\", \"hijacker_session\": \"$CURRENT_SESSION\"}"
+    else
+        echo "🔄 路由劫持已自动恢复: $CURRENT_SESSION -> $PRIMARY_SESSION"
+    fi
+else
+    # 路由正常
+    if [ "${1:-}" = "--json" ]; then
+        echo "{\"action\": \"none\", \"status\": \"healthy\"}"
+    fi
+fi

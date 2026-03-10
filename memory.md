@@ -118,3 +118,47 @@ Gate 1 通过后，再考虑 session 编排层接入。
 ---
 
 Added: 2026-03-06 12:13 CST
+
+## Private Test Marker
+- MAIN_PRIVATE_TEST_67890: This is main's private memory
+
+
+---
+
+## 2026-03-09: Execution Policy Framework v1
+
+### 新增系统
+
+**Execution Policy Enforcement & Anti-Forgetting Framework v1**
+- 位置: `POLICIES/EXECUTION_POLICY*.md`
+- 工具: `tools/policy-*`, `tools/safe-write`, `tools/safe-replace`
+- 监控: `probe-execution-policy-v2` (已加入 heartbeat)
+
+**关键规则**:
+- `~/.openclaw/**` 禁用 `edit` 工具
+- 任务关闭前必须过 Gate
+- 敏感路径优先 safe-write
+
+**观察窗机制**:
+- 样本成熟度门槛: deny≥5, warn≥10
+- A-candidate vs A-confirmed 区分
+- v1.1 候选先 Shadow Tracking
+
+### 诊断方法论
+
+**context = unknown 问题**:
+- 两层分类: runtime behavior vs root cause wording
+- Probe A/B 验证 continuity
+- 先取证后判断，不先改配置
+
+### Cron 优化
+
+- Retrieval regression: 6h → 1d (02:00)
+- Session cleanup: 7天保留 (04:10)
+- flock + 日志 防并发
+
+### 收益
+
+- 规则从文档层升级到执行层
+- 防止"规则写进文档但仍被忘记"
+- 自动化监控和报告

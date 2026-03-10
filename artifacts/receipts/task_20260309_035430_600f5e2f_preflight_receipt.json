@@ -1,0 +1,14 @@
+{
+  "task_id": "task_20260309_035430_600f5e2f",
+  "receipt_type": "preflight",
+  "status": "pass",
+  "generated_at": "2026-03-09T04:01:49.135165",
+  "checks": [
+    {
+      "name": "done_guard_available",
+      "status": "pass"
+    }
+  ],
+  "state_before": "await_human_test",
+  "state_after": "ready_to_close"
+}

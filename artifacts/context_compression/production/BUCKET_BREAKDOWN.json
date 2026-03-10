@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-03-09T11:46:23.856674",
+  "source": "calibration/REVALIDATION_RESULTS.json",
+  "total_samples": 50,
+  "buckets": {
+    "user_correction": {
+      "count": 6,
+      "v2_pass_rate": 0.0,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0
+    },
+    "multi_topic_switch": {
+      "count": 3,
+      "v2_pass_rate": 0.0,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0
+    },
+    "post_tool_chat": {
+      "count": 4,
+      "v2_pass_rate": 0.0,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0
+    },
+    "historical": {
+      "count": 5,
+      "v2_pass_rate": 0.4,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 1
+    },
+    "old_topic_recall": {
+      "count": 6,
+      "v2_pass_rate": 0.0,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0
+    },
+    "real_main_agent": {
+      "count": 15,
+      "v2_pass_rate": 0.3333333333333333,
+      "agreement_rate": 0.9333333333333333,
+      "fp_count": 1,
+      "fn_count": 1
+    },
+    "synthetic": {
+      "count": 2,
+      "v2_pass_rate": 0.0,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0
+    },
+    "open_loops": {
+      "count": 6,
+      "v2_pass_rate": 0.0,
+      "agreement_rate": 1.0,
+      "fp_count": 0,
+      "fn_count": 0
+    },
+    "long_technical": {
+      "count": 3,
+      "v2_pass_rate": 1.0,
+      "agreement_rate": 0.0,
+      "fp_count": 3,
+      "fn_count": 0
+    }
+  }
+}

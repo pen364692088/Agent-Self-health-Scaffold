@@ -54,13 +54,13 @@
   "channel": "telegram",
   "from": "telegram:8420019401",
   "conversation_id": "telegram:8420019401",
-  "message_id": "8703",
-  "ts": 1773045327000,
+  "message_id": "9083",
+  "ts": 1773105643000,
   "dt_seconds": 300,
-  "request_id_base": "telegram:8703",
+  "request_id_base": "telegram:9083",
   "pre_decision": {
     "action": "boundary",
-    "decision_id": 591
+    "decision_id": 691
   },
   "allowed_subtypes_infer": [
     "care",
@@ -145,6 +145,89 @@ planned -> implementing -> self_verify -> await_human_test
 
 ---
 Added: 2026-03-06 09:05 CST
+
+---
+
+## Execution Policy Tools (2026-03-09)
+
+### 核心工具
+
+**policy-eval** - 评估工具调用是否符合策略
+```bash
+# 检查路径+工具组合
+policy-eval --path <path> --tool <tool>
+
+# JSON 输出
+policy-eval --path ~/.openclaw/workspace/SOUL.md --tool edit --json
+```
+
+**policy-doctor** - 执行策略系统健康检查
+```bash
+# 运行所有检查
+policy-doctor
+
+# JSON 输出
+policy-doctor --json
+```
+
+**policy-violations-report** - 违规报告生成
+```bash
+# 今日摘要
+policy-violations-report --today --summary
+
+# 详细报告
+policy-violations-report --detail
+
+# 导出 CSV
+policy-violations-report --export csv --output violations.csv
+```
+
+### 安全写入工具
+
+**safe-write** - 原子写入（带验证）
+```bash
+# 写入文件
+safe-write <path> <content>
+
+# 从文件读取
+safe-write --path <path> --file <source_file>
+```
+
+**safe-replace** - 安全内容替换
+```bash
+# 替换内容
+safe-replace <path> <old_string> <new_string>
+
+# 正则替换
+safe-replace --path <path> --old <regex> --new <replacement> --regex
+```
+
+### 策略规则
+
+| 规则 ID | 优先级 | 动作 | 描述 |
+|---------|--------|------|------|
+| OPENCLAW_PATH_NO_EDIT | P0 | DENY | ~/.openclaw/** 禁止使用 edit 工具 |
+| SENSITIVE_PATH_PREFER_SAFE_WRITE | P1 | WARN | 敏感路径推荐使用 safe-write |
+| FRAGILE_REPLACE_BLOCK_ON_MANAGED_FILES | P1 | DENY | 管理文件禁止脆弱替换 |
+| GATE_REQUIRED_BEFORE_CLOSE | P0 | DENY | 任务关闭前必须通过 Gate |
+| TASK_COMPLETION_PROTOCOL | P1 | DENY | 完成消息必须通过 safe-message |
+
+### 使用示例
+
+```bash
+# ❌ 错误 - 使用 edit 工具修改敏感路径
+policy-eval --path ~/.openclaw/workspace/SOUL.md --tool edit
+# 输出: DENY - Use safe-write, safe-replace, or exec + heredoc
+
+# ✅ 正确 - 使用 safe-write
+safe-write ~/.openclaw/workspace/SOUL.md "new content"
+
+# ✅ 正确 - 使用 safe-replace
+safe-replace ~/.openclaw/workspace/SOUL.md "old text" "new text"
+```
+
+---
+Added: 2026-03-09 18:25 CST
 
 ---
 

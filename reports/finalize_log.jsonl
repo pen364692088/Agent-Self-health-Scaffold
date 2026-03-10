@@ -25,3 +25,8 @@
 {"timestamp": "2026-03-06T10:05:13.532466", "task_id": "baseline_happy_001", "allowed": true, "reason": "all_checks_passed"}
 {"timestamp": "2026-03-08T08:18:52.372638", "task_id": "session_reuse_v1_0", "allowed": true, "reason": "all_checks_passed"}
 {"timestamp": "2026-03-08T10:40:05.385799", "task_id": "agent_self_health_v1", "allowed": true, "reason": "all_checks_passed"}
+{"timestamp": "2026-03-09T04:01:55.547956", "task_id": "task_20260309_035430_600f5e2f", "allowed": false, "reason": "fake_completion_detected", "details": {"patterns": ["\u5df2\u5b8c\u6210"]}}
+{"timestamp": "2026-03-09T04:02:02.427995", "task_id": "task_20260309_035430_600f5e2f", "allowed": true, "reason": "all_checks_passed"}
+{"timestamp": "2026-03-09T04:02:08.948087", "task_id": "task_20260309_035430_600f5e2f", "allowed": true, "reason": "all_checks_passed"}
+{"timestamp": "2026-03-09T07:00:27.395386", "task_id": "daily-briefing-7am", "allowed": true, "reason": "all_checks_passed"}
+{"timestamp": "2026-03-09T07:00:32.301998", "task_id": "daily-briefing-7am", "allowed": true, "reason": "all_checks_passed"}

@@ -1,0 +1,15 @@
+{
+  "task_id": "daily-briefing-7am",
+  "receipt_type": "e2e",
+  "status": "pass",
+  "generated_at": "2026-03-09T07:00:25.960956",
+  "checks": [
+    {
+      "name": "e2e",
+      "status": "skip",
+      "details": "skipped for non-code task"
+    }
+  ],
+  "state_before": "self_verify",
+  "state_after": "await_human_test"
+}
