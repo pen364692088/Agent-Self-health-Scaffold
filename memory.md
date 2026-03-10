@@ -2,26 +2,45 @@
 
 **Purpose**: session bootstrap cheat sheet only. Full history lives in indexed memory/OpenViking.
 
-## Core tools
+---
+
+## Subagent Orchestration (主入口)
+
 ```bash
-# Preferred subagent orchestration
-~/.openclaw/workspace/tools/subtask-orchestrate run "<task>" -m baiduqianfancodingplan/qianfan-code-latest
+# 正式入口
+~/.openclaw/workspace/tools/subtask-orchestrate run "<task>" -m <model>
 ~/.openclaw/workspace/tools/subtask-orchestrate status
 ~/.openclaw/workspace/tools/subtask-orchestrate resume
-
-# Memory retrieval
-~/.openclaw/workspace/tools/session-query "<query>"
-openviking find "<query>" -u viking://resources/user/memory/
 ```
 
-## Hard rules
+---
+
+## Memory Retrieval (入口层级)
+
+| 层级 | 工具 | 用途 |
+|------|------|------|
+| 主入口 | `session-query` | 日常检索 |
+| 底层兜底 | `openviking find` | session-query 不可用时 |
+
+**使用规则**:
+1. 先 `session-query`
+2. 必要时 `openviking find`
+3. 先检索最小范围，再读取最小片段
+4. 不整库灌入 prompt
+
+---
+
+## Hard Rules
+
 - 子代理正式主链路：`subtask-orchestrate` + `subagent-inbox`
 - 不把 `sessions_send` 当关键完成回执主链路
-- 先检索最小范围，再读取最小片段
 - 不在 bootstrap 文件里堆历史细节
 - 归档 = 每日日志 + bootstrap 摘要 + 索引/向量归档 + 顶层备份提交
 
-## Retrieval triggers
+---
+
+## Retrieval Triggers
+
 以下情况先检索：
 - 历史决策
 - 参数/阈值
@@ -29,16 +48,18 @@ openviking find "<query>" -u viking://resources/user/memory/
 - 旧故障模式
 - 协议细节
 
-推荐顺序：
-1. `session-query`
-2. 必要时 `openviking find`
+---
 
-## User/project reminders
+## User/Project Reminders
+
 - 稳定优先于花哨
 - 重要里程碑要能回溯证据
 - 数据/工具类任务优先走确定性流程
 
-## Maintenance rule
+---
+
+## Maintenance Rule
+
 如果新增内容：
 - 规则/入口：这里只留简版
 - 历史/细节：写到 archive、docs、POLICIES 或 OpenViking
@@ -46,119 +67,32 @@ openviking find "<query>" -u viking://resources/user/memory/
 
 ---
 
-## 2026-03-06: Context Compression Pipeline v1.0
+## Context Compression Pipeline v1.0 (2026-03-06)
 
-### 核心架构
+**状态**: S1 Shadow Validation (Feature Frozen)
+**Gate 0**: ✅ PASSED
+**Gate 1**: ⏳ PENDING
 
-**三层上下文模型**：
-- Resident Layer: 常驻（任务目标、open_loops、硬约束）
-- Active Layer: 活动（最近 6-12 轮对话）
-- Recall Layer: 回填（capsule + vector 检索）
-
-**两级检索**：
-- L1: Capsule Fallback (always available, confidence 0.85)
-- L2: Vector Enhancement (optional, confidence 0.65)
-
-### 工具位置
-
+**专用工具** (S1 专用，非通用入口):
 ```bash
 tools/context-budget-check    # Token 压力估算
 tools/capsule-builder         # 结构化胶囊提取
-tools/context-compress        # 压缩执行器 (Shadow/Enforced)
-tools/context-retrieve        # 两级检索
+tools/context-compress        # 压缩执行器
+tools/context-retrieve        # 两级检索 (S1 专用)
 tools/prompt-assemble         # Prompt 组装器
-tools/s1-dashboard            # S1 监控面板
-tools/gate1-check             # Gate 1 判定脚本
 ```
-
-### Schemas
-
-```bash
-schemas/active_state.v1.schema.json
-schemas/session_capsule.v1.schema.json
-schemas/compression_event.v1.schema.json
-schemas/budget_snapshot.v1.schema.json
-```
-
-### Policies
-
-```bash
-POLICIES/CONTEXT_COMPRESSION.md          # 核心原则
-POLICIES/CONTEXT_COMPRESSION_ROLLOUT.md  # Gate 系统 + 分阶段 rollout
-POLICIES/S1_FEATURE_FREEZE.md            # S1 功能冻结规则
-POLICIES/S1_SAMPLE_COUNTING_RULES.md     # 样本计数 + blocker 白名单
-```
-
-### Gate 系统
-
-```
-Gate 0: Minimal Closure (L1 可用)
-Gate 1: Capsule Shadow Ready (S1 指标达标)
-Gate 2: Full Retrieval Ready (L2 健康 + S2 达标)
-```
-
-### 当前状态
-
-```
-阶段: S1 Shadow Validation (Feature Frozen)
-启用: ❌ 未接入主链路
-Gate 0: ✅ PASSED
-Gate 1: ⏳ PENDING (样本 12/80)
-```
-
-### 已知问题
-
-- Issue #1: context-retrieve L2 参数错误 (非 blocker, Gate 2 准备项)
-
-### 集成时机
-
-Gate 1 通过后，再考虑 session 编排层接入。
-当前只作为独立工具，不改变 active session 行为。
 
 ---
 
-Added: 2026-03-06 12:13 CST
+## Execution Policy Framework v1 (2026-03-09)
 
-## Private Test Marker
-- MAIN_PRIVATE_TEST_67890: This is main's private memory
-
-
----
-
-## 2026-03-09: Execution Policy Framework v1
-
-### 新增系统
-
-**Execution Policy Enforcement & Anti-Forgetting Framework v1**
-- 位置: `POLICIES/EXECUTION_POLICY*.md`
-- 工具: `tools/policy-*`, `tools/safe-write`, `tools/safe-replace`
-- 监控: `probe-execution-policy-v2` (已加入 heartbeat)
+**写入入口** (详见 TOOLS.md):
+| 层级 | 工具 | 用途 |
+|------|------|------|
+| 主入口 | `safe-write` | 完整文件写入 |
+| 主入口 | `safe-replace` | 精确内容替换 |
+| 底层 | `exec + heredoc` | Shell 写入 |
 
 **关键规则**:
 - `~/.openclaw/**` 禁用 `edit` 工具
 - 任务关闭前必须过 Gate
-- 敏感路径优先 safe-write
-
-**观察窗机制**:
-- 样本成熟度门槛: deny≥5, warn≥10
-- A-candidate vs A-confirmed 区分
-- v1.1 候选先 Shadow Tracking
-
-### 诊断方法论
-
-**context = unknown 问题**:
-- 两层分类: runtime behavior vs root cause wording
-- Probe A/B 验证 continuity
-- 先取证后判断，不先改配置
-
-### Cron 优化
-
-- Retrieval regression: 6h → 1d (02:00)
-- Session cleanup: 7天保留 (04:10)
-- flock + 日志 防并发
-
-### 收益
-
-- 规则从文档层升级到执行层
-- 防止"规则写进文档但仍被忘记"
-- 自动化监控和报告

@@ -23,7 +23,7 @@
       "details": {
         "returncode": 0,
         "health_result": {
-          "timestamp": "2026-03-10T04:01:51.177599+00:00",
+          "timestamp": "2026-03-10T09:45:58.572883+00:00",
           "gate_a": {
             "status": "PASS",
             "missing": [],
@@ -32,10 +32,10 @@
           "gate_b": {
             "status": "PASS",
             "ages_seconds": {
-              "heartbeat": 60.927438259124756,
-              "callback": 60.821813344955444,
-              "mailbox": 60.82117176055908,
-              "summary": 60.820799827575684
+              "heartbeat": 236.80803442001343,
+              "callback": 236.7397334575653,
+              "mailbox": 236.73924040794373,
+              "summary": 236.73898077011108
             },
             "explanation": "runtime telemetry present and fresh"
           },
@@ -45,7 +45,7 @@
               "tool_doctor_agent_health_check": "PASS",
               "execution_guard_health": "PASS"
             },
-            "last_gate_run_at": "2026-03-10T04:00:49.993570+00:00",
+            "last_gate_run_at": "2026-03-10T09:42:01.602092+00:00",
             "explanation": "preflight/doctor/execution-guard baseline checks"
           },
           "verdict": "PASS"
@@ -84,18 +84,18 @@
         "verdict_files": [],
         "metrics_file_exists": true,
         "metrics": {
-          "scheduler_runs_total": 439,
-          "quick_runs_total": 58,
-          "full_runs_total": 23,
-          "gate_runs_total": 358,
-          "skipped_runs_total": 59,
+          "scheduler_runs_total": 517,
+          "quick_runs_total": 78,
+          "full_runs_total": 26,
+          "gate_runs_total": 413,
+          "skipped_runs_total": 91,
           "lock_contention_count": 0,
-          "execution_budget_hit_count": 26,
-          "cooldown_blocked_count": 56,
-          "probe_runs_total": 64,
-          "probe_failures_total": 37,
-          "incident_total": 15,
-          "proposal_total": 12,
+          "execution_budget_hit_count": 28,
+          "cooldown_blocked_count": 88,
+          "probe_runs_total": 87,
+          "probe_failures_total": 40,
+          "incident_total": 18,
+          "proposal_total": 15,
           "deduped_incident_count": 16,
           "repeated_same_alert_count": 16,
           "deduped_proposal_count": 19
@@ -144,5 +144,5 @@
   "failures": [],
   "status": "ok",
   "message": "Probe checks passed",
-  "timestamp": "2026-03-10T04:01:51.560541+00:00"
+  "timestamp": "2026-03-10T09:45:58.830870+00:00"
 }

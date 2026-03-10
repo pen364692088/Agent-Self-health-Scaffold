@@ -49,7 +49,7 @@
         "baseline_exists": false,
         "check_mode_returncode": 0,
         "check_mode_available": true,
-        "check_output_preview": "======================================================================\nEXECUTION DEGRADATION MONITOR\n======================================================================\nCollection Time: 2026-03-09T",
+        "check_output_preview": "======================================================================\nEXECUTION DEGRADATION MONITOR\n======================================================================\nCollection Time: 2026-03-10T",
         "prometheus_mode": true
       }
     },
@@ -61,7 +61,7 @@
         "returncode": 0,
         "check_output": {
           "metrics": {
-            "collection_time": "2026-03-09T23:01:58.788133",
+            "collection_time": "2026-03-10T04:46:02.164940",
             "window": "1h",
             "metrics": {
               "finalize_response_blocks_hourly": 0,
@@ -82,5 +82,5 @@
   "message": "Execution degradation monitoring healthy",
   "check_count": 5,
   "pass_count": 5,
-  "timestamp": "2026-03-10T04:01:58.797894+00:00"
+  "timestamp": "2026-03-10T09:46:02.171726+00:00"
 }

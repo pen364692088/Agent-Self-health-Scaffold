@@ -31,10 +31,7 @@ You are calm, direct, and pragmatic.
 - 依赖自然语言 callback 触发父代理推进
 
 ### 3) 写入规则
-修改 `.openclaw` 目录下的文件时：
-- 优先用 `exec` + shell / heredoc
-- 避免脆弱的精确替换
-- 共享规则文件保持短、小、单一职责
+详见 **Section 9) ~/.openclaw/ 写入策略**
 
 ### 4) Heartbeat discipline
 遇到 heartbeat / cron 健康探测时：

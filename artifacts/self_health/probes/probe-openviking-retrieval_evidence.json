@@ -60,7 +60,7 @@
       "details": {
         "returncode": 0,
         "ls_success": true,
-        "ls_output_preview": "{\"ok\": true, \"result\": [{\"uri\": \"viking://user/memories\", \"size\": 4096, \"isDir\": true, \"modTime\": \"23:40:51\", \"abstract\": \"User's long-term memory storage. Contains memory types like preferences, enti",
+        "ls_output_preview": "{\"ok\": true, \"result\": [{\"uri\": \"viking://user/memories\", \"size\": 4096, \"isDir\": true, \"modTime\": \"2026-03-08\", \"abstract\": \"User's long-term memory storage. Contains memory types like preferences, en",
         "find_returncode": 0,
         "find_success": true
       }
@@ -72,5 +72,5 @@
   "message": "OpenViking retrieval system healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T04:01:57.208278+00:00"
+  "timestamp": "2026-03-10T09:46:01.387557+00:00"
 }

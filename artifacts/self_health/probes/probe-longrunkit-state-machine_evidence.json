@@ -20,12 +20,12 @@
       "passed": true,
       "details": {
         "valid_states": [
-          "CANCELLED",
           "RUNNING",
-          "FAILED",
           "QUEUED",
           "DONE",
-          "STUCK"
+          "CANCELLED",
+          "STUCK",
+          "FAILED"
         ],
         "valid_transitions": {
           "QUEUED": [
@@ -62,8 +62,8 @@
       "details": {
         "jobs_checked": 20,
         "states_found": [
-          "CANCELLED",
-          "DONE"
+          "DONE",
+          "CANCELLED"
         ],
         "invalid_transitions": []
       }
@@ -144,5 +144,5 @@
       "rev": 6
     }
   ],
-  "timestamp": "2026-03-10T04:01:57.287641+00:00"
+  "timestamp": "2026-03-10T09:46:01.417376+00:00"
 }

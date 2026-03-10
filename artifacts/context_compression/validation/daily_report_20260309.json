@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-03-09T23:30:01.233184",
+  "gate1_status": {
+    "historical_replay_reports": 18,
+    "real_main_agent_reports": 18,
+    "synthetic_reports": 75,
+    "scorable_old_topic_samples": 30,
+    "replay_real_scorable_old_topic": 30,
+    "old_topic_recovery_on_scorable": 0.51,
+    "total_reports": 111,
+    "targets": {
+      "historical_replay_reports": 10,
+      "scorable_old_topic_samples": 30,
+      "replay_real_scorable_old_topic": 15,
+      "old_topic_recovery_on_scorable": 0.7
+    },
+    "gate1_passed": false
+  },
+  "baseline_commit": "31a604a"
+}
