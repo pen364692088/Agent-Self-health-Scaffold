@@ -122,6 +122,6 @@
   "message": "Receipt pipeline chain healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T02:49:47.893469+00:00",
+  "timestamp": "2026-03-10T03:04:01.931035+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-receipt-pipeline_evidence.json"
 }

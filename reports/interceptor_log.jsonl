@@ -36,3 +36,5 @@
 {"timestamp": "2026-03-09T15:12:22.440645", "task_id": "test_interceptor_002", "channel": "telegram", "allowed": true, "reason": "passed", "details": {"has_receipts": true}}
 {"timestamp": "2026-03-09T15:12:52.537843", "task_id": "test_interceptor_001", "channel": "telegram", "allowed": false, "reason": "missing_receipts", "details": {"has_receipts": false}}
 {"timestamp": "2026-03-09T15:12:52.668394", "task_id": "test_interceptor_002", "channel": "telegram", "allowed": true, "reason": "passed", "details": {"has_receipts": true}}
+{"timestamp": "2026-03-09T22:10:11.571980", "task_id": "nonexistent-task", "channel": "unknown", "allowed": false, "reason": "missing_receipts", "details": {"has_receipts": false}}
+{"timestamp": "2026-03-09T22:10:30.680159", "task_id": "nonexistent-task", "channel": "telegram", "allowed": false, "reason": "missing_receipts", "details": {"has_receipts": false}}

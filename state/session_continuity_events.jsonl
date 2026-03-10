@@ -1064,3 +1064,73 @@
     "recovery_id": "unknown:2026-03-09T21:50:22.485259"
   }
 }
+{
+  "ts": "2026-03-09T22:03:55-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T22:03:55.162099",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T22:03:55.162099"
+  }
+}
+{
+  "ts": "2026-03-09T22:04:30-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T22:04:30.332050",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T22:04:30.332050"
+  }
+}
+{
+  "ts": "2026-03-09T22:09:36-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773112176",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test-gate1-6",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773112176",
+    "checks": "3"
+  }
+}
+{
+  "ts": "2026-03-09T22:09:36-05:00",
+  "event_type": "task_ready_to_close",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "task_ready_to_close:test-gate1-6:2026-03-09",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test-gate1-6",
+    "gate": "all",
+    "result": "pass",
+    "gate_id": "0efbf2aecfd46a9e"
+  }
+}
+{
+  "ts": "2026-03-09T22:09:53-05:00",
+  "event_type": "gate_completed",
+  "session_id": "unknown",
+  "source_tool": "verify-and-close",
+  "dedupe_key": "gate_completed:1773112193",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "task_id": "test-gate1-6",
+    "gate": "gate_a",
+    "result": "pass",
+    "gate_id": "1773112193",
+    "checks": "3"
+  }
+}

@@ -37,7 +37,7 @@
       "passed": true,
       "details": {
         "path": "/home/moonlight/.openclaw/workspace/state/session_continuity_events.jsonl",
-        "total_lines": 1053,
+        "total_lines": 1079,
         "valid_entries": 0
       }
     },
@@ -51,5 +51,5 @@
       }
     }
   ],
-  "timestamp": "2026-03-10T02:49:41.305377+00:00"
+  "timestamp": "2026-03-10T03:03:56.963746+00:00"
 }

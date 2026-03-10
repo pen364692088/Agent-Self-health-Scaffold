@@ -23,7 +23,7 @@
       "details": {
         "returncode": 0,
         "health_result": {
-          "timestamp": "2026-03-10T02:49:40.778204+00:00",
+          "timestamp": "2026-03-10T03:03:56.503952+00:00",
           "gate_a": {
             "status": "PASS",
             "missing": [],
@@ -32,10 +32,10 @@
           "gate_b": {
             "status": "PASS",
             "ages_seconds": {
-              "heartbeat": 250.68031334877014,
-              "callback": 250.5785231590271,
-              "mailbox": 250.57807207107544,
-              "summary": 250.57754182815552
+              "heartbeat": 202.39308500289917,
+              "callback": 202.26867842674255,
+              "mailbox": 202.26784586906433,
+              "summary": 202.2675096988678
             },
             "explanation": "runtime telemetry present and fresh"
           },
@@ -45,7 +45,7 @@
               "tool_doctor_agent_health_check": "PASS",
               "execution_guard_health": "PASS"
             },
-            "last_gate_run_at": "2026-03-10T02:45:29.854395+00:00",
+            "last_gate_run_at": "2026-03-10T03:00:33.841354+00:00",
             "explanation": "preflight/doctor/execution-guard baseline checks"
           },
           "verdict": "PASS"
@@ -84,15 +84,15 @@
         "verdict_files": [],
         "metrics_file_exists": true,
         "metrics": {
-          "scheduler_runs_total": 418,
-          "quick_runs_total": 53,
+          "scheduler_runs_total": 422,
+          "quick_runs_total": 54,
           "full_runs_total": 22,
-          "gate_runs_total": 343,
+          "gate_runs_total": 346,
           "skipped_runs_total": 57,
           "lock_contention_count": 0,
-          "execution_budget_hit_count": 21,
+          "execution_budget_hit_count": 22,
           "cooldown_blocked_count": 54,
-          "probe_runs_total": 58,
+          "probe_runs_total": 59,
           "probe_failures_total": 36,
           "incident_total": 14,
           "proposal_total": 11,
@@ -144,5 +144,5 @@
   "failures": [],
   "status": "ok",
   "message": "Probe checks passed",
-  "timestamp": "2026-03-10T02:49:41.247052+00:00"
+  "timestamp": "2026-03-10T03:03:56.908252+00:00"
 }
