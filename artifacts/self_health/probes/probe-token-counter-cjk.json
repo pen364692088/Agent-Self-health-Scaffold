@@ -73,6 +73,6 @@
   "message": "Token counter CJK support healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T02:32:00.153997+00:00",
+  "timestamp": "2026-03-10T02:50:03.602073+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-token-counter-cjk_evidence.json"
 }

@@ -1025,3 +1025,42 @@
     "recovery_id": "unknown:2026-03-09T21:32:48.060208"
   }
 }
+{
+  "ts": "2026-03-09T21:44:35-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T21:44:35.114578",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T21:44:35.114578"
+  }
+}
+{
+  "ts": "2026-03-09T21:49:39-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T21:49:39.214936",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T21:49:39.214936"
+  }
+}
+{
+  "ts": "2026-03-09T21:50:22-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T21:50:22.485259",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T21:50:22.485259"
+  }
+}

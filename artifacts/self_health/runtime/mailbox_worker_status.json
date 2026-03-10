@@ -1,7 +1,7 @@
 {
   "worker_name": "mailbox-worker",
   "alive": true,
-  "last_poll_at": "2026-03-10T02:40:29.592256+00:00",
+  "last_poll_at": "2026-03-10T03:00:34.109570+00:00",
   "last_progress_at": null,
   "backlog_count": 0,
   "stuck_suspected": false,

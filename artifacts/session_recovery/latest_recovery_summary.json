@@ -1,30 +1,30 @@
 {
   "session_id": "unknown",
-  "timestamp": "2026-03-09T21:32:48.060208",
+  "timestamp": "2026-03-09T21:50:22.485259",
   "is_new_session": false,
   "sources": {
     "session_state": {
       "exists": true,
       "fresh": true,
-      "age_hours": 2.28,
+      "age_hours": 2.57,
       "modified": "2026-03-09T19:15:56.931645"
     },
     "working_buffer": {
       "exists": true,
       "fresh": true,
-      "age_hours": 20.0,
+      "age_hours": 20.29,
       "modified": "2026-03-09T01:33:05.284830"
     },
     "handoff": {
       "exists": true,
       "fresh": true,
-      "age_hours": 3.12,
+      "age_hours": 3.41,
       "modified": "2026-03-09T18:25:45.366809"
     },
     "wal": {
       "exists": true,
       "fresh": true,
-      "age_hours": 19.78,
+      "age_hours": 20.07,
       "modified": "2026-03-09T01:46:11.323112"
     },
     "repo": {
