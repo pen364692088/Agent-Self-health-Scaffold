@@ -20,9 +20,9 @@
       "details": {
         "current_health_exists": true,
         "current_health_path": "/home/moonlight/.openclaw/workspace/artifacts/self_health/state/current_health.json",
-        "file_age_hours": 0.22,
+        "file_age_hours": 0.1,
         "health_history_exists": true,
-        "history_entries": 648
+        "history_entries": 656
       }
     },
     {
@@ -56,7 +56,7 @@
         "has_overall_status": true,
         "overall_status_value": "GREEN",
         "has_timestamp": true,
-        "timestamp_value": "2026-03-10T03:16:36+00:00",
+        "timestamp_value": "2026-03-10T03:30:02+00:00",
         "has_components": true,
         "has_metrics": true,
         "found_required": [
@@ -95,6 +95,6 @@
   "message": "Summary generation system healthy",
   "check_count": 5,
   "pass_count": 5,
-  "timestamp": "2026-03-10T03:29:51.575707+00:00",
+  "timestamp": "2026-03-10T03:36:15.331926+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-summary-generation_evidence.json"
 }

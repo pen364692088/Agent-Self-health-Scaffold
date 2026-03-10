@@ -1173,3 +1173,16 @@
     "recovery_id": "unknown:2026-03-09T22:29:46.493496"
   }
 }
+{
+  "ts": "2026-03-09T22:36:09-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T22:36:09.647543",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Gate 系列审计完成，进入 3-7 天稳定运行观察窗",
+    "phase": "CONTROLLED OBSERVATION - Gate 系列收口",
+    "recovery_id": "unknown:2026-03-09T22:36:09.647543"
+  }
+}

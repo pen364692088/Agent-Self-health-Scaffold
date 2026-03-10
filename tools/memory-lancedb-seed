@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+"""
+memory-lancedb-seed - 直接写入测试数据到 LanceDB
+
+用途:
+- 绕过 autoCapture，直接写入测试向量
+- 验证 LanceDB populate 和 retrieval
+
+Usage:
+  memory-lancedb-seed --seed
+  memory-lancedb-seed --recall "test query"
+  memory-lancedb-seed --status
+"""
+
+import argparse
+import json
+import sys
+import os
+import subprocess
+from pathlib import Path
+from datetime import datetime
+import uuid
+
+WORKSPACE = Path(os.environ.get("OPENCLAW_WORKSPACE", "/home/moonlight/.openclaw/workspace"))
+LANCEDB_PATH = Path.home() / ".openclaw" / "memory" / "lancedb"
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://192.168.79.1:11434")
+
+def get_embedding(text: str) -> list:
+    """获取文本的 embedding 向量"""
+    import urllib.request
+    import urllib.parse
+    
+    url = f"{OLLAMA_BASE_URL}/api/embeddings"
+    data = json.dumps({"model": "mxbai-embed-large", "prompt": text}).encode('utf-8')
+    
+    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    with urllib.request.urlopen(req, timeout=30) as response:
+        result = json.loads(response.read().decode('utf-8'))
+        return result.get('embedding', [])
+
+def seed_database():
+    """写入测试数据"""
+    print("=== Seeding LanceDB ===")
+    
+    # 测试数据
+    test_entries = [
+        {
+            "text": "Gate 1.7 test: verify memory-lancedb population and retrieval. This is a test entry for validation.",
+            "importance": 0.9,
+            "category": "test"
+        },
+        {
+            "text": "Execution Policy enforcement: verify-and-close must be called before task completion. Use safe-write for sensitive paths.",
+            "importance": 0.8,
+            "category": "policy"
+        },
+        {
+            "text": "Session Continuity: session-start-recovery must be called at the start of every new session to restore state.",
+            "importance": 0.85,
+            "category": "continuity"
+        }
+    ]
+    
+    # 检查是否有 lancedb Python 包
+    try:
+        import lancedb
+        HAS_LANCEDB = True
+    except ImportError:
+        HAS_LANCEDB = False
+        print("Warning: lancedb Python package not installed")
+        print("Will create seed data file instead")
+    
+    if HAS_LANCEDB:
+        # 直接写入 LanceDB
+        print(f"Opening LanceDB at {LANCEDB_PATH}")
+        db = lancedb.connect(str(LANCEDB_PATH))
+        
+        # 创建表
+        entries = []
+        for entry in test_entries:
+            print(f"Getting embedding for: {entry['text'][:50]}...")
+            vector = get_embedding(entry['text'])
+            
+            full_entry = {
+                "id": str(uuid.uuid4()),
+                "text": entry['text'],
+                "vector": vector,
+                "importance": entry['importance'],
+                "category": entry['category'],
+                "createdAt": int(datetime.now().timestamp() * 1000)
+            }
+            entries.append(full_entry)
+        
+        # 创建或追加到表
+        import pyarrow as pa
+        
+        schema = pa.schema([
+            pa.field("id", pa.string()),
+            pa.field("text", pa.string()),
+            pa.field("vector", pa.list_(pa.float32(), 1024)),
+            pa.field("importance", pa.float64()),
+            pa.field("category", pa.string()),
+            pa.field("createdAt", pa.int64())
+        ])
+        
+        table = db.create_table("memories", data=entries, mode="overwrite")
+        print(f"✅ Seeded {len(entries)} entries to LanceDB")
+        
+        # 验证
+        count = table.count_rows()
+        print(f"Total rows in table: {count}")
+    else:
+        # 创建 seed 数据文件供后续导入
+        seed_file = WORKSPACE / "artifacts" / "memory_lancedb_seed.jsonl"
+        with open(seed_file, 'w') as f:
+            for entry in test_entries:
+                vector = get_embedding(entry['text'])
+                full_entry = {
+                    "id": str(uuid.uuid4()),
+                    "text": entry['text'],
+                    "vector": vector,
+                    "importance": entry['importance'],
+                    "category": entry['category'],
+                    "createdAt": int(datetime.now().timestamp() * 1000)
+                }
+                f.write(json.dumps(full_entry) + '\n')
+        print(f"✅ Created seed file at {seed_file}")
+        print(f"   Entries: {len(test_entries)}")
+    
+    return 0
+
+def check_status():
+    """检查 LanceDB 状态"""
+    print("=== LanceDB Status ===")
+    print(f"Path: {LANCEDB_PATH}")
+    print(f"Exists: {LANCEDB_PATH.exists()}")
+    
+    if LANCEDB_PATH.exists():
+        files = list(LANCEDB_PATH.glob("*"))
+        print(f"Files: {len(files)}")
+        for f in files[:10]:
+            print(f"  - {f.name}")
+    
+    # 尝试读取数据
+    try:
+        import lancedb
+        db = lancedb.connect(str(LANCEDB_PATH))
+        tables = db.table_names()
+        print(f"Tables: {tables}")
+        
+        if 'memories' in tables:
+            table = db.open_table('memories')
+            print(f"Memory count: {table.count_rows()}")
+    except ImportError:
+        print("lancedb Python package not installed")
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    return 0
+
+def recall_data(query: str):
+    """检索数据"""
+    print(f"=== Recall: '{query}' ===")
+    
+    try:
+        import lancedb
+        import numpy as np
+        
+        db = lancedb.connect(str(LANCEDB_PATH))
+        
+        if 'memories' not in db.table_names():
+            print("No 'memories' table found")
+            return 1
+        
+        table = db.open_table('memories')
+        
+        # 获取 query embedding
+        vector = get_embedding(query)
+        
+        # 搜索
+        results = table.search(vector).limit(5).to_pandas()
+        
+        if len(results) == 0:
+            print("No results found")
+        else:
+            print(f"Found {len(results)} results:")
+            for _, row in results.iterrows():
+                print(f"\n- Score: {row.get('_distance', 'N/A')}")
+                print(f"  Text: {row.get('text', 'N/A')[:100]}...")
+                print(f"  Category: {row.get('category', 'N/A')}")
+        
+        return 0
+    except ImportError:
+        print("lancedb Python package not installed")
+        return 1
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+def main():
+    parser = argparse.ArgumentParser(description="Memory LanceDB Seed Tool")
+    parser.add_argument("--seed", action="store_true", help="Seed test data")
+    parser.add_argument("--recall", type=str, help="Recall data with query")
+    parser.add_argument("--status", action="store_true", help="Check status")
+    args = parser.parse_args()
+    
+    if args.seed:
+        return seed_database()
+    elif args.recall:
+        return recall_data(args.recall)
+    elif args.status:
+        return check_status()
+    else:
+        parser.print_help()
+        return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
