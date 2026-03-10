@@ -28,9 +28,13 @@
             "name": "event-queue",
             "path": "/home/moonlight/.openclaw/workspace/tools/event-queue",
             "executable": true
+          },
+          {
+            "name": "openclaw message",
+            "available": true
           }
         ],
-        "openclaw_message_error": "[Errno 2] No such file or directory: 'openclaw'"
+        "openclaw_message_available": true
       }
     },
     {
@@ -74,5 +78,5 @@
   "message": "Webhook fallback healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T01:16:34.478165+00:00"
+  "timestamp": "2026-03-10T02:21:50.285956+00:00"
 }

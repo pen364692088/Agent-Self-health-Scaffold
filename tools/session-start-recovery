@@ -31,6 +31,30 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+
+
+def retrieve_memory_constraints() -> Dict[str, Any]:
+    """Retrieve hard constraints directly from capsule files."""
+    try:
+        capsules_dir = WORKSPACE / "artifacts" / "capsules"
+        constraints = []
+        if capsules_dir.exists():
+            for f in capsules_dir.glob("*.json"):
+                try:
+                    data = json.loads(f.read_text())
+                    for hc in data.get("hard_constraints", []):
+                        if isinstance(hc, str) and len(hc.strip()) > 10:
+                            constraints.append(hc.strip())
+                except:
+                    pass
+        if constraints:
+            # Deduplicate and return top 5
+            unique = list(dict.fromkeys(constraints))[:5]
+            return {"available": True, "constraints": unique}
+        return {"available": False, "error": "no constraints found"}
+    except Exception as e:
+        return {"available": False, "error": str(e)}
+
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
 WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
@@ -332,6 +356,14 @@ def perform_field_level_recovery() -> Dict[str, Any]:
     for field, resolution in result["field_resolution"].items():
         if resolution.get("status") == "missing" and field in ["objective", "next_step", "next_actions"]:
             result["uncertainty_flag"] = True
+    
+    # Retrieve memory constraints via context-retrieve
+    memory_result = retrieve_memory_constraints()
+    if memory_result.get("available"):
+        result["memory_constraints"] = memory_result.get("constraints", [])
+        result["sources"]["context_retrieve"] = {"available": True, "count": len(memory_result.get("constraints", []))}
+    else:
+        result["sources"]["context_retrieve"] = {"available": False, "error": memory_result.get("error")}
     
     result["recovered"] = SESSION_STATE.exists() or WORKING_BUFFER.exists()
     

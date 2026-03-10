@@ -28,3 +28,8 @@
   "event": "hijack_restored",
   "details": {"primary": "ee931bff-6fce-4682-930e-44f23cb8382a", "hijacker": "727ed589-118d-439b-9c60-01cc6d47bfa3"}
 }
+{
+  "timestamp": "2026-03-09T21:09:52-05:00",
+  "event": "hijack_restored",
+  "details": {"primary": "ee931bff-6fce-4682-930e-44f23cb8382a", "hijacker": "9eb95be9-832d-435c-b723-59db9521cbde"}
+}

@@ -182,8 +182,6 @@ class TwoTierRetriever:
                 ['openviking', 'health'],
                 capture_output=True, text=True, timeout=5
             )
-            if health_result.returncode != 0:
-                return []
             
             health_data = json.loads(health_result.stdout)
             # Note: OpenViking may report unhealthy but still work
@@ -200,8 +198,7 @@ class TwoTierRetriever:
                 result = subprocess.run(
                     ['openviking', 'find', query, 
                      '-u', uri_scope,
-                     '--limit', str(limit), 
-                     '-o', 'json'],
+                     '-n', str(limit)],
                     capture_output=True, text=True, timeout=15
                 )
                 

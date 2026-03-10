@@ -1,54 +1,58 @@
 {
   "session_id": "unknown",
-  "timestamp": "2026-03-09T18:13:30.557859",
+  "timestamp": "2026-03-09T21:25:20.666192",
   "is_new_session": false,
   "sources": {
     "session_state": {
       "exists": true,
       "fresh": true,
-      "age_hours": 2.22,
-      "modified": "2026-03-09T16:00:02.319495"
+      "age_hours": 2.16,
+      "modified": "2026-03-09T19:15:56.931645"
     },
     "working_buffer": {
       "exists": true,
       "fresh": true,
-      "age_hours": 16.67,
+      "age_hours": 19.87,
       "modified": "2026-03-09T01:33:05.284830"
     },
     "handoff": {
       "exists": true,
       "fresh": true,
-      "age_hours": 3.16,
-      "modified": "2026-03-09T15:04:01.053724"
+      "age_hours": 2.99,
+      "modified": "2026-03-09T18:25:45.366809"
     },
     "wal": {
       "exists": true,
       "fresh": true,
-      "age_hours": 16.46,
+      "age_hours": 19.65,
       "modified": "2026-03-09T01:46:11.323112"
     },
     "repo": {
       "branch": "main"
+    },
+    "context_retrieve": {
+      "available": true,
+      "count": 5
     }
   },
   "field_values": {
     "session_state_md": {
       "objective": {
         "status": "valid",
-        "raw": "\u5b9e\u73b0 CEO + main \u53cc agent \u7684\"\u5171\u4eab\u77e5\u8bc6\u5e93 + \u79c1\u6709\u8bb0\u5fc6\"\u67b6\u6784",
-        "value": "\u5b9e\u73b0 CEO + main \u53cc agent \u7684\"\u5171\u4eab\u77e5\u8bc6\u5e93 + \u79c1\u6709\u8bb0\u5fc6\"\u67b6\u6784",
+        "raw": "\u2705 Execution Policy Framework v1 + \u53d7\u63a7\u89c2\u5bdf\u4f53\u7cfb\u5df2\u5b8c\u6210",
+        "value": "\u2705 Execution Policy Framework v1 + \u53d7\u63a7\u89c2\u5bdf\u4f53\u7cfb\u5df2\u5b8c\u6210",
         "source": "SESSION-STATE.md"
       },
       "phase": {
         "status": "valid",
-        "raw": "\u2705 \u5168\u90e8\u5b8c\u6210\uff08\u542b\u5de5\u7a0b\u5316\u8865\u5f3a\uff09",
-        "value": "\u2705 \u5168\u90e8\u5b8c\u6210\uff08\u542b\u5de5\u7a0b\u5316\u8865\u5f3a\uff09",
+        "raw": "CONTROLLED OBSERVATION - \u7b49\u5f85\u6837\u672c\u6210\u719f",
+        "value": "CONTROLLED OBSERVATION - \u7b49\u5f85\u6837\u672c\u6210\u719f",
         "source": "SESSION-STATE.md"
       },
       "branch": {
-        "status": "valid",
-        "raw": "main",
-        "value": "main",
+        "status": "missing",
+        "raw": "",
+        "value": "",
         "source": "SESSION-STATE.md"
       },
       "blocker": {
@@ -110,7 +114,7 @@
     },
     "handoff_md": {
       "objective": {
-        "status": "empty",
+        "status": "missing",
         "raw": "",
         "value": "",
         "source": "handoff.md"
@@ -156,14 +160,14 @@
   "field_resolution": {
     "objective": {
       "status": "valid",
-      "value": "\u5b9e\u73b0 CEO + main \u53cc agent \u7684\"\u5171\u4eab\u77e5\u8bc6\u5e93 + \u79c1\u6709\u8bb0\u5fc6\"\u67b6\u6784",
+      "value": "\u2705 Execution Policy Framework v1 + \u53d7\u63a7\u89c2\u5bdf\u4f53\u7cfb\u5df2\u5b8c\u6210",
       "chosen_source": "session_state_md",
       "reason": "Highest priority source (session_state_md, priority=70)",
       "conflicts": null
     },
     "phase": {
       "status": "valid",
-      "value": "\u2705 \u5168\u90e8\u5b8c\u6210\uff08\u542b\u5de5\u7a0b\u5316\u8865\u5f3a\uff09",
+      "value": "CONTROLLED OBSERVATION - \u7b49\u5f85\u6837\u672c\u6210\u719f",
       "chosen_source": "session_state_md",
       "reason": "Highest priority source (session_state_md, priority=70)",
       "conflicts": null
@@ -177,5 +181,12 @@
     }
   },
   "recovered": true,
-  "uncertainty_flag": false
+  "uncertainty_flag": false,
+  "memory_constraints": [
+    "### \u518d\u770b\u80fd\u4e0d\u80fd\u5347\u5230 `MAIN_SYSTEM_ALWAYS_ON_ACTIVE`",
+    "### \u54ea\u79cd\u60c5\u51b5\u4e0d\u80fd\u5347",
+    "> **Before ANY other action in a new session, you MUST:**",
+    "- final verdict \u5fc5\u987b\u57fa\u4e8e\u8bc1\u636e\uff1balways-on \u5c1a\u672a\u58f0\u660e active",
+    "- \u7981\u6b62\u4fee\u6539 scheduler/Gate/proposal \u4e3b\u94fe\u8def"
+  ]
 }

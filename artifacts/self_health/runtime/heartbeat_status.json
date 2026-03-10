@@ -1,11 +1,11 @@
 {
-  "last_heartbeat_at": "2026-03-10T01:20:12.964121+00:00",
+  "last_heartbeat_at": "2026-03-10T02:30:29.078298+00:00",
   "heartbeat_lag_seconds": 0,
   "heartbeat_cycle_ok": true,
-  "last_cycle_duration_ms": 8814,
-  "last_quick_check_at": "2026-03-10T00:18:36.171637+00:00",
+  "last_cycle_duration_ms": 24559,
+  "last_quick_check_at": "2026-03-10T02:21:50.636481+00:00",
   "last_full_check_at": "2026-03-10T01:16:34.641696+00:00",
   "heartbeat_status": "healthy",
-  "health_history_age_seconds": 218.35066938400269,
+  "health_history_age_seconds": 518.4922504425049,
   "last_probe_summary": null
 }

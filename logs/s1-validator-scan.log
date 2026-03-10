@@ -16508,3 +16508,303 @@
     "real_main_agent_count": 10
   }
 }
+{
+  "historical_replay": [
+    {
+      "session_id": "ee931bff-6fce-4682-930e-44f23cb8382a",
+      "event_count": 4800,
+      "last_timestamp": "2026-03-09T00:16:41.833Z"
+    },
+    {
+      "session_id": "a82dafd7-2691-4322-91dc-ef847d1cf9f7",
+      "event_count": 2784,
+      "last_timestamp": "2026-03-08T09:31:05.044Z"
+    },
+    {
+      "session_id": "c5e7a61a-b65f-491b-852a-1477b4c3bc67",
+      "event_count": 2028,
+      "last_timestamp": "2026-03-09T05:39:03.317Z"
+    },
+    {
+      "session_id": "1cc2db83-f0a7-46ed-baa9-9e2add4f9b2b",
+      "event_count": 1848,
+      "last_timestamp": "2026-03-08T15:41:38.462Z"
+    },
+    {
+      "session_id": "cdddcaca-ad61-4024-9a30-d559873b29cb",
+      "event_count": 1578,
+      "last_timestamp": "2026-03-08T18:43:19.744Z"
+    },
+    {
+      "session_id": "89cbc6ee-8dae-4a70-bb27-32fcf4fac44c",
+      "event_count": 1275,
+      "last_timestamp": "2026-03-08T06:00:52.254Z"
+    },
+    {
+      "session_id": "0601db02-c5e6-495d-83c1-bb1bc165b106",
+      "event_count": 837,
+      "last_timestamp": "2026-03-09T08:42:04.120Z"
+    },
+    {
+      "session_id": "9c85c19e-08cd-4155-aab2-ce12b52ff5f0",
+      "event_count": 552,
+      "last_timestamp": "2026-03-08T19:16:18.236Z"
+    },
+    {
+      "session_id": "3764b01c-0461-4993-85fa-859262f7d343",
+      "event_count": 455,
+      "last_timestamp": "2026-03-09T03:02:50.224Z"
+    },
+    {
+      "session_id": "b3001016-4cec-4edf-b2bb-db2a5118b631",
+      "event_count": 428,
+      "last_timestamp": "2026-03-09T02:16:18.345Z"
+    },
+    {
+      "session_id": "3715eea0-f713-4fff-a159-64528a950835",
+      "event_count": 397,
+      "last_timestamp": "2026-03-09T14:18:35.711Z"
+    },
+    {
+      "session_id": "7da68c0d-7614-43df-9826-2d2f22968f2a",
+      "event_count": 284,
+      "last_timestamp": "2026-03-10T01:22:40.802Z"
+    },
+    {
+      "session_id": "04f51b3d-6007-4c0b-aa53-d34c8a8642e7",
+      "event_count": 208,
+      "last_timestamp": "2026-03-09T08:01:19.170Z"
+    },
+    {
+      "session_id": "727ed589-118d-439b-9c60-01cc6d47bfa3",
+      "event_count": 203,
+      "last_timestamp": "2026-03-09T21:00:10.426Z"
+    },
+    {
+      "session_id": "e4a90dfd-dbf3-4a08-b04a-795d1023ef3b",
+      "event_count": 200,
+      "last_timestamp": "2026-03-09T20:04:16.297Z"
+    },
+    {
+      "session_id": "a66f1007-bd89-45c3-893a-3912dd939e67",
+      "event_count": 154,
+      "last_timestamp": "2026-03-09T17:30:01.170Z"
+    },
+    {
+      "session_id": "02053176-0855-4885-981e-39cc895abcb4",
+      "event_count": 139,
+      "last_timestamp": "2026-03-09T02:42:52.816Z"
+    },
+    {
+      "session_id": "24419375-9db1-4689-8d69-e6981dafce45",
+      "event_count": 131,
+      "last_timestamp": "2026-03-09T09:09:32.734Z"
+    },
+    {
+      "session_id": "20b82894-a9f6-40ef-acf0-b1e9362bf08d",
+      "event_count": 114,
+      "last_timestamp": "2026-03-08T12:52:43.707Z"
+    },
+    {
+      "session_id": "e75b9231-5422-4a67-b4d1-79e07e562188",
+      "event_count": 102,
+      "last_timestamp": "2026-03-08T14:46:44.804Z"
+    },
+    {
+      "session_id": "18f09a8e-ef48-4931-9abf-af8746492b51",
+      "event_count": 96,
+      "last_timestamp": "2026-03-08T14:46:38.171Z"
+    },
+    {
+      "session_id": "f075538c-38bd-4289-8b1f-e162c2c1dfc5",
+      "event_count": 89,
+      "last_timestamp": "2026-03-09T03:19:27.942Z"
+    },
+    {
+      "session_id": "d5746b33-6814-4e8a-8708-08d4b8fcef04",
+      "event_count": 78,
+      "last_timestamp": "2026-03-09T07:30:08.580Z"
+    },
+    {
+      "session_id": "7407df30-68d7-4fcb-9e0d-f7ec04f722f1",
+      "event_count": 71,
+      "last_timestamp": "2026-03-09T08:30:44.542Z"
+    },
+    {
+      "session_id": "8a5e2a2c-e9e1-4e51-a98f-27628aa6f077",
+      "event_count": 71,
+      "last_timestamp": "2026-03-09T19:38:46.473Z"
+    },
+    {
+      "session_id": "c7876ca2-50a2-42fb-8bcf-5d5bc2225fc3",
+      "event_count": 68,
+      "last_timestamp": "2026-03-09T23:26:17.450Z"
+    },
+    {
+      "session_id": "ace8fac4-efd7-4e9b-b0b0-8b1631c19683",
+      "event_count": 66,
+      "last_timestamp": "2026-03-08T16:51:44.840Z"
+    },
+    {
+      "session_id": "0fed416a-6ce4-4b20-bc2b-87b7d019b6eb",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:28:13.744Z"
+    },
+    {
+      "session_id": "169e6c24-0359-4e87-ac06-34cc4e7ee88f",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:14:14.168Z"
+    },
+    {
+      "session_id": "18133c37-4488-4e55-a75c-193f56880c07",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:52:13.909Z"
+    },
+    {
+      "session_id": "18470000-91cc-45cf-a9b6-ff6623a53b2c",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:05:17.861Z"
+    },
+    {
+      "session_id": "19909457-a1b9-4695-a979-5d11d9d92f1d",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:24:09.608Z"
+    },
+    {
+      "session_id": "1b32647b-134e-4d0f-95de-6f73213d5149",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:36:13.802Z"
+    },
+    {
+      "session_id": "1c470e52-3585-45aa-9036-55566884ee3d",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:46:13.843Z"
+    },
+    {
+      "session_id": "1c48c5c8-7ebe-4ff8-8673-34d2fd97f59f",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:06:09.361Z"
+    },
+    {
+      "session_id": "21102569-ef13-4e37-8734-62cda49aeac1",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:40:13.814Z"
+    },
+    {
+      "session_id": "2183e02b-0891-46a5-ae21-0195a040e7af",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:16:09.871Z"
+    },
+    {
+      "session_id": "265fd194-ea35-4280-8ccc-19da464b46e5",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:36:09.367Z"
+    },
+    {
+      "session_id": "31d6e7c3-4719-48fd-b933-22e37bfa5ed2",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:12:14.030Z"
+    },
+    {
+      "session_id": "373769e5-8d4a-45fd-8fde-980765e4c1b5",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:24:14.109Z"
+    },
+    {
+      "session_id": "37b60ca9-4465-4b07-aa7d-3937381d2752",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:44:13.892Z"
+    },
+    {
+      "session_id": "39b8fdd1-b1fb-4a4f-9afa-9a57012e791f",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:04:09.434Z"
+    },
+    {
+      "session_id": "3a5b1528-b595-4933-9d72-a475d540f689",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:08:14.191Z"
+    },
+    {
+      "session_id": "41045c5e-98ba-49f2-a1b7-32eb72be59a3",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:47:06.643Z"
+    },
+    {
+      "session_id": "4279af42-6938-45db-b28a-970ddcccfa49",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:26:13.795Z"
+    },
+    {
+      "session_id": "461b2976-a71d-43b7-9f8b-57c91634fa73",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:57:06.900Z"
+    },
+    {
+      "session_id": "48e9392d-0324-48e6-b223-9aafcfe107eb",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:00:14.173Z"
+    },
+    {
+      "session_id": "52a3fc88-af71-4067-807e-590191f477ec",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:32:09.706Z"
+    },
+    {
+      "session_id": "57eaf128-d4b1-4157-aba0-4002c20cd6c6",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T01:54:14.169Z"
+    },
+    {
+      "session_id": "5d4c7d79-d8be-49cf-be1d-c657aa9e7f50",
+      "event_count": 56,
+      "last_timestamp": "2026-03-09T02:08:09.615Z"
+    }
+  ],
+  "real_main_agent": [
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-05.jsonl",
+      "size": 40605
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401.jsonl",
+      "size": 57139
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-04.jsonl",
+      "size": 40763
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-08.jsonl",
+      "size": 40948
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-07.jsonl",
+      "size": 28930
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:test123-2026-03-06.jsonl",
+      "size": 219
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-10.jsonl",
+      "size": 3330
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-09.jsonl",
+      "size": 43349
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-06.jsonl",
+      "size": 52672
+    },
+    {
+      "file": "/home/moonlight/.openclaw/workspace/integrations/openclaw/traces/telegram:8420019401-2026-03-03.jsonl",
+      "size": 19161
+    }
+  ],
+  "stats": {
+    "historical_replay_count": 50,
+    "real_main_agent_count": 10
+  }
+}

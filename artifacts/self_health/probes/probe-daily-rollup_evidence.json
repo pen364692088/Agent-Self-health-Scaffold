@@ -50,7 +50,7 @@
         "rollup_files_count": 1,
         "latest_file": "daily_summaries.jsonl",
         "latest_path": "/home/moonlight/.openclaw/workspace/memory/daily_summaries.jsonl",
-        "latest_age_hours": 18.72
+        "latest_age_hours": 19.81
       }
     },
     {
@@ -68,7 +68,7 @@
       "description": "Check aggregated data integrity",
       "passed": true,
       "details": {
-        "total_md_files": 164,
+        "total_md_files": 165,
         "recent_md_files": 10,
         "events_log_exists": true,
         "events_log_size": 120531,
@@ -82,5 +82,5 @@
   "message": "Daily rollup healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T01:16:34.376873+00:00"
+  "timestamp": "2026-03-10T02:21:47.984940+00:00"
 }

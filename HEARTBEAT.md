@@ -210,6 +210,26 @@ HEARTBEAT_OK
 
 ---
 
+## Execution Policy Quick Check (每次 heartbeat) ⭐⭐⭐
+
+**每次 heartbeat 静默执行**：
+
+```bash
+~/.openclaw/workspace/tools/probe-execution-policy-v2 --quick --json >/dev/null 2>&1 || true
+```
+
+**行为**：
+- 静默检查最近违规
+- 记录到审计日志 `logs/execution_policy_heartbeat.jsonl`
+- 不改变 heartbeat 输出契约
+
+**重要**：
+- 此检查静默执行，不阻断 heartbeat
+- 失败不阻断 heartbeat（仅记录日志）
+- 用于监控执行策略健康状态
+
+---
+
 ## Route Rebind Guard Check (每次 heartbeat) ⭐⭐⭐⭐⭐
 
 **每次 heartbeat 必须执行**：
