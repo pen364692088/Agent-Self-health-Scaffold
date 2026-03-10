@@ -1,57 +1,48 @@
 # Working Buffer
 
 ## Focus
-Execution Policy Enforcement & Anti-Forgetting Framework v1 · ✅ 完成
+R3 Consolidation Prep Pack + Patch Queue Preparation · ✅ 完成
 
 ## Current State
-- Framework 实现: ✅ 完成
-- Gate A/B/C: ✅ 验证通过
-- 测试套件: ✅ 36/36 通过
-- 文档: ✅ 完整
+- Memory Rehydration Lite: ✅ 完成
+- R3 Prep Pack: ✅ 完成
+- Patch Queue: ✅ 完成
+- 观察窗: Day 1 进行中
+- Freeze: 活跃，无行为变更
 
 ## 交付物验证
 
 | Item | Status | Notes |
 |------|--------|-------|
-| POLICIES/EXECUTION_POLICY.md | ✅ | 核心原则与架构 |
-| POLICIES/EXECUTION_POLICY_RULES.yaml | ✅ | 40+ 条规则定义 |
-| POLICIES/EXECUTION_POLICY_SCHEMA.json | ✅ | 规则 Schema |
-| POLICIES/EXECUTION_POLICY_RUNBOOK.md | ✅ | 运维手册 |
-| tools/policy-eval | ✅ | 规则评估器 |
-| tools/policy-doctor | ✅ | 健康检查 |
-| tools/policy-violations-report | ✅ | 违规报告 |
-| tools/safe-write | ✅ | 安全写入工具 |
-| tools/safe-replace | ✅ | 安全替换工具 |
-| hooks/execution-policy-enforcer/ | ✅ | Hook 系统 |
-| tests/policy/test_execution_policy.py | ✅ | 20/20 通过 |
-| tests/e2e/test_execution_policy_e2e.py | ✅ | 16/16 通过 |
+| ENTRYPOINT_INVENTORY.md | ✅ | 73 入口清单 |
+| CANONICAL_MAINLINE_MAP.md | ✅ | 10 能力主链 |
+| DUPLICATE_AND_BYPASS_MATRIX.md | ✅ | 6 重复区域 |
+| LEGACY_AND_FALLBACK_CLASSIFICATION.md | ✅ | 53 工具分类 |
+| POST_FREEZE_MINIMAL_CONSOLIDATION_PLAN.md | ✅ | 4 阶段计划 |
+| OBSERVATION_WINDOW_METRICS.md | ✅ | 7 指标类别 |
+| R3_PREP_VERDICT.md | ✅ | 总结验收 |
+| PATCH_QUEUE_P0.md | ✅ | 3 patches, 8 tests |
+| PATCH_QUEUE_P1.md | ✅ | 2 patches, 10 tests |
+| FREEZE_END_EXECUTION_ORDER.md | ✅ | 执行路线图 |
+| REGRESSION_CHECKLIST.md | ✅ | 24 检查项 |
+| OBSERVATION_WINDOW_EVIDENCE_APPENDIX.md | ✅ | 5 证据类别 |
+| PATCH_QUEUE_VERDICT.md | ✅ | 最终验收 |
 
-## Framework 核心功能
+## Patch Queue 总览
 
-1. **规则从文档层升级到执行层**
-   - YAML 定义规则
-   - policy-eval 实时评估
-   - Gate A/B/C 强制验证
+### P0 (Security)
+- P0-1: Block direct message completion
+- P0-2: Add receipt check to finalize-response
+- P0-3: Neutralize --force with audit
 
-2. **敏感路径硬阻断**
-   - ~/.openclaw/ 写入必须走受控通道
-   - 禁止 edit/write 直接操作
-   - safe-write/safe-replace wrapper
-
-3. **伪完成检测**
-   - done-guard 拦截伪完成文本
-   - receipt 验证
-   - 状态机驱动
-
-4. **监控集成**
-   - agent-self-health-scaffold 接入点
-   - 违规报告
-   - 健康检查
+### P1 (Consolidation)
+- P1-4: Merge memory retrieval to session-query --mode
+- P1-5: Integrate state writing through safe-write
 
 ## Next Actions
-1. 将框架接入 agent-self-health-scaffold
-2. 更新 SOUL.md 引用新规则
-3. 归档本次会话
+1. 每日收集观察指标和证据
+2. 观察窗结束 (~Mar 13-17) 按路线图执行
+3. 监控 bypass 和 legacy 使用
 
 ## Compaction Note
-[2026-03-09 19:38 UTC] Context compacted (normal): ratio 0.85 → 0.58
+[2026-03-10 07:15 CST] Patch Queue 准备完成，共 13 个文档，纯文档无行为变更
