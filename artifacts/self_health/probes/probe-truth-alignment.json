@@ -40,20 +40,20 @@
       "details": {
         "timestamps": {
           "current_health": {
-            "timestamp": "2026-03-10T02:16:00+00:00",
-            "age_minutes": 5.5
+            "timestamp": "2026-03-10T02:21:50+00:00",
+            "age_minutes": 9.9
           },
           "gate_report": {
-            "timestamp": "2026-03-10T02:21:27.191460+00:00",
+            "timestamp": "2026-03-10T02:31:40.866017+00:00",
             "age_minutes": 0.0
           },
           "heartbeat_status": {
-            "timestamp": "2026-03-10T02:20:26.297185+00:00",
-            "age_minutes": 1.0
+            "timestamp": "2026-03-10T02:30:29.078298+00:00",
+            "age_minutes": 1.2
           },
           "probe_summary": {
-            "timestamp": "2026-03-10T02:16:00.845276+00:00",
-            "age_minutes": 5.4
+            "timestamp": "2026-03-10T02:21:50.293867+00:00",
+            "age_minutes": 9.9
           }
         },
         "stale_sources": [],
@@ -77,5 +77,5 @@
       }
     }
   ],
-  "timestamp": "2026-03-10T02:21:27.839396+00:00"
+  "timestamp": "2026-03-10T02:31:41.487150+00:00"
 }

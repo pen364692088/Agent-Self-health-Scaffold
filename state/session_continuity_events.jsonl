@@ -999,3 +999,29 @@
     "recovery_id": "unknown:2026-03-09T21:25:20.666192"
   }
 }
+{
+  "ts": "2026-03-09T21:31:39-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T21:31:39.632094",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T21:31:39.632094"
+  }
+}
+{
+  "ts": "2026-03-09T21:32:48-05:00",
+  "event_type": "recovery_success",
+  "session_id": "unknown",
+  "source_tool": "session-start-recovery",
+  "dedupe_key": "recovery_success:unknown:2026-03-09T21:32:48.060208",
+  "metric_semantics_version": "v1.1.1a",
+  "meta": {
+    "objective": "✅ Execution Policy Framework v1 + 受控观察体系已完成",
+    "phase": "CONTROLLED OBSERVATION - 等待样本成熟",
+    "recovery_id": "unknown:2026-03-09T21:32:48.060208"
+  }
+}

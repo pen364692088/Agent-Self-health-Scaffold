@@ -4,7 +4,7 @@
   "incident_count": 18,
   "active_incidents": 18,
   "current_health": {
-    "timestamp": "2026-03-10T02:16:00+00:00",
+    "timestamp": "2026-03-10T02:32:02+00:00",
     "session_key": "agent:main:main",
     "overall_status": "GREEN",
     "mode": "quick",
@@ -13,7 +13,7 @@
         "component": "liveness",
         "status": "ok",
         "severity": "INFO",
-        "last_ok_at": "2026-03-10T02:16:00+00:00",
+        "last_ok_at": "2026-03-10T02:32:02+00:00",
         "last_fail_at": null,
         "fail_count": 0,
         "recovery_attempts": 0,
@@ -27,21 +27,21 @@
         "component": "memory",
         "status": "ok",
         "severity": "INFO",
-        "last_ok_at": "2026-03-10T02:16:00+00:00",
+        "last_ok_at": "2026-03-10T02:32:02+00:00",
         "last_fail_at": null,
         "fail_count": 0,
         "recovery_attempts": 0,
         "latest_evidence": {
-          "memory_usage_percent": 46.3
+          "memory_usage_percent": 46.6
         },
         "recommended_action": "none",
-        "message": "Memory usage 46.3%"
+        "message": "Memory usage 46.6%"
       },
       {
         "component": "context",
         "status": "ok",
         "severity": "INFO",
-        "last_ok_at": "2026-03-10T02:16:00+00:00",
+        "last_ok_at": "2026-03-10T02:32:02+00:00",
         "last_fail_at": null,
         "fail_count": 0,
         "recovery_attempts": 0,
@@ -55,7 +55,7 @@
         "component": "subagents",
         "status": "ok",
         "severity": "INFO",
-        "last_ok_at": "2026-03-10T02:16:00+00:00",
+        "last_ok_at": "2026-03-10T02:32:02+00:00",
         "last_fail_at": null,
         "fail_count": 0,
         "recovery_attempts": 0,
@@ -70,7 +70,7 @@
         "component": "storage",
         "status": "ok",
         "severity": "INFO",
-        "last_ok_at": "2026-03-10T02:16:00+00:00",
+        "last_ok_at": "2026-03-10T02:32:02+00:00",
         "last_fail_at": null,
         "fail_count": 0,
         "recovery_attempts": 0,
@@ -84,7 +84,7 @@
         "component": "network",
         "status": "unknown",
         "severity": "WARN",
-        "last_ok_at": "2026-03-10T02:16:00+00:00",
+        "last_ok_at": "2026-03-10T02:32:02+00:00",
         "last_fail_at": null,
         "fail_count": 0,
         "recovery_attempts": 0,
@@ -95,7 +95,7 @@
     ],
     "metrics": {
       "context_usage_percent": 0,
-      "memory_usage_percent": 46.3,
+      "memory_usage_percent": 46.6,
       "disk_usage_percent": 61,
       "failed_subagents_last_hour": 0,
       "pending_inbox_items": 0
@@ -104,5 +104,5 @@
     "active_incidents": [],
     "last_heal_action": null
   },
-  "generated_at": "2026-03-10T02:20:26+00:00"
+  "generated_at": "2026-03-10T02:40:29+00:00"
 }

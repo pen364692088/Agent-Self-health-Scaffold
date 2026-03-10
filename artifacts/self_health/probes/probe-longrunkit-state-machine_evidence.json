@@ -20,12 +20,12 @@
       "passed": true,
       "details": {
         "valid_states": [
-          "DONE",
-          "QUEUED",
+          "RUNNING",
+          "CANCELLED",
           "FAILED",
           "STUCK",
-          "CANCELLED",
-          "RUNNING"
+          "QUEUED",
+          "DONE"
         ],
         "valid_transitions": {
           "QUEUED": [
@@ -144,5 +144,5 @@
       "rev": 6
     }
   ],
-  "timestamp": "2026-03-10T02:21:33.536421+00:00"
+  "timestamp": "2026-03-10T02:31:46.861316+00:00"
 }

@@ -17,8 +17,8 @@
       "passed": true,
       "details": {
         "path": "/home/moonlight/.openclaw/workspace/state/session_continuity_events.jsonl",
-        "file_size_bytes": 31222,
-        "event_count": 70,
+        "file_size_bytes": 33597,
+        "event_count": 75,
         "file_age_hours": 0.0
       }
     },
@@ -27,15 +27,15 @@
       "description": "Verify event format correct",
       "passed": true,
       "details": {
-        "total_events": 70,
-        "valid_events": 70,
+        "total_events": 75,
+        "valid_events": 75,
         "invalid_events": 0,
         "format_errors": [],
         "event_types_found": [
-          "task_ready_to_close",
-          "gate_completed",
+          "conflict_resolution_applied",
           "recovery_success",
-          "conflict_resolution_applied"
+          "task_ready_to_close",
+          "gate_completed"
         ]
       }
     },
@@ -44,10 +44,10 @@
       "description": "Check event completeness (no loss)",
       "passed": true,
       "details": {
-        "total_events": 70,
-        "unique_events": 61,
+        "total_events": 75,
+        "unique_events": 66,
         "duplicate_events": 9,
-        "duplicate_rate": 0.129
+        "duplicate_rate": 0.12
       }
     },
     {
@@ -74,7 +74,7 @@
       "passed": true,
       "details": {
         "event_type_counts": {
-          "recovery_success": 43,
+          "recovery_success": 48,
           "conflict_resolution_applied": 5,
           "gate_completed": 12,
           "task_ready_to_close": 10
@@ -89,5 +89,5 @@
   "message": "Continuity event log healthy",
   "check_count": 6,
   "pass_count": 6,
-  "timestamp": "2026-03-10T02:21:35.616483+00:00"
+  "timestamp": "2026-03-10T02:31:48.399044+00:00"
 }

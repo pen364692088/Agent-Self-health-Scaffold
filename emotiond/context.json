@@ -2,12 +2,12 @@
   "target_id": "telegram:8420019401",
   "channel_id": "telegram",
   "conversation_id": "telegram:8420019401",
-  "message_id": "9161",
+  "message_id": "9164",
   "from": "telegram:8420019401",
-  "timestamp": 1773109327000,
+  "timestamp": 1773110249000,
   "decision": {
-    "action": "approach",
-    "decision_id": 696,
+    "action": "withdraw",
+    "decision_id": 697,
     "explanation": {
       "emotion": {
         "top2": [
@@ -29,7 +29,7 @@
         "energy": 1
       },
       "relationships": {
-        "bond": 3.2274857030201156e-24,
+        "bond": 2.7768776785091963e-24,
         "grudge": 0,
         "trust": 0.5000000000000003,
         "repair_bank": 0
@@ -98,9 +98,9 @@
           ]
         }
       ],
-      "selected": "approach",
+      "selected": "withdraw",
       "selection_reasons": [
-        "Selected via stochastic process (score: 0.036)",
+        "Selected via stochastic process (score: -0.041)",
         "Relying primarily on general experience"
       ],
       "persistence": {
@@ -124,15 +124,15 @@
     }
   },
   "guidance": {
-    "tone": "warm, open, friendly",
-    "intent": "engage warmly",
+    "tone": "brief, neutral",
+    "intent": "conserve energy",
     "phrases": [
-      "glad to hear",
-      "I appreciate"
+      "I understand",
+      "noted"
     ]
   },
   "emotiond_available": true,
-  "generated_at": "2026-03-10T02:22:09.063Z",
+  "generated_at": "2026-03-10T02:37:30.987Z",
   "self_report_contract": {
     "mode": "interpreted",
     "raw_state": {
@@ -146,7 +146,7 @@
       "mood": {},
       "bonds": {
         "telegram:8420019401": {
-          "bond": 3.2274857030201156e-24,
+          "bond": 2.7768776785091963e-24,
           "trust": 0.5000000000000003,
           "grudge": 0,
           "repair_bank": 0
@@ -176,7 +176,7 @@
       ]
     },
     "metadata": {
-      "generated_at": 1773109329.0403166,
+      "generated_at": 1773110250.9638922,
       "schema_version": "v1",
       "numeric_leak_protection": {
         "enabled": true,

@@ -72,6 +72,6 @@
   "message": "OpenViking retrieval system healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T02:21:33.480972+00:00",
+  "timestamp": "2026-03-10T02:31:46.808572+00:00",
   "evidence_file": "/home/moonlight/.openclaw/workspace/artifacts/self_health/probes/probe-openviking-retrieval_evidence.json"
 }

@@ -50,7 +50,7 @@
         "rollup_files_count": 1,
         "latest_file": "daily_summaries.jsonl",
         "latest_path": "/home/moonlight/.openclaw/workspace/memory/daily_summaries.jsonl",
-        "latest_age_hours": 19.81
+        "latest_age_hours": 19.98
       }
     },
     {
@@ -82,5 +82,5 @@
   "message": "Daily rollup healthy",
   "check_count": 4,
   "pass_count": 4,
-  "timestamp": "2026-03-10T02:21:47.984940+00:00"
+  "timestamp": "2026-03-10T02:32:00.111552+00:00"
 }
