@@ -4,7 +4,7 @@
 OpenClaw 无人监管续跑闭环补齐（最小闭环）
 
 ## Phase
-VALIDATING
+CLOSEOUT
 
 ## Branch
 main
@@ -14,30 +14,25 @@ None
 
 ---
 
-## 已完成
-- durable truth layer: `tools/run-state` + `RUN_STATE.json` + `CHECKPOINTS/`
-- startup recovery 接入 durable truth (`session-start-recovery`)
-- callback / advance 关键路径写 checkpoint
-- hard-block-only 判定收敛为单一真相源：`tools/hard-block-policy`
-- 历史 `TASK_LEDGER` 噪音已从恢复判断中隔离
-- 普通失败自动 retry/degrade 最小实现：`tools/retry-policy`
-- live-like 验证已补：restart-like / compact-like new session recovery
+## 收尾摘要
+本轮已把最小闭环关键链路补齐：
+- durable truth layer
+- startup recovery 接管
+- hard-block-only policy
+- retry/degrade 最小实现
+- restart-like / compact-like recovery 验证
 
-## 当前状态
-最小闭环已基本成立：
-1. durable state 落盘
-2. 恢复编排器启动即接管
-3. 默认继续/重试/降级，而不是默认询问用户
-4. 只有 hard block 才上浮
+## Artifacts
+- `artifacts/unattended_recovery_minimal_validation.md`
+- `artifacts/unattended_recovery_closeout.md`
 
 ## Remaining
 1. callback-worker 旧路径统一
-2. 更完整 daemon 级 E2E
-3. 收尾总结
+2. daemon 级真实重启 E2E
+3. 历史 orchestration 分支继续收敛
 
-## Next Actions
-1. 提交 live validation 补充
-2. 给出阶段性结论与剩余缺口
+## Suggested Next Phase
+把 callback-worker / mailbox / worker daemon 全部对齐到同一 durable recovery contract，再做一次真实进程级中断恢复演练。
 
 ## Updated
-2026-03-11 08:42 CDT
+2026-03-11 08:44 CDT
