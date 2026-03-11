@@ -25,6 +25,7 @@ ORCHESTRATOR_FILE = WORKSPACE / "tools" / "orchestrator" / "pending_subtasks.jso
 LEDGER_TOOL = WORKSPACE / "tools" / "task-ledger"
 RUN_STATE_TOOL = WORKSPACE / "tools" / "run-state"
 HARD_BLOCK_POLICY_TOOL = WORKSPACE / "tools" / "hard-block-policy"
+RETRY_POLICY_TOOL = WORKSPACE / "tools" / "retry-policy"
 
 
 def load_workflow():
@@ -148,6 +149,22 @@ def classify_hard_block(error_type: str | None):
         pass
     return False, None
 
+
+
+def decide_retry(error_type: str | None, step: dict):
+    try:
+        import subprocess, json
+        retry_count = int(step.get('retry_count', 0) or 0)
+        max_retries = int(step.get('max_retries', 2) or 2)
+        model = step.get('model')
+        degraded_model = step.get('degraded_model') or 'haiku'
+        r = subprocess.run([str(RETRY_POLICY_TOOL), 'decide', '--error-type', error_type or 'subagent_failed', '--retry-count', str(retry_count), '--max-retries', str(max_retries), '--model', model or '', '--degraded-model', degraded_model], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            return json.loads(r.stdout or '{}')
+    except Exception:
+        pass
+    return {'action': 'escalate', 'next_retry_count': step.get('retry_count', 0), 'next_model': step.get('model'), 'mode': 'policy_error'}
+
 def write_checkpoint(label: str, summary: str = "", next_step: str = "", status: str = "running", hard_block: bool = False, error_type: str = None):
     """Persist a durable checkpoint without breaking main flow."""
     try:
@@ -213,6 +230,23 @@ def handle_structured_payload(payload: dict) -> dict:
     if status != 'completed':
         err = payload.get('error', {}) if isinstance(payload.get('error'), dict) else {}
         err_type = err.get('type') or 'subagent_failed'
+        retry_decision = decide_retry(err_type, step)
+        if retry_decision.get('action') == 'retry':
+            step['status'] = 'pending'
+            step['retry_count'] = retry_decision.get('next_retry_count', 1)
+            step['last_error_type'] = err_type
+            step['model'] = retry_decision.get('next_model') or step.get('model')
+            step['last_retry_mode'] = retry_decision.get('mode')
+            step.pop('run_id', None)
+            save_workflow(state)
+            write_checkpoint('step_retry_scheduled', summary=summary or task_id, next_step=step.get('id') or '', status='repairing', error_type=err_type)
+            return {
+                "action": "spawn_next",
+                "next_step": step,
+                "workflow": state,
+                "should_silence": True,
+                "retry_scheduled": True
+            }
         hard_block, hard_reason = classify_hard_block(err_type)
         write_checkpoint('step_failed', summary=summary or task_id, next_step=step.get('id') or '', status='hard_blocked' if hard_block else 'repairing', hard_block=hard_block, error_type=hard_reason or err_type)
     step['completed_at'] = datetime.now().isoformat()

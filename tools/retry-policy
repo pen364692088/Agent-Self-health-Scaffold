@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""
+retry-policy - minimal retry/degrade decision helper
+
+Usage:
+  retry-policy decide --error-type TYPE [--retry-count N] [--max-retries N] [--model MODEL] [--degraded-model MODEL]
+  retry-policy --health
+"""
+
+import argparse
+import json
+import sys
+
+RETRYABLE_ERRORS = {
+    'subagent_failed',
+    'tool_failed',
+    'tool_timeout',
+    'transient_tool_error',
+    'network_error',
+    'provider_error',
+    'unknown_error',
+}
+
+
+def decide(error_type: str | None, retry_count: int, max_retries: int, model: str | None, degraded_model: str | None):
+    error_type = error_type or 'subagent_failed'
+    retryable = error_type in RETRYABLE_ERRORS
+    if retryable and retry_count < max_retries:
+        next_retry = retry_count + 1
+        next_model = model
+        mode = 'retry_same'
+        if degraded_model and next_retry >= 2:
+            next_model = degraded_model
+            mode = 'retry_degraded'
+        return {
+            'action': 'retry',
+            'retryable': True,
+            'next_retry_count': next_retry,
+            'next_model': next_model,
+            'mode': mode,
+        }
+    return {
+        'action': 'escalate',
+        'retryable': retryable,
+        'next_retry_count': retry_count,
+        'next_model': model,
+        'mode': 'exhausted' if retryable else 'non_retryable',
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('command', nargs='?')
+    parser.add_argument('--error-type')
+    parser.add_argument('--retry-count', type=int, default=0)
+    parser.add_argument('--max-retries', type=int, default=2)
+    parser.add_argument('--model')
+    parser.add_argument('--degraded-model')
+    args = parser.parse_args()
+
+    if args.command == '--health' or (args.command is None and '--health' in sys.argv):
+        print(json.dumps({'status': 'healthy', 'retryable_errors': sorted(RETRYABLE_ERRORS)}))
+        return
+    if args.command == 'decide':
+        print(json.dumps(decide(args.error_type, args.retry_count, args.max_retries, args.model, args.degraded_model), ensure_ascii=False, indent=2))
+        return
+    parser.print_help()
+    sys.exit(1)
+
+if __name__ == '__main__':
+    main()
