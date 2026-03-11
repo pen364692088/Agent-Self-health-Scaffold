@@ -39,9 +39,10 @@ def main():
     parser.add_argument('--error-type')
     parser.add_argument('--risk')
     parser.add_argument('--json', action='store_true')
+    parser.add_argument('--health', action='store_true')
     args = parser.parse_args()
 
-    if args.command == '--health' or (args.command is None and '--health' in sys.argv):
+    if args.health or args.command == '--health':
         print(json.dumps({'status': 'healthy', 'hard_block_types': sorted(HARD_BLOCK_TYPES)}))
         return
     if args.command == 'list':
