@@ -1,6 +1,6 @@
 # Unattended Recovery Minimal Validation
 
-Date: 2026-03-11 08:39 CDT
+Date: 2026-03-11 08:42 CDT
 
 ## Scope
 Validate minimal unattended execution loop closure for:
@@ -8,10 +8,13 @@ Validate minimal unattended execution loop closure for:
 2. startup recovery derives actionable resume state
 3. hard-block-only escalation policy
 4. old ledger noise does not force false resume
+5. ordinary failure retries/degrades before escalation
+6. restart / compact-like new session recovery behavior
 
 ## Changes Under Test
 - `tools/run-state`
 - `tools/hard-block-policy`
+- `tools/retry-policy`
 - `tools/session-start-recovery`
 - `tools/subagent-completion-handler`
 - `tools/handle-subagent-complete`
@@ -29,7 +32,7 @@ Expected:
 - `recovery_hint.should_auto_continue = true`
 
 Result:
-- PASS (covered by `tests/test_run_state_minimal.py`)
+- PASS (`tests/test_run_state_minimal.py`)
 
 ### Case 2: ordinary failure should not hard-block
 Method:
@@ -40,7 +43,7 @@ Expected:
 - `hard_block = false`
 
 Result:
-- PASS (covered by `tests/test_hard_block_policy_minimal.py`)
+- PASS (`tests/test_hard_block_policy_minimal.py`)
 
 ### Case 3: hard-block classification only for allowed categories
 Method:
@@ -51,7 +54,7 @@ Expected:
 - reason preserved
 
 Result:
-- PASS (covered by `tests/test_hard_block_policy_minimal.py`)
+- PASS (`tests/test_hard_block_policy_minimal.py`)
 
 ### Case 4: startup recovery consumes durable truth layer
 Method:
@@ -78,23 +81,83 @@ Expected:
 Result:
 - PASS
 
+### Case 6: retryable failure schedules retry instead of asking user
+Method:
+- active workflow contains running step with `retry_count=0`, `max_retries=2`
+- send failed payload with `error.type = tool_failed`
+
+Expected:
+- handler returns `action = spawn_next`
+- step moves back to `pending`
+- `retry_count` increments
+
+Result:
+- PASS (`tests/test_retry_policy_minimal.py`)
+
+### Case 7: second retry can degrade model
+Method:
+- run `tools/retry-policy decide --error-type tool_failed --retry-count 1 --max-retries 3 --model gpt --degraded-model haiku`
+
+Expected:
+- action = retry
+- mode = retry_degraded
+- next_model = haiku
+
+Result:
+- PASS (`tests/test_retry_policy_minimal.py`)
+
+### Case 8: restart-like new session auto-surfaces pending work
+Method:
+- persist active workflow with one pending step
+- force `.last_session_id` mismatch
+- run `tools/session-start-recovery --recover --json`
+
+Expected:
+- `is_new_session = true`
+- `durable_resume_action = spawn_pending`
+- `durable_should_auto_continue = true`
+
+Result:
+- PASS (`tests/test_live_recovery_minimal.py`)
+
+### Case 9: compact-like new session stays idle when no live work exists
+Method:
+- remove active workflow
+- clear hard block fields
+- force `.last_session_id` mismatch
+- run `tools/session-start-recovery --recover --json`
+
+Expected:
+- `is_new_session = true`
+- `durable_resume_action = idle`
+- `durable_should_auto_continue = false`
+
+Result:
+- PASS (`tests/test_live_recovery_minimal.py`)
+
 ## Test Commands
 ```bash
-python3 -m pytest -q tests/test_run_state_minimal.py tests/test_hard_block_policy_minimal.py
+python3 -m pytest -q \
+  tests/test_live_recovery_minimal.py \
+  tests/test_retry_policy_minimal.py \
+  tests/test_run_state_minimal.py \
+  tests/test_hard_block_policy_minimal.py
+
 ./tools/run-state recover
 ./tools/session-start-recovery --recover --json
 ```
 
 ## Current Gaps
-- tool-fail auto retry/degrade path is partially represented via `repairing` status but not yet unified into a dedicated retry policy module
-- restart/compact live E2E was not simulated end-to-end; current validation is minimal and deterministic
-- callback-worker still writes direct notifications; policy is improved but not fully centralized
+- retry/degrade is currently implemented in `subagent-completion-handler`; not yet fully centralized for all failure sources
+- callback-worker still retains legacy direct notification behavior and should be aligned to the same durable recovery contract
+- no full daemon-level end-to-end restart simulation with real background workers yet
 
 ## Verdict
-Minimal loop closure is now materially better:
-- durable state exists
-- startup recovery can auto-decide resume vs hard-block
-- normal failures do not automatically escalate to user
-- stale ledger noise no longer forces false continuation
+The minimum unattended loop is now closed enough to be meaningful:
+- task truth is durable
+- startup recovery can decide whether to continue automatically
+- ordinary failures retry/degrade first
+- only hard-block classes require user involvement
+- stale ledger noise no longer creates false continuation
 
-Not fully complete yet, but the smallest viable unattended recovery loop is now present.
+This is a real shift from “wait for user to say continue” toward unattended continuation.
