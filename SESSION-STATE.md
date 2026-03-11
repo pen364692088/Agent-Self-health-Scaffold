@@ -41,15 +41,17 @@ None
 - 公共 durable outbound queue 已存在：`src/infra/outbound/deliver.ts`
 - Telegram bot 回复主路径仍有直接发送入口：`src/telegram/bot-message-dispatch.ts` -> `src/telegram/bot/delivery.replies.ts`
 - 该 Telegram 路径会发 `message:sent` hook，但未统一经过 write-ahead queue / queue recovery ledger
+- 本轮额外硬要求已确认：保持 Telegram 现有用户可见语义不变；补真正 dedupe identity；E2E 覆盖两个最危险中断断点；telemetry 必须支持单条 reply 生命周期串联
 - 用户明确要求暂停 Web/WhatsApp 横向扩展，优先修复 Telegram 原事故链
 
 ---
 
 ## 下一步
-1. 确认原事故（14:40/14:45“上一条像没收到”）实际命中的 Telegram 发送路径
-2. 优先把 Telegram special/direct send path 统一到 durable outbound queue
-3. 增补一条原事故导向的 E2E：high context pressure + long reply + Telegram send 中 compaction defer/recheck
-4. 把 telemetry 落到可观测出口：channel lifecycle / defer reason / recheck success rate / backlog / recovery / retry / dedupe
+1. P0：用代码路径 + trace/log + 复现实验确认 14:40/14:45 事故实际命中的 Telegram 分支（final answer / fallback reply / native command direct reply）
+2. P1：把 Telegram bot special/direct reply path 统一进 durable outbound queue，且保持 reply_to / thread fallback / chunking / media fallback / native command 即时性语义不变
+3. P1.5：同时补幂等与 dedupe identity，覆盖“send 成功但 ack 未落盘”恢复后重复发送风险
+4. P2：补 3 条事故导向 E2E：正常 defer+recheck；queue write 成功但 send 前中断；send 成功但 ack 前中断，断言不丢、不重、可恢复
+5. P3：把 telemetry 落到可观测出口，支持单条 reply 级关联追踪（turn_id / logical_reply_id / outbound_delivery_id / channel / lifecycle / defer reason / recheck / recovery / retry / dedupe）
 
 ---
 
