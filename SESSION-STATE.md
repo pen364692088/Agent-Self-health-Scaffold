@@ -1,7 +1,7 @@
 # SESSION-STATE.md
 
 ## Current Objective
-OpenClaw 无人监管续跑闭环补齐（最小闭环）
+OpenClaw 无人监管续跑闭环补齐（最小闭环 + 主链收口）
 
 ## Phase
 CLOSEOUT
@@ -14,25 +14,22 @@ None
 
 ---
 
-## 收尾摘要
-本轮已把最小闭环关键链路补齐：
-- durable truth layer
-- startup recovery 接管
-- hard-block-only policy
-- retry/degrade 最小实现
-- restart-like / compact-like recovery 验证
+## 本轮新增收口
+- `callback-worker` 已降级为 trigger-only
+- 唯一正式推进入口收敛为 `subtask-orchestrate resume`
+- `subtask-orchestrate resume` 现在统一负责：处理 inbox → 推进 main flow → 决定 spawn / wait / notify
+- 新增 `tests/test_single_entrypoint_flow.py` 验证单入口形态
 
-## Artifacts
-- `artifacts/unattended_recovery_minimal_validation.md`
-- `artifacts/unattended_recovery_closeout.md`
+## 统一后的正式主链
+`callback-worker -> subtask-orchestrate resume -> handle-subagent-complete -> subagent-completion-handler -> run-state`
+
+## 结果
+主流程不再保留 callback-worker 自行决策推进的第二入口。
+现在它只负责触发和必要的最终通知转发。
 
 ## Remaining
-1. callback-worker 旧路径统一
+1. 更彻底清理历史文档/脚本中的旧入口表述
 2. daemon 级真实重启 E2E
-3. 历史 orchestration 分支继续收敛
-
-## Suggested Next Phase
-把 callback-worker / mailbox / worker daemon 全部对齐到同一 durable recovery contract，再做一次真实进程级中断恢复演练。
 
 ## Updated
-2026-03-11 08:44 CDT
+2026-03-11 08:49 CDT

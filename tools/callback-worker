@@ -1,173 +1,59 @@
 #!/usr/bin/env python3
 """
-Callback Worker v8.0 - 直接发送通知
+Callback Worker v9.0 - trigger only
 
-功能：
-- 处理子代理回执
-- 更新 WORKFLOW_STATE.json
-- notify_user 时直接调用 message 工具发送
+唯一职责：
+- 发现新回执
+- 调用唯一正式入口 `subtask-orchestrate resume`
+- 如需用户通知，仅转发该入口的结果
 
-Usage:
-  callback-worker --once
-  callback-worker --health
+不再自行决定 spawn / flag / workflow 推进。
 """
 
 import json
 import subprocess
 import sys
 from pathlib import Path
-from datetime import datetime
 
 WORKSPACE = Path.home() / ".openclaw" / "workspace"
-INBOX_TOOL = WORKSPACE / "tools" / "subagent-inbox"
-HANDLER = WORKSPACE / "tools" / "subagent-completion-handler"
-NOTIFY_FLAG = WORKSPACE / "reports" / "spawn_needed.flag"
-WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+ORCH_TOOL = WORKSPACE / "tools" / "subtask-orchestrate"
 
 
-def process_pending():
-    """处理待处理的回执"""
-    result = subprocess.run(
-        [str(INBOX_TOOL), "check", "--once"],
-        capture_output=True, text=True
-    )
-    
-    pending_count = 0
-    if "pending" in result.stdout:
-        lines = result.stdout.strip().split('\n')
-        for line in lines:
-            if "pending" in line.lower():
-                try:
-                    pending_count = int(line.split()[1])
-                except:
-                    pass
-    
-    if pending_count == 0:
-        return {"processed": 0, "results": [], "action": "none"}
-    
-    results = []
-    
-    import re
-    task_ids = re.findall(r'-\s+([a-zA-Z0-9_\-\.]+):', result.stdout)
-    
-    for task_id in task_ids:
-        task_id = task_id.replace('.done', '')
-        if not task_id:
-            continue
-        
-        proc_result = subprocess.run(
-            [str(INBOX_TOOL), "process", task_id],
-            capture_output=True, text=True
-        )
-        
-        try:
-            process_result = json.loads(proc_result.stdout)
-            results.append(process_result)
-            
-            if process_result.get("status") == "processed":
-                handler_result = process_result.get("handler_result", {})
-                action = handler_result.get("action")
-                
-                if action == "spawn_next":
-                    next_step = handler_result.get("next_step", {})
-                    
-                    with open(NOTIFY_FLAG, 'w') as f:
-                        json.dump({
-                            "action": "spawn_next",
-                            "step_id": next_step.get("id"),
-                            "task": next_step.get("task"),
-                            "model": next_step.get("model"),
-                            "timestamp": datetime.now().isoformat()
-                        }, f)
-                    
-                    # 唤醒 main session
-                    wake_result = wake_main_session(next_step.get("id", "unknown"))
-                    
-                    return {
-                        "processed": len(results),
-                        "results": results,
-                        "action": "spawn_next",
-                        "next_step": next_step,
-                        "wake_result": wake_result
-                    }
-                    
-                elif action == "notify_user":
-                    message = handler_result.get("message", "")
-                    
-                    # 直接发送通知
-                    send_result = send_notification(message)
-                    
-                    return {
-                        "processed": len(results),
-                        "results": results,
-                        "action": "notify_user",
-                        "message": message,
-                        "send_result": send_result
-                    }
-        except Exception as e:
-            results.append({"task_id": task_id, "error": str(e)})
-    
-    return {"processed": len(results), "results": results, "action": "processed"}
-
-
-def wake_main_session(step_id):
-    """使用 openclaw system event 唤醒 main session"""
-    event_text = f"Subtask receipt arrived, step {step_id} ready. Run handle-subagent-complete."
-    
+def run_resume():
+    result = subprocess.run([str(ORCH_TOOL), 'resume'], capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        return {'status': 'error', 'error': result.stderr[:200] if result.stderr else 'resume_failed'}
     try:
-        result = subprocess.run(
-            ["openclaw", "system", "event",
-             "--text", event_text,
-             "--mode", "now"],
-            capture_output=True, text=True,
-            timeout=30
-        )
-        return {"success": result.returncode == 0}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+        return json.loads(result.stdout or '{}')
+    except Exception:
+        return {'status': 'error', 'error': 'invalid_resume_json', 'raw': result.stdout[:200]}
 
 
 def send_notification(message):
-    """直接发送通知给用户"""
-    # 使用完整路径（systemd user session PATH 不包含 npm-global）
     openclaw_path = Path.home() / ".npm-global" / "bin" / "openclaw"
-    
     try:
-        result = subprocess.run(
-            [str(openclaw_path), "message", "send",
-             "--account", "manager",
-             "--channel", "telegram",
-             "--target", "8420019401",
-             "--message", message],
-            capture_output=True, text=True,
-            timeout=30
-        )
-        return {
-            "success": result.returncode == 0,
-            "output": result.stdout[:100] if result.stdout else "",
-            "error": result.stderr[:200] if result.stderr else None
-        }
+        result = subprocess.run([str(openclaw_path), 'message', 'send', '--account', 'manager', '--channel', 'telegram', '--target', '8420019401', '--message', message], capture_output=True, text=True, timeout=30)
+        return {'success': result.returncode == 0, 'output': result.stdout[:100] if result.stdout else '', 'error': result.stderr[:200] if result.stderr else None}
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {'success': False, 'error': str(e)}
 
 
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
-    
-    if sys.argv[1] == "--health":
-        print(json.dumps({"status": "healthy", "version": "8.0"}))
+    if sys.argv[1] == '--health':
+        print(json.dumps({'status': 'healthy', 'version': '9.0', 'entrypoint': 'subtask-orchestrate resume'}))
         sys.exit(0)
-    
-    if sys.argv[1] == "--once":
-        result = process_pending()
+    if sys.argv[1] == '--once':
+        result = run_resume()
+        if result.get('action') == 'notify_user' and result.get('message'):
+            result['send_result'] = send_notification(result['message'])
         print(json.dumps(result, indent=2, ensure_ascii=False))
         sys.exit(0)
-    
     print(__doc__)
     sys.exit(1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# LAYER: main
+# PURPOSE: 子代理编排正式入口
+# DOCS: TOOLS.md, SOUL.md
 """
 Subagent Orchestrate v3.0 - 唯一正式入口
 
@@ -31,6 +34,8 @@ HANDLER_TOOL = WORKSPACE / "tools" / "subagent-completion-handler"
 ORCHESTRATOR_DIR = WORKSPACE / "tools" / "orchestrator"
 PENDING_FILE = ORCHESTRATOR_DIR / "pending_subtasks.json"
 WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
+ADVANCE_TOOL = WORKSPACE / "tools" / "handle-subagent-complete"
+RUN_STATE_TOOL = WORKSPACE / "tools" / "run-state"
 
 
 def run_command(cmd: list, capture: bool = True) -> tuple:
@@ -97,6 +102,29 @@ def check_and_process_inbox() -> dict:
         "processed": processed
     }
 
+
+
+
+def checkpoint(label: str, summary: str = "", next_step: str = "", status: str = "running"):
+    try:
+        cmd = [str(RUN_STATE_TOOL), 'checkpoint', label, '--status', status]
+        if summary:
+            cmd += ['--summary', summary]
+        if next_step:
+            cmd += ['--next-step', next_step]
+        subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except Exception:
+        pass
+
+
+def advance_main_flow() -> dict:
+    success, output = run_command([str(ADVANCE_TOOL), '--json'])
+    if not success or not output:
+        return {'action': 'error', 'error': 'advance_failed'}
+    try:
+        return json.loads(output)
+    except Exception:
+        return {'action': 'error', 'error': 'advance_parse_failed', 'raw': output[:200]}
 
 def get_workflow_status() -> dict:
     """获取工作流状态"""
@@ -205,30 +233,42 @@ def show_status() -> dict:
 
 
 def resume_work() -> dict:
-    """恢复工作（强制先检查邮箱）"""
+    """恢复工作（唯一正式推进入口）"""
+    inbox = check_and_process_inbox()
     result = {
-        "inbox": check_and_process_inbox(),
-        "action": None
+        'entrypoint': 'subtask-orchestrate.resume',
+        'inbox': inbox,
     }
-    
-    # 检查是否有待恢复的工作
-    workflow = get_workflow_status()
-    
-    if workflow.get("active"):
-        for step in workflow.get("steps", []):
-            if step.get("status") == "running":
-                result["action"] = "wait_for_running"
-                result["message"] = f"步骤 {step.get('id')} 正在运行"
-                return result
-    
-    # 检查邮箱是否有新回执
-    if result["inbox"].get("processed"):
-        result["action"] = "processed"
-        result["message"] = "已处理新回执"
-    else:
-        result["action"] = "nothing_to_do"
-        result["message"] = "没有待处理的工作"
-    
+
+    advance = advance_main_flow()
+    result['advance'] = advance
+    action = advance.get('action', 'none')
+
+    if action == 'spawn_next':
+        checkpoint('subtask_orchestrate_resume_spawn', summary=advance.get('task', ''), next_step=advance.get('step_id', ''), status='running')
+        result['action'] = 'spawn_next'
+        result['message'] = '已统一入口推进到下一步'
+        return result
+
+    if action == 'notify_user':
+        checkpoint('subtask_orchestrate_resume_notify', summary=advance.get('message', ''), status='completed')
+        result['action'] = 'notify_user'
+        result['message'] = advance.get('message', '')
+        return result
+
+    if action == 'wait':
+        checkpoint('subtask_orchestrate_resume_wait', summary=advance.get('message', '等待中'), status='running')
+        result['action'] = 'wait'
+        result['message'] = advance.get('message', '等待中')
+        return result
+
+    if action == 'none':
+        result['action'] = 'none'
+        result['message'] = '没有待恢复的工作'
+        return result
+
+    result['action'] = action
+    result['message'] = advance.get('message', advance.get('error', 'unknown'))
     return result
 
 
