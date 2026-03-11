@@ -130,7 +130,7 @@ def gate_b_check() -> dict:
 def gate_c_check() -> dict:
     """Gate C: Tool chain availability check."""
     tools = [
-        "session-start-recovery",
+        str(WORKSPACE / "tools" / "session-start-recovery"),
         "state-write-atomic",
         "state-journal-append",
         "state-lock"

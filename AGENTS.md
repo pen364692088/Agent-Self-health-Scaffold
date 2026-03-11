@@ -10,13 +10,9 @@
 
 ## ⚠️ FIRST ACTION (MANDATORY) ⚠️
 
-**Before ANY other action in a new session, you MUST:**
+Before ANY other action in a new session, you MUST:
 
 ```bash
-# 如果 PATH 已配置（~/.bashrc 中添加了 tools/ 目录）
-session-start-recovery --recover --summary
-
-# 否则使用完整路径
 ~/.openclaw/workspace/tools/session-start-recovery --recover --summary
 ```
 
@@ -79,7 +75,7 @@ This command:
 **Execute immediately at session start:**
 ```bash
 # 如果 PATH 已配置（~/.bashrc 中添加了 tools/ 目录）
-session-start-recovery --recover --summary
+~/.openclaw/workspace/tools/session-start-recovery --recover --summary
 
 # 否则使用完整路径
 ~/.openclaw/workspace/tools/session-start-recovery --recover --summary
@@ -122,7 +118,7 @@ session-start-recovery --recover --summary
 ## cc-godmode 长任务流接入
 
 ### 长任务入口前执行
-1. `session-start-recovery --preflight`
+1. `~/.openclaw/workspace/tools/session-start-recovery --preflight`
 2. 如果 needs_recovery，执行恢复
 3. 从恢复状态获取当前 objective, phase, next actions
 

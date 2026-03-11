@@ -19,7 +19,7 @@
 1. **执行恢复检查**
    ```bash
    # 调用恢复工具（静默模式）
-   RECOVERY_RESULT=$(session-start-recovery --recover --json 2>/dev/null)
+   RECOVERY_RESULT=$(~/.openclaw/workspace/tools/session-start-recovery --recover --json 2>/dev/null)
    RECOVERY_EXIT=$?
    
    if [ $RECOVERY_EXIT -ne 0 ]; then

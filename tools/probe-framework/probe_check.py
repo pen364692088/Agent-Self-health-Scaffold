@@ -58,7 +58,7 @@ class ProbeCheck(ProbeBase):
         
         # Default: check session-start-recovery tool availability
         if command is None:
-            command = "which session-start-recovery || echo 'not-found'"
+            command = "test -x /home/moonlight/.openclaw/workspace/tools/session-start-recovery && echo /home/moonlight/.openclaw/workspace/tools/session-start-recovery || echo not-found"
         
         try:
             result = subprocess.run(

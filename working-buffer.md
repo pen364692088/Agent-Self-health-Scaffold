@@ -1,18 +1,18 @@
 # Working Buffer
 
 ## Focus
-收最后一段：hard-block-only 明确化 + 恢复验证报告 + 提交。
+把 restart 后 recovery 的 PATH 断点先消掉，再做一次真机复测。
 
 ## What Changed
-- 新 truth layer 已经落地，不再只靠 WORKFLOW_STATE.json
-- session-start-recovery 启动时会同步 RUN_STATE
-- callback / advance 链路在关键节点已写 durable checkpoints
+- 已排除 `tools/session-route` 本体为问题源（本体已用绝对路径）
+- 已修复 workspace 内可见的裸 `session-start-recovery` 调用
+- 最小自测通过：恢复工具可执行，Python 文件可编译
 
-## Risk
-- 历史 TASK_LEDGER 中残留的旧 pending 测试任务会污染 recover 判断
-- 现在 hard_block 类型集合已经存在，但还分散在脚本里，下一步应抽成单一判定源
+## Remaining Uncertainty
+- 还不能证明 restart hook 已真正进入 apply/continuation
+- 需要一次新的 restart 后日志证据
 
 ## Minimal Finish Line
-- 恢复动作只分：auto-continue / hard-block
-- 普通失败先 repairing / retrying，不直接 ask user
-- 验证 restart / phase complete / 普通失败三条链路
+- commit 当前修复
+- 用户重启
+- 复查日志是否消失 `command not found`
