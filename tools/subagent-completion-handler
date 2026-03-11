@@ -23,6 +23,7 @@ WORKSPACE = Path.home() / ".openclaw" / "workspace"
 WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
 ORCHESTRATOR_FILE = WORKSPACE / "tools" / "orchestrator" / "pending_subtasks.json"
 LEDGER_TOOL = WORKSPACE / "tools" / "task-ledger"
+RUN_STATE_TOOL = WORKSPACE / "tools" / "run-state"
 
 
 def load_workflow():
@@ -131,6 +132,25 @@ def try_match_step(state: dict, payload: dict, exclude_done: bool = True) -> tup
     return None, -1, None
 
 
+
+
+def write_checkpoint(label: str, summary: str = "", next_step: str = "", status: str = "running", hard_block: bool = False, error_type: str = None):
+    """Persist a durable checkpoint without breaking main flow."""
+    try:
+        cmd = [str(RUN_STATE_TOOL), 'checkpoint', label, '--status', status]
+        if summary:
+            cmd.extend(['--summary', summary])
+        if next_step:
+            cmd.extend(['--next-step', next_step])
+        if hard_block:
+            cmd.append('--hard-block')
+        if error_type:
+            cmd.extend(['--error-type', error_type])
+        import subprocess
+        subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except Exception:
+        pass
+
 def handle_structured_payload(payload: dict) -> dict:
     """处理结构化 payload"""
     task_id = payload.get('task_id')
@@ -142,6 +162,7 @@ def handle_structured_payload(payload: dict) -> dict:
     state = load_workflow()
     
     if not state or not state.get('active'):
+        write_checkpoint('callback_no_active_workflow', summary=summary, next_step='', status='running')
         return {
             "action": "notify_user",
             "message": f"✅ 子任务完成: {task_id}\n{summary}",
@@ -154,6 +175,7 @@ def handle_structured_payload(payload: dict) -> dict:
     
     if match_method == 'already_done':
         # 幂等：步骤已完成，忽略重复回调
+        write_checkpoint('duplicate_callback', summary=summary, status='running')
         return {
             "action": "ignore",
             "reason": "duplicate_callback",
@@ -164,6 +186,7 @@ def handle_structured_payload(payload: dict) -> dict:
     
     if not step:
         # 没找到匹配步骤
+        write_checkpoint('callback_step_not_found', summary=summary or task_id, status='running')
         return {
             "action": "ignore",
             "reason": "step_not_found",
@@ -173,6 +196,11 @@ def handle_structured_payload(payload: dict) -> dict:
     
     # 更新步骤状态
     step['status'] = 'done' if status == 'completed' else 'failed'
+    if status != 'completed':
+        err = payload.get('error', {}) if isinstance(payload.get('error'), dict) else {}
+        err_type = err.get('type') or 'subagent_failed'
+        hard_block = err_type in {'missing_permission','missing_credential','resource_unavailable','resource_missing','irreversible_risk','goal_conflict'}
+        write_checkpoint('step_failed', summary=summary or task_id, next_step=step.get('id') or '', status='hard_blocked' if hard_block else 'repairing', hard_block=hard_block, error_type=err_type)
     step['completed_at'] = datetime.now().isoformat()
     step['summary'] = summary
     step['artifacts'] = artifacts
@@ -192,6 +220,7 @@ def handle_structured_payload(payload: dict) -> dict:
         
         if all(d in completed_ids for d in depends_on):
             save_workflow(state)
+            write_checkpoint('step_completed', summary=summary or task_id, next_step=next_step.get('id') or '', status='running')
             return {
                 "action": "spawn_next",
                 "next_step": next_step,
@@ -200,6 +229,7 @@ def handle_structured_payload(payload: dict) -> dict:
             }
         else:
             save_workflow(state)
+            write_checkpoint('wait_for_dependencies', summary=summary or task_id, next_step=next_step.get('id') or '', status='running')
             return {
                 "action": "wait_for_dependencies",
                 "waiting_for": [d for d in depends_on if d not in completed_ids],
@@ -210,6 +240,7 @@ def handle_structured_payload(payload: dict) -> dict:
         state['active'] = False
         state['completed_at'] = datetime.now().isoformat()
         save_workflow(state)
+        write_checkpoint('workflow_completed', summary=summary or task_id, status='completed')
         
         return {
             "action": "notify_user",

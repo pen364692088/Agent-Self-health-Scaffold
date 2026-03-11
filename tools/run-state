@@ -1,0 +1,305 @@
+#!/usr/bin/env python3
+"""
+run-state - durable truth layer for unattended execution
+
+Commands:
+  run-state derive [--json] [--save]
+  run-state recover [--json]
+  run-state checkpoint <label> [--summary TEXT] [--next-step TEXT] [--status STATUS] [--hard-block] [--error-type TYPE]
+  run-state update --patch-json '{...}'
+  run-state show
+  run-state --health
+"""
+
+import argparse
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
+
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+STATE_DIR = WORKSPACE / 'state' / 'durable_execution'
+RUN_STATE_FILE = STATE_DIR / 'RUN_STATE.json'
+CHECKPOINT_DIR = STATE_DIR / 'CHECKPOINTS'
+TASK_LEDGER = WORKSPACE / 'TASK_LEDGER.jsonl'
+WORKFLOW_FILE = WORKSPACE / 'WORKFLOW_STATE.json'
+ORCH_PENDING_FILE = WORKSPACE / 'tools' / 'orchestrator' / 'pending_subtasks.json'
+HANDOFF = WORKSPACE / 'handoff.md'
+SESSION_STATE = WORKSPACE / 'SESSION-STATE.md'
+
+HARD_BLOCK_TYPES = {
+    'missing_permission',
+    'missing_credential',
+    'resource_unavailable',
+    'resource_missing',
+    'irreversible_risk',
+    'goal_conflict',
+}
+
+
+def now() -> str:
+    return datetime.now().isoformat()
+
+
+def ensure_dirs() -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def read_json(path: Path, default=None):
+    if not path.exists():
+        return {} if default is None else default
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        return {} if default is None else default
+
+
+def write_json(path: Path, data: Any) -> None:
+    ensure_dirs()
+    tmp = path.with_suffix(path.suffix + '.tmp')
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    tmp.replace(path)
+
+
+def read_ledger_latest() -> Dict[str, Dict[str, Any]]:
+    latest: Dict[str, Dict[str, Any]] = {}
+    if not TASK_LEDGER.exists():
+        return latest
+    for line in TASK_LEDGER.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        task_id = obj.get('task_id')
+        if task_id:
+            latest[task_id] = obj
+    return latest
+
+
+def workflow_summary() -> Dict[str, Any]:
+    wf = read_json(WORKFLOW_FILE, default={})
+    steps = wf.get('steps', []) if isinstance(wf, dict) else []
+    pending = []
+    running = []
+    done = []
+    failed = []
+    for step in steps:
+        status = step.get('status')
+        item = {
+            'id': step.get('id'),
+            'task': step.get('task'),
+            'model': step.get('model'),
+            'run_id': step.get('run_id'),
+            'depends_on': step.get('depends_on', []),
+            'status': status,
+        }
+        if status == 'pending':
+            pending.append(item)
+        elif status == 'running':
+            running.append(item)
+        elif status == 'done':
+            done.append(item)
+        elif status == 'failed':
+            failed.append(item)
+    return {
+        'exists': WORKFLOW_FILE.exists(),
+        'active': bool(wf.get('active')) if isinstance(wf, dict) else False,
+        'workflow_type': wf.get('workflow_type') if isinstance(wf, dict) else None,
+        'pending_steps': pending,
+        'running_steps': running,
+        'done_steps': done,
+        'failed_steps': failed,
+        'notify_on_done': wf.get('notify_on_done') if isinstance(wf, dict) else None,
+        'updated_at': wf.get('updated_at') if isinstance(wf, dict) else None,
+    }
+
+
+def orchestrator_summary() -> Dict[str, Any]:
+    data = read_json(ORCH_PENDING_FILE, default={})
+    pending = data.get('pending', {}) if isinstance(data, dict) else {}
+    completed = data.get('completed', {}) if isinstance(data, dict) else {}
+    return {
+        'exists': ORCH_PENDING_FILE.exists(),
+        'pending_count': len(pending),
+        'completed_count': len(completed),
+        'pending_tasks': [
+            {
+                'task_id': k,
+                'run_id': v.get('run_id'),
+                'description': v.get('description'),
+                'deadline': v.get('deadline'),
+                'status': v.get('status'),
+            }
+            for k, v in pending.items()
+        ],
+    }
+
+
+def derive_state() -> Dict[str, Any]:
+    ensure_dirs()
+    previous = read_json(RUN_STATE_FILE, default={})
+    ledger = read_ledger_latest()
+    wf = workflow_summary()
+    orch = orchestrator_summary()
+
+    unfinished_ledger = []
+    for task_id, item in ledger.items():
+        state = item.get('state')
+        if state in ('pending', 'running'):
+            unfinished_ledger.append({
+                'task_id': task_id,
+                'state': state,
+                'run_id': item.get('run_id'),
+                'description': item.get('description'),
+                'ts': item.get('ts'),
+            })
+
+    hard_block = previous.get('hard_block', False)
+    hard_block_reason = previous.get('hard_block_reason')
+    last_error_type = previous.get('last_error_type')
+    if last_error_type and last_error_type in HARD_BLOCK_TYPES:
+        hard_block = True
+        hard_block_reason = last_error_type
+
+    resume_action = 'idle'
+    if hard_block:
+        resume_action = 'hard_block'
+    elif wf.get('running_steps'):
+        resume_action = 'resume_running'
+    elif wf.get('pending_steps'):
+        resume_action = 'spawn_pending'
+    elif orch.get('pending_count', 0) > 0 or unfinished_ledger:
+        resume_action = 'recover_orchestrator'
+
+    next_step = None
+    if wf.get('pending_steps'):
+        next_step = wf['pending_steps'][0]
+    elif wf.get('running_steps'):
+        next_step = wf['running_steps'][0]
+    elif orch.get('pending_tasks'):
+        next_step = orch['pending_tasks'][0]
+    elif unfinished_ledger:
+        next_step = unfinished_ledger[0]
+
+    state = {
+        'version': 1,
+        'updated_at': now(),
+        'objective': previous.get('objective'),
+        'status': previous.get('status') or ('hard_blocked' if hard_block else 'running'),
+        'hard_block': hard_block,
+        'hard_block_reason': hard_block_reason,
+        'last_error_type': last_error_type,
+        'last_error': previous.get('last_error'),
+        'checkpoint_count': len(list(CHECKPOINT_DIR.glob('*.json'))),
+        'last_checkpoint': previous.get('last_checkpoint'),
+        'resume_action': resume_action,
+        'next_step': next_step,
+        'workflow': wf,
+        'orchestrator': orch,
+        'unfinished_tasks': {
+            'workflow_pending': wf.get('pending_steps', []),
+            'workflow_running': wf.get('running_steps', []),
+            'ledger': unfinished_ledger,
+            'orchestrator_pending': orch.get('pending_tasks', []),
+        },
+        'recovery_hint': {
+            'should_auto_continue': resume_action in {'resume_running', 'spawn_pending', 'recover_orchestrator'} and not hard_block,
+            'requires_user_input': hard_block,
+        }
+    }
+    return state
+
+
+def save_checkpoint(label: str, summary: str, next_step: str, status: str, hard_block: bool, error_type: str | None):
+    current = read_json(RUN_STATE_FILE, default={})
+    ensure_dirs()
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    payload = {
+        'label': label,
+        'summary': summary,
+        'next_step': next_step,
+        'status': status,
+        'hard_block': hard_block,
+        'error_type': error_type,
+        'ts': now(),
+    }
+    cp = CHECKPOINT_DIR / f'{stamp}_{label}.json'
+    write_json(cp, payload)
+    current['last_checkpoint'] = payload
+    current['status'] = status or current.get('status')
+    if summary:
+        current['last_summary'] = summary
+    if next_step:
+        current['next_step_text'] = next_step
+    if hard_block:
+        current['hard_block'] = True
+        current['hard_block_reason'] = error_type or 'explicit_hard_block'
+    if error_type:
+        current['last_error_type'] = error_type
+    current['updated_at'] = now()
+    write_json(RUN_STATE_FILE, current)
+    return {'status': 'ok', 'checkpoint': str(cp)}
+
+
+def deep_merge(base: Dict[str, Any], patch: Dict[str, Any]) -> Dict[str, Any]:
+    out = dict(base)
+    for k, v in patch.items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('command', nargs='?')
+    parser.add_argument('label', nargs='?')
+    parser.add_argument('--json', action='store_true')
+    parser.add_argument('--save', action='store_true')
+    parser.add_argument('--summary', default='')
+    parser.add_argument('--next-step', default='')
+    parser.add_argument('--status', default='')
+    parser.add_argument('--hard-block', action='store_true')
+    parser.add_argument('--error-type', default=None)
+    parser.add_argument('--patch-json', default='{}')
+    args = parser.parse_args()
+
+    if args.command == '--health' or (args.command is None and '--health' in sys.argv):
+        print(json.dumps({'status': 'healthy', 'run_state_exists': RUN_STATE_FILE.exists(), 'checkpoint_dir': str(CHECKPOINT_DIR)}))
+        return
+
+    cmd = args.command
+    if cmd == 'derive':
+        state = derive_state()
+        if args.save:
+            write_json(RUN_STATE_FILE, state)
+        print(json.dumps(state, ensure_ascii=False, indent=2) if args.json or True else state)
+    elif cmd == 'recover':
+        state = derive_state()
+        write_json(RUN_STATE_FILE, state)
+        print(json.dumps(state, ensure_ascii=False, indent=2))
+    elif cmd == 'checkpoint':
+        res = save_checkpoint(args.label or 'checkpoint', args.summary, args.next_step, args.status or 'running', args.hard_block, args.error_type)
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+    elif cmd == 'update':
+        base = read_json(RUN_STATE_FILE, default={})
+        patch = json.loads(args.patch_json)
+        merged = deep_merge(base, patch)
+        merged['updated_at'] = now()
+        write_json(RUN_STATE_FILE, merged)
+        print(json.dumps(merged, ensure_ascii=False, indent=2))
+    elif cmd == 'show':
+        print(json.dumps(read_json(RUN_STATE_FILE, default={}), ensure_ascii=False, indent=2))
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

@@ -62,6 +62,8 @@ HANDOFF = WORKSPACE / "handoff.md"
 LAST_SESSION_FILE = WORKSPACE / ".last_session_id"
 RECOVERY_DIR = WORKSPACE / "artifacts" / "session_recovery"
 WAL_FILE = WORKSPACE / "state" / "wal" / "session_state_wal.jsonl"
+RUN_STATE_TOOL = WORKSPACE / "tools" / "run-state"
+RUN_STATE_FILE = WORKSPACE / "state" / "durable_execution" / "RUN_STATE.json"
 
 # State source priority (higher = more trusted)
 SOURCE_PRIORITY = {
@@ -309,6 +311,20 @@ def resolve_field_conflicts(field_values: Dict[str, Dict[str, Any]]) -> Dict[str
     }
 
 
+def recover_run_state() -> Dict[str, Any]:
+    """Recover durable execution truth from RUN_STATE + live workflow/orchestrator sources."""
+    if not RUN_STATE_TOOL.exists():
+        return {"available": False, "reason": "run_state_tool_missing"}
+    try:
+        result = subprocess.run([str(RUN_STATE_TOOL), "recover"], capture_output=True, text=True, timeout=15)
+        if result.returncode != 0:
+            return {"available": False, "reason": "run_state_recover_failed", "stderr": result.stderr[:200]}
+        data = json.loads(result.stdout or "{}")
+        return {"available": True, "data": data}
+    except Exception as e:
+        return {"available": False, "reason": str(e)}
+
+
 def perform_field_level_recovery() -> Dict[str, Any]:
     """Perform recovery with field-level conflict resolution."""
     current_session = get_current_session_id()
@@ -331,6 +347,7 @@ def perform_field_level_recovery() -> Dict[str, Any]:
     result["sources"]["handoff"] = check_file_freshness(HANDOFF)
     result["sources"]["wal"] = check_file_freshness(WAL_FILE) if WAL_FILE.exists() else {"exists": False}
     result["sources"]["repo"] = {"branch": current_branch}
+    result["sources"]["run_state"] = check_file_freshness(RUN_STATE_FILE) if RUN_STATE_FILE.exists() else {"exists": False}
     
     # Extract fields from each source
     result["field_values"]["session_state_md"] = extract_all_fields(SESSION_STATE)
@@ -357,6 +374,15 @@ def perform_field_level_recovery() -> Dict[str, Any]:
         if resolution.get("status") == "missing" and field in ["objective", "next_step", "next_actions"]:
             result["uncertainty_flag"] = True
     
+    run_state_recovery = recover_run_state()
+    result["run_state"] = run_state_recovery
+    if run_state_recovery.get("available"):
+        durable = run_state_recovery.get("data", {})
+        result["durable_resume_action"] = durable.get("resume_action")
+        result["durable_should_auto_continue"] = durable.get("recovery_hint", {}).get("should_auto_continue", False)
+        result["durable_hard_block"] = durable.get("hard_block", False)
+        result["durable_next_step"] = durable.get("next_step")
+
     # Retrieve memory constraints via context-retrieve
     memory_result = retrieve_memory_constraints()
     if memory_result.get("available"):

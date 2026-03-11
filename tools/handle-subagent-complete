@@ -19,7 +19,26 @@ NOTIFY_FLAG = WORKSPACE / "reports" / "spawn_needed.flag"
 AUTO_RECEIPT = WORKSPACE / "tools" / "auto-receipt"
 SPAWN_TOOL = WORKSPACE / "tools" / "spawn-with-callback"
 ACTIVATOR = WORKSPACE / "tools" / "callback-handler"
+RUN_STATE_TOOL = WORKSPACE / "tools" / "run-state"
 
+
+
+
+def checkpoint(label, summary="", next_step="", status="running", hard_block=False, error_type=None):
+    try:
+        cmd = [str(RUN_STATE_TOOL), 'checkpoint', label, '--status', status]
+        if summary:
+            cmd += ['--summary', summary]
+        if next_step:
+            cmd += ['--next-step', next_step]
+        if hard_block:
+            cmd.append('--hard-block')
+        if error_type:
+            cmd += ['--error-type', error_type]
+        import subprocess
+        subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except Exception:
+        pass
 
 def get_workflow_state():
     """获取工作流状态"""
@@ -81,6 +100,7 @@ def main():
             
             # 清除 flag
             NOTIFY_FLAG.unlink(missing_ok=True)
+            checkpoint('spawn_flag_consumed', summary=task, next_step=step_id, status='running')
             
             # 生成 spawn 参数
             spawn_result = subprocess.run(
@@ -142,6 +162,7 @@ def main():
                         capture_output=True, text=True
                     )
                     
+                    checkpoint('spawn_next_ready', summary=task, next_step=step_id, status='running')
                     result = {
                         "action": "spawn_next",
                         "step_id": step_id,
@@ -153,6 +174,7 @@ def main():
                         "should_silence": True
                     }
                 except Exception as e:
+                    checkpoint('spawn_error', summary=str(e), status='repairing')
                     result = {
                         "action": "error",
                         "error": str(e),
@@ -163,12 +185,14 @@ def main():
                 all_done = all(s.get('status') == 'done' for s in state.get('steps', []))
                 
                 if all_done:
+                    checkpoint('workflow_done_notify', summary=state.get("notify_on_done", "工作流完成"), status='completed')
                     result = {
                         "action": "notify_user",
                         "message": state.get("notify_on_done", "工作流完成"),
                         "should_silence": False
                     }
                 else:
+                    checkpoint('wait_running_subtask', summary='等待子代理完成', status='running')
                     result = {
                         "action": "wait",
                         "message": "等待子代理完成",
