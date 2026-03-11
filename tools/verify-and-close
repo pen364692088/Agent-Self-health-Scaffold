@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# LAYER: main
+# PURPOSE: 任务收尾入口
+# DOCS: TOOLS.md, SOUL.md
 """
 verify-and-close v1.2 - Unified Task Completion Entry Point
 

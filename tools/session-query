@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# LAYER: main
+# PURPOSE: 统一检索入口
+# DOCS: TOOLS.md, memory.md
 """
 Session Query Tool - Unified retrieval across three layers
 

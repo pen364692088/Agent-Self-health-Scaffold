@@ -1,8 +1,10 @@
+# SESSION-STATE.md
+
 ## Current Objective
-OpenClaw 重启后自动续跑能力已接入主循环与启动恢复路径。
+收口 OpenClaw reply → durable queue → compaction safe-point 闭环。
 
 ## Phase
-CLOSEOUT
+INPROGRESS
 
 ## Branch
 main
@@ -13,34 +15,47 @@ None
 ---
 
 ## 最新推进
-- 已实现 durable auto-resume MVP：`tools/auto-resume-orchestrator`
-- 已接入 gateway 启动路径：`auto-resume-orchestrator.service`
-- 已进一步接入主循环：`tools/agent-self-health-scheduler`
-  - quick/full/gate 模式都会顺手触发一次低风险 auto-resume 检查
-  - 实际幂等、防重入、cooldown、lease 仍由 `auto-resume-orchestrator` 自己负责
-- 新增主循环接线测试：
-  - `tests/test_auto_resume_main_loop_wiring.py`
-- 本轮验证测试通过：
-  - `tests/test_auto_resume_main_loop_wiring.py`
-  - `tests/test_auto_resume_orchestrator.py`
-  - `tests/test_main_system_always_on_wiring.py`
-- 当前新增提交：
-  - `16761d9` feat: wire auto-resume into main scheduler loop
-  - `e4fcbda` docs: add closeout evidence reports
 
-## 当前结论
-- auto-resume 现在不是只靠“启动时扫一次”，而是已经进入 always-on 主循环。
-- 主链为：
-  1. gateway 启动时 one-shot 恢复
-  2. main scheduler loop 持续低频补扫
-- 这样即使启动窗口错过一次，后续主循环仍可幂等接管。
+### 已完成补丁
 
-## Next
-- closeout docs 已最小化提交；下一步若继续收口，优先决定是否单独整理剩余未跟踪草稿，或直接保持为本地工作痕迹不入库。
-- 如需继续增强功能，可补：
-  - orphan reclaim 语义
-  - recovery markers
-  - 更细失败分类与告警
+#### 第一轮：compaction safe-point guard (8e8bcb6)
+- 给 compaction 加了 `reply_in_flight` 检查
+- compaction 触发前先检查全局 pending replies
+- 如果有 reply in flight，跳过 compaction
 
-## Updated
-2026-03-11 14:31 CDT
+#### 第二轮：bounded defer + automatic recheck (dd71b00)
+- 统一 reply lifecycle snapshot/state machine
+- `reply_in_flight` 判断基于统一 snapshot
+- compaction defer 后 bounded wait (5s)
+- 自动 recheck compaction
+- telemetry 入口：deferCount, deferDurationMs, recoveryCount, retryCount, dedupeCount
+
+#### 第三轮：Signal / iMessage 统一到 durable outbound delivery (43e0573)
+- `src/signal/monitor.ts`: deliverReplies 改为调用 deliverOutboundPayloads
+- `src/imessage/monitor/deliver.ts`: deliverReplies 改为调用 deliverOutboundPayloads
+- 两者现在都走统一的 outbound adapter + write-ahead queue
+
+---
+
+## 当前状态
+- compaction ↔ reply lifecycle 闭环已打通
+- Signal / iMessage 已统一到公共 durable delivery
+- telemetry 骨架已在主链
+
+---
+
+## 下一步
+1. Web/WhatsApp direct-send path 统一
+2. 降级策略完整自动化（短消息/结论优先）
+3. telemetry 落地到可观测出口
+
+---
+
+## 关键文件
+- `src/agents/pi-embedded-runner/compaction-bridge.ts`
+- `src/agents/pi-embedded-runner/run/attempt.ts`
+- `src/auto-reply/reply/dispatcher-registry.ts`
+- `src/auto-reply/reply/reply-dispatcher.ts`
+- `src/infra/outbound/deliver.ts`
+- `src/signal/monitor.ts`
+- `src/imessage/monitor/deliver.ts`
