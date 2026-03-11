@@ -20,15 +20,17 @@ You are calm, direct, and pragmatic.
 - 回归测试
 
 ### 2) 正式子代理主链路
-当前正式完成回执路径是：
-- `subtask-orchestrate`
-- `subagent-inbox`
-- `subagent-completion-handler`
+当前正式主链路是：
+- `subtask-orchestrate run`
+- `subtask-orchestrate resume`
+- `subagent-inbox`（receipt 通道）
+- `run-state`（durable truth）
 
 不要把以下机制当成正式主链路：
 - 看到 `✅ Subagent` 文本后再临场决定
 - `sessions_send` 关键完成回执
 - 依赖自然语言 callback 触发父代理推进
+- `callback-worker` 自行做推进决策
 
 ### 3) 写入规则
 详见 **Section 9) ~/.openclaw/ 写入策略**
@@ -109,45 +111,15 @@ message --action send --to user --message "任务已完成"
 safe-message --task-id <id> --to user --message "实现完成"
 ```
 
-**safe-message 会自动：**
-1. 调用 output-interceptor 检查
-2. 验证 receipts 存在
-3. 检测伪完成文本
-4. 决定 ALLOW/BLOCK
+### 8) 子代理完成自动通知 / 推进边界 ⭐⭐⭐⭐⭐
 
----
+当前边界：
+- `callback-worker` 只负责触发 `subtask-orchestrate resume`
+- 真正推进只允许在 `subtask-orchestrate resume` 内发生
+- 不允许 worker 自己成为第二个编排入口
 
-## Working style
-- Think like an owner.
-- Solve root causes, not just symptoms.
-- Keep the prompt layer clean: one formal rule, one main path, one preferred entry.
-
-### 8) 子代理完成自动通知 (v8.0 正式主链路) ⭐⭐⭐⭐⭐
-
-**子代理完成后，通知自动发送，无需主代理干预。**
-
-```
-子代理完成 → 写回执到 subagent-inbox → systemd 触发 callback-worker → 直接发送通知
-```
-
-**架构**：
-- `callback-worker.path` 监听 `reports/subtasks/` 目录
-- 新回执写入时自动触发 `callback-worker.service`
-- callback-worker 调用 `openclaw message send --account manager` 发送通知
-
-**主代理无需操作**：
-- ❌ 不需要手动调用 callback-worker
-- ❌ 不需要检查 inbox
-- ❌ 不需要手动发送通知
-
-**唯一职责**：
-- 创建任务时用 `subtask-orchestrate run`
-- 子代理会自动写回执
-- 通知会自动发送
-
-**验证命令**：
+验证命令：
 ```bash
-# 查看最近发送日志
 journalctl --user -u callback-worker --since "5 min ago"
 ```
 
@@ -165,41 +137,3 @@ journalctl --user -u callback-worker --since "5 min ago"
 - ✅ `exec + heredoc` - shell 写入
 - ✅ `exec + sed` - 流式替换
 - ✅ `exec + python` - Python 脚本重写
-
-**工具位置**：
-```
-tools/safe-write        # 写入整个文件
-tools/safe-replace      # 替换指定内容
-tools/write-policy-check # 策略检查
-```
-
-**使用示例**：
-
-```bash
-# 写入整个文件
-safe-write ~/.openclaw/workspace/SOUL.md "new content"
-
-# 替换内容
-safe-replace ~/.openclaw/workspace/TOOLS.md "| old |" "| new |"
-
-# heredoc 写入
-cat > ~/.openclaw/config.json << 'EOF'
-{"key": "value"}
-EOF
-
-# sed 替换
-sed -i 's/old/new/g' ~/.openclaw/workspace/TOOLS.md
-```
-
-**为什么必须这样做**：
-1. `edit` 工具依赖精确字符串匹配，稍有变化就失败
-2. 表格、缩进、空格变化会导致替换失败
-3. 多次提醒仍然复发，说明口头约定无效
-4. 必须把规则变成系统约束
-
-**验收要求**：
-每次修改 `~/.openclaw/` 下的文件后，必须汇报：
-- 修改路径
-- 使用的方法（safe-write/safe-replace/exec）
-- 是否命中受保护路径
-

@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
 """
-Handle Subagent Complete v2.0 - 统一入口
+Handle Subagent Complete v3.0 - unified advancement helper
 
-检查工作流状态，决定下一步动作。
+职责：
+- 被 `subtask-orchestrate resume` 调用
+- 读取当前 workflow 状态
+- 对 pending/running/done 状态做统一推进判断
 
-Usage:
-  handle-subagent-complete [--json]
+不再依赖 `spawn_needed.flag` 等旧式侧带信号。
 """
 
 import json
 import sys
 from pathlib import Path
-from datetime import datetime
 
 WORKSPACE = Path.home() / ".openclaw" / "workspace"
 WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
-NOTIFY_FLAG = WORKSPACE / "reports" / "spawn_needed.flag"
 AUTO_RECEIPT = WORKSPACE / "tools" / "auto-receipt"
 SPAWN_TOOL = WORKSPACE / "tools" / "spawn-with-callback"
 ACTIVATOR = WORKSPACE / "tools" / "callback-handler"
 RUN_STATE_TOOL = WORKSPACE / "tools" / "run-state"
 
 
-
-
 def checkpoint(label, summary="", next_step="", status="running", hard_block=False, error_type=None):
     try:
+        import subprocess
         cmd = [str(RUN_STATE_TOOL), 'checkpoint', label, '--status', status]
         if summary:
             cmd += ['--summary', summary]
@@ -35,179 +34,91 @@ def checkpoint(label, summary="", next_step="", status="running", hard_block=Fal
             cmd.append('--hard-block')
         if error_type:
             cmd += ['--error-type', error_type]
-        import subprocess
         subprocess.run(cmd, capture_output=True, text=True, timeout=10)
     except Exception:
         pass
 
+
 def get_workflow_state():
-    """获取工作流状态"""
     if not WORKFLOW_FILE.exists():
         return None
     try:
-        with open(WORKFLOW_FILE) as f:
-            return json.load(f)
-    except:
-        return None
-
-
-def get_spawn_needed():
-    """获取 spawn 通知"""
-    if not NOTIFY_FLAG.exists():
-        return None
-    try:
-        with open(NOTIFY_FLAG) as f:
-            return json.load(f)
-    except:
+        return json.loads(WORKFLOW_FILE.read_text())
+    except Exception:
         return None
 
 
 def get_pending_step(state):
-    """获取下一个 pending 步骤"""
     if not state or not state.get('active'):
         return None
-    
     for step in state.get('steps', []):
         if step.get('status') == 'pending':
             return step
     return None
 
 
+def any_running_step(state):
+    if not state or not state.get('active'):
+        return None
+    for step in state.get('steps', []):
+        if step.get('status') == 'running':
+            return step
+    return None
+
+
 def main():
-    output_json = "--json" in sys.argv
-    
-    # 1. 先运行 auto-receipt（如果有 running 步骤）
+    output_json = '--json' in sys.argv
     import subprocess
     subprocess.run([str(AUTO_RECEIPT)], capture_output=True)
-    
-    # 2. 检查工作流状态
+
     state = get_workflow_state()
-    
     if not state or not state.get('active'):
-        result = {
-            "action": "none",
-            "reason": "workflow_inactive",
-            "should_silence": True
-        }
+        result = {'action': 'none', 'reason': 'workflow_inactive', 'should_silence': True}
     else:
-        # 3. 检查 spawn_needed.flag
-        spawn_needed = get_spawn_needed()
-        
-        if spawn_needed and spawn_needed.get("action") == "spawn_next":
-            step_id = spawn_needed.get("step_id")
-            task = spawn_needed.get("task", "")
-            model = spawn_needed.get("model", "baiduqianfancodingplan/qianfan-code-latest")
-            
-            # 清除 flag
-            NOTIFY_FLAG.unlink(missing_ok=True)
-            checkpoint('spawn_flag_consumed', summary=task, next_step=step_id, status='running')
-            
-            # 生成 spawn 参数
-            spawn_result = subprocess.run(
-                [str(SPAWN_TOOL), task, "--model", model, "--timeout", "120"],
-                capture_output=True, text=True
-            )
-            
+        pending_step = get_pending_step(state)
+        if pending_step:
+            step_id = pending_step.get('id')
+            task = pending_step.get('task', '')
+            model = pending_step.get('model', 'baiduqianfancodingplan/qianfan-code-latest')
+            spawn_result = subprocess.run([str(SPAWN_TOOL), task, '--model', model, '--timeout', '120'], capture_output=True, text=True)
             try:
                 spawn_data = json.loads(spawn_result.stdout)
-                task_id = spawn_data.get("task_id", "")
-                run_id = spawn_data.get("run_id", "")
-                
-                # 激活步骤
-                subprocess.run(
-                    [str(ACTIVATOR), "--activate", step_id, run_id],
-                    capture_output=True, text=True
-                )
-                
+                run_id = spawn_data.get('run_id', '')
+                subprocess.run([str(ACTIVATOR), '--activate', step_id, run_id], capture_output=True, text=True)
+                checkpoint('spawn_next_ready', summary=task, next_step=step_id, status='running')
                 result = {
-                    "action": "spawn_next",
-                    "step_id": step_id,
-                    "task": task,
-                    "model": model,
-                    "task_id": task_id,
-                    "run_id": run_id,
-                    "spawn_args": spawn_data.get("spawn_args", {}),
-                    "should_silence": True  # 不回复用户，等待子代理完成
+                    'action': 'spawn_next',
+                    'step_id': step_id,
+                    'task': task,
+                    'model': model,
+                    'task_id': spawn_data.get('task_id', ''),
+                    'run_id': run_id,
+                    'spawn_args': spawn_data.get('spawn_args', {}),
+                    'should_silence': True,
                 }
             except Exception as e:
-                result = {
-                    "action": "error",
-                    "error": str(e),
-                    "should_silence": False
-                }
-        
+                checkpoint('spawn_error', summary=str(e), status='repairing')
+                result = {'action': 'error', 'error': str(e), 'should_silence': False}
         else:
-            # 4. 检查是否有 pending 步骤
-            pending_step = get_pending_step(state)
-            
-            if pending_step:
-                step_id = pending_step.get('id')
-                task = pending_step.get('task', '')
-                model = pending_step.get('model', 'baiduqianfancodingplan/qianfan-code-latest')
-                
-                # 生成 spawn 参数
-                spawn_result = subprocess.run(
-                    [str(SPAWN_TOOL), task, "--model", model, "--timeout", "120"],
-                    capture_output=True, text=True
-                )
-                
-                try:
-                    spawn_data = json.loads(spawn_result.stdout)
-                    task_id = spawn_data.get("task_id", "")
-                    run_id = spawn_data.get("run_id", "")
-                    
-                    # 激活步骤
-                    subprocess.run(
-                        [str(ACTIVATOR), "--activate", step_id, run_id],
-                        capture_output=True, text=True
-                    )
-                    
-                    checkpoint('spawn_next_ready', summary=task, next_step=step_id, status='running')
-                    result = {
-                        "action": "spawn_next",
-                        "step_id": step_id,
-                        "task": task,
-                        "model": model,
-                        "task_id": task_id,
-                        "run_id": run_id,
-                        "spawn_args": spawn_data.get("spawn_args", {}),
-                        "should_silence": True
-                    }
-                except Exception as e:
-                    checkpoint('spawn_error', summary=str(e), status='repairing')
-                    result = {
-                        "action": "error",
-                        "error": str(e),
-                        "should_silence": False
-                    }
+            running = any_running_step(state)
+            if running:
+                checkpoint('wait_running_subtask', summary='等待子代理完成', next_step=running.get('id', ''), status='running')
+                result = {'action': 'wait', 'message': '等待子代理完成', 'step_id': running.get('id'), 'should_silence': True}
             else:
-                # 检查是否全部完成
                 all_done = all(s.get('status') == 'done' for s in state.get('steps', []))
-                
                 if all_done:
-                    checkpoint('workflow_done_notify', summary=state.get("notify_on_done", "工作流完成"), status='completed')
-                    result = {
-                        "action": "notify_user",
-                        "message": state.get("notify_on_done", "工作流完成"),
-                        "should_silence": False
-                    }
+                    checkpoint('workflow_done_notify', summary=state.get('notify_on_done', '工作流完成'), status='completed')
+                    result = {'action': 'notify_user', 'message': state.get('notify_on_done', '工作流完成'), 'should_silence': False}
                 else:
-                    checkpoint('wait_running_subtask', summary='等待子代理完成', status='running')
-                    result = {
-                        "action": "wait",
-                        "message": "等待子代理完成",
-                        "should_silence": True
-                    }
-    
+                    result = {'action': 'none', 'message': '没有待处理的工作', 'should_silence': True}
+
     if output_json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
         print(f"Action: {result.get('action')}")
         if result.get('step_id'):
             print(f"Step: {result['step_id']}")
-    
-    sys.exit(0)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
