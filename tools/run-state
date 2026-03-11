@@ -14,7 +14,7 @@ Commands:
 import argparse
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -28,14 +28,8 @@ ORCH_PENDING_FILE = WORKSPACE / 'tools' / 'orchestrator' / 'pending_subtasks.jso
 HANDOFF = WORKSPACE / 'handoff.md'
 SESSION_STATE = WORKSPACE / 'SESSION-STATE.md'
 
-HARD_BLOCK_TYPES = {
-    'missing_permission',
-    'missing_credential',
-    'resource_unavailable',
-    'resource_missing',
-    'irreversible_risk',
-    'goal_conflict',
-}
+LEDGER_LOOKBACK_HOURS = 6
+HARD_BLOCK_POLICY_TOOL = WORKSPACE / 'tools' / 'hard-block-policy'
 
 
 def now() -> str:
@@ -63,10 +57,20 @@ def write_json(path: Path, data: Any) -> None:
     tmp.replace(path)
 
 
+def parse_ts(ts: str | None):
+    if not ts:
+        return None
+    try:
+        return datetime.fromisoformat(ts)
+    except Exception:
+        return None
+
+
 def read_ledger_latest() -> Dict[str, Dict[str, Any]]:
     latest: Dict[str, Dict[str, Any]] = {}
     if not TASK_LEDGER.exists():
         return latest
+    cutoff = datetime.now() - timedelta(hours=LEDGER_LOOKBACK_HOURS)
     for line in TASK_LEDGER.read_text().splitlines():
         line = line.strip()
         if not line:
@@ -76,9 +80,33 @@ def read_ledger_latest() -> Dict[str, Dict[str, Any]]:
         except Exception:
             continue
         task_id = obj.get('task_id')
+        ts = parse_ts(obj.get('ts'))
+        if not task_id or (ts and ts < cutoff):
+            continue
+        if obj.get('parent_session_key') == 'agent:main:test':
+            continue
+        if '测试' in str(obj.get('description', '')) or str(task_id).startswith('test_'):
+            continue
         if task_id:
             latest[task_id] = obj
     return latest
+
+
+def classify_hard_block(error_type: str | None, explicit_hard_block: bool = False) -> tuple[bool, str | None]:
+    if explicit_hard_block:
+        return True, error_type or 'explicit_hard_block'
+    if not error_type:
+        return False, None
+    if HARD_BLOCK_POLICY_TOOL.exists():
+        import subprocess
+        try:
+            r = subprocess.run([str(HARD_BLOCK_POLICY_TOOL), 'classify', '--error-type', error_type], capture_output=True, text=True, timeout=5)
+            if r.returncode == 0:
+                data = json.loads(r.stdout or '{}')
+                return bool(data.get('hard_block')), data.get('reason')
+        except Exception:
+            pass
+    return False, None
 
 
 def workflow_summary() -> Dict[str, Any]:
@@ -159,12 +187,8 @@ def derive_state() -> Dict[str, Any]:
                 'ts': item.get('ts'),
             })
 
-    hard_block = previous.get('hard_block', False)
-    hard_block_reason = previous.get('hard_block_reason')
     last_error_type = previous.get('last_error_type')
-    if last_error_type and last_error_type in HARD_BLOCK_TYPES:
-        hard_block = True
-        hard_block_reason = last_error_type
+    hard_block, hard_block_reason = classify_hard_block(last_error_type, bool(previous.get('hard_block', False)))
 
     resume_action = 'idle'
     if hard_block:
@@ -236,11 +260,13 @@ def save_checkpoint(label: str, summary: str, next_step: str, status: str, hard_
         current['last_summary'] = summary
     if next_step:
         current['next_step_text'] = next_step
-    if hard_block:
-        current['hard_block'] = True
-        current['hard_block_reason'] = error_type or 'explicit_hard_block'
+    policy_hard_block, policy_reason = classify_hard_block(error_type, hard_block)
+    current['hard_block'] = policy_hard_block
+    current['hard_block_reason'] = policy_reason
     if error_type:
         current['last_error_type'] = error_type
+    elif not policy_hard_block:
+        current['last_error_type'] = None
     current['updated_at'] = now()
     write_json(RUN_STATE_FILE, current)
     return {'status': 'ok', 'checkpoint': str(cp)}

@@ -14,35 +14,28 @@ None
 
 ---
 
-## 本轮目标
-把当前“需要用户说继续才能继续”的执行模式，升级为“中断后可自动恢复并继续推进”的无人监管模式。
-
 ## 已完成
-- 新增 `tools/run-state`，作为 durable truth layer
-- 新增 `state/durable_execution/RUN_STATE.json`
-- 新增 `state/durable_execution/CHECKPOINTS/`
-- `session-start-recovery` 已接入 `run-state recover`
-- `subagent-completion-handler` 已在 step complete / failed / duplicate / wait-deps / workflow done 时写 checkpoint
-- `handle-subagent-complete` 已在 spawn / wait / done / error 路径写 checkpoint
-- `spawn-with-callback` 补齐 `-p` 短参数兼容，并满足既有测试期望
-- 新增最小测试 `tests/test_run_state_minimal.py`
+- durable truth layer: `tools/run-state` + `RUN_STATE.json` + `CHECKPOINTS/`
+- startup recovery 接入 durable truth (`session-start-recovery`)
+- callback / advance 关键路径写 checkpoint
+- hard-block-only 判定收敛为单一真相源：`tools/hard-block-policy`
+- 历史 `TASK_LEDGER` 噪音已从恢复判断中隔离（lookback + test/noise filter）
+- 最小验证报告已产出：`artifacts/unattended_recovery_minimal_validation.md`
 
-## 当前判断
-最小闭环已覆盖两段核心链路：
-1. 状态真相落盘（RUN_STATE + CHECKPOINT）
-2. 启动恢复读取 durable state，并给出 resume_action / should_auto_continue
+## 当前状态
+最小闭环已具备：
+1. 任务真相落盘
+2. 启动恢复可判断 resume_action
+3. 默认继续/恢复，只有 hard-block 才要求用户介入
 
-## 剩余收口
-1. 把 hard-block-only 策略显式收敛成统一判定函数/表
-2. 处理旧 TASK_LEDGER 历史脏数据对恢复判断的干扰
-3. 补一份中断恢复验证报告（restart / phase complete / normal tool fail）
-4. 提交本轮改动
+## Remaining
+1. 把普通失败的 retry/degrade 策略再统一一层
+2. 补 live restart/compact E2E 验证
+3. 清理 callback-worker 的旧直连通知分支
 
 ## Next Actions
-1. 清洗/隔离旧 pending ledger 噪音
-2. 补 hard-block policy 最小实现
-3. 产出最小验证报告
-4. git commit
+1. 提交本轮 hard-block policy + ledger noise filter + validation report
+2. 继续补普通失败自动 retry/degrade 最小实现
 
 ## Updated
-2026-03-11 08:34 CDT
+2026-03-11 08:39 CDT

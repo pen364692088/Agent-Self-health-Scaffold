@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""
+hard-block-policy - single source of truth for escalation policy
+
+Usage:
+  hard-block-policy classify [--error-type TYPE] [--risk irreversible] [--json]
+  hard-block-policy list
+  hard-block-policy --health
+"""
+
+import argparse
+import json
+import sys
+
+HARD_BLOCK_TYPES = {
+    'missing_permission': '缺权限',
+    'missing_credential': '缺凭证',
+    'resource_unavailable': '外部资源不可访问',
+    'resource_missing': '外部资源不存在',
+    'irreversible_risk': '不可逆高风险操作',
+    'goal_conflict': '目标冲突无法自动裁决',
+}
+
+
+def classify(error_type: str | None, risk: str | None = None):
+    hard = False
+    reason = None
+    if risk == 'irreversible':
+        return {'hard_block': True, 'reason': 'irreversible_risk'}
+    if error_type in HARD_BLOCK_TYPES:
+        hard = True
+        reason = error_type
+    return {'hard_block': hard, 'reason': reason, 'label': HARD_BLOCK_TYPES.get(reason)}
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('command', nargs='?')
+    parser.add_argument('--error-type')
+    parser.add_argument('--risk')
+    parser.add_argument('--json', action='store_true')
+    args = parser.parse_args()
+
+    if args.command == '--health' or (args.command is None and '--health' in sys.argv):
+        print(json.dumps({'status': 'healthy', 'hard_block_types': sorted(HARD_BLOCK_TYPES)}))
+        return
+    if args.command == 'list':
+        print(json.dumps(HARD_BLOCK_TYPES, ensure_ascii=False, indent=2))
+        return
+    if args.command == 'classify':
+        print(json.dumps(classify(args.error_type, args.risk), ensure_ascii=False, indent=2))
+        return
+    parser.print_help()
+    sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
