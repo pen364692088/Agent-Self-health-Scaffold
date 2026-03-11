@@ -12,6 +12,7 @@ INCIDENTS = WORKSPACE / 'artifacts' / 'self_health' / 'incidents'
 PROPOSALS = WORKSPACE / 'artifacts' / 'self_health' / 'proposals'
 AUDIT = WORKSPACE / 'artifacts' / 'self_health' / 'audit'
 PROBES_DIR = WORKSPACE / 'artifacts' / 'self_health' / 'probes'
+AUTO_RESUME_TOOL = WORKSPACE / 'tools' / 'auto-resume-orchestrator'
 for p in [RUNTIME, STATE, ALWAYS_ON, LOCKS, INCIDENTS, PROPOSALS, AUDIT, PROBES_DIR]:
     p.mkdir(parents=True, exist_ok=True)
 
@@ -267,6 +268,28 @@ def should_dedup(kind, fingerprint, seconds):
     return False, None
 
 
+
+
+def maybe_run_auto_resume(mode):
+    """Run durable auto-resume as a low-risk main-loop hook.
+
+    The auto-resume tool owns its own lock / lease / cooldown / attempt cap.
+    Scheduler only triggers it opportunistically and records the result.
+    """
+    if not AUTO_RESUME_TOOL.exists():
+        return {'status': 'unavailable', 'reason': 'tool_missing'}
+    try:
+        rc, out, err = run([str(AUTO_RESUME_TOOL), '--once', '--json'], timeout=20)
+        payload = parse_json(out, {'raw_stdout': out[:500], 'raw_stderr': err[:200]})
+        return {
+            'status': 'ok' if rc == 0 else 'failed',
+            'exit_code': rc,
+            'mode': mode,
+            'payload': payload,
+        }
+    except Exception as e:
+        return {'status': 'error', 'mode': mode, 'reason': str(e)}
+
 def maybe_generate_incident_and_proposal(health_payload, probe_failures=None):
     metrics = read_json(ALWAYS_ON / 'always_on_metrics.json', {})
     overall = health_payload.get('overall_status', 'GREEN') if health_payload else 'GREEN'
@@ -403,6 +426,8 @@ def main():
             probe_summary, probe_failures = run_all_probes()
             extras['probes'] = probe_summary
         
+        auto_resume_result = maybe_run_auto_resume(args.mode)
+
         if args.mode in ('quick','full'):
             cmd = [str(WORKSPACE / 'tools' / 'agent-health-check')] + cfg['health_args']
             rc, out, err = run(cmd, timeout=cfg['budget'])
@@ -433,6 +458,7 @@ def main():
             gate_consistency_metrics(payload)
             extras['summaries'] = maybe_generate_summaries(args.mode)
 
+        extras['auto_resume'] = auto_resume_result
         if extras:
             result.update(extras)
         state.update({'last_run_at': ts, 'last_run_epoch': time.time(), 'last_run_result': result['status'], 'last_run_duration_ms': result['duration_ms']})
