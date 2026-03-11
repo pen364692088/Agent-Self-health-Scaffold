@@ -1,38 +1,50 @@
 ## Current Objective
-OpenClaw 无人监管续跑闭环补齐（修复 restart 后恢复链路的裸命令调用）
+实现 OpenClaw 重启后自动续跑 MVP：持久化未完成任务、启动自动扫描恢复、防重入、开关、基本测试。
 
 ## Phase
-VERIFY
+IMPLEMENT / VERIFY
 
 ## Branch
 main
 
 ## Blocker
-需要你再重启一次，验证 gateway 日志里不再出现 `session-start-recovery: command not found`，并确认是否出现 recovery/apply 正向证据。
+None
 
 ---
 
 ## 最新推进
-- 已确认 `tools/session-route` 本身使用绝对路径调用 `tools/session-start-recovery`
-- 已确认故障更可能来自 workspace 内运行指令/检查脚本仍使用裸命令 `session-start-recovery`
-- 已统一修复以下调用点为绝对路径：
-  - `AGENTS.md`
-  - `HEARTBEAT.md`
-  - `scripts/run_session_continuity_checks.py`
-  - `tools/probe-framework/probe_check.py`
-- 已通过最小本地验证：
-  - Python compile 通过
-  - `~/.openclaw/workspace/tools/session-start-recovery --recover --json` 可正常执行
+- 新增 `tools/auto-resume-orchestrator`，启动时读取 `run-state recover` 的 durable truth。
+- 恢复入口统一走正式主链：`tools/subtask-orchestrate resume`。
+- 新增全局配置：`state/durable_execution/AUTO_RESUME_CONFIG.json`。
+- 支持单任务/单 step 禁用自动续跑：
+  - `task_overrides[<target_id>].enabled=false`
+  - 或 `WORKFLOW_STATE.json` step 上 `auto_resume=false`
+- 已实现防重入：
+  - 全局锁
+  - target lease
+  - cooldown
+  - per `(target, checkpoint)` attempt cap
+- 新增观测：
+  - `artifacts/auto_resume/00_DESIGN.md`
+  - `artifacts/auto_resume/recovery_log.jsonl`
+  - `state/durable_execution/AUTO_RESUME_RUNTIME.json`
+- 新增 systemd unit 模板并已安装启用：
+  - `templates/systemd/auto-resume-orchestrator.service`
+  - `~/.config/systemd/user/auto-resume-orchestrator.service`
+- 已把 unit 绑定到 `openclaw-gateway.service`，gateway 启动/重启后会触发一次自动恢复扫描。
+- 已跑基础测试：
+  - `tests/test_auto_resume_orchestrator.py`
+  - `tests/test_run_state_minimal.py`
+  - `tests/test_live_recovery_minimal.py`
+  - 当前 9 passed
 
 ## 当前结论
-- 当前最直接的 PATH 级断点已被修掉
-- 但是否真正修复了“restart 后 runtime 自动恢复链路”还需要一次重启后的真实验证
-- 如果重启后日志里仍出现同类报错，说明实际调用源不在当前 workspace 这些文件里，而在 service/hook 上游环境
+- MVP 主链已闭环：A 持久化未完成任务 → B 启动自动扫描恢复 → C 防重入 → D 开关 → E 基本测试通过。
+- 当前 auto-resume 只做最小闭环，不做复杂外围补救链。
 
 ## Next
-- 提交本次绝对路径修复
-- 让用户再重启一次
-- 复查 gateway 日志与 continuation/recovery/apply 痕迹
+- 做一次真实 restart 验证：执行中任务 + gateway restart，确认无需用户发送“继续”即可推进。
+- 若验证通过，再补增强项：更细的 failure 分类、恢复质量指标、timer/重试策略。
 
 ## Updated
-2026-03-11 13:37 CDT
+2026-03-11 14:15 CDT

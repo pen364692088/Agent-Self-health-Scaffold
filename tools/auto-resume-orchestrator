@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, json, os, socket, subprocess, sys, uuid
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict
+WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
+STATE_DIR = WORKSPACE / 'state' / 'durable_execution'
+ARTIFACT_DIR = WORKSPACE / 'artifacts' / 'auto_resume'
+LOCK_DIR = STATE_DIR / 'locks'
+LEASE_DIR = STATE_DIR / 'leases'
+CONFIG_FILE = STATE_DIR / 'AUTO_RESUME_CONFIG.json'
+RUNTIME_FILE = STATE_DIR / 'AUTO_RESUME_RUNTIME.json'
+LOG_FILE = ARTIFACT_DIR / 'recovery_log.jsonl'
+RUN_STATE_TOOL = WORKSPACE / 'tools' / 'run-state'
+ORCH_TOOL = WORKSPACE / 'tools' / 'subtask-orchestrate'
+WORKFLOW_FILE = WORKSPACE / 'WORKFLOW_STATE.json'
+DEFAULT_CONFIG = {'enabled': True, 'cooldown_seconds': 45, 'lease_ttl_seconds': 180, 'max_recovery_attempts_per_target': 3, 'task_overrides': {}}
+def now_iso() -> str: return datetime.now().isoformat()
+def ensure_dirs() -> None:
+    for path in (STATE_DIR, ARTIFACT_DIR, LOCK_DIR, LEASE_DIR): path.mkdir(parents=True, exist_ok=True)
+def read_json(path: Path, default: Any):
+    if not path.exists(): return default
+    try: return json.loads(path.read_text())
+    except Exception: return default
+def write_json(path: Path, data: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + '.tmp')
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    tmp.replace(path)
+def append_jsonl(path: Path, row: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('a', encoding='utf-8') as f: f.write(json.dumps(row, ensure_ascii=False) + '\n')
+def load_config() -> Dict[str, Any]:
+    ensure_dirs(); config = dict(DEFAULT_CONFIG); saved = read_json(CONFIG_FILE, {})
+    if isinstance(saved, dict):
+        config.update(saved)
+        if not isinstance(config.get('task_overrides'), dict): config['task_overrides'] = {}
+    if not CONFIG_FILE.exists(): write_json(CONFIG_FILE, config)
+    return config
+def load_runtime() -> Dict[str, Any]:
+    return read_json(RUNTIME_FILE, {'last_attempt_at': None, 'last_target': None, 'last_checkpoint_ts': None, 'last_result': None, 'recovery_counts': {}, 'last_success_at': None})
+def persist_runtime(runtime: Dict[str, Any]) -> None: write_json(RUNTIME_FILE, runtime)
+def read_run_state() -> Dict[str, Any]:
+    result = subprocess.run([str(RUN_STATE_TOOL), 'recover'], capture_output=True, text=True, timeout=20)
+    if result.returncode != 0: raise RuntimeError(result.stderr.strip() or 'run-state recover failed')
+    return json.loads(result.stdout or '{}')
+def workflow_step_meta(step_id: str | None) -> Dict[str, Any]:
+    if not step_id or not WORKFLOW_FILE.exists(): return {}
+    wf = read_json(WORKFLOW_FILE, {})
+    for step in wf.get('steps', []):
+        if step.get('id') == step_id: return step
+    return {}
+def compute_target(run_state: Dict[str, Any]) -> Dict[str, Any]:
+    next_step = run_state.get('next_step') or {}
+    workflow_pending = run_state.get('workflow', {}).get('pending_steps', [])
+    workflow_running = run_state.get('workflow', {}).get('running_steps', [])
+    orch_pending = run_state.get('orchestrator', {}).get('pending_tasks', [])
+    ledger_pending = run_state.get('unfinished_tasks', {}).get('ledger', [])
+    target_id, target_kind = None, 'idle'
+    if next_step.get('id'): target_id, target_kind = next_step.get('id'), 'workflow_step'
+    elif next_step.get('task_id'): target_id, target_kind = next_step.get('task_id'), 'task'
+    elif workflow_pending: target_id, target_kind = workflow_pending[0].get('id'), 'workflow_step'
+    elif workflow_running: target_id, target_kind = workflow_running[0].get('id'), 'workflow_step'
+    elif orch_pending: target_id, target_kind = orch_pending[0].get('task_id'), 'task'
+    elif ledger_pending: target_id, target_kind = ledger_pending[0].get('task_id'), 'task'
+    return {'target_kind': target_kind, 'target_id': target_id, 'checkpoint_ts': (run_state.get('last_checkpoint') or {}).get('ts'), 'resume_action': run_state.get('resume_action')}
+def target_enabled(config: Dict[str, Any], run_state: Dict[str, Any], target: Dict[str, Any]) -> tuple[bool, str | None]:
+    if not config.get('enabled', True): return False, 'global_disabled'
+    if run_state.get('hard_block'): return False, 'hard_blocked'
+    if not run_state.get('recovery_hint', {}).get('should_auto_continue', False): return False, 'should_auto_continue_false'
+    if run_state.get('status') in {'completed', 'failed', 'failed_waiting_human', 'stopped'}: return False, f"status_{run_state.get('status')}"
+    override = (config.get('task_overrides') or {}).get(target.get('target_id') or '', {})
+    if override.get('enabled') is False: return False, 'task_override_disabled'
+    if target.get('target_kind') == 'workflow_step':
+        step = workflow_step_meta(target.get('target_id'))
+        if step.get('auto_resume') is False: return False, 'step_auto_resume_disabled'
+        if step.get('status') in {'done', 'failed', 'stopped'}: return False, f"step_status_{step.get('status')}"
+    return True, None
+def cooldown_blocks(config: Dict[str, Any], runtime: Dict[str, Any], target: Dict[str, Any]) -> tuple[bool, str | None]:
+    last_attempt = runtime.get('last_attempt_at')
+    if not last_attempt: return False, None
+    try: last_dt = datetime.fromisoformat(last_attempt)
+    except Exception: return False, None
+    if runtime.get('last_target') != target.get('target_id'): return False, None
+    if runtime.get('last_checkpoint_ts') != target.get('checkpoint_ts'): return False, None
+    if datetime.now() - last_dt < timedelta(seconds=int(config.get('cooldown_seconds', 45))): return True, 'cooldown_active'
+    return False, None
+def attempt_limit_blocks(config: Dict[str, Any], runtime: Dict[str, Any], target: Dict[str, Any]) -> tuple[bool, str | None]:
+    key = f"{target.get('target_kind')}:{target.get('target_id')}:{target.get('checkpoint_ts')}"
+    attempts = int((runtime.get('recovery_counts', {}) or {}).get(key, 0))
+    if attempts >= int(config.get('max_recovery_attempts_per_target', 3)): return True, 'attempt_limit_reached'
+    return False, None
+def acquire_global_lock() -> Path | None:
+    ensure_dirs(); lock = LOCK_DIR / 'auto_resume_orchestrator.lock'
+    try:
+        fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY); os.write(fd, f"{os.getpid()}\n".encode()); os.close(fd); return lock
+    except FileExistsError: return None
+def release_global_lock(lock: Path | None) -> None:
+    if lock and lock.exists(): lock.unlink(missing_ok=True)
+def acquire_target_lease(config: Dict[str, Any], target: Dict[str, Any]) -> tuple[bool, str | None, Dict[str, Any] | None]:
+    ensure_dirs(); target_id = target.get('target_id') or 'idle'; lease_path = LEASE_DIR / f"{target.get('target_kind')}__{target_id}.json"; existing = read_json(lease_path, None); now = datetime.now()
+    if isinstance(existing, dict):
+        try: expires_at = datetime.fromisoformat(existing.get('expires_at'))
+        except Exception: expires_at = now - timedelta(seconds=1)
+        if expires_at > now: return False, 'lease_conflict', existing
+    lease = {'holder': f"{socket.gethostname()}:{os.getpid()}:{uuid.uuid4().hex[:8]}", 'target': target, 'acquired_at': now_iso(), 'expires_at': (now + timedelta(seconds=int(config.get('lease_ttl_seconds', 180)))).isoformat()}
+    write_json(lease_path, lease); return True, str(lease_path), lease
+def release_target_lease(path_str: str | None) -> None:
+    if path_str: Path(path_str).unlink(missing_ok=True)
+def run_resume() -> Dict[str, Any]:
+    result = subprocess.run([str(ORCH_TOOL), 'resume'], capture_output=True, text=True, timeout=120)
+    if result.returncode != 0: return {'ok': False, 'returncode': result.returncode, 'stderr': (result.stderr or '')[:400], 'stdout': (result.stdout or '')[:400]}
+    try: data = json.loads(result.stdout or '{}')
+    except Exception: data = {'raw_stdout': (result.stdout or '')[:400]}
+    return {'ok': True, 'data': data}
+def mark_attempt(runtime: Dict[str, Any], target: Dict[str, Any], result: str) -> Dict[str, Any]:
+    key = f"{target.get('target_kind')}:{target.get('target_id')}:{target.get('checkpoint_ts')}"; counts = runtime.setdefault('recovery_counts', {}); counts[key] = int(counts.get(key, 0)) + 1
+    runtime['last_attempt_at'] = now_iso(); runtime['last_target'] = target.get('target_id'); runtime['last_checkpoint_ts'] = target.get('checkpoint_ts'); runtime['last_result'] = result
+    if result == 'resumed': runtime['last_success_at'] = runtime['last_attempt_at']
+    return runtime
+def once() -> Dict[str, Any]:
+    config = load_config(); runtime = load_runtime(); event = {'ts': now_iso(), 'tool': 'auto-resume-orchestrator'}; lock = acquire_global_lock()
+    if not lock:
+        event.update({'action': 'skip', 'reason': 'global_lock_held'}); append_jsonl(LOG_FILE, event); return event
+    lease_path = None
+    try:
+        run_state = read_run_state(); target = compute_target(run_state); event.update({'run_state_action': run_state.get('resume_action'), 'target': target})
+        enabled, reason = target_enabled(config, run_state, target)
+        if not enabled: event.update({'action': 'skip', 'reason': reason}); append_jsonl(LOG_FILE, event); return event
+        blocked, reason = cooldown_blocks(config, runtime, target)
+        if blocked: event.update({'action': 'skip', 'reason': reason}); append_jsonl(LOG_FILE, event); return event
+        blocked, reason = attempt_limit_blocks(config, runtime, target)
+        if blocked: event.update({'action': 'skip', 'reason': reason}); append_jsonl(LOG_FILE, event); return event
+        ok, lease_info, lease = acquire_target_lease(config, target)
+        if not ok: event.update({'action': 'skip', 'reason': lease_info, 'lease': lease}); append_jsonl(LOG_FILE, event); return event
+        lease_path = lease_info
+        resume = run_resume()
+        if not resume.get('ok'):
+            runtime = mark_attempt(runtime, target, 'resume_failed'); persist_runtime(runtime); event.update({'action': 'resume_failed', 'resume': resume}); append_jsonl(LOG_FILE, event); return event
+        runtime = mark_attempt(runtime, target, 'resumed'); persist_runtime(runtime); event.update({'action': 'resumed', 'resume': resume.get('data', {})}); append_jsonl(LOG_FILE, event); return event
+    finally:
+        release_target_lease(lease_path); release_global_lock(lock)
+def main() -> int:
+    p = argparse.ArgumentParser(description='Auto resume orchestrator'); p.add_argument('--once', action='store_true'); p.add_argument('--json', action='store_true'); p.add_argument('--health', action='store_true'); args = p.parse_args()
+    if args.health: print(json.dumps({'status': 'healthy', 'config': str(CONFIG_FILE), 'runtime': str(RUNTIME_FILE)})); return 0
+    result = once(); print(json.dumps(result, ensure_ascii=False, indent=2)); return 0
+if __name__ == '__main__': sys.exit(main())

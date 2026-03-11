@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenClaw Auto Resume Orchestrator
+After=openclaw-gateway.service
+PartOf=openclaw-gateway.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.openclaw/workspace/tools/auto-resume-orchestrator --once --json
+WorkingDirectory=%h/.openclaw/workspace
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=auto-resume-orchestrator
+
+[Install]
+WantedBy=default.target
+WantedBy=openclaw-gateway.service
