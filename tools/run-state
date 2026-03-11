@@ -283,6 +283,10 @@ def deep_merge(base: Dict[str, Any], patch: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def main():
+    if '--health' in sys.argv[1:]:
+        print(json.dumps({'status': 'healthy', 'run_state_exists': RUN_STATE_FILE.exists(), 'checkpoint_dir': str(CHECKPOINT_DIR)}))
+        return
+
     parser = argparse.ArgumentParser()
     parser.add_argument('command', nargs='?')
     parser.add_argument('label', nargs='?')
@@ -295,10 +299,6 @@ def main():
     parser.add_argument('--error-type', default=None)
     parser.add_argument('--patch-json', default='{}')
     args = parser.parse_args()
-
-    if args.command == '--health' or (args.command is None and '--health' in sys.argv):
-        print(json.dumps({'status': 'healthy', 'run_state_exists': RUN_STATE_FILE.exists(), 'checkpoint_dir': str(CHECKPOINT_DIR)}))
-        return
 
     cmd = args.command
     if cmd == 'derive':

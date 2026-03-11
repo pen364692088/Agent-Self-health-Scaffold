@@ -14,17 +14,14 @@ None
 
 ---
 
-## 本轮清理
-- 删除 `handle-subagent-complete` 中对 `spawn_needed.flag` 的旧兼容依赖
-- 清理 `SOUL.md` 中 callback-worker 直接推进/直接通知的旧叙述
-- 清理 `TOOLS.md` 中多入口/旧推进角色表述
-- 保留单一主链：`callback-worker -> subtask-orchestrate resume -> handle-subagent-complete -> subagent-completion-handler -> run-state`
+## 最新修复
+- 修复 `tools/run-state --health` 参数解析错误
+- 复跑 run-state / recovery / single-entrypoint 相关关键测试通过
 
-## 验证
-- `tests/test_single_entrypoint_flow.py`
-- `tests/test_live_recovery_minimal.py`
-- `tests/test_retry_policy_minimal.py`
-- 当前回归：6 passed
+## 当前结论
+- 最小闭环成立
+- 单入口主链成立
+- run-state 健康检查可正常作为日常探针使用
 
 ## Updated
-2026-03-11 08:51 CDT
+2026-03-11 08:55 CDT
