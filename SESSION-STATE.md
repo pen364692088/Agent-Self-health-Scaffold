@@ -1,7 +1,7 @@
 # SESSION-STATE.md
 
 ## Current Objective
-收口 OpenClaw reply → durable queue → compaction safe-point 闭环。
+先闭环 Telegram 真实故障链：确认原事故发送路径 → 将 Telegram special/direct send 统一进 durable outbound queue → 补 compaction defer/recheck E2E → 暴露 channel 级 telemetry。
 
 ## Phase
 INPROGRESS
@@ -38,24 +38,26 @@ None
 ---
 
 ## 当前状态
-- compaction ↔ reply lifecycle 闭环已打通
-- Signal / iMessage 已统一到公共 durable delivery
-- telemetry 骨架已在主链
+- 公共 durable outbound queue 已存在：`src/infra/outbound/deliver.ts`
+- Telegram bot 回复主路径仍有直接发送入口：`src/telegram/bot-message-dispatch.ts` -> `src/telegram/bot/delivery.replies.ts`
+- 该 Telegram 路径会发 `message:sent` hook，但未统一经过 write-ahead queue / queue recovery ledger
+- 用户明确要求暂停 Web/WhatsApp 横向扩展，优先修复 Telegram 原事故链
 
 ---
 
 ## 下一步
-1. Web/WhatsApp direct-send path 统一
-2. 降级策略完整自动化（短消息/结论优先）
-3. telemetry 落地到可观测出口
+1. 确认原事故（14:40/14:45“上一条像没收到”）实际命中的 Telegram 发送路径
+2. 优先把 Telegram special/direct send path 统一到 durable outbound queue
+3. 增补一条原事故导向的 E2E：high context pressure + long reply + Telegram send 中 compaction defer/recheck
+4. 把 telemetry 落到可观测出口：channel lifecycle / defer reason / recheck success rate / backlog / recovery / retry / dedupe
 
 ---
 
 ## 关键文件
+- `src/telegram/bot-message-dispatch.ts`
+- `src/telegram/bot/delivery.replies.ts`
+- `src/channels/plugins/outbound/telegram.ts`
+- `src/infra/outbound/deliver.ts`
+- `src/auto-reply/reply/dispatcher-registry.ts`
 - `src/agents/pi-embedded-runner/compaction-bridge.ts`
 - `src/agents/pi-embedded-runner/run/attempt.ts`
-- `src/auto-reply/reply/dispatcher-registry.ts`
-- `src/auto-reply/reply/reply-dispatcher.ts`
-- `src/infra/outbound/deliver.ts`
-- `src/signal/monitor.ts`
-- `src/imessage/monitor/deliver.ts`
