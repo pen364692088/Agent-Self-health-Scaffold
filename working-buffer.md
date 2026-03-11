@@ -1,18 +1,16 @@
 # Working Buffer
 
 ## Focus
-把 restart 后 recovery 的 PATH 断点先消掉，再做一次真机复测。
+已完成最小化 closeout-doc 提交，当前关注剩余未提交内容是否需要继续收口。
 
 ## What Changed
-- 已排除 `tools/session-route` 本体为问题源（本体已用绝对路径）
-- 已修复 workspace 内可见的裸 `session-start-recovery` 调用
-- 最小自测通过：恢复工具可执行，Python 文件可编译
+- 已提交核心证据文档：`e4fcbda` `docs: add closeout evidence reports`
+- 明确排除了大量 runtime artifacts / logs / memory / state 噪音
 
 ## Remaining Uncertainty
-- 还不能证明 restart hook 已真正进入 apply/continuation
-- 需要一次新的 restart 后日志证据
+- 剩余未跟踪草稿里有一部分可能只是过程产物，不一定值得入库
+- 尚未决定是否继续做第二个更细的 docs 整理提交
 
 ## Minimal Finish Line
-- commit 当前修复
-- 用户重启
-- 复查日志是否消失 `command not found`
+- 对用户报告：活跃任务已检查，最小 closeout-doc 提交已完成
+- 无硬 blocker；若继续，仅需决定剩余草稿的取舍
