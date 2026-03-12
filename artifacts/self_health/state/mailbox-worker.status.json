@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "metrics": {
+    "process_alive": true,
+    "last_progress_time": "just_now",
+    "backlog": 4,
+    "stuck": false
+  },
+  "failure_indicators": []
+}

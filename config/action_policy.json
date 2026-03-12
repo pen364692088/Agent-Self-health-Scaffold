@@ -1,0 +1,73 @@
+{
+  "whitelist": {
+    "rerun_health_check": [
+      "heartbeat",
+      "health_check",
+      "callback-worker",
+      "mailbox-worker"
+    ],
+    "restart_worker": [
+      "callback-worker",
+      "mailbox-worker"
+    ],
+    "rotate_logs": [
+      "health_check",
+      "heartbeat",
+      "callback-worker",
+      "mailbox-worker"
+    ],
+    "clear_stale_lock": [
+      "callback-worker",
+      "mailbox-worker"
+    ],
+    "restart_service": [
+      "callback-worker",
+      "mailbox-worker"
+    ]
+  },
+  "cooldown_seconds": {
+    "rerun_health_check": 30,
+    "restart_worker": 120,
+    "rotate_logs": 300,
+    "clear_stale_lock": 300,
+    "restart_service": 300
+  },
+  "max_retry": {
+    "rerun_health_check": 2,
+    "restart_worker": 3,
+    "rotate_logs": 10,
+    "clear_stale_lock": 1,
+    "restart_service": 1
+  },
+  "verification_window_seconds": {
+    "rerun_health_check": 5,
+    "restart_worker": 15,
+    "rotate_logs": 5,
+    "clear_stale_lock": 5,
+    "restart_service": 20
+  },
+  "critical_capability_groups": {
+    "compaction": {
+      "capabilities": [
+        "CAP-COMPACTION_EXECUTION",
+        "CAP-CONTEXT_OVERFLOW_HANDLING"
+      ],
+      "alert_priority": "critical",
+      "description": "Core compaction chain - critical path degradation"
+    },
+    "compaction_extended": {
+      "capabilities": [
+        "CAP-COMPACTION_EFFECTIVENESS"
+      ],
+      "alert_priority": "high",
+      "description": "Compaction effectiveness monitoring"
+    }
+  },
+  "alert_rules": {
+    "critical_capability_degradation": {
+      "trigger": "any capability in critical_capability_groups != healthy",
+      "action": "immediate_alert",
+      "escalation": "within 5 minutes"
+    }
+  }
+}

@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+import argparse, json
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+STATE_DIR = REPO / 'artifacts' / 'self_health' / 'state'
+RUNTIME_DIR = REPO / 'artifacts' / 'self_health' / 'runtime'
+CAP_DIR = REPO / 'artifacts' / 'self_health' / 'capabilities'
+INCIDENT_DIR = REPO / 'artifacts' / 'self_health' / 'capability_incidents'
+
+CAPABILITIES = {
+    'CAP-HEARTBEAT_CYCLE_EXECUTION': {
+        'name': 'Heartbeat Cycle Execution',
+        'component': 'heartbeat',
+        'category': 'liveness_capability',
+        'verification_mode': 'probe_check',
+        'severity_if_missing': 'critical',
+    },
+    'CAP-CALLBACK_DELIVERY': {
+        'name': 'Callback Delivery',
+        'component': 'callback-worker',
+        'category': 'delivery_capability',
+        'verification_mode': 'probe_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-MAILBOX_CONSUMPTION': {
+        'name': 'Mailbox Consumption',
+        'component': 'mailbox-worker',
+        'category': 'processing_capability',
+        'verification_mode': 'probe_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-HEALTH_SUMMARY_GENERATION': {
+        'name': 'Health Summary Generation',
+        'component': 'agent-health-summary',
+        'category': 'workflow_capability',
+        'verification_mode': 'artifact_output_check',
+        'severity_if_missing': 'medium',
+    },
+    'CAP-INCIDENT_RECORDING': {
+        'name': 'Incident Recording',
+        'component': 'agent-incident-report',
+        'category': 'safety_capability',
+        'verification_mode': 'artifact_output_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-RECOVERY_SUMMARY_GENERATION': {
+        'name': 'Recovery Summary Generation',
+        'component': 'agent-recovery-summary',
+        'category': 'workflow_capability',
+        'verification_mode': 'artifact_output_check',
+        'severity_if_missing': 'medium',
+    },
+    # Real user-promised features
+    'CAP-USER_PROMISED_FEATURE_TELEGRAM_NOTIFICATION': {
+        'name': 'Telegram Notification Delivery',
+        'component': 'telegram-channel',
+        'category': 'user_promised_feature',
+        'verification_mode': 'recent_success_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-USER_PROMISED_FEATURE_SUBAGENT_ORCHESTRATION': {
+        'name': 'Subagent Orchestration',
+        'component': 'subtask-orchestrate',
+        'category': 'user_promised_feature',
+        'verification_mode': 'recent_success_check',
+        'severity_if_missing': 'medium',
+    },
+}
+
+
+def check_probe_from_telemetry(component):
+    """Check using telemetry data from runtime/"""
+    telemetry_map = {
+        'heartbeat': 'heartbeat_status',
+        'callback-worker': 'callback_worker_status',
+        'mailbox-worker': 'mailbox_worker_status',
+    }
+    
+    if component not in telemetry_map:
+        return check_probe_legacy(component)
+    
+    telemetry_file = RUNTIME_DIR / f'{telemetry_map[component]}.json'
+    if not telemetry_file.exists():
+        return 'telemetry_missing', {'reason': 'no_telemetry_file', 'component': component}
+    
+    try:
+        data = json.loads(telemetry_file.read_text())
+        if component == 'heartbeat':
+            status = data.get('heartbeat_status', 'unknown')
+        elif component == 'callback-worker':
+            status = data.get('worker_status', 'unknown')
+        elif component == 'mailbox-worker':
+            status = data.get('mailbox_status', data.get('worker_status', 'unknown'))
+        else:
+            status = data.get('status', 'unknown')
+        
+        if status == 'ok':
+            return 'healthy', {'telemetry_source': str(telemetry_file), 'raw': data}
+        elif status == 'warning':
+            return 'degraded', {'telemetry_source': str(telemetry_file), 'raw': data}
+        elif status in ['error', 'failed']:
+            return 'missing', {'telemetry_source': str(telemetry_file), 'raw': data}
+        else:
+            return 'unknown', {'telemetry_source': str(telemetry_file), 'raw': data}
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_probe_legacy(component):
+    """Legacy check using state files"""
+    marker = STATE_DIR / f'{component}.status.json'
+    if not marker.exists():
+        return 'telemetry_missing', {'reason': 'no_status_file'}
+    try:
+        data = json.loads(marker.read_text())
+        status = data.get('status', 'unknown')
+        if status == 'ok':
+            return 'healthy', data
+        elif status in {'warning', 'error', 'failed'}:
+            return 'degraded', data
+        return 'unknown', data
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_artifact(component):
+    if component == 'agent-health-summary':
+        artifact = REPO / 'artifacts' / 'self_health' / 'HEALTH_SUMMARY.md'
+    elif component == 'agent-recovery-summary':
+        artifact = REPO / 'artifacts' / 'self_health' / 'VERIFIED_RECOVERY_SUMMARY.md'
+    elif component == 'telegram-channel':
+        # Check for telegram notification artifacts
+        artifact = REPO / 'artifacts' / 'self_health' / 'runtime' / 'summary_status.json'
+    elif component == 'subtask-orchestrate':
+        # Check for subagent artifacts
+        artifact = REPO / 'artifacts' / 'self_health' / 'runtime' / 'summary_status.json'
+    else:
+        artifact = STATE_DIR / f'{component}.latest.json'
+    
+    if not artifact.exists():
+        return 'telemetry_missing', {'reason': 'no_artifact'}
+    
+    try:
+        stat = artifact.stat()
+        age_seconds = (datetime.now(timezone.utc).timestamp() - stat.st_mtime)
+        if age_seconds > 7200:
+            return 'stale', {'age_seconds': age_seconds}
+        return 'healthy', {'path': str(artifact), 'age_seconds': age_seconds}
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def verify_capability(cap_id):
+    cap = CAPABILITIES.get(cap_id)
+    if not cap:
+        return {'capability_id': cap_id, 'status': 'unknown', 'reason': 'not_registered'}
+    
+    component = cap['component']
+    mode = cap['verification_mode']
+    
+    if mode == 'probe_check':
+        status, evidence = check_probe_from_telemetry(component)
+    elif mode == 'artifact_output_check':
+        status, evidence = check_artifact(component)
+    elif mode == 'recent_success_check':
+        status, evidence = check_artifact(component)
+    else:
+        status, evidence = 'unknown', {'reason': 'unsupported_mode'}
+    
+    result = {
+        'capability_id': cap_id,
+        'name': cap['name'],
+        'component': component,
+        'category': cap['category'],
+        'status': status,
+        'severity_if_missing': cap['severity_if_missing'],
+        'evidence': evidence,
+        'checked_at': datetime.now(timezone.utc).isoformat(),
+    }
+    return result
+
+
+def record_capability_result(result):
+    CAP_DIR.mkdir(parents=True, exist_ok=True)
+    cap_id = result['capability_id']
+    path = CAP_DIR / f'{cap_id}.json'
+    path.write_text(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def create_incident(result):
+    if result['status'] in {'missing', 'degraded'}:
+        INCIDENT_DIR.mkdir(parents=True, exist_ok=True)
+        incident_id = f"INC-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{result['capability_id']}"
+        incident = {
+            'incident_id': incident_id,
+            'incident_type': 'capability_degradation',
+            'capability_id': result['capability_id'],
+            'component': result['component'],
+            'severity': result['severity_if_missing'],
+            'status': result['status'],
+            'evidence': result['evidence'],
+            'created_at': datetime.now(timezone.utc).isoformat(),
+        }
+        path = INCIDENT_DIR / f'{incident_id}.json'
+        path.write_text(json.dumps(incident, ensure_ascii=False, indent=2))
+        return incident_id
+    return None
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--capability', help='Specific capability ID to check')
+parser.add_argument('--all', action='store_true', help='Check all registered capabilities')
+parser.add_argument('--json', action='store_true')
+args = parser.parse_args()
+
+results = []
+if args.all:
+    for cap_id in CAPABILITIES:
+        r = verify_capability(cap_id)
+        record_capability_result(r)
+        incident_id = create_incident(r)
+        if incident_id:
+            r['incident_id'] = incident_id
+        results.append(r)
+elif args.capability:
+    r = verify_capability(args.capability)
+    record_capability_result(r)
+    incident_id = create_incident(r)
+    if incident_id:
+        r['incident_id'] = incident_id
+    results.append(r)
+else:
+    print("Specify --capability ID or --all")
+    exit(1)
+
+if args.json:
+    print(json.dumps(results, ensure_ascii=False, indent=2))
+else:
+    for r in results:
+        print(f"{r['capability_id']}: {r['status']}")

@@ -1,0 +1,32 @@
+{
+  "proposal_id": "PROP-20260311-151633-CAP-CONTEXT_OVERFLOW_HANDLING",
+  "proposal_type": "capability_verification_frequency_adjustment",
+  "target_component": "context_manager",
+  "target_capability": "CAP-CONTEXT_OVERFLOW_HANDLING",
+  "problem_statement": "Capability status: degraded",
+  "evidence": {
+    "alert_type": "capability_degraded",
+    "capability_status": "degraded",
+    "checked_at": "2026-03-11T15:16:33.790435+00:00"
+  },
+  "proposed_change": "Increase verification frequency or investigate capability degradation",
+  "expected_benefit": "Earlier detection of capability issues",
+  "risk_assessment": {
+    "impact": "low",
+    "reversibility": "high"
+  },
+  "shadow_plan": {
+    "comparison_window": "24h",
+    "baseline_metrics": {
+      "verification_frequency": "current"
+    },
+    "success_threshold": {
+      "status": "healthy"
+    }
+  },
+  "rollback_plan": "Revert to previous verification schedule",
+  "approval_required": true,
+  "proposal_only": true,
+  "status": "pending",
+  "created_at": "2026-03-11T15:16:33.908612+00:00"
+}

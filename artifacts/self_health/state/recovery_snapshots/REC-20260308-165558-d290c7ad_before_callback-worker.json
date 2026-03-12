@@ -1,0 +1,42 @@
+{
+  "recovery_id": "REC-20260308-165558-d290c7ad",
+  "phase": "before",
+  "component": "callback-worker",
+  "probe_timestamp": "2026-03-08T16:55:58.969474+00:00",
+  "status": "error",
+  "key_metrics": {
+    "process_alive": false,
+    "last_progress_time": "old",
+    "backlog": 10,
+    "stuck": true
+  },
+  "failure_indicators": [
+    "worker_down",
+    "worker_stuck",
+    "no_progress"
+  ],
+  "evidence": {
+    "raw": {
+      "status": "error",
+      "metrics": {
+        "process_alive": false,
+        "last_progress_time": "old",
+        "backlog": 10,
+        "stuck": true
+      },
+      "failure_indicators": [
+        "worker_down",
+        "worker_stuck",
+        "no_progress"
+      ]
+    }
+  },
+  "probe_name": "worker_probe",
+  "metrics": {
+    "process_alive": false,
+    "last_progress_time": "old",
+    "backlog": 10,
+    "stuck": true
+  },
+  "recoverability_hint": "restart_worker"
+}

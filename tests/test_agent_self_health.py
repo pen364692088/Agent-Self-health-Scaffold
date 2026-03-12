@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-import os
 import json, subprocess
 from pathlib import Path
 
-W = Path(os.environ.get('OPENCLAW_WORKSPACE', Path(__file__).parent.parent))
+W = Path(__file__).resolve().parent.parent
 
 def run(cmd):
     r = subprocess.run(cmd, capture_output=True, text=True)

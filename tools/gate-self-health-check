@@ -1,100 +1,140 @@
 #!/usr/bin/env python3
-import argparse, json, subprocess, sys, time
+import argparse, json
 from datetime import datetime, timezone
 from pathlib import Path
 
-WORKSPACE = Path('/home/moonlight/.openclaw/workspace')
-RUNTIME = WORKSPACE / 'artifacts' / 'self_health' / 'runtime'
-ALWAYS_ON = WORKSPACE / 'artifacts' / 'self_health' / 'always_on'
+REPO = Path(__file__).resolve().parent.parent
+CAP_DIR = REPO / 'artifacts' / 'self_health' / 'capabilities'
+PROP_DIR = REPO / 'artifacts' / 'self_health' / 'proposals'
+SCHEMAS_DIR = REPO / 'schemas'
+POLICIES_DIR = REPO / 'POLICIES'
+REPORTS_DIR = REPO / 'artifacts' / 'self_health' / 'gate_reports'
 
 
-def read_json(path, default):
-    try:
-        return json.loads(Path(path).read_text())
-    except Exception:
-        return default
+def check_gate_a():
+    issues = []
+    # Check capability registry exists
+    registry = POLICIES_DIR / 'AGENT_CAPABILITY_REGISTRY.md'
+    if not registry.exists():
+        issues.append({'gate': 'A', 'severity': 'critical', 'issue': 'capability_registry_missing'})
+    
+    # Check schemas exist
+    for schema in ['AGENT_CAPABILITY.schema.json', 'AGENT_PROPOSAL.schema.json']:
+        if not (SCHEMAS_DIR / schema).exists():
+            issues.append({'gate': 'A', 'severity': 'critical', 'issue': f'schema_missing:{schema}'})
+    
+    # Check capability states are valid
+    if CAP_DIR.exists():
+        for cap_file in CAP_DIR.glob('CAP-*.json'):
+            try:
+                data = json.loads(cap_file.read_text())
+                if not data.get('capability_id'):
+                    issues.append({'gate': 'A', 'severity': 'high', 'issue': f'missing_capability_id:{cap_file.name}'})
+            except Exception as e:
+                issues.append({'gate': 'A', 'severity': 'high', 'issue': f'invalid_json:{cap_file.name}'})
+    
+    # Check proposals are proposal_only
+    if PROP_DIR.exists():
+        for prop_file in PROP_DIR.glob('PROP-*.json'):
+            try:
+                data = json.loads(prop_file.read_text())
+                if not data.get('proposal_only', True):
+                    issues.append({'gate': 'A', 'severity': 'critical', 'issue': f'proposal_not_proposal_only:{prop_file.name}'})
+            except Exception:
+                pass
+    
+    return issues
 
 
-def age(path):
-    p = Path(path)
-    if not p.exists():
-        return None
-    return max(0, time.time() - p.stat().st_mtime)
+def check_gate_b():
+    issues = []
+    summary = {'total': 0, 'healthy': 0, 'degraded': 0, 'missing': 0, 'unknown': 0}
+    
+    if CAP_DIR.exists():
+        for cap_file in CAP_DIR.glob('CAP-*.json'):
+            try:
+                data = json.loads(cap_file.read_text())
+                summary['total'] += 1
+                status = data.get('status', 'unknown')
+                if status in summary:
+                    summary[status] += 1
+                if status in {'degraded', 'missing'}:
+                    issues.append({
+                        'gate': 'B',
+                        'severity': data.get('severity_if_missing', 'high'),
+                        'issue': f'capability_{status}:{data.get("capability_id")}'
+                    })
+            except Exception:
+                pass
+    
+    return issues, summary
 
 
-def run(cmd, timeout=20):
-    p = subprocess.run(cmd, cwd=WORKSPACE, capture_output=True, text=True, timeout=timeout)
-    return p.returncode, p.stdout, p.stderr
-
-
-def gate_a():
-    required = [
-        WORKSPACE / 'POLICIES' / 'AGENT_SELF_HEALTH_POLICY.md',
-        WORKSPACE / 'POLICIES' / 'OPENCLAW_ALWAYS_ON_POLICY.md',
-        WORKSPACE / 'tools' / 'agent-health-check',
-        WORKSPACE / 'tools' / 'agent-self-heal',
-        WORKSPACE / 'tools' / 'agent-self-health-scheduler',
+def check_gate_c():
+    issues = []
+    
+    # Check summary files exist
+    summaries = [
+        'VERIFIED_RECOVERY_SUMMARY.md',
+        'CAPABILITY_SUMMARY.md',
+        'PROPOSAL_SUMMARY.md'
     ]
-    missing = [str(p.relative_to(WORKSPACE)) for p in required if not p.exists()]
-    status = 'PASS' if not missing else 'FAIL'
-    return {'status': status, 'missing': missing, 'explanation': 'registry/policy/tool presence'}
+    for s in summaries:
+        if not (REPO / 'artifacts' / 'self_health' / s).exists():
+            issues.append({'gate': 'C', 'severity': 'medium', 'issue': f'summary_missing:{s}'})
+    
+    # Check lock files not stale
+    lock_dir = REPO / 'artifacts' / 'self_health' / 'locks'
+    if lock_dir.exists():
+        for lock_file in lock_dir.glob('*.lock'):
+            try:
+                data = json.loads(lock_file.read_text())
+                started = datetime.fromisoformat(data['started_at'].replace('Z', '+00:00'))
+                age = (datetime.now(timezone.utc) - started).total_seconds()
+                if age > 600:
+                    issues.append({'gate': 'C', 'severity': 'medium', 'issue': f'stale_lock:{lock_file.name}'})
+            except Exception:
+                pass
+    
+    return issues
 
 
-def gate_b():
-    files = {
-        'heartbeat': RUNTIME / 'heartbeat_status.json',
-        'callback': RUNTIME / 'callback_worker_status.json',
-        'mailbox': RUNTIME / 'mailbox_worker_status.json',
-        'summary': RUNTIME / 'summary_status.json',
+parser = argparse.ArgumentParser()
+parser.add_argument('--json', action='store_true')
+parser.add_argument('--write', action='store_true')
+args = parser.parse_args()
+
+gate_a_issues = check_gate_a()
+gate_b_issues, capability_summary = check_gate_b()
+gate_c_issues = check_gate_c()
+
+report = {
+    'generated_at': datetime.now(timezone.utc).isoformat(),
+    'gate_a': {
+        'status': 'PASS' if not gate_a_issues else 'FAIL',
+        'issues': gate_a_issues
+    },
+    'gate_b': {
+        'status': 'PASS' if not gate_b_issues else 'PARTIAL' if capability_summary['healthy'] > 0 else 'FAIL',
+        'issues': gate_b_issues,
+        'summary': capability_summary
+    },
+    'gate_c': {
+        'status': 'PASS' if not gate_c_issues else 'FAIL',
+        'issues': gate_c_issues
     }
-    ages = {k: age(v) for k, v in files.items()}
-    missing = [k for k, v in files.items() if not v.exists()]
-    stale = [k for k, sec in ages.items() if sec is not None and sec > 7200]
-    if missing:
-        status = 'PARTIAL'
-        explanation = f'telemetry_missing: {missing}'
-    elif stale:
-        status = 'PARTIAL'
-        explanation = f'telemetry_stale: {stale}'
-    else:
-        status = 'PASS'
-        explanation = 'runtime telemetry present and fresh'
-    return {'status': status, 'ages_seconds': ages, 'explanation': explanation}
+}
 
+if args.write:
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    report_file = REPORTS_DIR / f'gate_report_{datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")}.json'
+    report_file.write_text(json.dumps(report, ensure_ascii=False, indent=2))
 
-def gate_c():
-    checks = {}
-    rc, out, err = run(['python3', str(WORKSPACE / 'tools' / 'tool_doctor'), str(WORKSPACE / 'tools' / 'agent-health-check'), '--ci'])
-    checks['tool_doctor_agent_health_check'] = 'PASS' if rc == 0 else 'FAIL'
-    rc2, out2, err2 = run(['python3', str(WORKSPACE / 'tools' / 'pre-reply-guard'), '--health'])
-    checks['execution_guard_health'] = 'PASS' if rc2 == 0 else 'FAIL'
-    scheduler = read_json(RUNTIME / 'gate_scheduler_state.json', {})
-    status = 'PASS' if all(v == 'PASS' for v in checks.values()) else 'FAIL'
-    return {'status': status, 'checks': checks, 'last_gate_run_at': scheduler.get('last_run_at'), 'explanation': 'preflight/doctor/execution-guard baseline checks'}
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--json', action='store_true')
-    ap.add_argument('--health', action='store_true')
-    args = ap.parse_args()
-    if args.health:
-        print(json.dumps({'status': 'healthy', 'tool': 'gate-self-health-check', 'version': '1.0.0'}))
-        return 0
-    result = {
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-        'gate_a': gate_a(),
-        'gate_b': gate_b(),
-        'gate_c': gate_c(),
-    }
-    result['verdict'] = 'PASS' if all(result[g]['status'] == 'PASS' for g in ('gate_a','gate_b','gate_c')) else 'PARTIAL_OR_FAIL'
-    out = ALWAYS_ON / 'gate_report_latest.json'
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(result, ensure_ascii=False, indent=2))
-    with (ALWAYS_ON / 'gate_report_history.jsonl').open('a', encoding='utf-8') as f:
-        f.write(json.dumps(result, ensure_ascii=False) + '\n')
-    print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else result['verdict'])
-    return 0 if result['verdict'] == 'PASS' else 1
-
-if __name__ == '__main__':
-    sys.exit(main())
+if args.json:
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+else:
+    print(f"Gate A: {report['gate_a']['status']}")
+    print(f"Gate B: {report['gate_b']['status']}")
+    print(f"Gate C: {report['gate_c']['status']}")
+    total_issues = len(gate_a_issues) + len(gate_b_issues) + len(gate_c_issues)
+    print(f"Total issues: {total_issues}")

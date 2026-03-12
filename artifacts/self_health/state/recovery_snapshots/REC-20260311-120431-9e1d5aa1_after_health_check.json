@@ -1,0 +1,128 @@
+{
+  "recovery_id": "REC-20260311-120431-9e1d5aa1",
+  "phase": "after",
+  "component": "health_check",
+  "probe_timestamp": "2026-03-11T12:04:33.170880+00:00",
+  "status": "ok",
+  "key_metrics": {
+    "context_usage_percent": 0,
+    "memory_usage_percent": 33.7,
+    "disk_usage_percent": 64,
+    "failed_subagents_last_hour": 0,
+    "pending_inbox_items": 0
+  },
+  "failure_indicators": [],
+  "evidence": {
+    "exit_code": 0,
+    "raw": {
+      "timestamp": "2026-03-11T12:04:33+00:00",
+      "session_key": "agent:main:main",
+      "overall_status": "GREEN",
+      "mode": "quick",
+      "components": [
+        {
+          "component": "liveness",
+          "status": "ok",
+          "severity": "INFO",
+          "last_ok_at": "2026-03-11T12:04:33+00:00",
+          "last_fail_at": null,
+          "fail_count": 0,
+          "recovery_attempts": 0,
+          "latest_evidence": {
+            "message": "Agent responsive"
+          },
+          "recommended_action": "none",
+          "message": "Agent responsive"
+        },
+        {
+          "component": "memory",
+          "status": "ok",
+          "severity": "INFO",
+          "last_ok_at": "2026-03-11T12:04:33+00:00",
+          "last_fail_at": null,
+          "fail_count": 0,
+          "recovery_attempts": 0,
+          "latest_evidence": {
+            "memory_usage_percent": 33.7
+          },
+          "recommended_action": "none",
+          "message": "Memory usage 33.7%"
+        },
+        {
+          "component": "context",
+          "status": "ok",
+          "severity": "INFO",
+          "last_ok_at": "2026-03-11T12:04:33+00:00",
+          "last_fail_at": null,
+          "fail_count": 0,
+          "recovery_attempts": 0,
+          "latest_evidence": {
+            "context_usage_percent": 0
+          },
+          "recommended_action": "none",
+          "message": "Context budget normal"
+        },
+        {
+          "component": "subagents",
+          "status": "ok",
+          "severity": "INFO",
+          "last_ok_at": "2026-03-11T12:04:33+00:00",
+          "last_fail_at": null,
+          "fail_count": 0,
+          "recovery_attempts": 0,
+          "latest_evidence": {
+            "failed_subagents_last_hour": 0,
+            "pending_inbox_items": 0
+          },
+          "recommended_action": "none",
+          "message": "Subagents healthy"
+        },
+        {
+          "component": "storage",
+          "status": "ok",
+          "severity": "INFO",
+          "last_ok_at": "2026-03-11T12:04:33+00:00",
+          "last_fail_at": null,
+          "fail_count": 0,
+          "recovery_attempts": 0,
+          "latest_evidence": {
+            "disk_usage_percent": 64
+          },
+          "recommended_action": "none",
+          "message": "Disk usage 64%"
+        },
+        {
+          "component": "network",
+          "status": "unknown",
+          "severity": "WARN",
+          "last_ok_at": "2026-03-11T12:04:33+00:00",
+          "last_fail_at": null,
+          "fail_count": 0,
+          "recovery_attempts": 0,
+          "latest_evidence": {},
+          "recommended_action": "investigate",
+          "message": "Skipped in quick mode"
+        }
+      ],
+      "metrics": {
+        "context_usage_percent": 0,
+        "memory_usage_percent": 33.7,
+        "disk_usage_percent": 64,
+        "failed_subagents_last_hour": 0,
+        "pending_inbox_items": 0
+      },
+      "previous_level": "GREEN",
+      "active_incidents": [],
+      "last_heal_action": null
+    }
+  },
+  "probe_name": "legacy_probe",
+  "metrics": {
+    "context_usage_percent": 0,
+    "memory_usage_percent": 33.7,
+    "disk_usage_percent": 64,
+    "failed_subagents_last_hour": 0,
+    "pending_inbox_items": 0
+  },
+  "recoverability_hint": "none"
+}

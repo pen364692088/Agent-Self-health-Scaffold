@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "restart-intent.schema.json",
+  "title": "RestartIntent",
+  "type": "object",
+  "required": ["intent_id", "target", "reason", "requested_at"],
+  "properties": {
+    "intent_id": { "type": "string", "minLength": 1 },
+    "target": { "type": "string", "enum": ["gateway", "worker", "all"] },
+    "reason": { "type": "string", "enum": ["stalled", "drift_detected", "manual", "scheduled"] },
+    "trigger_run_id": { "type": ["string", "null"] },
+    "requested_at": { "type": "string", "format": "date-time" },
+    "cooldown_until": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "additionalProperties": false
+}

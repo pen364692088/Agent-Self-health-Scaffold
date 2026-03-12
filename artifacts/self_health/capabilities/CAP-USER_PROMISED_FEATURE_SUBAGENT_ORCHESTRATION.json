@@ -1,0 +1,12 @@
+{
+  "capability_id": "CAP-USER_PROMISED_FEATURE_SUBAGENT_ORCHESTRATION",
+  "name": "Subagent Orchestration",
+  "component": "subtask-orchestrate",
+  "category": "user_promised_feature",
+  "status": "telemetry_missing",
+  "severity_if_missing": "medium",
+  "evidence": {
+    "reason": "no_artifact"
+  },
+  "checked_at": "2026-03-11T15:18:15.174600+00:00"
+}

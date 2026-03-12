@@ -1,0 +1,40 @@
+{
+  "recovery_id": "REC-20260308-175323-e3e20861",
+  "phase": "before",
+  "component": "mailbox-worker",
+  "probe_timestamp": "2026-03-08T17:53:24.003294+00:00",
+  "status": "error",
+  "key_metrics": {
+    "process_alive": false,
+    "last_progress_time": "old",
+    "backlog": 7,
+    "stuck": true
+  },
+  "failure_indicators": [
+    "worker_down",
+    "no_progress"
+  ],
+  "evidence": {
+    "raw": {
+      "status": "error",
+      "metrics": {
+        "process_alive": false,
+        "last_progress_time": "old",
+        "backlog": 7,
+        "stuck": true
+      },
+      "failure_indicators": [
+        "worker_down",
+        "no_progress"
+      ]
+    }
+  },
+  "probe_name": "worker_probe",
+  "metrics": {
+    "process_alive": false,
+    "last_progress_time": "old",
+    "backlog": 7,
+    "stuck": true
+  },
+  "recoverability_hint": "restart_worker"
+}

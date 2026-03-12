@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-WORKSPACE="$HOME/.openclaw/workspace"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+WORKSPACE="$REPO_ROOT"
 INCIDENTS_DIR="$WORKSPACE/artifacts/self_health/incidents"
 AUDIT_DIR="$WORKSPACE/artifacts/self_health/audit"
 STATE_DIR="$WORKSPACE/artifacts/self_health/state"

@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+import argparse, json, subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+STATE = REPO / 'artifacts' / 'self_health' / 'state'
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def load_json(path: Path, default=None):
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        return default
+
+
+def build_probe(probe_name, component, status='unknown', evidence=None, metrics=None, failure_indicators=None, recoverability_hint='none'):
+    return {
+        'probe_name': probe_name,
+        'component': component,
+        'status': status,
+        'observed_at': now_iso(),
+        'evidence': evidence or {},
+        'metrics': metrics or {},
+        'failure_indicators': failure_indicators or [],
+        'recoverability_hint': recoverability_hint,
+    }
+
+
+def probe_heartbeat():
+    data = load_json(STATE / 'heartbeat.status.json')
+    if not data:
+        return build_probe('heartbeat_probe', 'heartbeat', 'unknown', {'source': 'missing heartbeat.status.json'}, {}, ['missing_probe'], 'rerun_health_check')
+    status = data.get('status', 'unknown')
+    metrics = data.get('metrics', {})
+    fi = list(data.get('failure_indicators', []))
+    hint = 'none'
+    if status in {'warning', 'error', 'failed'}:
+        hint = 'rerun_health_check'
+    return build_probe('heartbeat_probe', 'heartbeat', status, {'raw': data}, metrics, fi, hint)
+
+
+def probe_worker(component):
+    fname = f'{component}.status.json'
+    data = load_json(STATE / fname)
+    if not data:
+        return build_probe('worker_probe', component, 'unknown', {'source': f'missing {fname}'}, {}, ['missing_probe'], 'restart_worker')
+    status = data.get('status', 'unknown')
+    metrics = data.get('metrics', {})
+    fi = list(data.get('failure_indicators', []))
+    hint = 'restart_worker' if status in {'warning', 'error', 'failed'} else 'none'
+    return build_probe('worker_probe', component, status, {'raw': data}, metrics, fi, hint)
+
+
+def probe_systemd(component):
+    fname = f'systemd.{component}.status.json'
+    data = load_json(STATE / fname)
+    if data:
+        status = data.get('status', 'unknown')
+        metrics = data.get('metrics', {})
+        fi = list(data.get('failure_indicators', []))
+        hint = 'restart_service' if status in {'warning', 'error', 'failed'} else 'none'
+        return build_probe('systemd_probe', component, status, {'raw': data}, metrics, fi, hint)
+    cmd = ['systemctl', '--user', 'is-active', component]
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        raw = (p.stdout or p.stderr).strip()
+        mapping = {'active': 'ok', 'activating': 'warning', 'reloading': 'warning', 'inactive': 'failed', 'failed': 'failed'}
+        status = mapping.get(raw, 'unknown')
+        fi = [] if status == 'ok' else [f'systemd_{raw or "unknown"}']
+        hint = 'restart_service' if status in {'warning', 'error', 'failed'} else 'none'
+        return build_probe('systemd_probe', component, status, {'systemctl_is_active': raw}, {'service_state': raw}, fi, hint)
+    except FileNotFoundError:
+        return build_probe('systemd_probe', component, 'unknown', {'source': 'systemctl_unavailable'}, {}, ['systemctl_unavailable'], 'needs_human_attention')
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--component', required=True)
+parser.add_argument('--json', action='store_true')
+args = parser.parse_args()
+
+component = args.component
+if component == 'heartbeat':
+    out = probe_heartbeat()
+elif component in {'callback-worker', 'mailbox-worker'}:
+    out = probe_worker(component)
+else:
+    out = probe_systemd(component)
+
+print(json.dumps(out, ensure_ascii=False, indent=2) if args.json else json.dumps(out, ensure_ascii=False))

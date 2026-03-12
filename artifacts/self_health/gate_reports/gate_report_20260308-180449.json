@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-03-08T18:04:49.688018+00:00",
+  "gate_a": {
+    "status": "PASS",
+    "issues": []
+  },
+  "gate_b": {
+    "status": "PARTIAL",
+    "issues": [
+      {
+        "gate": "B",
+        "severity": "medium",
+        "issue": "capability_missing:CAP-HEALTH_SUMMARY_GENERATION"
+      },
+      {
+        "gate": "B",
+        "severity": "high",
+        "issue": "capability_missing:CAP-MAILBOX_CONSUMPTION"
+      },
+      {
+        "gate": "B",
+        "severity": "high",
+        "issue": "capability_missing:CAP-INCIDENT_RECORDING"
+      },
+      {
+        "gate": "B",
+        "severity": "high",
+        "issue": "capability_missing:CAP-CALLBACK_DELIVERY"
+      },
+      {
+        "gate": "B",
+        "severity": "critical",
+        "issue": "capability_missing:CAP-HEARTBEAT_CYCLE_EXECUTION"
+      }
+    ],
+    "summary": {
+      "total": 6,
+      "healthy": 1,
+      "degraded": 0,
+      "missing": 5,
+      "unknown": 0
+    }
+  },
+  "gate_c": {
+    "status": "PASS",
+    "issues": []
+  }
+}

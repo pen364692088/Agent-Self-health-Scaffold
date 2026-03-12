@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "task-spec.schema.json",
+  "title": "TaskSpec",
+  "type": "object",
+  "required": [
+    "task_id",
+    "goal",
+    "desired_state",
+    "success_criteria",
+    "gates_required",
+    "allowed_repairs",
+    "retry_policy",
+    "timeout_policy"
+  ],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "desired_state": { "type": "string", "minLength": 1 },
+    "success_criteria": { "type": "array", "items": { "type": "string" } },
+    "gates_required": { "type": "array", "items": { "type": "string", "enum": ["A", "B", "C"] } },
+    "allowed_repairs": { "type": "array", "items": { "type": "string" } },
+    "retry_policy": {
+      "type": "object",
+      "required": ["max_attempts", "backoff"],
+      "properties": {
+        "max_attempts": { "type": "integer", "minimum": 0 },
+        "backoff": { "type": "string", "enum": ["fixed", "linear", "exponential"] }
+      },
+      "additionalProperties": false
+    },
+    "timeout_policy": {
+      "type": "object",
+      "required": ["soft_timeout_sec", "hard_timeout_sec"],
+      "properties": {
+        "soft_timeout_sec": { "type": "integer", "minimum": 1 },
+        "hard_timeout_sec": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

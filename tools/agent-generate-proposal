@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+import argparse, json, hashlib
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+PROPOSAL_DIR = REPO / 'artifacts' / 'self_health' / 'proposals'
+
+PROPOSAL_TYPES = [
+    'timeout_adjustment',
+    'retry_backoff_adjustment',
+    'fallback_path_switch',
+    'noncritical_hook_toggle',
+    'watchdog_threshold_adjustment',
+    'queue_policy_adjustment',
+    'degraded_mode_entry',
+    'capability_verification_frequency_adjustment',
+]
+
+
+def get_fingerprint(proposal_type, target_component, problem_statement):
+    content = f"{proposal_type}:{target_component}:{problem_statement}"
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+
+def check_duplicate(fingerprint, cooldown_hours=24):
+    PROPOSAL_DIR.mkdir(parents=True, exist_ok=True)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=cooldown_hours)
+    for f in PROPOSAL_DIR.glob('PROP-*.json'):
+        try:
+            data = json.loads(f.read_text())
+            if data.get('fingerprint') == fingerprint:
+                created = datetime.fromisoformat(data['created_at'].replace('Z', '+00:00'))
+                if created > cutoff:
+                    return f.name, data.get('suppressed_count', 0) + 1
+        except Exception:
+            pass
+    return None, 0
+
+
+def create_proposal(proposal_type, target_component, problem_statement, evidence, proposed_change, shadow_plan, rollback_plan):
+    fingerprint = get_fingerprint(proposal_type, target_component, problem_statement)
+    dup, suppressed = check_duplicate(fingerprint)
+    
+    if dup:
+        dup_path = PROPOSAL_DIR / dup
+        data = json.loads(dup_path.read_text())
+        data['suppressed_count'] = suppressed
+        data['last_suppressed_at'] = datetime.now(timezone.utc).isoformat()
+        dup_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+        return data
+    
+    proposal_id = f"PROP-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{target_component}"
+    
+    proposal = {
+        'proposal_id': proposal_id,
+        'fingerprint': fingerprint,
+        'suppressed_count': 0,
+        'proposal_type': proposal_type,
+        'target_component': target_component,
+        'target_capability': None,
+        'problem_statement': problem_statement,
+        'evidence': evidence,
+        'current_behavior': evidence.get('current_behavior', 'unknown'),
+        'proposed_change': proposed_change,
+        'expected_benefit': 'Improved stability or performance',
+        'risk_assessment': {'impact': 'medium', 'reversibility': 'medium'},
+        'shadow_plan': shadow_plan,
+        'success_metrics': shadow_plan.get('success_threshold', {}),
+        'failure_metrics': shadow_plan.get('failure_threshold', {}),
+        'rollback_plan': rollback_plan,
+        'approval_required': True,
+        'proposal_only': True,
+        'status': 'pending',
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }
+    
+    PROPOSAL_DIR.mkdir(parents=True, exist_ok=True)
+    path = PROPOSAL_DIR / f'{proposal_id}.json'
+    path.write_text(json.dumps(proposal, ensure_ascii=False, indent=2))
+    return proposal
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--type', choices=PROPOSAL_TYPES, required=True)
+parser.add_argument('--component', required=True)
+parser.add_argument('--problem', required=True)
+parser.add_argument('--proposed-change', required=True)
+parser.add_argument('--rollback', required=True)
+parser.add_argument('--json', action='store_true')
+args = parser.parse_args()
+
+proposal = create_proposal(
+    proposal_type=args.type,
+    target_component=args.component,
+    problem_statement=args.problem,
+    evidence={'source': 'manual'},
+    proposed_change=args.proposed_change,
+    shadow_plan={
+        'comparison_window': '1h',
+        'baseline_metrics': {},
+        'success_threshold': {},
+    },
+    rollback_plan=args.rollback,
+)
+
+if args.json:
+    print(json.dumps(proposal, ensure_ascii=False, indent=2))
+else:
+    print(f"Created: {proposal['proposal_id']}")
+    print(f"Status: {proposal['status']}")
+    print(f"Type: {proposal['proposal_type']}")

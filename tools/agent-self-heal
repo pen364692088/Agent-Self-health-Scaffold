@@ -1,53 +1,247 @@
 #!/bin/bash
 set -euo pipefail
-WORKSPACE="$HOME/.openclaw/workspace"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+WORKSPACE="$REPO_ROOT"
 AUDIT_DIR="$WORKSPACE/artifacts/self_health/audit"
 PROPOSALS_DIR="$WORKSPACE/artifacts/self_health/proposals"
 RECOVERY_DIR="$WORKSPACE/artifacts/self_health/recovery_logs"
 STATE_DIR="$WORKSPACE/artifacts/self_health/state"
+POLICY_FILE="$WORKSPACE/config/action_policy.json"
 mkdir -p "$AUDIT_DIR" "$PROPOSALS_DIR" "$RECOVERY_DIR" "$STATE_DIR" "$WORKSPACE/artifacts/cache" "$WORKSPACE/artifacts/logs"
-JSON_OUTPUT=false; DRY_RUN=false; PROPOSAL_ONLY=false; ACTION=""; HEAL_LEVEL=""; SESSION_KEY="${SESSION_KEY:-agent:main:main}"
+JSON_OUTPUT=false; DRY_RUN=false; PROPOSAL_ONLY=false; ACTION=""; HEAL_LEVEL=""; COMPONENT="health_check"; SESSION_KEY="${SESSION_KEY:-agent:main:main}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --action) ACTION="$2"; shift 2 ;;
     --level) HEAL_LEVEL="$2"; shift 2 ;;
+    --component) COMPONENT="$2"; shift 2 ;;
     --dry-run) DRY_RUN=true; shift ;;
     --proposal-only) PROPOSAL_ONLY=true; shift ;;
     --json) JSON_OUTPUT=true; shift ;;
-    --health) echo '{"status":"healthy","tool":"agent-self-heal","version":"1.0.0"}'; exit 0 ;;
+    --health) echo '{"status":"healthy","tool":"agent-self-heal","version":"2.2.0"}'; exit 0 ;;
     *) shift ;;
   esac
 done
-proposal(){ local id="PROP-$(date -u +%Y%m%d-%H%M%S)-$(head -c 4 /dev/urandom | xxd -p)"; local f="$PROPOSALS_DIR/proposal_${id}.json"; cat > "$f" <<EOF
+proposal(){ local id="PROP-$(date -u +%Y%m%d-%H%M%S)-$(head -c 4 /dev/urandom | xxd -p)"; local f="$PROPOSALS_DIR/proposal_${id}.json"; cat > "$f" <<EOP
 {"proposal_id":"$id","action":"$ACTION","level":"${HEAL_LEVEL:-B}","status":"pending_review","risk_assessment":{"impact":"needs review","reversibility":"varies"},"validation_plan":"shadow validate before execute","rollback_plan":"revert to previous known good state","created_at":"$(date -u -Iseconds)"}
-EOF
+EOP
  echo "$f"; }
 audit(){ echo "{\"timestamp\":\"$(date -u -Iseconds)\",\"action\":\"$1\",\"result\":\"$2\",\"session_key\":\"$SESSION_KEY\"}" >> "$AUDIT_DIR/health_audit.jsonl"; }
+new_recovery_id(){ echo "REC-$(date -u +%Y%m%d-%H%M%S)-$(head -c 4 /dev/urandom | xxd -p)"; }
+policy_json(){ python3 - <<'PY' "$POLICY_FILE" "$ACTION" "$COMPONENT" "$RECOVERY_DIR"
+import json, sys, pathlib
+policy=json.load(open(sys.argv[1]))
+action=sys.argv[2]; component=sys.argv[3]; rdir=pathlib.Path(sys.argv[4])
+allowed_components=policy['whitelist'].get(action, [])
+cooldown=policy['cooldown_seconds'].get(action, 0)
+max_retry=policy['max_retry'].get(action, 0)
+window=policy['verification_window_seconds'].get(action, 0)
+records=[]
+for f in sorted(rdir.glob('recovery_*.json')):
+    try:
+        d=json.load(open(f))
+        if d.get('action')==action and d.get('component')==component:
+            records.append(d)
+    except Exception:
+        pass
+last=records[-1] if records else None
+blocked_reason=None
+cooldown_active=False
+retry_count=len(records)
+bad_count=sum(1 for d in records if d.get('verdict') in {'unchanged','degraded','insufficient_evidence'})
+if component not in allowed_components:
+    blocked_reason='component_not_whitelisted'
+elif retry_count >= max_retry:
+    blocked_reason='max_retry_exceeded'
+elif bad_count >= 2:
+    blocked_reason='escalation_stop'
+elif last:
+    from datetime import datetime, timezone
+    try:
+        ts=last.get('started_at','').replace('Z','+00:00')
+        dt=datetime.fromisoformat(ts)
+        now=datetime.now(timezone.utc)
+        if (now-dt).total_seconds() < cooldown:
+            cooldown_active=True
+            blocked_reason='escalation_stop' if bad_count >= 1 else 'cooldown_active'
+    except Exception:
+        pass
+print(json.dumps({
+    'allowed': blocked_reason is None,
+    'blocked_reason': blocked_reason,
+    'component': component,
+    'action': action,
+    'cooldown_seconds': cooldown,
+    'max_retry': max_retry,
+    'retry_count': retry_count,
+    'verification_window_seconds': window,
+    'cooldown_active': cooldown_active,
+    'bad_outcome_count': bad_count,
+}))
+PY
+}
+run_python_update(){ python3 - <<'PY' "$1" "$2"
+import json, sys
+path=sys.argv[1]; mode=sys.argv[2]
+with open(path) as f: data=json.load(f)
+metrics=data.setdefault('metrics', {})
+fi=set(data.setdefault('failure_indicators', []))
+if mode=='rerun_health_check':
+    data['status']='ok' if data.get('status')=='unknown' else data.get('status','ok')
+    metrics['probe_refreshed']=True
+    fi.discard('missing_probe')
+elif mode=='restart_worker':
+    data['status']='ok'
+    metrics['process_alive']=True
+    metrics['stuck']=False
+    metrics['last_progress_time']='just_now'
+    fi.discard('worker_down'); fi.discard('worker_stuck')
+elif mode=='rotate_logs':
+    metrics['logs_rotated']=True
+elif mode=='clear_stale_lock':
+    metrics['stale_lock_cleared']=True
+    metrics['blocked_by_lock']=False
+    fi.discard('stale_lock_present')
+    data['status']='ok' if not fi else data.get('status','warning')
+data['failure_indicators']=sorted(fi)
+json.dump(data, open(path,'w'), ensure_ascii=False, indent=2)
+PY
+}
 if [[ "$PROPOSAL_ONLY" == true ]]; then p=$(proposal); [[ "$JSON_OUTPUT" == true ]] && cat "$p" || echo "Proposal created: $p"; exit 0; fi
 [[ -n "$ACTION" ]] || { echo 'ERROR: --action required' >&2; exit 1; }
+GUARD_JSON=$(policy_json)
+GUARD_ALLOWED=$(echo "$GUARD_JSON" | python3 -c 'import sys,json; print(str(json.load(sys.stdin)["allowed"]).lower())')
+if [[ "$GUARD_ALLOWED" != "true" ]]; then
+  echo "{\"action\":\"$ACTION\",\"component\":\"$COMPONENT\",\"guard\":$GUARD_JSON}" | python3 -m json.tool
+  exit 4
+fi
+RECOVERY_ID=$(new_recovery_id)
+STARTED_AT=$(date -u -Iseconds)
+BEFORE_JSON=$("$WORKSPACE/tools/agent-health-snapshot" --component "$COMPONENT" --phase before --recovery-id "$RECOVERY_ID" --json)
+BEFORE_PATH=$(echo "$BEFORE_JSON" | python3 -c 'import sys,json; print(json.load(sys.stdin)["snapshot_path"])')
+VERIFY_WINDOW=$(echo "$GUARD_JSON" | python3 -c 'import sys,json; print(json.load(sys.stdin)["verification_window_seconds"])')
+PRECONDITION_STATUS=met
 case "$ACTION" in
-  clear_cache)
-    before=$(find "$WORKSPACE/artifacts/cache" -type f 2>/dev/null | wc -l || true)
-    [[ "$DRY_RUN" == true ]] || find "$WORKSPACE/artifacts/cache" -mindepth 1 -delete 2>/dev/null || true
-    after=$(find "$WORKSPACE/artifacts/cache" -type f 2>/dev/null | wc -l || true)
-    audit heal_clear_cache success
-    out="{\"action\":\"clear_cache\",\"level\":\"A\",\"before\":$before,\"after\":$after,\"dry_run\":$DRY_RUN}"
+  rerun_health_check)
+    audit heal_rerun_health_check success
+    ACTION_JSON='{"action":"rerun_health_check","level":"A","kind":"evidence_refresh","counts_as_recovery":false,"expected_improvement_signals":["probe_refreshed","fresh_snapshot","status_becomes_determinable"]}'
+    ;;
+  restart_worker)
+    marker="$STATE_DIR/${COMPONENT}.status.json"
+    behavior="$STATE_DIR/${COMPONENT}.restart_behavior.json"
+    if [[ ! -f "$marker" ]]; then PRECONDITION_STATUS=failed; fi
+    if [[ "$PRECONDITION_STATUS" == "met" ]]; then
+      if [[ -f "$behavior" ]]; then
+        python3 - <<'PY' "$marker" "$behavior"
+import json, sys
+mp,bp=sys.argv[1],sys.argv[2]
+data=json.load(open(mp)); beh=json.load(open(bp))
+metrics=data.setdefault('metrics', {})
+fi=set(data.setdefault('failure_indicators', []))
+metrics['process_alive']=beh.get('process_alive', True)
+metrics['last_progress_time']=beh.get('last_progress_time', 'just_now')
+metrics['backlog']=beh.get('backlog', metrics.get('backlog', 0))
+metrics['stuck']=beh.get('stuck', False)
+fi.discard('worker_down')
+for x in ['worker_stuck','no_progress']:
+    fi.discard(x)
+for x in beh.get('keep_failure_indicators', []):
+    fi.add(x)
+if metrics.get('process_alive') and metrics.get('last_progress_time') == 'just_now' and not metrics.get('stuck') and 'no_progress' not in fi:
+    data['status']='ok'
+elif metrics.get('process_alive'):
+    data['status']='warning'
+else:
+    data['status']='error'
+data['failure_indicators']=sorted(fi)
+json.dump(data, open(mp,'w'), ensure_ascii=False, indent=2)
+PY
+      else
+        run_python_update "$marker" restart_worker
+      fi
+    fi
+    audit heal_restart_worker success
+    ACTION_JSON='{"action":"restart_worker","level":"A","expected_improvement_signals":["process_alive_true","last_progress_time_updated","stuck_false","backlog_not_growing"],"recovered_requires":["progress_signal_recovered","no_false_green_on_process_only"]}'
     ;;
   rotate_logs)
     before=$(find "$WORKSPACE/artifacts/logs" -name '*.log' 2>/dev/null | wc -l || true)
     [[ "$DRY_RUN" == true ]] || find "$WORKSPACE/artifacts/logs" -name '*.log' -mtime +7 -exec gzip -f {} \; 2>/dev/null || true
     audit heal_rotate_logs success
-    out="{\"action\":\"rotate_logs\",\"level\":\"A\",\"before\":$before,\"dry_run\":$DRY_RUN}"
+    ACTION_JSON=$(printf '{"action":"rotate_logs","level":"A","before":%s,"dry_run":%s,"expected_improvement_signals":["logs_rotated","log_writability_preserved"]}' "$before" "$DRY_RUN")
     ;;
-  refresh_session_index)
-    audit heal_refresh_session_index skipped
-    out='{"action":"refresh_session_index","level":"A","result":"skipped","reason":"session-indexer unavailable in scaffold"}'
+  clear_stale_lock)
+    lock="$STATE_DIR/${COMPONENT}.lock.json"
+    marker="$STATE_DIR/${COMPONENT}.status.json"
+    if [[ ! -f "$lock" ]]; then PRECONDITION_STATUS=failed; fi
+    if [[ "$PRECONDITION_STATUS" == "met" ]]; then
+      CAN_CLEAR=$(python3 - <<'PY' "$lock"
+import json, sys
+j=json.load(open(sys.argv[1]))
+age=float(j.get('age_seconds',0))
+owner_alive=bool(j.get('owner_alive',False))
+active=bool(j.get('active_lock',False))
+lease_fresh=bool(j.get('lease_fresh',False))
+expected=j.get('expected_holder_identity')
+actual=j.get('actual_holder_identity', expected)
+ok = age >= 300 and (not owner_alive) and (not active) and (not lease_fresh) and (expected in (None, '', actual))
+print('true' if ok else 'false')
+PY
+)
+      if [[ "$CAN_CLEAR" != "true" ]]; then
+        PRECONDITION_STATUS=failed
+      else
+        rm -f "$lock"
+        [[ -f "$marker" ]] && run_python_update "$marker" clear_stale_lock
+      fi
+    fi
+    audit heal_clear_stale_lock success
+    ACTION_JSON='{"action":"clear_stale_lock","level":"A","expected_improvement_signals":["lock_removed","work_can_progress","no_active_lock_deleted"],"recovered_requires":["downstream_progress_resumes","lock_removal_not_equal_success"]}'
     ;;
-  retry_subagent|compact_context)
-    audit "heal_${ACTION}" skipped
-    out="{\"action\":\"$ACTION\",\"level\":\"A\",\"result\":\"skipped\",\"reason\":\"not auto-executed in scaffold\"}"
+  restart_service)
+    audit heal_restart_service skipped
+    ACTION_JSON='{"action":"restart_service","level":"A","result":"skipped","reason":"deferred until post-worker hardening","expected_improvement_signals":["systemd_active","functional_probe_recovers"]}'
     ;;
   *)
-    ACTION="$ACTION"; p=$(proposal); audit proposal_created success; out=$(cat "$p") ;;
+    p=$(proposal); audit proposal_created success; ACTION_JSON=$(cat "$p") ;;
 esac
-[[ "$JSON_OUTPUT" == true ]] && echo "$out" | python3 -m json.tool || echo "$out"
+[[ "$VERIFY_WINDOW" -gt 0 ]] && sleep 1 || true
+if [[ "$ACTION" == "rerun_health_check" ]]; then marker="$STATE_DIR/${COMPONENT}.status.json"; [[ -f "$marker" ]] && run_python_update "$marker" rerun_health_check; fi
+AFTER_JSON=$("$WORKSPACE/tools/agent-health-snapshot" --component "$COMPONENT" --phase after --recovery-id "$RECOVERY_ID" --json)
+AFTER_PATH=$(echo "$AFTER_JSON" | python3 -c 'import sys,json; print(json.load(sys.stdin)["snapshot_path"])')
+VERDICT_JSON=$("$WORKSPACE/tools/agent-recovery-verify" --before "$BEFORE_PATH" --after "$AFTER_PATH" --json)
+STATUS=archive
+ESCALATION_STATE=none
+VERDICT=$(echo "$VERDICT_JSON" | python3 -c 'import sys,json; print(json.load(sys.stdin)["verdict"])')
+if [[ "$VERDICT" == "unchanged" || "$VERDICT" == "degraded" || "$VERDICT" == "insufficient_evidence" || "$PRECONDITION_STATUS" == "failed" ]]; then
+  STATUS=escalate
+  ESCALATION_STATE=needs_proposal
+fi
+FINAL_JSON=$(ACTION_JSON="$ACTION_JSON" VERDICT_JSON="$VERDICT_JSON" GUARD_JSON="$GUARD_JSON" RECOVERY_ID="$RECOVERY_ID" COMPONENT="$COMPONENT" ACTION="$ACTION" STATUS="$STATUS" STARTED_AT="$STARTED_AT" BEFORE_PATH="$BEFORE_PATH" AFTER_PATH="$AFTER_PATH" ESCALATION_STATE="$ESCALATION_STATE" PRECONDITION_STATUS="$PRECONDITION_STATUS" python3 - <<'PY'
+import json, os
+out=json.loads(os.environ['ACTION_JSON'])
+ver=json.loads(os.environ['VERDICT_JSON'])
+guard=json.loads(os.environ['GUARD_JSON'])
+record={
+  'recovery_id': os.environ['RECOVERY_ID'],
+  'incident_id': None,
+  'component': os.environ['COMPONENT'],
+  'action': out.get('action', os.environ['ACTION']),
+  'status': os.environ['STATUS'],
+  'started_at': os.environ['STARTED_AT'],
+  'snapshot_before_path': os.environ['BEFORE_PATH'],
+  'snapshot_after_path': os.environ['AFTER_PATH'],
+  'verdict': ver['verdict'],
+  'rollback_needed': ver['rollback_needed'],
+  'escalation_state': os.environ['ESCALATION_STATE'],
+  'attempt_number': guard['retry_count'] + 1,
+  'cooldown_applied': False,
+  'guard': guard,
+  'precondition_status': os.environ['PRECONDITION_STATUS'],
+  'action_result': out,
+  'verification': ver,
+}
+print(json.dumps(record, ensure_ascii=False))
+PY
+)
+echo "$FINAL_JSON" | python3 -m json.tool > "$RECOVERY_DIR/recovery_${RECOVERY_ID}.json"
+echo "$FINAL_JSON" >> "$AUDIT_DIR/health_audit.jsonl"
+[[ "$JSON_OUTPUT" == true ]] && echo "$FINAL_JSON" | python3 -m json.tool || echo "$FINAL_JSON"

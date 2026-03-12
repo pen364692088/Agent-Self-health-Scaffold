@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+import argparse, json
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+
+def check_instance_access():
+    """Check basic instance access requirements"""
+    issues = []
+    
+    # Check if we can write to artifacts
+    artifacts = REPO / 'artifacts'
+    if not artifacts.exists():
+        try:
+            artifacts.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            issues.append(f"Cannot create artifacts directory: {e}")
+    
+    # Check if runtime directory can be created
+    runtime = artifacts / 'self_health' / 'runtime'
+    if not runtime.exists():
+        try:
+            runtime.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            issues.append(f"Cannot create runtime directory: {e}")
+    
+    return {
+        'category': 'instance_access',
+        'status': 'GO' if not issues else 'NO-GO',
+        'issues': issues
+    }
+
+def check_telemetry_sources():
+    """Check if telemetry sources exist"""
+    runtime = REPO / 'artifacts' / 'self_health' / 'runtime'
+    expected = ['heartbeat_status.json', 'callback_worker_status.json', 'mailbox_worker_status.json', 'summary_status.json']
+    
+    sources = {}
+    for name in expected:
+        path = runtime / name
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+                sources[name] = {'exists': True, 'valid': True, 'status': data.get('status', data.get('heartbeat_status', data.get('worker_status', 'unknown')))}
+            except Exception as e:
+                sources[name] = {'exists': True, 'valid': False, 'error': str(e)}
+        else:
+            sources[name] = {'exists': False}
+    
+    existing = sum(1 for s in sources.values() if s.get('exists'))
+    valid = sum(1 for s in sources.values() if s.get('valid'))
+    
+    return {
+        'category': 'telemetry_sources',
+        'status': 'READY' if valid >= 2 else 'PARTIAL' if existing >= 1 else 'NOT_READY',
+        'existing': existing,
+        'valid': valid,
+        'total_expected': len(expected),
+        'sources': sources
+    }
+
+def check_capability_registry():
+    """Check if capability registry exists"""
+    registry = REPO / 'POLICIES' / 'AGENT_CAPABILITY_REGISTRY.md'
+    overlay = REPO / 'POLICIES' / 'PILOT_INSTANCE_CAPABILITY_OVERLAY.md'
+    
+    return {
+        'category': 'capability_registry',
+        'status': 'READY' if registry.exists() else 'NOT_READY',
+        'base_registry_exists': registry.exists(),
+        'overlay_exists': overlay.exists()
+    }
+
+def check_schemas():
+    """Check if schemas exist"""
+    schemas = REPO / 'schemas'
+    expected = ['AGENT_CAPABILITY.schema.json', 'AGENT_PROPOSAL.schema.json']
+    
+    existing = []
+    for name in expected:
+        if (schemas / name).exists():
+            existing.append(name)
+    
+    return {
+        'category': 'schemas',
+        'status': 'READY' if len(existing) == len(expected) else 'PARTIAL',
+        'existing': existing,
+        'expected': expected
+    }
+
+def check_policies():
+    """Check if policy files exist"""
+    policies = REPO / 'POLICIES'
+    expected = [
+        'AGENT_CAPABILITY_CONTRACT.md',
+        'AGENT_ACTION_GOVERNANCE.md',
+        'AGENT_PROPOSAL_POLICY.md'
+    ]
+    
+    existing = []
+    for name in expected:
+        if (policies / name).exists():
+            existing.append(name)
+    
+    return {
+        'category': 'policies',
+        'status': 'READY' if len(existing) == len(expected) else 'PARTIAL',
+        'existing': existing,
+        'expected': expected
+    }
+
+def check_tools():
+    """Check if required tools exist"""
+    tools = REPO / 'tools'
+    expected = [
+        'agent-capability-check',
+        'agent-forgetting-guard',
+        'agent-self-health-scheduler',
+        'gate-self-health-check',
+        'agent-telemetry-normalize'
+    ]
+    
+    existing = []
+    for name in expected:
+        if (tools / name).exists():
+            existing.append(name)
+    
+    return {
+        'category': 'tools',
+        'status': 'READY' if len(existing) == len(expected) else 'PARTIAL',
+        'existing': existing,
+        'expected': expected
+    }
+
+def check_gate_status():
+    """Check current gate status"""
+    gate_reports = REPO / 'artifacts' / 'self_health' / 'gate_reports'
+    
+    if not gate_reports.exists():
+        return {
+            'category': 'gate_status',
+            'status': 'NOT_READY',
+            'reason': 'No gate reports found'
+        }
+    
+    reports = sorted(gate_reports.glob('gate_report_*.json'), reverse=True)
+    if not reports:
+        return {
+            'category': 'gate_status',
+            'status': 'NOT_READY',
+            'reason': 'No gate reports found'
+        }
+    
+    try:
+        latest = json.loads(reports[0].read_text())
+        return {
+            'category': 'gate_status',
+            'status': 'READY' if latest.get('gate_a', {}).get('status') == 'PASS' else 'PARTIAL',
+            'gate_a': latest.get('gate_a', {}).get('status'),
+            'gate_b': latest.get('gate_b', {}).get('status'),
+            'gate_c': latest.get('gate_c', {}).get('status')
+        }
+    except Exception as e:
+        return {
+            'category': 'gate_status',
+            'status': 'NOT_READY',
+            'reason': str(e)
+        }
+
+def assess_readiness(results):
+    """Calculate overall readiness level"""
+    required = ['instance_access']
+    high_priority = ['telemetry_sources', 'capability_registry']
+    
+    # Check required
+    for cat in required:
+        if results.get(cat, {}).get('status') in ['NO-GO', 'NOT_READY']:
+            return 'LEVEL_3_NOT_READY'
+    
+    # Count high priority ready
+    high_ready = sum(1 for cat in high_priority if results.get(cat, {}).get('status') == 'READY')
+    
+    if high_ready == len(high_priority):
+        return 'LEVEL_1_GO'
+    elif high_ready >= 1:
+        return 'LEVEL_2_PARTIAL'
+    else:
+        return 'LEVEL_3_NOT_READY'
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--json', action='store_true')
+parser.add_argument('--instance-name', default='current_instance')
+args = parser.parse_args()
+
+results = {
+    'instance_name': args.instance_name,
+    'checked_at': datetime.now(timezone.utc).isoformat(),
+    'checks': {}
+}
+
+results['checks']['instance_access'] = check_instance_access()
+results['checks']['telemetry_sources'] = check_telemetry_sources()
+results['checks']['capability_registry'] = check_capability_registry()
+results['checks']['schemas'] = check_schemas()
+results['checks']['policies'] = check_policies()
+results['checks']['tools'] = check_tools()
+results['checks']['gate_status'] = check_gate_status()
+
+results['overall_readiness'] = assess_readiness(results['checks'])
+
+if args.json:
+    print(json.dumps(results, ensure_ascii=False, indent=2))
+else:
+    print(f"Instance Readiness Check: {args.instance_name}")
+    print(f"Checked: {results['checked_at']}")
+    print()
+    for name, check in results['checks'].items():
+        status = check.get('status', 'UNKNOWN')
+        print(f"  {name}: {status}")
+    print()
+    print(f"Overall: {results['overall_readiness']}")

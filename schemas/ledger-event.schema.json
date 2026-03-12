@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger-event.schema.json",
+  "title": "LedgerEvent",
+  "type": "object",
+  "required": ["event_id", "task_id", "run_id", "type", "ts", "payload", "idempotency_key"],
+  "properties": {
+    "event_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "parent_run_id": { "type": ["string", "null"] },
+    "step_id": { "type": ["string", "null"] },
+    "type": {
+      "type": "string",
+      "enum": [
+        "task_created",
+        "run_started",
+        "step_started",
+        "step_heartbeat",
+        "step_succeeded",
+        "step_failed",
+        "retry_scheduled",
+        "repair_proposed",
+        "repair_applied",
+        "gate_passed",
+        "gate_failed",
+        "transcript_rebuilt",
+        "run_completed",
+        "run_abandoned",
+        "child_registered",
+        "child_missing_detected",
+        "process_restarted",
+        "restart_intent_created",
+        "restart_completed",
+        "job_submitted",
+        "job_started",
+        "job_succeeded",
+        "job_failed",
+        "dependency_resolved",
+        "recovery_hook_triggered"
+      ]
+    },
+    "ts": { "type": "string", "minLength": 1 },
+    "payload": { "type": "object" },
+    "idempotency_key": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+import argparse, json
+from pathlib import Path
+
+
+def load(path):
+    data = json.loads(Path(path).read_text())
+    return data.get('snapshot', data)
+
+
+def worker_progress_recovered(before, after, fb, fa):
+    bm = before.get('metrics', {})
+    am = after.get('metrics', {})
+    return (
+        am.get('process_alive') is True
+        and am.get('last_progress_time') not in {None, '', bm.get('last_progress_time')}
+        and am.get('stuck') is False
+        and 'no_progress' not in fa
+        and 'worker_stuck' not in fa
+        and am.get('backlog', 0) <= bm.get('backlog', 0)
+    )
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--before', required=True)
+parser.add_argument('--after', required=True)
+parser.add_argument('--json', action='store_true')
+args = parser.parse_args()
+
+before = load(args.before)
+after = load(args.after)
+fb = set(before.get('failure_indicators', []))
+fa = set(after.get('failure_indicators', []))
+sb = before.get('status', 'unknown')
+sa = after.get('status', 'unknown')
+rollback_needed = False
+
+if 'missing_probe' in fb or 'missing_probe' in fa or sb == 'unknown' or sa == 'unknown':
+    verdict = 'insufficient_evidence'
+    reason = ['missing_or_unknown_probe']
+elif worker_progress_recovered(before, after, fb, fa):
+    verdict = 'recovered'
+    reason = ['worker_progress_signal_recovered']
+elif len(fa) > len(fb) or (sb == 'ok' and sa in {'warning', 'error', 'failed'}):
+    verdict = 'degraded'
+    rollback_needed = True
+    reason = ['failure_indicators_increased_or_status_worsened']
+elif len(fa) < len(fb) and 'no_progress' not in fa:
+    verdict = 'recovered'
+    reason = ['failure_indicators_reduced_without_progress_regression']
+elif sb in {'warning', 'error', 'failed'} and sa == 'ok' and 'no_progress' not in fa:
+    verdict = 'recovered'
+    reason = ['status_improved_to_ok']
+else:
+    verdict = 'unchanged'
+    reason = ['no_meaningful_difference_detected']
+
+out = {
+    'verdict': verdict,
+    'rollback_needed': rollback_needed,
+    'reason': reason,
+    'before_status': sb,
+    'after_status': sa,
+    'before_failure_indicators': sorted(fb),
+    'after_failure_indicators': sorted(fa),
+}
+print(json.dumps(out, ensure_ascii=False, indent=2) if args.json else verdict)

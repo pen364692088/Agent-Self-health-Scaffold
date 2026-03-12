@@ -1,0 +1,23 @@
+{
+  "capability_id": "CAP-CONTEXT_OVERFLOW_HANDLING",
+  "name": "Context Overflow Handling",
+  "component": "context_manager",
+  "category": "safety",
+  "status": "degraded",
+  "severity_if_missing": "critical",
+  "evidence": {
+    "high_pressure_count": 2,
+    "sessions": [
+      {
+        "key": "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63:run:efd76ee0-1dd1-4b4b-9575-eb721cedb126",
+        "ratio": "112.4%"
+      },
+      {
+        "key": "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63:run:caf7b505-0dfb-42b3-88b4-8eaf6134b14f",
+        "ratio": "112.8%"
+      }
+    ],
+    "note": "High pressure with potential lane/blocker issue"
+  },
+  "checked_at": "2026-03-11T15:18:16.516915+00:00"
+}

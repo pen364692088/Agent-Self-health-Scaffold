@@ -1,0 +1,40 @@
+{
+  "recovery_id": "REC-20260308-181744-187950d5",
+  "phase": "after",
+  "component": "heartbeat",
+  "probe_timestamp": "2026-03-08T18:17:45.871917+00:00",
+  "status": "warning",
+  "key_metrics": {
+    "last_seen": "2026-03-08T00:00:00Z",
+    "lag_seconds": 120,
+    "consecutive_failures": 3,
+    "last_successful_cycle": "2026-03-08T00:00:00Z"
+  },
+  "failure_indicators": [
+    "heartbeat_stale",
+    "consecutive_failures"
+  ],
+  "evidence": {
+    "raw": {
+      "status": "warning",
+      "metrics": {
+        "last_seen": "2026-03-08T00:00:00Z",
+        "lag_seconds": 120,
+        "consecutive_failures": 3,
+        "last_successful_cycle": "2026-03-08T00:00:00Z"
+      },
+      "failure_indicators": [
+        "heartbeat_stale",
+        "consecutive_failures"
+      ]
+    }
+  },
+  "probe_name": "heartbeat_probe",
+  "metrics": {
+    "last_seen": "2026-03-08T00:00:00Z",
+    "lag_seconds": 120,
+    "consecutive_failures": 3,
+    "last_successful_cycle": "2026-03-08T00:00:00Z"
+  },
+  "recoverability_hint": "rerun_health_check"
+}

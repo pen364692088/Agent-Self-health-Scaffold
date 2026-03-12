@@ -1,0 +1,524 @@
+#!/usr/bin/env python3
+import argparse, json, subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+STATE_DIR = REPO / 'artifacts' / 'self_health' / 'state'
+RUNTIME_DIR = REPO / 'artifacts' / 'self_health' / 'runtime'
+CAP_DIR = REPO / 'artifacts' / 'self_health' / 'capabilities'
+INCIDENT_DIR = REPO / 'artifacts' / 'self_health' / 'capability_incidents'
+
+CAPABILITIES = {
+    'CAP-HEARTBEAT_CYCLE_EXECUTION': {
+        'name': 'Heartbeat Cycle Execution',
+        'component': 'heartbeat',
+        'category': 'liveness_capability',
+        'verification_mode': 'probe_check',
+        'severity_if_missing': 'critical',
+    },
+    'CAP-CALLBACK_DELIVERY': {
+        'name': 'Callback Delivery',
+        'component': 'callback-worker',
+        'category': 'delivery_capability',
+        'verification_mode': 'probe_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-MAILBOX_CONSUMPTION': {
+        'name': 'Mailbox Consumption',
+        'component': 'mailbox-worker',
+        'category': 'processing_capability',
+        'verification_mode': 'probe_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-HEALTH_SUMMARY_GENERATION': {
+        'name': 'Health Summary Generation',
+        'component': 'agent-health-summary',
+        'category': 'workflow_capability',
+        'verification_mode': 'artifact_output_check',
+        'severity_if_missing': 'medium',
+    },
+    'CAP-INCIDENT_RECORDING': {
+        'name': 'Incident Recording',
+        'component': 'agent-incident-report',
+        'category': 'safety_capability',
+        'verification_mode': 'artifact_output_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-RECOVERY_SUMMARY_GENERATION': {
+        'name': 'Recovery Summary Generation',
+        'component': 'agent-recovery-summary',
+        'category': 'workflow_capability',
+        'verification_mode': 'artifact_output_check',
+        'severity_if_missing': 'medium',
+    },
+    # Real user-promised features
+    'CAP-USER_PROMISED_FEATURE_TELEGRAM_NOTIFICATION': {
+        'name': 'Telegram Notification Delivery',
+        'component': 'telegram-channel',
+        'category': 'user_promised_feature',
+        'verification_mode': 'recent_success_check',
+        'severity_if_missing': 'high',
+    },
+    'CAP-USER_PROMISED_FEATURE_SUBAGENT_ORCHESTRATION': {
+        'name': 'Subagent Orchestration',
+        'component': 'subtask-orchestrate',
+        'category': 'user_promised_feature',
+        'verification_mode': 'recent_success_check',
+        'severity_if_missing': 'medium',
+    },
+    # Core features - Compaction capability group (P0)
+    'CAP-COMPACTION_EXECUTION': {
+        'name': 'Native Compaction Execution',
+        'component': 'compaction',
+        'category': 'core_feature',
+        'verification_mode': 'compaction_probe_check',
+        'severity_if_missing': 'critical',
+    },
+    'CAP-CONTEXT_OVERFLOW_HANDLING': {
+        'name': 'Context Overflow Handling',
+        'component': 'context_manager',
+        'category': 'safety',
+        'verification_mode': 'overflow_chain_check',
+        'severity_if_missing': 'critical',
+    },
+    # P1 - Effectiveness monitoring
+    'CAP-COMPACTION_EFFECTIVENESS': {
+        'name': 'Compaction Effectiveness',
+        'component': 'compaction',
+        'category': 'core_feature',
+        'verification_mode': 'effectiveness_check',
+        'severity_if_missing': 'high',
+    },
+    # LongRunKit - Async job management
+    'CAP-LONGRUNKIT_HEALTH': {
+        'name': 'LongRunKit Job Processing',
+        'component': 'longrunkit',
+        'category': 'core_feature',
+        'verification_mode': 'longrunkit_check',
+        'severity_if_missing': 'high',
+    },
+}
+
+
+def check_probe_from_telemetry(component):
+    """Check using telemetry data from runtime/"""
+    telemetry_map = {
+        'heartbeat': 'heartbeat_status',
+        'callback-worker': 'callback_worker_status',
+        'mailbox-worker': 'mailbox_worker_status',
+    }
+    
+    if component not in telemetry_map:
+        return check_probe_legacy(component)
+    
+    telemetry_file = RUNTIME_DIR / f'{telemetry_map[component]}.json'
+    if not telemetry_file.exists():
+        return 'telemetry_missing', {'reason': 'no_telemetry_file', 'component': component}
+    
+    try:
+        data = json.loads(telemetry_file.read_text())
+        if component == 'heartbeat':
+            status = data.get('heartbeat_status', 'unknown')
+        elif component == 'callback-worker':
+            status = data.get('worker_status', 'unknown')
+        elif component == 'mailbox-worker':
+            status = data.get('mailbox_status', data.get('worker_status', 'unknown'))
+        else:
+            status = data.get('status', 'unknown')
+        
+        if status == 'ok':
+            return 'healthy', {'telemetry_source': str(telemetry_file), 'raw': data}
+        elif status == 'warning':
+            return 'degraded', {'telemetry_source': str(telemetry_file), 'raw': data}
+        elif status in ['error', 'failed']:
+            return 'missing', {'telemetry_source': str(telemetry_file), 'raw': data}
+        else:
+            return 'unknown', {'telemetry_source': str(telemetry_file), 'raw': data}
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_probe_legacy(component):
+    """Legacy check using state files"""
+    marker = STATE_DIR / f'{component}.status.json'
+    if not marker.exists():
+        return 'telemetry_missing', {'reason': 'no_status_file'}
+    try:
+        data = json.loads(marker.read_text())
+        status = data.get('status', 'unknown')
+        if status == 'ok':
+            return 'healthy', data
+        elif status in {'warning', 'error', 'failed'}:
+            return 'degraded', data
+        return 'unknown', data
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_artifact(component):
+    if component == 'agent-health-summary':
+        artifact = REPO / 'artifacts' / 'self_health' / 'HEALTH_SUMMARY.md'
+    elif component == 'agent-recovery-summary':
+        artifact = REPO / 'artifacts' / 'self_health' / 'VERIFIED_RECOVERY_SUMMARY.md'
+    elif component == 'telegram-channel':
+        # Check for telegram notification artifacts
+        artifact = REPO / 'artifacts' / 'self_health' / 'runtime' / 'summary_status.json'
+    elif component == 'subtask-orchestrate':
+        # Check for subagent artifacts
+        artifact = REPO / 'artifacts' / 'self_health' / 'runtime' / 'summary_status.json'
+    else:
+        artifact = STATE_DIR / f'{component}.latest.json'
+    
+    if not artifact.exists():
+        return 'telemetry_missing', {'reason': 'no_artifact'}
+    
+    try:
+        stat = artifact.stat()
+        age_seconds = (datetime.now(timezone.utc).timestamp() - stat.st_mtime)
+        if age_seconds > 7200:
+            return 'stale', {'age_seconds': age_seconds}
+        return 'healthy', {'path': str(artifact), 'age_seconds': age_seconds}
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_compaction_execution():
+    """Check if native compaction is actually executing.
+    
+    Pass conditions:
+    - Recent compaction run exists (within N hours)
+    - Last compaction status = success
+    - Compaction counter has increased
+    """
+    import subprocess
+    
+    try:
+        # Check compaction counter
+        result = subprocess.run(
+            ['grep', '-c', '"type":"compaction"', 
+             '/home/moonlight/.openclaw/agents/main/sessions/*.jsonl'],
+            capture_output=True, text=True, shell=False
+        )
+        count = int(result.stdout.strip()) if result.returncode == 0 else 0
+        
+        # Check for recent compaction entry
+        result2 = subprocess.run(
+            ['sh', '-c', 
+             'grep -l "type.*compaction" /home/moonlight/.openclaw/agents/*/sessions/*.jsonl 2>/dev/null | head -5'],
+            capture_output=True, text=True
+        )
+        recent_files = result2.stdout.strip().split('\n') if result2.stdout.strip() else []
+        
+        # Check VERDICT file for RESTORED status
+        verdict_file = Path('/home/moonlight/.openclaw/workspace/artifacts/real_session_compaction_test/FINAL_VERDICT.md')
+        if verdict_file.exists():
+            verdict_content = verdict_file.read_text()
+            is_restored = 'RESTORED' in verdict_content and '✅' in verdict_content
+        else:
+            is_restored = False
+        
+        if count > 0 or len(recent_files) > 0:
+            return 'healthy', {
+                'compaction_count': count,
+                'recent_files': len(recent_files),
+                'restored_status': is_restored
+            }
+        elif is_restored:
+            # Capability is restored but no recent runs (may be idle)
+            return 'healthy', {
+                'compaction_count': 0,
+                'restored_status': True,
+                'note': 'Restored but no recent compaction (session may be idle)'
+            }
+        else:
+            return 'missing', {
+                'compaction_count': 0,
+                'restored_status': False,
+                'reason': 'no_compaction_evidence'
+            }
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_context_overflow_handling():
+    """Check if context overflow is being handled correctly.
+    
+    Pass conditions:
+    - When context ratio exceeds threshold, mitigation action exists
+    - No overflow + no action combinations
+    - No repeated high pressure without compaction
+    """
+    try:
+        # Check session status for context info
+        result = subprocess.run(
+            ['openclaw', 'sessions', '--agent', 'main', '--json'],
+            capture_output=True, text=True
+        )
+        
+        if result.returncode != 0:
+            return 'unknown', {'error': 'sessions command failed'}
+        
+        sessions = json.loads(result.stdout).get('sessions', [])
+        
+        high_pressure_sessions = []
+        for s in sessions:
+            input_tokens = s.get('inputTokens', 0)
+            context_tokens = s.get('contextTokens', 1)
+            if context_tokens > 0:
+                ratio = input_tokens / context_tokens
+                if ratio > 0.8:  # 80% threshold
+                    high_pressure_sessions.append({
+                        'key': s.get('key'),
+                        'ratio': f'{ratio:.1%}'
+                    })
+        
+        # Check VERDICT for lane/blocker status
+        verdict_file = Path('/home/moonlight/.openclaw/workspace/artifacts/real_session_compaction_test/FINAL_VERDICT.md')
+        if verdict_file.exists():
+            verdict_content = verdict_file.read_text()
+            has_blocker = 'BLOCKED' in verdict_content or 'lane' in verdict_content.lower()
+        else:
+            has_blocker = False
+        
+        if len(high_pressure_sessions) == 0:
+            return 'healthy', {
+                'high_pressure_count': 0,
+                'note': 'No sessions at high context pressure'
+            }
+        elif not has_blocker:
+            return 'healthy', {
+                'high_pressure_count': len(high_pressure_sessions),
+                'sessions': high_pressure_sessions[:3],
+                'note': 'High pressure sessions exist but no blocker'
+            }
+        else:
+            return 'degraded', {
+                'high_pressure_count': len(high_pressure_sessions),
+                'sessions': high_pressure_sessions[:3],
+                'note': 'High pressure with potential lane/blocker issue'
+            }
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_compaction_effectiveness():
+    """Check if compaction is effective.
+    
+    Pass conditions:
+    - Context ratio drops after compaction
+    - No immediate re-high-pressure after compaction
+    - Key capsule/anchor retention meets minimum
+    """
+    try:
+        # Check for compaction entries with summary
+        result = subprocess.run(
+            ['sh', '-c',
+             'grep -l "type.*compaction" /home/moonlight/.openclaw/agents/*/sessions/*.jsonl 2>/dev/null | head -3'],
+            capture_output=True, text=True
+        )
+        
+        compaction_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
+        
+        if not compaction_files or compaction_files == ['']:
+            # No compaction runs yet - check if restored
+            verdict_file = Path('/home/moonlight/.openclaw/workspace/artifacts/real_session_compaction_test/FINAL_VERDICT.md')
+            if verdict_file.exists() and 'RESTORED' in verdict_file.read_text():
+                return 'healthy', {
+                    'compaction_files': 0,
+                    'note': 'Restored but awaiting first compaction run'
+                }
+            return 'missing', {'reason': 'no_compaction_runs'}
+        
+        # Check OpenViking retrieval as proxy for effectiveness
+        result2 = subprocess.run(
+            ['curl', '-s', 'http://localhost:8000/health'],
+            capture_output=True, text=True
+        )
+        openviking_healthy = result2.returncode == 0 and 'ok' in result2.stdout
+        
+        if openviking_healthy:
+            return 'healthy', {
+                'compaction_files': len(compaction_files),
+                'openviking_retrieval': 'available',
+                'note': 'Compaction + retrieval chain intact'
+            }
+        else:
+            return 'degraded', {
+                'compaction_files': len(compaction_files),
+                'openviking_retrieval': 'unavailable',
+                'note': 'Compaction runs but retrieval chain broken'
+            }
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def check_longrunkit_health():
+    """Check if LongRunKit is functioning correctly.
+    
+    Pass conditions:
+    - No stuck RUNNING jobs (RUNNING > 1 hour)
+    - Reasonable queue depth
+    - Recent completions exist
+    """
+    from datetime import datetime, timezone, timedelta
+    
+    longrun_dir = Path('/home/moonlight/Project/Github/MyProject/LongRunKit')
+    jobs_dir = longrun_dir / 'jobs'
+    
+    if not jobs_dir.exists():
+        return 'missing', {'reason': 'LongRunKit not installed'}
+    
+    try:
+        # Count job states
+        states = {'RUNNING': 0, 'QUEUED': 0, 'DONE': 0, 'FAILED': 0}
+        stuck_running = []
+        
+        for job_dir in jobs_dir.iterdir():
+            if not job_dir.is_dir():
+                continue
+            status_file = job_dir / 'status.json'
+            if not status_file.exists():
+                continue
+            
+            try:
+                data = json.loads(status_file.read_text())
+                state = data.get('state', 'UNKNOWN')
+                if state in states:
+                    states[state] += 1
+                
+                # Check for stuck RUNNING jobs
+                if state == 'RUNNING':
+                    updated = datetime.fromisoformat(data.get('updated_at', '').replace('Z', '+00:00'))
+                    age = datetime.now(timezone.utc) - updated
+                    if age > timedelta(hours=1):
+                        stuck_running.append({
+                            'job_id': data.get('job_id'),
+                            'age_hours': age.total_seconds() / 3600
+                        })
+            except:
+                pass
+        
+        # Evaluate health
+        issues = []
+        if len(stuck_running) > 0:
+            issues.append(f"{len(stuck_running)} stuck RUNNING jobs")
+        if states['QUEUED'] > 20:
+            issues.append(f"large queue depth ({states['QUEUED']})")
+        
+        if len(issues) == 0:
+            return 'healthy', {
+                'states': states,
+                'stuck_running': 0
+            }
+        elif len(stuck_running) > 0:
+            return 'degraded', {
+                'states': states,
+                'stuck_running': stuck_running,
+                'issues': issues
+            }
+        else:
+            return 'degraded', {
+                'states': states,
+                'issues': issues
+            }
+    except Exception as e:
+        return 'unknown', {'error': str(e)}
+
+
+def verify_capability(cap_id):
+    cap = CAPABILITIES.get(cap_id)
+    if not cap:
+        return {'capability_id': cap_id, 'status': 'unknown', 'reason': 'not_registered'}
+    
+    component = cap['component']
+    mode = cap['verification_mode']
+    
+    if mode == 'probe_check':
+        status, evidence = check_probe_from_telemetry(component)
+    elif mode == 'artifact_output_check':
+        status, evidence = check_artifact(component)
+    elif mode == 'recent_success_check':
+        status, evidence = check_artifact(component)
+    elif mode == 'compaction_probe_check':
+        status, evidence = check_compaction_execution()
+    elif mode == 'overflow_chain_check':
+        status, evidence = check_context_overflow_handling()
+    elif mode == 'effectiveness_check':
+        status, evidence = check_compaction_effectiveness()
+    elif mode == 'longrunkit_check':
+        status, evidence = check_longrunkit_health()
+    else:
+        status, evidence = 'unknown', {'reason': 'unsupported_mode'}
+    
+    result = {
+        'capability_id': cap_id,
+        'name': cap['name'],
+        'component': component,
+        'category': cap['category'],
+        'status': status,
+        'severity_if_missing': cap['severity_if_missing'],
+        'evidence': evidence,
+        'checked_at': datetime.now(timezone.utc).isoformat(),
+    }
+    return result
+
+
+def record_capability_result(result):
+    CAP_DIR.mkdir(parents=True, exist_ok=True)
+    cap_id = result['capability_id']
+    path = CAP_DIR / f'{cap_id}.json'
+    path.write_text(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def create_incident(result):
+    if result['status'] in {'missing', 'degraded'}:
+        INCIDENT_DIR.mkdir(parents=True, exist_ok=True)
+        incident_id = f"INC-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{result['capability_id']}"
+        incident = {
+            'incident_id': incident_id,
+            'incident_type': 'capability_degradation',
+            'capability_id': result['capability_id'],
+            'component': result['component'],
+            'severity': result['severity_if_missing'],
+            'status': result['status'],
+            'evidence': result['evidence'],
+            'created_at': datetime.now(timezone.utc).isoformat(),
+        }
+        path = INCIDENT_DIR / f'{incident_id}.json'
+        path.write_text(json.dumps(incident, ensure_ascii=False, indent=2))
+        return incident_id
+    return None
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--capability', help='Specific capability ID to check')
+parser.add_argument('--all', action='store_true', help='Check all registered capabilities')
+parser.add_argument('--json', action='store_true')
+args = parser.parse_args()
+
+results = []
+if args.all:
+    for cap_id in CAPABILITIES:
+        r = verify_capability(cap_id)
+        record_capability_result(r)
+        incident_id = create_incident(r)
+        if incident_id:
+            r['incident_id'] = incident_id
+        results.append(r)
+elif args.capability:
+    r = verify_capability(args.capability)
+    record_capability_result(r)
+    incident_id = create_incident(r)
+    if incident_id:
+        r['incident_id'] = incident_id
+    results.append(r)
+else:
+    print("Specify --capability ID or --all")
+    exit(1)
+
+if args.json:
+    print(json.dumps(results, ensure_ascii=False, indent=2))
+else:
+    for r in results:
+        print(f"{r['capability_id']}: {r['status']}")

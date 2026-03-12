@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "job-spec.schema.json",
+  "title": "JobSpec",
+  "type": "object",
+  "required": ["job_id", "task_id", "run_id", "agent_role", "command", "idempotency_key"],
+  "properties": {
+    "job_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "parent_run_id": { "type": ["string", "null"] },
+    "agent_role": { "type": "string", "enum": ["manager", "coder", "auditor"] },
+    "command": { "type": "string", "minLength": 1 },
+    "args": { "type": "array", "items": { "type": "string" } },
+    "timeout_sec": { "type": "integer", "minimum": 1, "default": 3600 },
+    "retry_policy": {
+      "type": "object",
+      "properties": {
+        "max_attempts": { "type": "integer", "minimum": 0, "default": 3 },
+        "backoff": { "type": "string", "enum": ["fixed", "linear", "exponential"], "default": "exponential" }
+      }
+    },
+    "depends_on": { "type": "array", "items": { "type": "string" } },
+    "idempotency_key": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,17 @@
+{
+  "recovery_id": "REC-20260308-175310-b714b73d",
+  "phase": "before",
+  "component": "heartbeat",
+  "probe_timestamp": "2026-03-08T17:53:10.403988+00:00",
+  "status": "unknown",
+  "key_metrics": {},
+  "failure_indicators": [
+    "missing_probe"
+  ],
+  "evidence": {
+    "source": "missing heartbeat.status.json"
+  },
+  "probe_name": "heartbeat_probe",
+  "metrics": {},
+  "recoverability_hint": "rerun_health_check"
+}

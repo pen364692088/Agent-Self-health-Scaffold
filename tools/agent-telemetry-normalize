@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+import argparse, json
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+RUNTIME_DIR = REPO / 'artifacts' / 'self_health' / 'runtime'
+STATE_DIR = REPO / 'artifacts' / 'self_health' / 'state'
+
+def load_telemetry(name):
+    path = RUNTIME_DIR / f'{name}.json'
+    if not path.exists():
+        return None, 'telemetry_missing'
+    try:
+        return json.loads(path.read_text()), 'ok'
+    except Exception as e:
+        return {'error': str(e)}, 'error'
+
+def normalize_heartbeat():
+    data, status = load_telemetry('heartbeat_status')
+    if status != 'ok':
+        return {'status': 'telemetry_missing', 'source': 'heartbeat_telemetry'}
+    
+    normalized = {
+        'component': 'heartbeat',
+        'status': data.get('heartbeat_status', 'unknown'),
+        'metrics': {
+            'lag_seconds': data.get('heartbeat_lag_seconds', 0),
+            'cycle_ok': data.get('heartbeat_cycle_ok', False),
+            'cycle_duration_ms': data.get('last_cycle_duration_ms', 0),
+        },
+        'last_seen': data.get('last_heartbeat_at'),
+        'telemetry_present': True,
+    }
+    
+    if data.get('heartbeat_lag_seconds', 0) > 30:
+        normalized['status'] = 'warning'
+        normalized['failure_indicators'] = ['lag_high']
+    elif not data.get('heartbeat_cycle_ok', True):
+        normalized['status'] = 'error'
+        normalized['failure_indicators'] = ['cycle_failed']
+    
+    return normalized
+
+def normalize_callback_worker():
+    data, status = load_telemetry('callback_worker_status')
+    if status != 'ok':
+        return {'status': 'telemetry_missing', 'source': 'callback_worker_telemetry'}
+    
+    normalized = {
+        'component': 'callback-worker',
+        'status': data.get('worker_status', 'unknown'),
+        'metrics': {
+            'alive': data.get('alive', False),
+            'pending_count': data.get('pending_count', 0),
+            'stuck': data.get('stuck_suspected', False),
+        },
+        'last_progress': data.get('last_progress_at'),
+        'telemetry_present': True,
+    }
+    
+    if data.get('stuck_suspected', False):
+        normalized['status'] = 'warning'
+        normalized['failure_indicators'] = ['stuck']
+    elif data.get('pending_count', 0) > 10:
+        normalized['status'] = 'warning'
+        normalized['failure_indicators'] = ['backlog_high']
+    elif not data.get('alive', False):
+        normalized['status'] = 'error'
+        normalized['failure_indicators'] = ['worker_down']
+    
+    return normalized
+
+def normalize_mailbox_worker():
+    data, status = load_telemetry('mailbox_worker_status')
+    if status != 'ok':
+        return {'status': 'telemetry_missing', 'source': 'mailbox_worker_telemetry'}
+    
+    normalized = {
+        'component': 'mailbox-worker',
+        'status': data.get('mailbox_status', 'unknown'),
+        'metrics': {
+            'alive': data.get('alive', False),
+            'backlog_count': data.get('backlog_count', 0),
+            'stuck': data.get('stuck_suspected', False),
+        },
+        'last_progress': data.get('last_progress_at'),
+        'telemetry_present': True,
+    }
+    
+    if data.get('stuck_suspected', False):
+        normalized['status'] = 'warning'
+        normalized['failure_indicators'] = ['stuck']
+    elif data.get('backlog_count', 0) > 10:
+        normalized['status'] = 'warning'
+        normalized['failure_indicators'] = ['backlog_high']
+    elif not data.get('alive', False):
+        normalized['status'] = 'error'
+        normalized['failure_indicators'] = ['worker_down']
+    
+    return normalized
+
+def normalize_summary():
+    data, status = load_telemetry('summary_status')
+    if status != 'ok':
+        return {'status': 'telemetry_missing', 'source': 'summary_telemetry'}
+    
+    normalized = {
+        'component': 'summary-pipeline',
+        'status': data.get('summary_pipeline_status', 'unknown'),
+        'metrics': {
+            'health_summary_ok': data.get('last_health_summary_at') is not None,
+            'recovery_summary_ok': data.get('last_recovery_summary_at') is not None,
+            'capability_summary_ok': data.get('last_capability_summary_at') is not None,
+        },
+        'telemetry_present': True,
+    }
+    
+    return normalized
+
+def write_normalized_state(component, data):
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    path = STATE_DIR / f'{component}.status.json'
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--component', choices=['heartbeat', 'callback-worker', 'mailbox-worker', 'summary', 'all'], default='all')
+parser.add_argument('--json', action='store_true')
+parser.add_argument('--write', action='store_true', help='Write normalized state to state files')
+args = parser.parse_args()
+
+results = {}
+
+if args.component in ['heartbeat', 'all']:
+    results['heartbeat'] = normalize_heartbeat()
+    if args.write:
+        write_normalized_state('heartbeat', results['heartbeat'])
+
+if args.component in ['callback-worker', 'all']:
+    results['callback-worker'] = normalize_callback_worker()
+    if args.write:
+        write_normalized_state('callback-worker', results['callback-worker'])
+
+if args.component in ['mailbox-worker', 'all']:
+    results['mailbox-worker'] = normalize_mailbox_worker()
+    if args.write:
+        write_normalized_state('mailbox-worker', results['mailbox-worker'])
+
+if args.component in ['summary', 'all']:
+    results['summary'] = normalize_summary()
+    if args.write:
+        write_normalized_state('summary', results['summary'])
+
+if args.json:
+    print(json.dumps(results, ensure_ascii=False, indent=2))
+else:
+    for comp, data in results.items():
+        status = data.get('status', 'unknown')
+        telemetry = 'present' if data.get('telemetry_present') else 'missing'
+        print(f"{comp}: {status} (telemetry: {telemetry})")

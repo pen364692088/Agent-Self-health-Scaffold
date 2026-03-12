@@ -1,0 +1,12 @@
+{
+  "capability_id": "CAP-HEALTH_SUMMARY_GENERATION",
+  "name": "Health Summary Generation",
+  "component": "agent-health-summary",
+  "category": "workflow_capability",
+  "status": "telemetry_missing",
+  "severity_if_missing": "medium",
+  "evidence": {
+    "reason": "no_artifact"
+  },
+  "checked_at": "2026-03-11T15:18:15.174084+00:00"
+}

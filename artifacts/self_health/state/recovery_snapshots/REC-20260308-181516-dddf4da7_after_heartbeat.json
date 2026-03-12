@@ -1,0 +1,37 @@
+{
+  "recovery_id": "REC-20260308-181516-dddf4da7",
+  "phase": "after",
+  "component": "heartbeat",
+  "probe_timestamp": "2026-03-08T18:15:17.277559+00:00",
+  "status": "ok",
+  "key_metrics": {
+    "lag_seconds": 2.5,
+    "cycle_ok": true,
+    "cycle_duration_ms": 150,
+    "probe_refreshed": true
+  },
+  "failure_indicators": [],
+  "evidence": {
+    "raw": {
+      "component": "heartbeat",
+      "status": "ok",
+      "metrics": {
+        "lag_seconds": 2.5,
+        "cycle_ok": true,
+        "cycle_duration_ms": 150,
+        "probe_refreshed": true
+      },
+      "last_seen": "2026-03-08T18:15:00Z",
+      "telemetry_present": true,
+      "failure_indicators": []
+    }
+  },
+  "probe_name": "heartbeat_probe",
+  "metrics": {
+    "lag_seconds": 2.5,
+    "cycle_ok": true,
+    "cycle_duration_ms": 150,
+    "probe_refreshed": true
+  },
+  "recoverability_hint": "none"
+}

@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+import argparse, json
+from pathlib import Path
+from datetime import datetime, timezone
+
+REPO = Path(__file__).resolve().parent.parent
+RECOVERY_DIR = REPO / 'artifacts' / 'self_health' / 'recovery_logs'
+OUTPUT_FILE = REPO / 'artifacts' / 'self_health' / 'VERIFIED_RECOVERY_SUMMARY.md'
+
+
+def load_recovery_records():
+    records = []
+    if RECOVERY_DIR.exists():
+        for f in sorted(RECOVERY_DIR.glob('recovery_*.json')):
+            try:
+                records.append(json.loads(f.read_text()))
+            except Exception:
+                pass
+    return records
+
+
+def classify_action(record):
+    action_result = record.get('action_result', {})
+    action = action_result.get('action', record.get('action', 'unknown'))
+    kind = action_result.get('kind', '')
+    
+    if kind == 'evidence_refresh':
+        return 'evidence'
+    if action_result.get('counts_as_recovery') is False:
+        return 'evidence'
+    if record.get('precondition_status') == 'failed':
+        return 'blocked'
+    if action in {'restart_worker', 'restart_service', 'clear_stale_lock'}:
+        return 'recovery'
+    if action in {'rerun_health_check'}:
+        return 'evidence'
+    if action in {'rotate_logs'}:
+        return 'maintenance'
+    return 'recovery'
+
+
+def compute_summary(records, hours=24):
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=hours)
+    
+    stats = {
+        'window_hours': hours,
+        'actions_total': 0,
+        'recovery_actions_total': 0,
+        'evidence_actions_total': 0,
+        'maintenance_actions_total': 0,
+        'proposal_only_total': 0,
+        'blocked_by_precondition_total': 0,
+        'verdict_counts': {'recovered': 0, 'unchanged': 0, 'degraded': 0, 'insufficient_evidence': 0},
+        'escalated_total': 0,
+        'cooldown_block_total': 0,
+        'retry_ceiling_hit_total': 0,
+        'direct_recovery_total': 0,
+        'components': {},
+        'clear_stale_lock_details': {'lock_removed': 0, 'downstream_progress_resumed': 0, 'recovery_confirmed': 0},
+    }
+    
+    for r in records:
+        # parse timestamp with fallback to include all records
+        try:
+            ts_str = r.get('started_at', '').replace('Z', '+00:00')
+            ts = datetime.fromisoformat(ts_str)
+            if ts < cutoff:
+                continue
+        except Exception:
+            pass
+        
+        stats['actions_total'] += 1
+        action_class = classify_action(r)
+        
+        if action_class == 'evidence':
+            stats['evidence_actions_total'] += 1
+        elif action_class == 'recovery':
+            stats['recovery_actions_total'] += 1
+        elif action_class == 'maintenance':
+            stats['maintenance_actions_total'] += 1
+        elif action_class == 'blocked':
+            stats['blocked_by_precondition_total'] += 1
+        
+        verdict = r.get('verdict', 'unknown')
+        if verdict in stats['verdict_counts']:
+            stats['verdict_counts'][verdict] += 1
+        
+        if verdict == 'recovered' and action_class == 'recovery':
+            stats['direct_recovery_total'] += 1
+        
+        if r.get('escalation_state') in {'needs_proposal', 'needs_human_attention'}:
+            stats['escalated_total'] += 1
+        
+        guard = r.get('guard', {})
+        blocked_reason = guard.get('blocked_reason')
+        if blocked_reason == 'cooldown_active':
+            stats['cooldown_block_total'] += 1
+        elif blocked_reason in {'max_retry_exceeded', 'escalation_stop'}:
+            stats['retry_ceiling_hit_total'] += 1
+        
+        component = r.get('component', 'unknown')
+        if component not in stats['components']:
+            stats['components'][component] = {
+                'incidents': 0, 'attempts': 0, 'recovered': 0,
+                'unchanged': 0, 'degraded': 0, 'insufficient_evidence': 0
+            }
+        stats['components'][component]['incidents'] += 1
+        if action_class == 'recovery':
+            stats['components'][component]['attempts'] += 1
+            if verdict in stats['components'][component]:
+                stats['components'][component][verdict] += 1
+        
+        action = r.get('action', '')
+        if action == 'clear_stale_lock':
+            ar = r.get('action_result', {})
+            precondition_met = r.get('precondition_status') == 'met'
+            if precondition_met or ar.get('lock_removed') is True:
+                stats['clear_stale_lock_details']['lock_removed'] += 1
+            if verdict == 'recovered':
+                stats['clear_stale_lock_details']['recovery_confirmed'] += 1
+            if ar.get('downstream_progress_resumed') is True:
+                stats['clear_stale_lock_details']['downstream_progress_resumed'] += 1
+    
+    total = stats['recovery_actions_total']
+    stats['recovery_effective_rate'] = (
+        stats['direct_recovery_total'] / total if total > 0 else 0.0
+    )
+    
+    flaky = sorted(
+        [(c, d) for c, d in stats['components'].items() if d['attempts'] > 0],
+        key=lambda x: (x[1]['degraded'] + x[1]['unchanged'], -x[1]['attempts']),
+        reverse=True
+    )[:5]
+    stats['top_flaky_components'] = [
+        {'component': c, 'attempts': d['attempts'], 'degraded': d['degraded'], 'unchanged': d['unchanged']}
+        for c, d in flaky
+    ]
+    
+    return stats
+
+
+def render_markdown(stats):
+    lines = [
+        '# Verified Recovery Summary',
+        '',
+        f'**Window**: Last {stats["window_hours"]} hours',
+        f'**Generated**: {datetime.now(timezone.utc).isoformat()}',
+        '',
+        '## Actions Overview',
+        '',
+        f'| Metric | Count |',
+        f'|--------|-------|',
+        f'| actions_total | {stats["actions_total"]} |',
+        f'| recovery_actions_total | {stats["recovery_actions_total"]} |',
+        f'| evidence_actions_total | {stats["evidence_actions_total"]} |',
+        f'| maintenance_actions_total | {stats["maintenance_actions_total"]} |',
+        f'| blocked_by_precondition_total | {stats["blocked_by_precondition_total"]} |',
+        '',
+        '## Verdict Distribution',
+        '',
+        f'| Verdict | Count |',
+        f'|---------|-------|',
+    ]
+    for v in ['recovered', 'unchanged', 'degraded', 'insufficient_evidence']:
+        lines.append(f'| {v} | {stats["verdict_counts"][v]} |')
+    
+    lines.extend([
+        '',
+        '## Recovery Effectiveness',
+        '',
+        f'- **direct_recovery_total**: {stats["direct_recovery_total"]}',
+        f'- **recovery_effective_rate**: {stats["recovery_effective_rate"]:.2%}',
+        '',
+        '## Risk & Stability',
+        '',
+        f'- escalated_total: {stats["escalated_total"]}',
+        f'- cooldown_block_total: {stats["cooldown_block_total"]}',
+        f'- retry_ceiling_hit_total: {stats["retry_ceiling_hit_total"]}',
+        '',
+        '## Top Flaky Components',
+        '',
+    ])
+    if stats['top_flaky_components']:
+        lines.append('| Component | Attempts | Degraded | Unchanged |')
+        lines.append('|-----------|----------|----------|-----------|')
+        for c in stats['top_flaky_components']:
+            lines.append(f"| {c['component']} | {c['attempts']} | {c['degraded']} | {c['unchanged']} |")
+    else:
+        lines.append('_No flaky components in this window._')
+    
+    lines.extend([
+        '',
+        '## clear_stale_lock Details',
+        '',
+        f'- lock_removed: {stats["clear_stale_lock_details"]["lock_removed"]}',
+        f'- downstream_progress_resumed: {stats["clear_stale_lock_details"]["downstream_progress_resumed"]}',
+        f'- recovery_confirmed: {stats["clear_stale_lock_details"]["recovery_confirmed"]}',
+        '',
+        '## Notes',
+        '',
+        '- `evidence_actions_total` are excluded from recovery effectiveness.',
+        '- `direct_recovery_total` counts only actions that led to `recovered` verdict.',
+        '- `clear_stale_lock` details separate lock removal from downstream recovery.',
+    ])
+    return '\n'.join(lines)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--hours', type=int, default=24)
+parser.add_argument('--json', action='store_true')
+parser.add_argument('--write', action='store_true', help='Write markdown summary to artifacts')
+args = parser.parse_args()
+
+records = load_recovery_records()
+stats = compute_summary(records, hours=args.hours)
+
+if args.json:
+    print(json.dumps(stats, ensure_ascii=False, indent=2))
+else:
+    md = render_markdown(stats)
+    if args.write:
+        OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        OUTPUT_FILE.write_text(md)
+        print(f'Written to {OUTPUT_FILE}')
+    else:
+        print(md)

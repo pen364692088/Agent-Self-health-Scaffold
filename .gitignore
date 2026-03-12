@@ -1,30 +1,15 @@
-# Large/generated/local-only data
-.session-index/
-output/
-tmp/
-temp/
-node_modules/
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
-
-# Python virtualenvs
-venv/
 .venv/
-ENV/
-env/
-OpenEmotion/venv/
-OpenEmotion/.venv/
-OpenEmotion/venv2/
-
-# Local vector/index/cache data
-.openviking-data/
-.openviking-data-local-ollama/
-
-# Nested repos and local experiments
-searxng-docker/
-
-# OS/editor noise
-.DS_Store
+venv/
+artifacts/self_health/state/current_health.json
+artifacts/self_health/state/health_history.jsonl
+artifacts/self_health/incidents/incident_*.json
+artifacts/self_health/proposals/proposal_*.json
+artifacts/self_health/audit/health_audit.jsonl
+artifacts/self_health/recovery_logs/
+artifacts/cache/
+artifacts/logs/

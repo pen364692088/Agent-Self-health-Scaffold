@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Capability Contract",
+  "type": "object",
+  "required": ["capability_id", "name", "component", "category", "expected_behavior", "verification_mode", "verification_frequency", "severity_if_missing"],
+  "properties": {
+    "capability_id": {"type": "string", "pattern": "^CAP-[A-Z0-9_]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "component": {"type": "string"},
+    "category": {"type": "string", "enum": ["liveness_capability", "processing_capability", "delivery_capability", "memory_capability", "tooling_capability", "workflow_capability", "safety_capability", "user_promised_feature"]},
+    "description": {"type": "string"},
+    "expected_behavior": {"type": "string", "minLength": 1},
+    "verification_mode": {"type": "string", "enum": ["probe_check", "synthetic_input_check", "artifact_output_check", "recent_success_check", "chain_integrity_check"]},
+    "verification_probe": {"type": ["string", "null"]},
+    "verification_frequency": {"type": "string"},
+    "severity_if_missing": {"type": "string", "enum": ["critical", "high", "medium", "low"]},
+    "degradation_rule": {"type": "string"},
+    "fallback_if_missing": {"type": ["string", "null"]},
+    "owner_component": {"type": "string"},
+    "human_attention_required": {"type": "boolean", "default": true},
+    "last_verified_at": {"type": ["string", "null"], "format": "date-time"},
+    "last_success_at": {"type": ["string", "null"], "format": "date-time"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}

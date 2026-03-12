@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-state.schema.json",
+  "title": "RunState",
+  "type": "object",
+  "required": [
+    "task_id", "run_id", "status", "current_step", "last_good_step",
+    "pending_children", "retry_count", "last_heartbeat", "recovery_status"
+  ],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["planned", "running", "blocked", "completed", "abandoned"] },
+    "current_step": { "type": ["string", "null"] },
+    "last_good_step": { "type": ["string", "null"] },
+    "pending_children": { "type": "array", "items": { "type": "string" } },
+    "retry_count": { "type": "integer", "minimum": 0 },
+    "last_heartbeat": { "type": ["string", "null"] },
+    "recovery_status": { "type": "string", "enum": ["eligible", "retryable", "needs_repair", "blocked", "abandoned"] }
+  },
+  "additionalProperties": false
+}

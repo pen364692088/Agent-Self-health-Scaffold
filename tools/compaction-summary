@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Compaction Capability Summary - 独立报告 compaction 链路状态"""
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+CAP_DIR = REPO / 'artifacts' / 'self_health' / 'capabilities'
+
+def get_capability_status(cap_id):
+    """读取能力状态"""
+    cap_file = CAP_DIR / f'{cap_id}.json'
+    if not cap_file.exists():
+        return None
+    try:
+        return json.loads(cap_file.read_text())
+    except:
+        return None
+
+def main():
+    # 读取三个 compaction 能力
+    execution = get_capability_status('CAP-COMPACTION_EXECUTION')
+    overflow = get_capability_status('CAP-CONTEXT_OVERFLOW_HANDLING')
+    effectiveness = get_capability_status('CAP-COMPACTION_EFFECTIVENESS')
+    
+    # 计算整体状态
+    statuses = []
+    for cap in [execution, overflow, effectiveness]:
+        if cap:
+            statuses.append(cap.get('status', 'unknown'))
+        else:
+            statuses.append('missing')
+    
+    # 整体判定
+    if all(s == 'healthy' for s in statuses):
+        overall = 'HEALTHY'
+    elif any(s in ('missing', 'degraded') for s in statuses[:2]):  # 前两项 critical
+        overall = 'CRITICAL_DEGRADATION'
+    elif 'degraded' in statuses:
+        overall = 'DEGRADED'
+    elif 'missing' in statuses:
+        overall = 'MISSING'
+    else:
+        overall = 'UNKNOWN'
+    
+    # 生成报告
+    print(f"""# Compaction Capability Summary
+
+**Generated**: {datetime.now(timezone.utc).isoformat()}
+**Overall Status**: **{overall}**
+
+---
+
+## Capability Trio Status
+
+| Capability | Status | Severity | Evidence |
+|------------|--------|----------|----------|
+| Execution | {execution.get('status', 'N/A') if execution else 'missing'} | critical | {str(execution.get('evidence', {}))[:80] if execution else 'N/A'} |
+| Overflow Handling | {overflow.get('status', 'N/A') if overflow else 'missing'} | critical | {str(overflow.get('evidence', {}))[:80] if overflow else 'N/A'} |
+| Effectiveness | {effectiveness.get('status', 'N/A') if effectiveness else 'missing'} | high | {str(effectiveness.get('evidence', {}))[:80] if effectiveness else 'N/A'} |
+
+---
+
+## Key Metrics
+
+| Metric | Value |
+|--------|-------|
+| Last Compaction | {execution.get('evidence', {}).get('recent_files', 'N/A') if execution else 'N/A'} files found |
+| Restored Status | {execution.get('evidence', {}).get('restored_status', 'N/A') if execution else 'N/A'} |
+| High Pressure Sessions | {overflow.get('evidence', {}).get('high_pressure_count', 'N/A') if overflow else 'N/A'} |
+| OpenViking Retrieval | {effectiveness.get('evidence', {}).get('openviking_retrieval', 'N/A') if effectiveness else 'N/A'} |
+
+---
+
+## Alert Rules
+
+| Condition | Priority | Action |
+|-----------|----------|--------|
+| Execution != healthy | **CRITICAL** | Immediate investigation |
+| Overflow Handling != healthy | **CRITICAL** | Immediate investigation |
+| Effectiveness != healthy | HIGH | Review within 1 hour |
+
+---
+
+## Verdict
+
+{get_verdict_message(overall, execution, overflow, effectiveness)}
+""")
+
+def get_verdict_message(overall, execution, overflow, effectiveness):
+    if overall == 'HEALTHY':
+        return "✅ Compaction chain is fully operational. Auto-compression functioning correctly."
+    elif overall == 'CRITICAL_DEGRADATION':
+        return "🚨 CRITICAL: Core compaction capability degraded. Immediate attention required."
+    elif overall == 'DEGRADED':
+        return "⚠️ WARNING: Compaction effectiveness degraded. Review recommended."
+    elif overall == 'MISSING':
+        return "❌ Compaction capability not detected. Check installation."
+    else:
+        return "❓ Compaction status unknown. Manual verification required."
+
+if __name__ == '__main__':
+    main()

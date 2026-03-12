@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+import argparse, json
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+PILOT_DIR = REPO / 'artifacts' / 'self_health' / 'pilot'
+METRICS_FILE = PILOT_DIR / 'soak_metrics.jsonl'
+
+def collect_metrics():
+    metrics = {
+        'collected_at': datetime.now(timezone.utc).isoformat(),
+        'scheduler': collect_scheduler_metrics(),
+        'capability': collect_capability_metrics(),
+        'incident': collect_incident_metrics(),
+        'proposal': collect_proposal_metrics(),
+        'recovery': collect_recovery_metrics(),
+        'gate': collect_gate_metrics(),
+    }
+    return metrics
+
+def collect_scheduler_metrics():
+    state_dir = REPO / 'artifacts' / 'self_health' / 'state'
+    runs = 0
+    if state_dir.exists():
+        for f in state_dir.glob('*.last_run'):
+            runs += 1
+    return {'runs_recorded': runs}
+
+def collect_capability_metrics():
+    cap_dir = REPO / 'artifacts' / 'self_health' / 'capabilities'
+    total = healthy = degraded = missing = unknown = 0
+    if cap_dir.exists():
+        for f in cap_dir.glob('CAP-*.json'):
+            try:
+                data = json.loads(f.read_text())
+                total += 1
+                status = data.get('status', 'unknown')
+                if status == 'healthy': healthy += 1
+                elif status == 'degraded': degraded += 1
+                elif status == 'missing': missing += 1
+                else: unknown += 1
+            except Exception:
+                unknown += 1
+    return {'total': total, 'healthy': healthy, 'degraded': degraded, 'missing': missing, 'unknown': unknown}
+
+def collect_incident_metrics():
+    inc_dir = REPO / 'artifacts' / 'self_health' / 'capability_incidents'
+    total = 0
+    if inc_dir.exists():
+        total = len(list(inc_dir.glob('INC-*.json')))
+    return {'total': total}
+
+def collect_proposal_metrics():
+    prop_dir = REPO / 'artifacts' / 'self_health' / 'proposals'
+    total = deduped = 0
+    if prop_dir.exists():
+        for f in prop_dir.glob('PROP-*.json'):
+            try:
+                data = json.loads(f.read_text())
+                total += 1
+                if data.get('suppressed_count', 0) > 0:
+                    deduped += 1
+            except Exception:
+                pass
+    return {'total': total, 'deduped': deduped}
+
+def collect_recovery_metrics():
+    rec_dir = REPO / 'artifacts' / 'self_health' / 'recovery_logs'
+    total = recovered = unchanged = degraded = insufficient = 0
+    if rec_dir.exists():
+        for f in rec_dir.glob('recovery_*.json'):
+            try:
+                data = json.loads(f.read_text())
+                total += 1
+                verdict = data.get('verdict', 'unknown')
+                if verdict == 'recovered': recovered += 1
+                elif verdict == 'unchanged': unchanged += 1
+                elif verdict == 'degraded': degraded += 1
+                elif verdict == 'insufficient_evidence': insufficient += 1
+            except Exception:
+                pass
+    return {'total': total, 'recovered': recovered, 'unchanged': unchanged, 'degraded': degraded, 'insufficient_evidence': insufficient}
+
+def collect_gate_metrics():
+    gate_dir = REPO / 'artifacts' / 'self_health' / 'gate_reports'
+    reports = 0
+    last_status = {'A': 'unknown', 'B': 'unknown', 'C': 'unknown'}
+    if gate_dir.exists():
+        report_files = sorted(gate_dir.glob('gate_report_*.json'), reverse=True)
+        reports = len(report_files)
+        if report_files:
+            try:
+                data = json.loads(report_files[0].read_text())
+                last_status['A'] = data.get('gate_a', {}).get('status', 'unknown')
+                last_status['B'] = data.get('gate_b', {}).get('status', 'unknown')
+                last_status['C'] = data.get('gate_c', {}).get('status', 'unknown')
+            except Exception:
+                pass
+    return {'reports': reports, 'last_status': last_status}
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--json', action='store_true')
+parser.add_argument('--append', action='store_true', help='Append to soak metrics file')
+args = parser.parse_args()
+
+metrics = collect_metrics()
+
+if args.append:
+    PILOT_DIR.mkdir(parents=True, exist_ok=True)
+    with open(METRICS_FILE, 'a') as f:
+        f.write(json.dumps(metrics, ensure_ascii=False) + '\n')
+
+if args.json:
+    print(json.dumps(metrics, ensure_ascii=False, indent=2))
+else:
+    print(f"Collected at: {metrics['collected_at']}")
+    print(f"Capabilities: {metrics['capability']}")
+    print(f"Incidents: {metrics['incident']['total']}")
+    print(f"Proposals: {metrics['proposal']['total']} (deduped: {metrics['proposal']['deduped']})")
+    print(f"Recoveries: {metrics['recovery']['total']}")
+    print(f"Gate: {metrics['gate']['last_status']}")

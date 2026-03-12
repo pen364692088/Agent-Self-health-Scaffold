@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-03-08T18:14:16.315169+00:00",
+  "gate_a": {
+    "status": "PASS",
+    "issues": []
+  },
+  "gate_b": {
+    "status": "PASS",
+    "issues": [],
+    "summary": {
+      "total": 8,
+      "healthy": 5,
+      "degraded": 0,
+      "missing": 0,
+      "unknown": 1
+    }
+  },
+  "gate_c": {
+    "status": "PASS",
+    "issues": []
+  }
+}

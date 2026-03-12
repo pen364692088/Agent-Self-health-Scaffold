@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+import argparse, json, subprocess, uuid
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+STATE_DIR = REPO / 'artifacts' / 'self_health' / 'state'
+SNAPSHOT_DIR = STATE_DIR / 'recovery_snapshots'
+SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def run(cmd):
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    return p.returncode, p.stdout.strip(), p.stderr.strip()
+
+
+def probe_component(component: str):
+    ts = now_iso()
+    probe = {
+        'component': component,
+        'probe_timestamp': ts,
+        'status': 'unknown',
+        'key_metrics': {},
+        'failure_indicators': [],
+        'evidence': {},
+        'probe_name': 'legacy_probe',
+        'metrics': {},
+        'recoverability_hint': 'none',
+    }
+    if component == 'health_check':
+        code, out, err = run([str(REPO / 'tools' / 'agent-health-check'), '--quick', '--json'])
+        probe['evidence']['exit_code'] = code
+        if out:
+            try:
+                data = json.loads(out)
+                level = str(data.get('overall_status', 'GREEN')).lower()
+                mapping = {'green': 'ok', 'yellow': 'warning', 'orange': 'error', 'red': 'failed'}
+                probe['status'] = mapping.get(level, level)
+                probe['key_metrics'] = data.get('metrics', {})
+                probe['metrics'] = data.get('metrics', {})
+                probe['evidence']['raw'] = data
+                if probe['status'] in {'warning', 'error', 'failed'}:
+                    probe['recoverability_hint'] = 'rerun_health_check'
+            except Exception:
+                probe['failure_indicators'].append('invalid_health_json')
+                probe['evidence']['stdout'] = out
+        if err:
+            probe['evidence']['stderr'] = err
+        return probe
+    code, out, err = run([str(REPO / 'tools' / 'agent-probe'), '--component', component, '--json'])
+    if code == 0 and out:
+        try:
+            data = json.loads(out)
+            probe['probe_name'] = data.get('probe_name', 'component_probe')
+            probe['status'] = data.get('status', 'unknown')
+            probe['key_metrics'] = data.get('metrics', {})
+            probe['metrics'] = data.get('metrics', {})
+            probe['failure_indicators'] = data.get('failure_indicators', [])
+            probe['evidence'] = data.get('evidence', {})
+            probe['recoverability_hint'] = data.get('recoverability_hint', 'none')
+            return probe
+        except Exception:
+            probe['failure_indicators'].append('invalid_probe_json')
+            probe['evidence']['stdout'] = out
+    if err:
+        probe['evidence']['stderr'] = err
+    if not probe['failure_indicators']:
+        probe['failure_indicators'].append('missing_probe')
+    return probe
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--component', required=True)
+parser.add_argument('--phase', choices=['before', 'after', 'point'], default='point')
+parser.add_argument('--recovery-id', default='')
+parser.add_argument('--json', action='store_true')
+args = parser.parse_args()
+
+recovery_id = args.recovery_id or f'REC-{datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")}-{uuid.uuid4().hex[:8]}'
+probe = probe_component(args.component)
+snapshot = {'recovery_id': recovery_id, 'phase': args.phase, **probe}
+path = SNAPSHOT_DIR / f'{recovery_id}_{args.phase}_{args.component}.json'
+path.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2))
+out = {'snapshot_path': str(path), 'snapshot': snapshot}
+print(json.dumps(out, ensure_ascii=False, indent=2) if args.json else str(path))

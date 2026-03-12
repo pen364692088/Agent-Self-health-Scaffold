@@ -1,0 +1,12 @@
+{
+  "recovery_id": "REC-20260308-161147-b70c3931",
+  "phase": "before",
+  "component": "heartbeat",
+  "probe_timestamp": "2026-03-08T16:11:47.067208+00:00",
+  "status": "unknown",
+  "key_metrics": {},
+  "failure_indicators": [
+    "missing_probe"
+  ],
+  "evidence": {}
+}

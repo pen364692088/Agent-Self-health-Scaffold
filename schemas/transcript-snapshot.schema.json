@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "transcript-snapshot.schema.json",
+  "title": "TranscriptSnapshot",
+  "type": "object",
+  "required": ["task_id", "run_id", "rebuilt_at", "event_count", "step_sequence"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "rebuilt_at": { "type": "string", "format": "date-time" },
+    "event_count": { "type": "integer", "minimum": 0 },
+    "step_sequence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_id", "status", "ts"],
+        "properties": {
+          "step_id": { "type": "string" },
+          "status": { "type": "string", "enum": ["succeeded", "failed", "skipped", "running"] },
+          "ts": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "summary": { "type": "string" },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

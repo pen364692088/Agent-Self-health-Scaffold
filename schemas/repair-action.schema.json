@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repair-action.schema.json",
+  "title": "RepairAction",
+  "type": "object",
+  "required": ["action_id", "risk_level", "preconditions", "executor", "validator", "rollback"],
+  "properties": {
+    "action_id": { "type": "string", "minLength": 1 },
+    "risk_level": { "type": "string", "enum": ["low", "medium", "high"] },
+    "preconditions": { "type": "array", "items": { "type": "string" } },
+    "executor": { "type": "string", "minLength": 1 },
+    "validator": { "type": "string", "minLength": 1 },
+    "rollback": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

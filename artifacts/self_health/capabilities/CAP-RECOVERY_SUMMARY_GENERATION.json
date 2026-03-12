@@ -1,0 +1,13 @@
+{
+  "capability_id": "CAP-RECOVERY_SUMMARY_GENERATION",
+  "name": "Recovery Summary Generation",
+  "component": "agent-recovery-summary",
+  "category": "workflow_capability",
+  "status": "healthy",
+  "severity_if_missing": "medium",
+  "evidence": {
+    "path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/self_health/VERIFIED_RECOVERY_SUMMARY.md",
+    "age_seconds": 101.19236731529236
+  },
+  "checked_at": "2026-03-11T15:18:15.174389+00:00"
+}

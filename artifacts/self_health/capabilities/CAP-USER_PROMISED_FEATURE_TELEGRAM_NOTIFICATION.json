@@ -1,0 +1,12 @@
+{
+  "capability_id": "CAP-USER_PROMISED_FEATURE_TELEGRAM_NOTIFICATION",
+  "name": "Telegram Notification Delivery",
+  "component": "telegram-channel",
+  "category": "user_promised_feature",
+  "status": "telemetry_missing",
+  "severity_if_missing": "high",
+  "evidence": {
+    "reason": "no_artifact"
+  },
+  "checked_at": "2026-03-11T15:18:15.174502+00:00"
+}

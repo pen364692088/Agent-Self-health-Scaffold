@@ -1,0 +1,29 @@
+{
+  "recovery_id": "REC-20260311-120419-5c876010",
+  "phase": "before",
+  "component": "callback-worker",
+  "probe_timestamp": "2026-03-11T12:04:19.723629+00:00",
+  "status": "warning",
+  "key_metrics": {
+    "blocked_by_lock": true
+  },
+  "failure_indicators": [
+    "stale_lock_present"
+  ],
+  "evidence": {
+    "raw": {
+      "status": "warning",
+      "metrics": {
+        "blocked_by_lock": true
+      },
+      "failure_indicators": [
+        "stale_lock_present"
+      ]
+    }
+  },
+  "probe_name": "worker_probe",
+  "metrics": {
+    "blocked_by_lock": true
+  },
+  "recoverability_hint": "restart_worker"
+}

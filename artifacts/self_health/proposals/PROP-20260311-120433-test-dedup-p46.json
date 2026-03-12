@@ -1,0 +1,32 @@
+{
+  "proposal_id": "PROP-20260311-120433-test-dedup-p46",
+  "fingerprint": "43a53d6d349d057c",
+  "suppressed_count": 1,
+  "proposal_type": "timeout_adjustment",
+  "target_component": "test-dedup-p46",
+  "target_capability": null,
+  "problem_statement": "Same problem",
+  "evidence": {
+    "source": "manual"
+  },
+  "current_behavior": "unknown",
+  "proposed_change": "Same fix",
+  "expected_benefit": "Improved stability or performance",
+  "risk_assessment": {
+    "impact": "medium",
+    "reversibility": "medium"
+  },
+  "shadow_plan": {
+    "comparison_window": "1h",
+    "baseline_metrics": {},
+    "success_threshold": {}
+  },
+  "success_metrics": {},
+  "failure_metrics": {},
+  "rollback_plan": "Same rollback",
+  "approval_required": true,
+  "proposal_only": true,
+  "status": "pending",
+  "created_at": "2026-03-11T12:04:33.521059+00:00",
+  "last_suppressed_at": "2026-03-11T12:04:33.547671+00:00"
+}

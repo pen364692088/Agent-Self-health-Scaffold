@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+import argparse, json
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+CAP_DIR = REPO / 'artifacts' / 'self_health' / 'capabilities'
+INCIDENT_DIR = REPO / 'artifacts' / 'self_health' / 'capability_incidents'
+PROPOSAL_DIR = REPO / 'artifacts' / 'self_health' / 'proposals'
+
+THRESHOLDS = {
+    'stale_hours': 2,
+    'missing_hours': 4,
+    'degraded_persist_hours': 1,
+}
+
+
+def load_capability_history(cap_id):
+    history = []
+    if CAP_DIR.exists():
+        cap_file = CAP_DIR / f'{cap_id}.json'
+        if cap_file.exists():
+            history.append(json.loads(cap_file.read_text()))
+    return history
+
+
+def check_forgetting(cap_result):
+    alerts = []
+    cap_id = cap_result['capability_id']
+    status = cap_result.get('status', 'unknown')
+    checked_at_str = cap_result.get('checked_at', '')
+    
+    try:
+        checked_at = datetime.fromisoformat(checked_at_str.replace('Z', '+00:00'))
+        age_hours = (datetime.now(timezone.utc) - checked_at).total_seconds() / 3600
+    except Exception:
+        age_hours = 999
+    
+    if status == 'healthy' and age_hours > THRESHOLDS['stale_hours']:
+        alerts.append({
+            'type': 'stale_verification',
+            'capability_id': cap_id,
+            'message': f'Capability not verified in {age_hours:.1f}h',
+            'severity': 'medium',
+        })
+    
+    if status in {'degraded', 'missing'}:
+        alerts.append({
+            'type': 'capability_degraded',
+            'capability_id': cap_id,
+            'message': f'Capability status: {status}',
+            'severity': cap_result.get('severity_if_missing', 'high'),
+        })
+    
+    if status == 'missing' and age_hours > THRESHOLDS['missing_hours']:
+        alerts.append({
+            'type': 'capability_forgotten',
+            'capability_id': cap_id,
+            'message': f'Capability missing for {age_hours:.1f}h',
+            'severity': 'critical',
+        })
+    
+    return alerts
+
+
+def generate_proposal(alert, cap_result):
+    if alert['severity'] not in {'high', 'critical'}:
+        return None
+    
+    proposal_id = f"PROP-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{alert['capability_id']}"
+    proposal = {
+        'proposal_id': proposal_id,
+        'proposal_type': 'capability_verification_frequency_adjustment',
+        'target_component': cap_result.get('component', 'unknown'),
+        'target_capability': alert['capability_id'],
+        'problem_statement': alert['message'],
+        'evidence': {
+            'alert_type': alert['type'],
+            'capability_status': cap_result.get('status'),
+            'checked_at': cap_result.get('checked_at'),
+        },
+        'proposed_change': 'Increase verification frequency or investigate capability degradation',
+        'expected_benefit': 'Earlier detection of capability issues',
+        'risk_assessment': {'impact': 'low', 'reversibility': 'high'},
+        'shadow_plan': {
+            'comparison_window': '24h',
+            'baseline_metrics': {'verification_frequency': 'current'},
+            'success_threshold': {'status': 'healthy'},
+        },
+        'rollback_plan': 'Revert to previous verification schedule',
+        'approval_required': True,
+        'proposal_only': True,
+        'status': 'pending',
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }
+    return proposal
+
+
+def save_proposal(proposal):
+    PROPOSAL_DIR.mkdir(parents=True, exist_ok=True)
+    path = PROPOSAL_DIR / f"{proposal['proposal_id']}.json"
+    path.write_text(json.dumps(proposal, ensure_ascii=False, indent=2))
+    return path
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--capability', help='Check specific capability for forgetting')
+parser.add_argument('--all', action='store_true', help='Check all capabilities')
+parser.add_argument('--json', action='store_true')
+args = parser.parse_args()
+
+all_alerts = []
+all_proposals = []
+
+if args.all:
+    for cap_file in sorted(CAP_DIR.glob('CAP-*.json')):
+        try:
+            cap_result = json.loads(cap_file.read_text())
+            alerts = check_forgetting(cap_result)
+            all_alerts.extend(alerts)
+            for alert in alerts:
+                proposal = generate_proposal(alert, cap_result)
+                if proposal:
+                    save_proposal(proposal)
+                    all_proposals.append(proposal['proposal_id'])
+        except Exception:
+            pass
+elif args.capability:
+    cap_file = CAP_DIR / f'{args.capability}.json'
+    if cap_file.exists():
+        cap_result = json.loads(cap_file.read_text())
+        alerts = check_forgetting(cap_result)
+        all_alerts.extend(alerts)
+        for alert in alerts:
+            proposal = generate_proposal(alert, cap_result)
+            if proposal:
+                save_proposal(proposal)
+                all_proposals.append(proposal['proposal_id'])
+
+out = {
+    'alerts': all_alerts,
+    'proposals_generated': all_proposals,
+    'checked_at': datetime.now(timezone.utc).isoformat(),
+}
+
+if args.json:
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+else:
+    print(f"Alerts: {len(all_alerts)}")
+    print(f"Proposals: {len(all_proposals)}")
+    for alert in all_alerts:
+        print(f"  [{alert['severity']}] {alert['capability_id']}: {alert['message']}")

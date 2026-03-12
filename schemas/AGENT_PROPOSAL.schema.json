@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Proposal Contract",
+  "type": "object",
+  "required": ["proposal_id", "proposal_type", "target_component", "problem_statement", "evidence", "proposed_change", "shadow_plan", "rollback_plan"],
+  "properties": {
+    "proposal_id": {"type": "string", "pattern": "^PROP-[A-Z0-9_]+$"},
+    "proposal_type": {"type": "string", "enum": ["timeout_adjustment", "retry_backoff_adjustment", "fallback_path_switch", "noncritical_hook_toggle", "watchdog_threshold_adjustment", "queue_policy_adjustment", "degraded_mode_entry", "capability_verification_frequency_adjustment"]},
+    "target_component": {"type": "string"},
+    "target_capability": {"type": ["string", "null"]},
+    "problem_statement": {"type": "string", "minLength": 1},
+    "evidence": {"type": "object"},
+    "current_behavior": {"type": "string"},
+    "proposed_change": {"type": "string", "minLength": 1},
+    "expected_benefit": {"type": "string"},
+    "risk_assessment": {"type": "object", "properties": {"impact": {"type": "string"}, "reversibility": {"type": "string"}}},
+    "shadow_plan": {"type": "object", "required": ["comparison_window", "baseline_metrics", "success_threshold"], "properties": {"comparison_window": {"type": "string"}, "baseline_metrics": {"type": "object"}, "candidate_metrics": {"type": "object"}, "success_threshold": {"type": "object"}, "failure_threshold": {"type": "object"}, "early_stop_conditions": {"type": "array"}}},
+    "success_metrics": {"type": "object"},
+    "failure_metrics": {"type": "object"},
+    "rollback_plan": {"type": "string", "minLength": 1},
+    "approval_required": {"type": "boolean", "default": true},
+    "proposal_only": {"type": "boolean", "default": true},
+    "status": {"type": "string", "enum": ["pending", "in_review", "approved", "rejected", "shadow_running", "completed"], "default": "pending"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}
