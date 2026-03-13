@@ -1,8 +1,0 @@
-{
-  "gateway_pid": 3650954,
-  "gateway_start_time": "2026-03-08T16:58:59-05:00",
-  "gateway_uptime": "2h 12min",
-  "config_last_modified": "2026-03-08T16:58:00-05:00",
-  "openclaw_version": "2026.3.7",
-  "node_version": "22.22.0"
-}

@@ -1,0 +1,14 @@
+{
+  "cerebras": {
+    "baseUrl": "https://api.cerebras.ai/v1",
+    "apiKey": "YOUR_CEREBRAS_API_KEY_HERE",
+    "auth": "token",
+    "api": "openai-completions",
+    "models": [
+      {"id": "gpt-oss-120b", "name": "Cerebras GPT-OSS 120B", "reasoning": false, "input": ["text"], "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}, "contextWindow": 128000, "maxTokens": 16384},
+      {"id": "zai-glm-4.7", "name": "Cerebras ZAI GLM-4.7", "reasoning": false, "input": ["text"], "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}, "contextWindow": 128000, "maxTokens": 16384},
+      {"id": "qwen-3-235b-a22b-instruct-2507", "name": "Cerebras Qwen 3 235B Instruct", "reasoning": false, "input": ["text"], "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}, "contextWindow": 128000, "maxTokens": 16384},
+      {"id": "llama3.1-8b", "name": "Cerebras Llama 3.1 8B", "reasoning": false, "input": ["text"], "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}, "contextWindow": 128000, "maxTokens": 16384}
+    ]
+  }
+}

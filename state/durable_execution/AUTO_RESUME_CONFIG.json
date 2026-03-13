@@ -1,7 +1,0 @@
-{
-  "enabled": true,
-  "cooldown_seconds": 45,
-  "lease_ttl_seconds": 180,
-  "max_recovery_attempts_per_target": 3,
-  "task_overrides": {}
-}

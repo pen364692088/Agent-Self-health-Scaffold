@@ -1,3 +1,0 @@
-{"ts": "2026-03-09T22:26:00Z", "rule_id": "OPENCLAW_PATH_NO_EDIT", "decision": "deny", "path": "~/.openclaw/workspace/SOUL.md", "tool": "edit", "fallback": "safe-write"}
-{"ts": "2026-03-09T22:26:01Z", "rule_id": "PERSIST_BEFORE_REPLY", "decision": "warn", "path": "~/.openclaw/workspace/test-boundary.md", "tool": "safe-write"}
-{"ts": "2026-03-09T22:26:02Z", "rule_id": "FRAGILE_REPLACE_BLOCK", "decision": "allow", "path": "/tmp/test.txt", "tool": "safe-write", "fallback_used": true}
