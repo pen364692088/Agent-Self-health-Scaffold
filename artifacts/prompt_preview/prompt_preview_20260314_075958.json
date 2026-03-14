@@ -1,0 +1,56 @@
+{
+  "session_id": "default",
+  "generated_at": "2026-03-14T07:59:58.450589",
+  "prompt_tokens": 84,
+  "max_tokens": 100000,
+  "layers": {
+    "resident": {
+      "tokens": 14,
+      "components": [
+        "objective",
+        "phase",
+        "branch"
+      ],
+      "data": {
+        "objective": "Phase 2.4 CanonicalAdapter Shadow Mode - COMPLETE",
+        "phase": "Done",
+        "branch": "main"
+      }
+    },
+    "action": {
+      "tokens": 25,
+      "components": [
+        "next_step"
+      ],
+      "data": {
+        "next_step": "User decision: Phase 2.5 (prompt-assemble), Phase 2.6 (recovery), or Phase 3 (task execution kernel)"
+      }
+    },
+    "metadata": {
+      "tokens": 45,
+      "components": [
+        "sources_checked",
+        "field_sources_summary"
+      ],
+      "data": {
+        "sources_checked": [
+          "session_state_md",
+          "working_buffer_md",
+          "repo_evidence"
+        ],
+        "field_sources_summary": {
+          "objective": "session_state_md",
+          "phase": "session_state_md",
+          "branch": "session_state_md",
+          "next_step": "session_state_md"
+        }
+      }
+    }
+  },
+  "warnings": [
+    "BLOCKER_MISSING: No blocker information available"
+  ],
+  "conflicts": [],
+  "fallbacks": [],
+  "uncertainty_flag": false
+}

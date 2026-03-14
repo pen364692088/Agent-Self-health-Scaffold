@@ -6,18 +6,22 @@
   "status": "degraded",
   "severity_if_missing": "critical",
   "evidence": {
-    "high_pressure_count": 2,
+    "high_pressure_count": 6,
     "sessions": [
       {
-        "key": "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63:run:efd76ee0-1dd1-4b4b-9575-eb721cedb126",
-        "ratio": "112.4%"
+        "key": "agent:main:telegram:direct:8420019401",
+        "ratio": "131.5%"
       },
       {
-        "key": "agent:main:cron:4c3c7c7f-87c5-4df3-9b89-60e2676dcf63:run:caf7b505-0dfb-42b3-88b4-8eaf6134b14f",
-        "ratio": "112.8%"
+        "key": "agent:main:cron:43c46579-2a55-4f68-9965-c65b791c896b:run:c6275d77-1fe9-46f2-872a-d459c8c2493f",
+        "ratio": "133.3%"
+      },
+      {
+        "key": "agent:main:cron:43c46579-2a55-4f68-9965-c65b791c896b:run:031dfc38-1bfa-4ca3-a7c9-26aa1ad4b60b",
+        "ratio": "118.6%"
       }
     ],
     "note": "High pressure with potential lane/blocker issue"
   },
-  "checked_at": "2026-03-11T15:18:16.516915+00:00"
+  "checked_at": "2026-03-14T17:56:28.534981+00:00"
 }

@@ -1,21 +1,20 @@
 # Proposal Summary
 
-**Generated**: 2026-03-11T15:18:16.682985+00:00
+**Generated**: 2026-03-14T17:56:28.799043+00:00
 
 ## Overview
 
-- **Total Proposals**: 11
-- **Pending**: 11
-- **From Capability Degradation**: 9
+- **Total Proposals**: 44
+- **Pending**: 44
+- **From Capability Degradation**: 44
 
 ## By Type
 
-- capability_verification_frequency_adjustment: 9
-- timeout_adjustment: 2
+- capability_verification_frequency_adjustment: 44
 
 ## By Status
 
-- pending: 11
+- pending: 44
 
 ## Notes
 

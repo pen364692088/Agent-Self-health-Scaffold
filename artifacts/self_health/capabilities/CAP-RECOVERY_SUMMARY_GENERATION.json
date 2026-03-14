@@ -6,8 +6,8 @@
   "status": "healthy",
   "severity_if_missing": "medium",
   "evidence": {
-    "path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/self_health/VERIFIED_RECOVERY_SUMMARY.md",
-    "age_seconds": 101.19236731529236
+    "path": "/home/moonlight/.openclaw/workspace/artifacts/self_health/VERIFIED_RECOVERY_SUMMARY.md",
+    "age_seconds": 3643.9173974990845
   },
-  "checked_at": "2026-03-11T15:18:15.174389+00:00"
+  "checked_at": "2026-03-14T17:56:26.485949+00:00"
 }

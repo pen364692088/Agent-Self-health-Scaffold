@@ -993,12 +993,12 @@
     },
     "viking://resources/user/memory/memory/memory.md": {
       "doc_id": "viking://resources/user/memory/memory/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T04:43:12.262112+00:00"
+      "indexed_at": "2026-03-13T08:24:14.114448+00:00"
     },
     "viking://resources/user/sessions/daily/2026-03-08_distilled_1/2026-03-08_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/2026-03-08_distilled_1/2026-03-08_distilled.md",
@@ -1011,12 +1011,12 @@
     },
     "viking://resources/user/memory/memory_3/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_3/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T04:55:39.071616+00:00"
+      "indexed_at": "2026-03-13T15:19:28.244163+00:00"
     },
     "viking://resources/user/sessions/daily/memory_distilled_1/memory_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/memory_distilled_1/memory_distilled.md",
@@ -1029,30 +1029,30 @@
     },
     "viking://resources/user/memory/memory_4/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_4/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T04:55:43.556573+00:00"
+      "indexed_at": "2026-03-13T20:03:27.105429+00:00"
     },
     "viking://resources/user/sessions/daily/memory_distilled_2/memory_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/memory_distilled_2/memory_distilled.md",
-      "doc_content_hash": "50ca091e1b0c8c82224007baa68b57300db441098de01f463c7b594c768bfb13",
+      "doc_content_hash": "2387f725f832ff928578a49e05a7b481b0801357eac8212b1c211de7a3efd917",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T08:47:14.249584+00:00"
+      "indexed_at": "2026-03-13T13:39:15.576606+00:00"
     },
     "viking://resources/user/memory/memory_5/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_5/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T08:47:16.644087+00:00"
+      "indexed_at": "2026-03-13T20:04:41.225486+00:00"
     },
     "viking://resources/user/sessions/daily/2026-03-09_distilled/2026-03-09_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/2026-03-09_distilled/2026-03-09_distilled.md",
@@ -1065,30 +1065,30 @@
     },
     "viking://resources/user/memory/memory_6/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_6/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T15:55:46.334425+00:00"
+      "indexed_at": "2026-03-14T01:29:33.348701+00:00"
     },
     "viking://resources/user/sessions/daily/memory_distilled_3/memory_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/memory_distilled_3/memory_distilled.md",
-      "doc_content_hash": "2939e234dd994b1fd9a9533d1d6849f6fc772dd1635f5449b694c9b307aea090",
+      "doc_content_hash": "f85d395c57ef983670d7ea2a43a3a4b7b7bb29deb1db2b651be971194f059e34",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T15:55:49.404867+00:00"
+      "indexed_at": "2026-03-13T15:19:26.164646+00:00"
     },
     "viking://resources/user/memory/memory_7/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_7/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T15:55:52.480173+00:00"
+      "indexed_at": "2026-03-14T01:30:25.756253+00:00"
     },
     "viking://resources/user/sessions/daily/2026-03-09_distilled_1/2026-03-09_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/2026-03-09_distilled_1/2026-03-09_distilled.md",
@@ -1101,39 +1101,39 @@
     },
     "viking://resources/user/memory/memory_8/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_8/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T16:42:03.930861+00:00"
+      "indexed_at": "2026-03-14T03:18:39.025900+00:00"
     },
     "viking://resources/user/sessions/daily/memory_distilled_4/memory_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/memory_distilled_4/memory_distilled.md",
-      "doc_content_hash": "de65105721bde332bca47f3ef9bebfa28bb04c858be5fd9c6aafa7d28edc99b4",
+      "doc_content_hash": "637e1936ae4709db1ed6f280d06134a9d1060d5c030bcbb0a2fbfb370cc83878",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T16:42:06.239049+00:00"
+      "indexed_at": "2026-03-13T20:03:24.837470+00:00"
     },
     "viking://resources/user/memory/memory_9/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_9/memory.md",
-      "doc_content_hash": "b738391b3a07da4be9bbfbbd618769fcf4ea8453415b7a8eee7dfaa584e5345a",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-09T16:42:08.524495+00:00"
+      "indexed_at": "2026-03-14T12:05:18.736502+00:00"
     },
     "viking://resources/user/sessions/daily/memory_distilled_5/memory_distilled.md": {
       "doc_id": "viking://resources/user/sessions/daily/memory_distilled_5/memory_distilled.md",
-      "doc_content_hash": "4b58956cb26c21274a36ac01900226f99dd07db26566d3eb7c788f4b31c11146",
+      "doc_content_hash": "11a305af880aaa36df4b40b26974135b412a379a78602c359a9dfb94647c2dcc",
       "chunker_version": "deterministic_chunker.v2",
       "embedding_version": "openviking.default",
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
-      "indexed_at": "2026-03-10T10:59:04.830231+00:00"
+      "indexed_at": "2026-03-13T20:04:38.830877+00:00"
     },
     "viking://resources/user/memory/memory_10/memory.md": {
       "doc_id": "viking://resources/user/memory/memory_10/memory.md",
@@ -1143,6 +1143,87 @@
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
       "indexed_at": "2026-03-10T10:59:07.642183+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled/memory_distilled.md",
+      "doc_content_hash": "ed56d22594fceef8431c327b9dbb140a7c3cf6ce814c331c96ee7b24643a6190",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-13T08:24:11.419680+00:00"
+    },
+    "viking://resources/user/memory/memory_1/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_1/memory.md",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-13T13:39:17.701131+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled_6/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled_6/memory_distilled.md",
+      "doc_content_hash": "8dd20536a4bc9d70729443162be1b9a42fa80583f44d567f052367822b9362dd",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T01:29:31.166803+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled_7/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled_7/memory_distilled.md",
+      "doc_content_hash": "293b9dee06c80f6abe4966062755b53bd9c12aa1fd7690a308f7e303fec8ad76",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T01:30:23.554675+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled_8/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled_8/memory_distilled.md",
+      "doc_content_hash": "be64ba34f99608aef4965ff102e5db4440d95a83599c891aaf095fa7ad59093e",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T03:18:36.810219+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled_9/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled_9/memory_distilled.md",
+      "doc_content_hash": "e5c2e40962234030ce5efe793f5ff29d44b35184e67a8dbc55d65c7908900c04",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T12:05:15.861680+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled_10/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled_10/memory_distilled.md",
+      "doc_content_hash": "7f75c9bcccc4dd1c92cce9a49695f2f0d543a9430021212a6937f0319acc8bc4",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T13:40:01.754436+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled_11/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled_11/memory_distilled.md",
+      "doc_content_hash": "bc8ff75220dd84544ff18ef029e8fbad2fa764e7d40e877ed4bc5dc266e2b574",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T16:40:39.963944+00:00"
+    },
+    "viking://resources/user/memory/memory_11/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_11/memory.md",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T16:40:42.719869+00:00"
     }
   }
 }

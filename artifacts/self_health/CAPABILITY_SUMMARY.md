@@ -1,13 +1,13 @@
 # Capability Summary
 
-**Generated**: 2026-03-11T15:18:16.659839+00:00
+**Generated**: 2026-03-14T17:56:28.764855+00:00
 
 ## Overview
 
 - **Total Capabilities**: 12
 - **Healthy**: 4
 - **Stale**: 0
-- **Degraded**: 2
+- **Degraded**: 1
 - **Missing**: 0
 - **Unknown**: 0
 
@@ -42,12 +42,11 @@
 ### Key Metrics
 
 - Restored Status: True
-- High Pressure Sessions: 2
+- High Pressure Sessions: 6
 - OpenViking Retrieval: available
 
 ## Degraded Capabilities
 
 | Capability | Status | Severity |
 |------------|--------|----------|
-| Mailbox Consumption | degraded | high |
 | Context Overflow Handling | degraded | critical |

@@ -1,0 +1,86 @@
+{
+  "session_id": "default",
+  "generated_at": "2026-03-14T08:19:39.148171",
+  "phase": "Done",
+  "next_step": "User decision: Phase 2.6 (recovery), Phase 2.7 (handoff/capsule), or Phase 3 (task execution kernel)",
+  "blocker": null,
+  "objective": "Phase 2.5 PromptPreview Shadow Mode - COMPLETE",
+  "fields": {
+    "objective": {
+      "value": "Phase 2.5 PromptPreview Shadow Mode - COMPLETE",
+      "source": "session_state_md",
+      "status": "valid",
+      "conflict_info": null
+    },
+    "phase": {
+      "value": "Done",
+      "source": "session_state_md",
+      "status": "valid",
+      "conflict_info": null
+    },
+    "next_step": {
+      "value": "User decision: Phase 2.6 (recovery), Phase 2.7 (handoff/capsule), or Phase 3 (task execution kernel)",
+      "source": "session_state_md",
+      "status": "conflict",
+      "conflict_info": {
+        "field": "next_step",
+        "bridge_value": "User decision: Phase 2.6 (recovery), Phase 2.7 (handoff/capsule), or Phase 3 (task execution kernel)",
+        "bridge_source": "session_state_md",
+        "canonical_value": "repair_20260312_200305_cb5df8",
+        "canonical_source": "run_state"
+      }
+    },
+    "blocker": {
+      "value": null,
+      "source": null,
+      "status": "missing",
+      "conflict_info": null
+    }
+  },
+  "warnings": [
+    "BLOCKER_MISSING: No blocker information available in materialized state"
+  ],
+  "conflicts": [
+    {
+      "field": "next_step",
+      "bridge_value": "User decision: Phase 2.6 (recovery), Phase 2.7 (handoff/capsule), or Phase 3 (task execution kernel)",
+      "bridge_source": "session_state_md",
+      "canonical_value": "repair_20260312_200305_cb5df8",
+      "canonical_source": "run_state"
+    }
+  ],
+  "provenance": {
+    "materialized_sources": [
+      "session_state_md",
+      "working_buffer_md",
+      "repo_evidence"
+    ],
+    "next_step_conflict": {
+      "field": "next_step",
+      "bridge_value": "User decision: Phase 2.6 (recovery), Phase 2.7 (handoff/capsule), or Phase 3 (task execution kernel)",
+      "bridge_source": "session_state_md",
+      "canonical_value": "repair_20260312_200305_cb5df8",
+      "canonical_source": "run_state"
+    },
+    "canonical_sources": {
+      "objective": {
+        "value": null,
+        "source": "run_state"
+      },
+      "status": {
+        "value": "running",
+        "source": "run_state"
+      },
+      "next_step": {
+        "value": "repair_20260312_200305_cb5df8",
+        "source": "run_state"
+      },
+      "resume_action": {
+        "value": "idle",
+        "source": "run_state"
+      }
+    }
+  },
+  "uncertainty_flag": false,
+  "should_recover": false
+}

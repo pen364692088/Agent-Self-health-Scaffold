@@ -1,16 +1,16 @@
 # Verified Recovery Summary
 
 **Window**: Last 24 hours
-**Generated**: 2026-03-11T15:18:16.706342+00:00
+**Generated**: 2026-03-14T17:56:28.833314+00:00
 
 ## Actions Overview
 
 | Metric | Count |
 |--------|-------|
-| actions_total | 1 |
+| actions_total | 0 |
 | recovery_actions_total | 0 |
 | evidence_actions_total | 0 |
-| maintenance_actions_total | 1 |
+| maintenance_actions_total | 0 |
 | blocked_by_precondition_total | 0 |
 
 ## Verdict Distribution
@@ -18,7 +18,7 @@
 | Verdict | Count |
 |---------|-------|
 | recovered | 0 |
-| unchanged | 1 |
+| unchanged | 0 |
 | degraded | 0 |
 | insufficient_evidence | 0 |
 
@@ -29,7 +29,7 @@
 
 ## Risk & Stability
 
-- escalated_total: 1
+- escalated_total: 0
 - cooldown_block_total: 0
 - retry_ceiling_hit_total: 0
 

@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""
+Context Ratio Monitor - Parse from gateway logs and trigger compression if needed
+"""
+
+import subprocess
+import json
+import re
+import sys
+from datetime import datetime
+
+WORKSPACE = "/home/moonlight/.openclaw/workspace"
+SAMPLES_FILE = f"{WORKSPACE}/artifacts/context_compression/ratio_samples.jsonl"
+
+# Thresholds
+WARNING_THRESHOLD = 0.80
+EMERGENCY_THRESHOLD = 0.90
+
+def get_ratio_from_logs():
+    """Parse context ratio from OpenClaw Gateway logs."""
+    try:
+        result = subprocess.run(
+            ["journalctl", "--user", "-u", "openclaw-gateway.service", "-n", "200", "--no-pager"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        output = result.stdout
+        
+        # Find last Context Guard line with non-zero Ratio
+        for line in reversed(output.split('\n')):
+            if "Context Guard" in line and "Ratio:" in line:
+                # Format: [Context Guard] Provider: unknown, Tokens: 61619, Ratio: 30.8%
+                match = re.search(r'Tokens:\s*(\d+),\s*Ratio:\s*([\d.]+)%', line)
+                if match:
+                    tokens = int(match.group(1))
+                    ratio = float(match.group(2)) / 100.0
+                    # Only return if ratio > 0
+                    if ratio > 0:
+                        return ratio, tokens
+        
+        return None, 0
+    except Exception as e:
+        return None, 0
+
+def get_zone(ratio):
+    """Determine zone based on ratio."""
+    if ratio is None:
+        return "unknown"
+    if ratio >= EMERGENCY_THRESHOLD:
+        return "emergency"
+    if ratio >= WARNING_THRESHOLD:
+        return "warning"
+    return "normal"
+
+def save_sample(ratio, zone, tokens):
+    """Save sample to file."""
+    import os
+    os.makedirs(os.path.dirname(SAMPLES_FILE), exist_ok=True)
+    
+    sample = {
+        "timestamp": datetime.now().isoformat(),
+        "ratio": ratio if ratio else 0,
+        "zone": zone,
+        "tokens": tokens
+    }
+    
+    with open(SAMPLES_FILE, 'a') as f:
+        f.write(json.dumps(sample) + '\n')
+
+def main():
+    ratio, tokens = get_ratio_from_logs()
+    zone = get_zone(ratio)
+    
+    result = {
+        "timestamp": datetime.now().isoformat(),
+        "ratio": ratio if ratio else 0,
+        "zone": zone,
+        "tokens": tokens,
+        "status": "ok" if zone in ("normal", "unknown") else "warning"
+    }
+    
+    print(json.dumps(result))
+    
+    # Save sample
+    save_sample(ratio, zone, tokens)
+    
+    # Return non-zero if emergency
+    if zone == "emergency":
+        return 2
+    if zone == "warning":
+        return 1
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
