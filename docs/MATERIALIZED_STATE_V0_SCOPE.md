@@ -4,7 +4,7 @@
 **Status**: Feature Frozen
 **Created**: 2026-03-14
 **Updated**: 2026-03-14
-**Phase**: Phase 2.4 COMPLETE (Shadow Mode)
+**Phase**: Phase 2.5 COMPLETE (Shadow Mode)
 
 ---
 
@@ -13,6 +13,8 @@
 `core/materialized_state_v0.py` 提供从 SESSION-STATE.md 和 working-buffer.md 物化状态的独立模块。设计为可复用组件，支持 CLI 工具、prompt assembly、recovery flows 和测试。
 
 Phase 2.4 新增 `core/canonical_adapter.py`，提供只读 shadow 接入 canonical sources。
+
+Phase 2.5 新增 `core/prompt_preview.py`，提供 shadow prompt preview 和 dual-run comparison。
 
 ---
 
@@ -68,12 +70,48 @@ materialize-state --shadow-compare
 - **Provenance preserved**: 所有冲突保留来源信息
 - **No silent override**: 不静默覆盖任何值
 
-### Compare Report 内容
-- **Coverage**: 哪些字段由哪个源覆盖
-- **Conflicts**: 值不匹配的字段
-- **Fallbacks**: Canonical 有但 bridge 没有的值
-- **Warnings**: 缺失字段和冲突警告
-- **Provenance**: 每个值的完整来源链
+---
+
+## Phase 2.5: Prompt Preview Shadow Mode
+
+### 新增模块
+`core/prompt_preview.py` - MaterializedState-driven prompt preview。
+
+### Prompt Preview 功能
+```bash
+# Basic preview
+materialize-state --prompt-preview
+
+# Compare with main prompt-assemble
+materialize-state --prompt-preview --compare-with-main
+```
+
+生成：
+- JSON preview: `artifacts/prompt_preview/prompt_preview_*.json`
+- Markdown summary: `artifacts/prompt_preview/prompt_preview_*.md`
+- Dual-run compare (if requested): `artifacts/prompt_preview/dual_run_compare_*.json`
+
+### Prompt Preview 约束
+- **Shadow mode**: 不替代 main prompt chain
+- **No authority**: MaterializedState 不是 prompt authority
+- **Conflicts NOT included**: 冲突字段不静默进入 prompt
+- **Explicit warnings**: Missing blocker 触发显式警告
+- **No silent behavior**: 所有问题必须明确报告
+
+### Prompt Layers
+1. **Resident Layer**: objective, phase, branch, blocker
+2. **Action Layer**: next_step, next_actions
+3. **Metadata Layer**: sources_checked, field_sources_summary
+
+### Dual-Run Comparison
+比较 main prompt-assemble 与 shadow preview：
+- Token usage comparison
+- Layer coverage comparison
+- Quality metrics:
+  - Completeness score
+  - Consistency assessment
+  - Observability features
+- Recommendations
 
 ---
 
@@ -81,13 +119,14 @@ materialize-state --shadow-compare
 
 以下功能明确不在 v0 范围内：
 
-1. **不接 prompt-assemble** - 独立模块，不与 prompt 组装器集成
-2. **不接 recovery** - 不与 recovery 流程集成
-3. **不接 canonical 主链** - CanonicalAdapter 是 shadow only，不替代 bridge state
-4. **不接 handoff/capsule/summary/distill** - 不读取这些文件作为输入
-5. **不新增第二套 live state** - 只读，不写回
-6. **不写回 continuity 源文件** - Read-only boundary
-7. **不让 canonical shadow 替代 bridge** - Shadow compare 仅用于 observability
+1. **不接 recovery** - 不与 recovery 流程集成
+2. **不接 canonical 主链** - CanonicalAdapter 是 shadow only，不替代 bridge state
+3. **不接 handoff/capsule/summary/distill** - 不读取这些文件作为输入
+4. **不新增第二套 live state** - 只读，不写回
+5. **不写回 continuity 源文件** - Read-only boundary
+6. **不让 canonical shadow 替代 bridge** - Shadow compare 仅用于 observability
+7. **不让 shadow preview 替代 main prompt chain** - 仅用于 comparison
+8. **不静默包含冲突字段** - 冲突必须明确标记
 
 ---
 
@@ -102,8 +141,14 @@ materialize-state --json
 # Shadow compare with canonical
 materialize-state --shadow-compare
 
+# Prompt preview (shadow mode)
+materialize-state --prompt-preview
+
+# Compare with main chain
+materialize-state --prompt-preview --compare-with-main
+
 # 指定输出目录
-materialize-state --shadow-compare --output-dir ./reports
+materialize-state --prompt-preview --output-dir ./reports
 
 # Schema 验证
 materialize-state --json --schema-validate
@@ -141,6 +186,18 @@ materialize-state --fields
 - Integration tests
 - Merge stub tests
 
+### PromptPreview
+`tests/core/test_prompt_preview.py` (31 tests):
+- Token estimation tests
+- Prompt assembly tests
+- Conflict handling tests
+- Shadow mode boundary tests
+- Dual-run comparison tests
+- Quality metrics tests
+- Integration tests
+
+**Total: 87 tests**
+
 Golden fixtures: `tests/core/fixtures/materialized_state_v0_golden_fixtures.json`
 
 ---
@@ -175,9 +232,11 @@ Golden fixtures: `tests/core/fixtures/materialized_state_v0_golden_fixtures.json
 |------|-------------|
 | `core/materialized_state_v0.py` | 核心模块 (Phase 2.3) |
 | `core/canonical_adapter.py` | Canonical adapter shadow mode (Phase 2.4) |
+| `core/prompt_preview.py` | Prompt preview shadow mode (Phase 2.5) |
 | `schemas/materialized_state.v0.schema.json` | JSON Schema |
 | `tests/core/test_materialized_state_v0.py` | Contract tests (30) |
 | `tests/core/test_canonical_adapter.py` | Contract tests (26) |
+| `tests/core/test_prompt_preview.py` | Contract tests (31) |
 | `tests/core/fixtures/*_golden_fixtures.json` | Golden fixtures |
 | `tools/materialize-state` | CLI wrapper |
 | `docs/MATERIALIZED_STATE_V0_SCOPE.md` | 本文档 |
@@ -190,14 +249,15 @@ Golden fixtures: `tests/core/fixtures/materialized_state_v0_golden_fixtures.json
 - 现有 `tests/ledger/test_state_materializer.py` 全部通过
 - CLI 输出格式保持向后兼容
 - Shadow compare 不影响主链路
+- Prompt preview 不替代 main prompt chain
 
 ---
 
 ## Next Steps (Future Phases)
 
-1. **Phase 2.5**: Integrate with prompt-assemble
-2. **Phase 2.6**: Integrate with recovery flows
-3. **Phase 2.7**: Add handoff/capsule input sources
-4. **Phase 2.8**: Merge canonical into bridge state (with explicit conflict resolution)
+1. **Phase 2.6**: Integrate with recovery flows
+2. **Phase 2.7**: Add handoff/capsule input sources
+3. **Phase 2.8**: Merge canonical into bridge state (with explicit conflict resolution)
+4. **Phase 3**: Task execution kernel
 
 这些步骤在 v0 中明确不做。

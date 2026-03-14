@@ -7,6 +7,7 @@ Materializes state from SESSION-STATE.md and working-buffer.md.
 Usage:
   materialize-state [--json] [--schema-validate]
   materialize-state --shadow-compare [--output-dir DIR]
+  materialize-state --prompt-preview [--compare-with-main]
   materialize-state --fields
   materialize-state --health
 
@@ -20,6 +21,12 @@ Phase 2.4:
 - Shadow compare with canonical sources (read-only)
 - Output compare artifacts
 - Does NOT replace bridge state
+
+Phase 2.5:
+- Prompt preview from MaterializedState (shadow mode)
+- Dual-run compare with main prompt-assemble
+- Conflicts NOT silently included in prompt
+- Missing blocker explicit warning
 """
 
 from __future__ import annotations
@@ -44,6 +51,11 @@ from core.materialized_state_v0 import (
 from core.canonical_adapter import (
     CanonicalAdapter,
     create_shadow_report,
+)
+from core.prompt_preview import (
+    MaterializedStatePromptAssembler,
+    DualRunComparator,
+    create_shadow_prompt_preview,
 )
 
 
@@ -187,6 +199,126 @@ def save_shadow_compare_artifact(report, output_dir: Path) -> Dict[str, Path]:
     return artifacts
 
 
+def run_main_prompt_assemble(session_id: str) -> Optional[Dict[str, Any]]:
+    """Run main prompt-assemble chain."""
+    prompt_assemble = WORKSPACE / "tools" / "prompt-assemble"
+    active_state = WORKSPACE / "artifacts" / "active_state.json"
+    raw_history = WORKSPACE / "artifacts" / "session_history" / f"{session_id}" / "raw.jsonl"
+    
+    if not prompt_assemble.exists():
+        return None
+    
+    # Try with default paths
+    try:
+        result = subprocess.run(
+            [str(prompt_assemble), "--session-id", session_id, "--dry-run", "--json"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+    except Exception:
+        pass
+    
+    return None
+
+
+def save_prompt_preview_artifacts(preview_dict, compare_dict, output_dir: Path) -> Dict[str, Path]:
+    """Save prompt preview artifacts."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    artifacts = {}
+    
+    # Preview JSON
+    preview_path = output_dir / f"prompt_preview_{timestamp}.json"
+    preview_path.write_text(json.dumps(preview_dict, indent=2, ensure_ascii=False))
+    artifacts["preview_json"] = preview_path
+    
+    # Compare JSON (if available)
+    if compare_dict:
+        compare_path = output_dir / f"dual_run_compare_{timestamp}.json"
+        compare_path.write_text(json.dumps(compare_dict, indent=2, ensure_ascii=False))
+        artifacts["compare_json"] = compare_path
+    
+    # Human-readable summary
+    summary_path = output_dir / f"prompt_preview_{timestamp}.md"
+    md_lines = [
+        "# Prompt Preview (Shadow Mode)",
+        "",
+        f"**Generated**: {preview_dict['generated_at']}",
+        f"**Prompt Tokens**: {preview_dict['prompt_tokens']}",
+        "",
+        "## ⚠️ Shadow Mode Notice",
+        "",
+        "This is a SHADOW preview. It does NOT replace the main prompt chain.",
+        "Use for comparison and quality assessment only.",
+        "",
+        "## Layers",
+        "",
+    ]
+    
+    for name, layer in preview_dict.get("layers", {}).items():
+        md_lines.append(f"### {name}")
+        md_lines.append(f"- **Tokens**: {layer['tokens']}")
+        md_lines.append(f"- **Components**: {', '.join(layer['components']) or 'None'}")
+        md_lines.append("")
+    
+    if preview_dict.get("warnings"):
+        md_lines.append("## ⚠️ Warnings")
+        md_lines.append("")
+        for w in preview_dict["warnings"]:
+            md_lines.append(f"- {w}")
+        md_lines.append("")
+    
+    if preview_dict.get("conflicts"):
+        md_lines.append("## Conflicts Detected")
+        md_lines.append("")
+        md_lines.append("**Note**: Conflicts are NOT included in prompt by default.")
+        md_lines.append("")
+        for c in preview_dict["conflicts"]:
+            md_lines.append(f"- **{c['field']}**: bridge=`{c['bridge_value']}` vs conflict=`{c['conflict_value']}`")
+        md_lines.append("")
+    
+    if preview_dict.get("uncertainty_flag"):
+        md_lines.append("## 🚨 Uncertainty Flag")
+        md_lines.append("")
+        md_lines.append("Critical fields are missing. Review materialized state.")
+        md_lines.append("")
+    
+    # Add dual-run comparison if available
+    if compare_dict:
+        md_lines.append("---")
+        md_lines.append("")
+        md_lines.append("# Dual-Run Comparison")
+        md_lines.append("")
+        
+        metrics = compare_dict.get("quality_metrics", {})
+        md_lines.append("## Quality Metrics")
+        md_lines.append("")
+        completeness = metrics.get("completeness", {})
+        md_lines.append(f"- **Completeness Score**: {completeness.get('score', 0):.1%}")
+        md_lines.append(f"- **Present Fields**: {', '.join(completeness.get('present', [])) or 'None'}")
+        md_lines.append(f"- **Missing Fields**: {', '.join(completeness.get('missing', [])) or 'None'}")
+        md_lines.append("")
+        
+        consistency = metrics.get("consistency", {})
+        md_lines.append(f"- **Consistency**: {'✅' if consistency.get('consistent') else '❌'}")
+        md_lines.append(f"- **Token Ratio**: {consistency.get('token_ratio', 0):.2f}")
+        md_lines.append("")
+        
+        if compare_dict.get("recommendations"):
+            md_lines.append("## Recommendations")
+            md_lines.append("")
+            for r in compare_dict["recommendations"]:
+                md_lines.append(f"- {r}")
+            md_lines.append("")
+    
+    summary_path.write_text("\n".join(md_lines))
+    artifacts["summary_md"] = summary_path
+    
+    return artifacts
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Materialize state from continuity sources",
@@ -195,6 +327,8 @@ def main():
 Examples:
   materialize-state --json           # Output as JSON
   materialize-state --shadow-compare # Compare with canonical sources
+  materialize-state --prompt-preview # Generate prompt preview (shadow mode)
+  materialize-state --prompt-preview --compare-with-main  # Compare with main chain
   materialize-state --fields         # Show tracked fields
   materialize-state --health         # Health check
 """
@@ -202,7 +336,10 @@ Examples:
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--schema-validate", action="store_true", help="Validate against JSON schema")
     parser.add_argument("--shadow-compare", action="store_true", help="Compare with canonical sources (shadow mode)")
-    parser.add_argument("--output-dir", type=str, help="Output directory for shadow compare artifacts")
+    parser.add_argument("--prompt-preview", action="store_true", help="Generate prompt preview from MaterializedState")
+    parser.add_argument("--compare-with-main", action="store_true", help="Compare with main prompt-assemble chain")
+    parser.add_argument("--output-dir", type=str, help="Output directory for artifacts")
+    parser.add_argument("--session-id", type=str, default="default", help="Session ID for prompt preview")
     parser.add_argument("--fields", action="store_true", help="Show tracked fields")
     parser.add_argument("--health", action="store_true", help="Health check")
     parser.add_argument("--workspace", type=str, help="Workspace path (default: ~/.openclaw/workspace)")
@@ -225,7 +362,8 @@ Examples:
             "canonical_sources": {
                 "run_state": (WORKSPACE / "state" / "durable_execution" / "RUN_STATE.json").exists(),
                 "task_ledger": (WORKSPACE / "TASK_LEDGER.jsonl").exists(),
-            }
+            },
+            "prompt_assemble_exists": (WORKSPACE / "tools" / "prompt-assemble").exists()
         }
         print(json.dumps(result))
         return 0
@@ -249,6 +387,33 @@ Examples:
     branch = get_current_branch()
     state = materializer.materialize(branch=branch)
     state_dict = state.to_dict()
+    
+    # Prompt preview
+    if args.prompt_preview:
+        preview = create_shadow_prompt_preview(state_dict, session_id=args.session_id)
+        preview_dict = preview.to_dict()
+        
+        compare_dict = None
+        if args.compare_with_main:
+            main_chain = run_main_prompt_assemble(args.session_id)
+            if main_chain:
+                comparator = DualRunComparator()
+                compare = comparator.compare(main_chain, preview)
+                compare_dict = compare.to_dict()
+        
+        output_dir = Path(args.output_dir) if args.output_dir else WORKSPACE / "artifacts" / "prompt_preview"
+        artifacts = save_prompt_preview_artifacts(preview_dict, compare_dict, output_dir)
+        
+        result = {
+            "prompt_preview": preview_dict,
+            "artifacts": {k: str(v) for k, v in artifacts.items()}
+        }
+        
+        if compare_dict:
+            result["dual_run_compare"] = compare_dict
+        
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
     
     # Shadow compare
     if args.shadow_compare:
