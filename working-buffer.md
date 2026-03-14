@@ -1,22 +1,37 @@
 # Working Buffer
 
 ## Focus
-P1.6 Phase 1 验收收口 ✅ 完成
+Idle - Phase 2.6 RecoveryPreview Shadow Mode 完成，已推送
 
-## Just Completed
-### EgoCore P1.6 Phase 1 验收 ✅
-- 验收合同已冻结
-- 五类入口 E2E 验证通过 (5/5)
-- Tool Runtime 真调用验证通过 (4/4 + 2/2 失败识别)
-- Memory/Checkpoint/Resume 连续性验证通过
-- 文档同步完成
-- 最终裁决：Phase 1 已闭环
+## Current Status
+- **Phase**: Phase 2.6 COMPLETE
+- **Branch**: main - synced with origin/main
+- **Blocker**: None
 
-## Next Actions
-- 等待用户指令进入下一阶段
-- 技术债务已记录 (TD-1/2/3)
+## Last Completed Task
+RecoveryPreview Shadow Mode
+- 29/29 contract tests 通过
+- Shadow recovery preview
+- Dual-run comparison with main recovery
+- Conflicts tracked, not silently used
+- No real recovery actions triggered
+- Commit: ff91d2c (pushed to origin/main)
+
+## Test Summary
+- MaterializedState v0: 30 tests ✅
+- CanonicalAdapter: 26 tests ✅
+- PromptPreview: 31 tests ✅
+- RecoveryPreview: 29 tests ✅
+- **Total: 116 tests ✅**
+
+## Active Background Tasks
+None
+
+## Available Next Steps
+1. **Phase 2.7**: Add handoff/capsule input sources
+2. **Phase 3 (任务执行内核)**: Define task/task_step data models, state machine
 
 ## System Status
-- EgoCore 3 commits ahead of origin/main (含本次验收提交)
-- Phase 1 验收文档已提交本地
-- 未 push（需用户确认）
+- 状态: clean, no blockers
+- Git: synced with origin/main
+- Last update: 2026-03-14 08:22 UTC

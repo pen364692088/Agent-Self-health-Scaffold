@@ -1,0 +1,12 @@
+{
+  "pilot_enabled": false,
+  "pilot_mode": "shadow",
+  "allowed_events": [
+    "recovery_success"
+  ],
+  "blocked_events": [],
+  "authority_chain": {
+    "prompt": "main_chain"
+  },
+  "stop_conditions": {}
+}

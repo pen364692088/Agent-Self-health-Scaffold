@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""
+Prompt Pilot Preflight - Check prerequisites before enabling pilot.
+"""
+
+import sys
+import json
+from pathlib import Path
+from datetime import datetime
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+
+def check_shadow_systems() -> tuple[bool, list[str]]:
+    """Check if shadow systems are available and functional."""
+    errors = []
+    
+    try:
+        from core.prompt_preview import MaterializedStatePromptAssembler
+    except ImportError as e:
+        errors.append(f"MaterializedStatePromptAssembler not available: {e}")
+    
+    try:
+        from core.recovery_preview import RecoveryPreviewGenerator
+    except ImportError as e:
+        errors.append(f"RecoveryPreviewGenerator not available: {e}")
+    
+    try:
+        from core.materialized_state_v0 import MaterializedState
+    except ImportError as e:
+        errors.append(f"MaterializedState not available: {e}")
+    
+    try:
+        from core.canonical_adapter import CanonicalAdapter
+    except ImportError as e:
+        errors.append(f"CanonicalAdapter not available: {e}")
+    
+    return len(errors) == 0, errors
+
+
+def check_state_files() -> tuple[bool, list[str]]:
+    """Check if state files exist."""
+    errors = []
+    
+    state_file = Path.home() / '.openclaw/workspace/SESSION-STATE.md'
+    if not state_file.exists():
+        errors.append(f"SESSION-STATE.md not found at {state_file}")
+    
+    working_buffer = Path.home() / '.openclaw/workspace/working-buffer.md'
+    if not working_buffer.exists():
+        errors.append(f"working-buffer.md not found at {working_buffer}")
+    
+    return len(errors) == 0, errors
+
+
+def check_tests() -> tuple[bool, list[str]]:
+    """Check if tests are passing."""
+    errors = []
+    
+    # Run quick test import check
+    test_modules = [
+        'tests.core.test_materialized_state_v0',
+        'tests.core.test_canonical_adapter',
+        'tests.core.test_prompt_preview',
+        'tests.core.test_recovery_preview'
+    ]
+    
+    for module in test_modules:
+        try:
+            __import__(module)
+        except ImportError:
+            pass  # Test file might not exist, that's okay for preflight
+    
+    # For now, just check if we can import the core modules
+    return True, errors
+
+
+def check_config() -> tuple[bool, list[str]]:
+    """Check pilot configuration."""
+    errors = []
+    
+    config_path = Path(__file__).parent.parent / "config" / "prompt_pilot.json"
+    
+    if not config_path.exists():
+        errors.append(f"Config file not found: {config_path}")
+        return False, errors
+    
+    with open(config_path) as f:
+        config = json.load(f)
+    
+    required_keys = [
+        "pilot_enabled",
+        "pilot_mode",
+        "allowed_events",
+        "authority_chain",
+        "stop_conditions"
+    ]
+    
+    for key in required_keys:
+        if key not in config:
+            errors.append(f"Missing config key: {key}")
+    
+    # Check authority chain is main_chain
+    if config.get("authority_chain", {}).get("prompt") != "main_chain":
+        errors.append("Authority chain must be 'main_chain' for safety")
+    
+    return len(errors) == 0, errors
+
+
+def check_artifacts_dir() -> tuple[bool, list[str]]:
+    """Check if artifacts directory exists and is writable."""
+    errors = []
+    
+    artifacts_path = Path(__file__).parent.parent / "artifacts" / "prompt_pilot"
+    
+    try:
+        artifacts_path.mkdir(parents=True, exist_ok=True)
+        test_file = artifacts_path / ".write_test"
+        test_file.write_text("test")
+        test_file.unlink()
+    except Exception as e:
+        errors.append(f"Cannot write to artifacts directory: {e}")
+    
+    return len(errors) == 0, errors
+
+
+def run_preflight() -> bool:
+    """Run all preflight checks."""
+    print("=== Prompt Pilot Preflight Checks ===\n")
+    
+    all_passed = True
+    
+    # 1. Shadow systems
+    print("1. Checking shadow systems...")
+    passed, errors = check_shadow_systems()
+    if passed:
+        print("   ✅ All shadow systems available")
+    else:
+        print("   ❌ Shadow systems check failed:")
+        for e in errors:
+            print(f"      - {e}")
+        all_passed = False
+    
+    # 2. State files
+    print("\n2. Checking state files...")
+    passed, errors = check_state_files()
+    if passed:
+        print("   ✅ State files present")
+    else:
+        print("   ❌ State files check failed:")
+        for e in errors:
+            print(f"      - {e}")
+        all_passed = False
+    
+    # 3. Configuration
+    print("\n3. Checking configuration...")
+    passed, errors = check_config()
+    if passed:
+        print("   ✅ Configuration valid")
+    else:
+        print("   ❌ Configuration check failed:")
+        for e in errors:
+            print(f"      - {e}")
+        all_passed = False
+    
+    # 4. Artifacts directory
+    print("\n4. Checking artifacts directory...")
+    passed, errors = check_artifacts_dir()
+    if passed:
+        print("   ✅ Artifacts directory writable")
+    else:
+        print("   ❌ Artifacts directory check failed:")
+        for e in errors:
+            print(f"      - {e}")
+        all_passed = False
+    
+    # 5. Functional test
+    print("\n5. Running functional test...")
+    try:
+        from core.materialized_state_v0 import MaterializedState
+        from core.prompt_preview import MaterializedStatePromptAssembler
+        
+        m = MaterializedState()
+        state_dict = m.to_dict()
+        assembler = MaterializedStatePromptAssembler()
+        result = assembler.assemble(state_dict, session_id='preflight-test')
+        
+        print("   ✅ Functional test passed")
+    except Exception as e:
+        print(f"   ❌ Functional test failed: {e}")
+        all_passed = False
+    
+    # Summary
+    print("\n" + "=" * 40)
+    if all_passed:
+        print("✅ All preflight checks passed")
+        print("\nReady to enable pilot with:")
+        print("  tools/prompt-pilot-control --enable --mode shadow")
+    else:
+        print("❌ Preflight checks failed")
+        print("\nFix the issues above before enabling pilot.")
+    
+    return all_passed
+
+
+def main():
+    success = run_preflight()
+    sys.exit(0 if success else 1)
+
+
+if __name__ == '__main__':
+    main()

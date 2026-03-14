@@ -1,0 +1,1 @@
+{"timestamp": "2026-03-14T09:56:39.365464", "event_type": "prompt_pilot_call", "session_id": "test-session", "task_type": "recovery_success", "success": true, "used_shadow": false, "match_rate": 0.5833333333333334, "conflict_count": 0, "missing_count": 1, "token_overhead": 0.0, "fallback": false, "error": null}

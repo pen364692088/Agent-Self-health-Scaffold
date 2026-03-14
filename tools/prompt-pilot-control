@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""
+Prompt Pilot Control - Enable/disable/configure the prompt pilot.
+
+Usage:
+  prompt-pilot-control --status
+  prompt-pilot-control --enable [--mode shadow|pilot]
+  prompt-pilot-control --disable [--reason "..."]
+  prompt-pilot-control --set-mode shadow|pilot
+  prompt-pilot-control --reset-metrics
+"""
+
+import sys
+import json
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+CONFIG_PATH = Path(__file__).parent.parent / "config" / "prompt_pilot.json"
+METRICS_PATH = Path(__file__).parent.parent / "artifacts" / "prompt_pilot" / "metrics.jsonl"
+
+
+def load_config() -> dict:
+    """Load pilot configuration."""
+    if not CONFIG_PATH.exists():
+        return {
+            "pilot_enabled": False,
+            "pilot_mode": "shadow",
+            "allowed_events": ["recovery_success", "task_ready_to_close", "gate_completed"],
+            "blocked_events": ["subagent_spawn", "external_api_call", "user_message"],
+            "authority_chain": {"prompt": "main_chain", "recovery": "main_chain"},
+            "fallback_on_error": True,
+            "stop_conditions": {
+                "max_conflict_rate": 0.05,
+                "max_missing_rate": 0.05,
+                "min_match_rate": 0.80,
+                "max_token_overhead": 0.30
+            },
+            "rollback_trigger": {
+                "manual": True,
+                "auto_on_violation": True,
+                "auto_on_error_spike": True
+            },
+            "pilot_start_time": None,
+            "pilot_sample_count": 0,
+            "metrics": {
+                "total_calls": 0,
+                "successful_calls": 0,
+                "fallback_calls": 0,
+                "error_calls": 0,
+                "avg_match_rate": 0.0,
+                "avg_conflict_rate": 0.0,
+                "avg_missing_rate": 0.0,
+                "avg_token_overhead": 0.0
+            }
+        }
+    
+    with open(CONFIG_PATH) as f:
+        return json.load(f)
+
+
+def save_config(config: dict) -> None:
+    """Save pilot configuration."""
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=2)
+
+
+def log_event(event_type: str, details: dict) -> None:
+    """Log a pilot event."""
+    METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
+    event = {
+        "timestamp": datetime.now().isoformat(),
+        "event_type": event_type,
+        **details
+    }
+    
+    with open(METRICS_PATH, 'a') as f:
+        f.write(json.dumps(event) + '\n')
+
+
+def show_status() -> None:
+    """Show current pilot status."""
+    config = load_config()
+    
+    print("=== Prompt Pilot Status ===\n")
+    
+    status = "ENABLED" if config.get("pilot_enabled") else "DISABLED"
+    mode = config.get("pilot_mode", "shadow")
+    
+    print(f"Status: {status}")
+    print(f"Mode: {mode}")
+    print(f"Authority: {config.get('authority_chain', {}).get('prompt', 'main_chain')}")
+    
+    if config.get("pilot_start_time"):
+        print(f"Started: {config['pilot_start_time']}")
+    
+    print(f"\nAllowed Events: {', '.join(config.get('allowed_events', []))}")
+    print(f"Blocked Events: {', '.join(config.get('blocked_events', []))}")
+    
+    metrics = config.get("metrics", {})
+    print(f"\n--- Metrics ---")
+    print(f"Total Calls: {metrics.get('total_calls', 0)}")
+    print(f"Successful: {metrics.get('successful_calls', 0)}")
+    print(f"Fallbacks: {metrics.get('fallback_calls', 0)}")
+    print(f"Errors: {metrics.get('error_calls', 0)}")
+    print(f"Avg Match Rate: {metrics.get('avg_match_rate', 0):.1%}")
+    print(f"Avg Conflict Rate: {metrics.get('avg_conflict_rate', 0):.1%}")
+    print(f"Avg Missing Rate: {metrics.get('avg_missing_rate', 0):.1%}")
+    print(f"Avg Token Overhead: {metrics.get('avg_token_overhead', 0):.1%}")
+    
+    # Check stop conditions
+    stop = config.get("stop_conditions", {})
+    violations = []
+    
+    if metrics.get("avg_conflict_rate", 0) > stop.get("max_conflict_rate", 0.05):
+        violations.append(f"Conflict rate {metrics['avg_conflict_rate']:.1%} > {stop['max_conflict_rate']:.1%}")
+    if metrics.get("avg_missing_rate", 0) > stop.get("max_missing_rate", 0.05):
+        violations.append(f"Missing rate {metrics['avg_missing_rate']:.1%} > {stop['max_missing_rate']:.1%}")
+    if metrics.get("avg_match_rate", 0) < stop.get("min_match_rate", 0.80) and metrics.get("total_calls", 0) > 10:
+        violations.append(f"Match rate {metrics['avg_match_rate']:.1%} < {stop['min_match_rate']:.1%}")
+    if metrics.get("avg_token_overhead", 0) > stop.get("max_token_overhead", 0.30):
+        violations.append(f"Token overhead {metrics['avg_token_overhead']:.1%} > {stop['max_token_overhead']:.1%}")
+    
+    if violations:
+        print(f"\n⚠️  STOP CONDITION VIOLATIONS:")
+        for v in violations:
+            print(f"  - {v}")
+    else:
+        print(f"\n✅ No stop condition violations")
+
+
+def enable_pilot(mode: str = "shadow") -> None:
+    """Enable the pilot."""
+    config = load_config()
+    
+    if config.get("pilot_enabled"):
+        print("Pilot already enabled")
+        return
+    
+    # Pre-flight checks
+    print("Running pre-flight checks...")
+    
+    # Check if shadow systems are available
+    try:
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from core.prompt_preview import MaterializedStatePromptAssembler
+        from core.materialized_state_v0 import MaterializedState
+        print("  ✅ Shadow systems available")
+    except ImportError as e:
+        print(f"  ❌ Shadow systems not available: {e}")
+        print("Cannot enable pilot")
+        return
+    
+    # Enable pilot
+    config["pilot_enabled"] = True
+    config["pilot_mode"] = mode
+    config["pilot_start_time"] = datetime.now().isoformat()
+    config["pilot_sample_count"] = 0
+    
+    # Reset metrics
+    config["metrics"] = {
+        "total_calls": 0,
+        "successful_calls": 0,
+        "fallback_calls": 0,
+        "error_calls": 0,
+        "avg_match_rate": 0.0,
+        "avg_conflict_rate": 0.0,
+        "avg_missing_rate": 0.0,
+        "avg_token_overhead": 0.0
+    }
+    
+    save_config(config)
+    
+    log_event("pilot_enabled", {
+        "mode": mode,
+        "config": config
+    })
+    
+    print(f"\n✅ Pilot ENABLED in {mode} mode")
+    print(f"   Authority chain: main_chain (shadow will not replace)")
+    print(f"   Fallback on error: {config.get('fallback_on_error', True)}")
+
+
+def disable_pilot(reason: str = None) -> None:
+    """Disable the pilot."""
+    config = load_config()
+    
+    if not config.get("pilot_enabled"):
+        print("Pilot already disabled")
+        return
+    
+    config["pilot_enabled"] = False
+    config["pilot_mode"] = "shadow"
+    
+    save_config(config)
+    
+    log_event("pilot_disabled", {
+        "reason": reason or "manual",
+        "final_metrics": config.get("metrics", {})
+    })
+    
+    print(f"✅ Pilot DISABLED")
+    if reason:
+        print(f"   Reason: {reason}")
+
+
+def set_mode(mode: str) -> None:
+    """Set the pilot mode."""
+    if mode not in ("shadow", "pilot"):
+        print(f"Invalid mode: {mode}. Must be 'shadow' or 'pilot'")
+        return
+    
+    config = load_config()
+    old_mode = config.get("pilot_mode", "shadow")
+    config["pilot_mode"] = mode
+    
+    save_config(config)
+    
+    log_event("pilot_mode_changed", {
+        "old_mode": old_mode,
+        "new_mode": mode
+    })
+    
+    print(f"✅ Mode changed: {old_mode} → {mode}")
+
+
+def reset_metrics() -> None:
+    """Reset pilot metrics."""
+    config = load_config()
+    
+    config["metrics"] = {
+        "total_calls": 0,
+        "successful_calls": 0,
+        "fallback_calls": 0,
+        "error_calls": 0,
+        "avg_match_rate": 0.0,
+        "avg_conflict_rate": 0.0,
+        "avg_missing_rate": 0.0,
+        "avg_token_overhead": 0.0
+    }
+    config["pilot_sample_count"] = 0
+    
+    save_config(config)
+    
+    log_event("metrics_reset", {})
+    
+    print("✅ Metrics reset")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Prompt Pilot Control')
+    
+    parser.add_argument('--status', action='store_true', help='Show current status')
+    parser.add_argument('--enable', action='store_true', help='Enable pilot')
+    parser.add_argument('--disable', action='store_true', help='Disable pilot')
+    parser.add_argument('--set-mode', dest='set_mode', choices=['shadow', 'pilot'],
+                        help='Set pilot mode')
+    parser.add_argument('--mode', default='shadow', choices=['shadow', 'pilot'],
+                        help='Mode when enabling')
+    parser.add_argument('--reason', help='Reason for disabling')
+    parser.add_argument('--reset-metrics', action='store_true', help='Reset metrics')
+    
+    args = parser.parse_args()
+    
+    if args.status or (not any([args.enable, args.disable, args.set_mode, args.reset_metrics])):
+        show_status()
+    elif args.enable:
+        enable_pilot(args.mode)
+    elif args.disable:
+        disable_pilot(args.reason)
+    elif args.set_mode:
+        set_mode(args.set_mode)
+    elif args.reset_metrics:
+        reset_metrics()
+
+
+if __name__ == '__main__':
+    main()
