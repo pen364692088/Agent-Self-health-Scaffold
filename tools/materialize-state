@@ -6,6 +6,7 @@ Materializes state from SESSION-STATE.md and working-buffer.md.
 
 Usage:
   materialize-state [--json] [--schema-validate]
+  materialize-state --shadow-compare [--output-dir DIR]
   materialize-state --fields
   materialize-state --health
 
@@ -14,6 +15,11 @@ v0 Constraints:
 - No handoff/capsule/summary/distill integration
 - No write-back to continuity sources
 - No second live state
+
+Phase 2.4:
+- Shadow compare with canonical sources (read-only)
+- Output compare artifacts
+- Does NOT replace bridge state
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ import argparse
 import json
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -33,6 +40,10 @@ from core.materialized_state_v0 import (
     StateMaterializerV0,
     MaterializedState,
     TRACKED_FIELDS,
+)
+from core.canonical_adapter import (
+    CanonicalAdapter,
+    create_shadow_report,
 )
 
 
@@ -69,6 +80,113 @@ def validate_against_schema(state_dict: Dict[str, Any]) -> tuple[bool, Optional[
         return False, str(e)
 
 
+def save_shadow_compare_artifact(report, output_dir: Path) -> Dict[str, Path]:
+    """Save shadow compare report as artifacts."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    artifacts = {}
+    
+    # Full JSON report
+    json_path = output_dir / f"shadow_compare_{timestamp}.json"
+    report_dict = {
+        "generated_at": report.generated_at,
+        "coverage": report.coverage,
+        "conflicts": report.conflicts,
+        "fallbacks": report.fallbacks,
+        "warnings": report.warnings,
+        "summary": report.summary,
+        "field_comparisons": {
+            name: {
+                "field_name": comp.field_name,
+                "bridge_value": comp.bridge_value,
+                "canonical_value": comp.canonical_value,
+                "bridge_source": comp.bridge_source,
+                "canonical_source": comp.canonical_source,
+                "match": comp.match,
+                "conflict_type": comp.conflict_type
+            }
+            for name, comp in report.field_comparisons.items()
+        },
+        "sources": {
+            name: {
+                "name": s.name,
+                "path": s.path,
+                "exists": s.exists,
+                "last_modified": s.last_modified,
+                "record_count": s.record_count
+            }
+            for name, s in report.sources.items()
+        }
+    }
+    json_path.write_text(json.dumps(report_dict, indent=2, ensure_ascii=False))
+    artifacts["json_report"] = json_path
+    
+    # Human-readable summary
+    summary_path = output_dir / f"shadow_compare_{timestamp}.md"
+    md_lines = [
+        "# Shadow Compare Report",
+        "",
+        f"**Generated**: {report.generated_at}",
+        "",
+        "## Summary",
+        "",
+        f"- **Total Fields Compared**: {report.summary['total_fields_compared']}",
+        f"- **Matches**: {report.summary['matches']}",
+        f"- **Conflicts**: {report.summary['conflicts']}",
+        f"- **Fallbacks Available**: {report.summary['fallbacks_available']}",
+        f"- **Bridge Coverage**: {report.summary['bridge_coverage']}/{report.summary['total_fields_compared']}",
+        f"- **Canonical Coverage**: {report.summary['canonical_coverage']}/{report.summary['total_fields_compared']}",
+        "",
+        "## Coverage",
+        "",
+        f"- **Both sources**: {', '.join(report.coverage['both']) or 'None'}",
+        f"- **Bridge only**: {', '.join(report.coverage['bridge_only']) or 'None'}",
+        f"- **Canonical only**: {', '.join(report.coverage['canonical_only']) or 'None'}",
+        f"- **Neither**: {', '.join(report.coverage['neither']) or 'None'}",
+        "",
+        "## Field Comparisons",
+        "",
+    ]
+    
+    for name, comp in report.field_comparisons.items():
+        match_icon = "✅" if comp.match else "❌"
+        md_lines.append(f"### {name}: {match_icon}")
+        md_lines.append(f"- **Bridge**: {comp.bridge_value or 'N/A'} ({comp.bridge_source or 'N/A'})")
+        md_lines.append(f"- **Canonical**: {comp.canonical_value or 'N/A'} ({comp.canonical_source or 'N/A'})")
+        if comp.conflict_type:
+            md_lines.append(f"- **Conflict Type**: {comp.conflict_type}")
+        md_lines.append("")
+    
+    if report.conflicts:
+        md_lines.append("## Conflicts")
+        md_lines.append("")
+        for c in report.conflicts:
+            md_lines.append(f"- **{c['field']}**:")
+            md_lines.append(f"  - Bridge: `{c['bridge_value']}` ({c['bridge_source']})")
+            md_lines.append(f"  - Canonical: `{c['canonical_value']}` ({c['canonical_source']})")
+        md_lines.append("")
+    
+    if report.fallbacks:
+        md_lines.append("## Available Fallbacks")
+        md_lines.append("")
+        for f in report.fallbacks:
+            md_lines.append(f"- **{f['field']}**: `{f['canonical_value']}` from {f['canonical_source']}")
+        md_lines.append("")
+    
+    if report.warnings:
+        md_lines.append("## Warnings")
+        md_lines.append("")
+        for w in report.warnings:
+            md_lines.append(f"- {w}")
+        md_lines.append("")
+    
+    summary_path.write_text("\n".join(md_lines))
+    artifacts["md_summary"] = summary_path
+    
+    return artifacts
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Materialize state from continuity sources",
@@ -76,13 +194,15 @@ def main():
         epilog="""
 Examples:
   materialize-state --json           # Output as JSON
+  materialize-state --shadow-compare # Compare with canonical sources
   materialize-state --fields         # Show tracked fields
-  materialize-state --schema-validate # Validate against schema
   materialize-state --health         # Health check
 """
     )
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--schema-validate", action="store_true", help="Validate against JSON schema")
+    parser.add_argument("--shadow-compare", action="store_true", help="Compare with canonical sources (shadow mode)")
+    parser.add_argument("--output-dir", type=str, help="Output directory for shadow compare artifacts")
     parser.add_argument("--fields", action="store_true", help="Show tracked fields")
     parser.add_argument("--health", action="store_true", help="Health check")
     parser.add_argument("--workspace", type=str, help="Workspace path (default: ~/.openclaw/workspace)")
@@ -102,6 +222,10 @@ Examples:
             "workspace": str(WORKSPACE),
             "session_state_exists": (WORKSPACE / "SESSION-STATE.md").exists(),
             "working_buffer_exists": (WORKSPACE / "working-buffer.md").exists(),
+            "canonical_sources": {
+                "run_state": (WORKSPACE / "state" / "durable_execution" / "RUN_STATE.json").exists(),
+                "task_ledger": (WORKSPACE / "TASK_LEDGER.jsonl").exists(),
+            }
         }
         print(json.dumps(result))
         return 0
@@ -125,6 +249,33 @@ Examples:
     branch = get_current_branch()
     state = materializer.materialize(branch=branch)
     state_dict = state.to_dict()
+    
+    # Shadow compare
+    if args.shadow_compare:
+        report = create_shadow_report(state_dict, workspace_path=WORKSPACE)
+        
+        output_dir = Path(args.output_dir) if args.output_dir else WORKSPACE / "artifacts" / "shadow_compare"
+        artifacts = save_shadow_compare_artifact(report, output_dir)
+        
+        # Output summary
+        result = {
+            "shadow_compare": {
+                "generated_at": report.generated_at,
+                "summary": report.summary,
+                "coverage": report.coverage,
+                "conflicts_count": len(report.conflicts),
+                "fallbacks_count": len(report.fallbacks),
+                "warnings_count": len(report.warnings),
+                "artifacts": {
+                    "json_report": str(artifacts["json_report"]),
+                    "md_summary": str(artifacts["md_summary"])
+                }
+            },
+            "bridge_state": state_dict
+        }
+        
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
     
     # Schema validation
     if args.schema_validate:
