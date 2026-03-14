@@ -1,0 +1,331 @@
+#!/usr/bin/env python3
+"""
+materialize-state - Derived materialized_state v0 generator
+
+Reads only:
+- SESSION-STATE.md
+- working-buffer.md
+
+Writes only:
+- artifacts/materialized_state/latest.json (or custom path under artifacts/)
+
+This tool generates a derived, prompt-ready state view.
+It is NOT an authoritative truth source.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+REPO = Path('/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold')
+SESSION_STATE = REPO / 'SESSION-STATE.md'
+WORKING_BUFFER = REPO / 'working-buffer.md'
+DEFAULT_OUTPUT = REPO / 'artifacts' / 'materialized_state' / 'latest.json'
+SCHEMA_PATH = REPO / 'schemas' / 'materialized_state.v0.schema.json'
+
+USAGE_ORDER = [
+    'ledger_run_truth',
+    'materialized_state',
+    'SESSION-STATE.md',
+    'working-buffer.md',
+    'summary_like_artifacts',
+]
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def read_text(path: Path) -> str:
+    if not path.exists():
+        return ''
+    return path.read_text(encoding='utf-8', errors='ignore')
+
+
+def extract_section(md: str, heading: str) -> Optional[str]:
+    pattern = re.compile(rf'^##\s+{re.escape(heading)}\s*$', re.MULTILINE)
+    m = pattern.search(md)
+    if not m:
+        return None
+    start = m.end()
+    rest = md[start:]
+    next_h = re.search(r'^##\s+', rest, re.MULTILINE)
+    section = rest[:next_h.start()] if next_h else rest
+    section = section.strip()
+    return section or None
+
+
+def extract_bullets(section: Optional[str]) -> List[str]:
+    if not section:
+        return []
+    out = []
+    for line in section.splitlines():
+        m = re.match(r'^\s*[-*]\s+(.*)$', line)
+        if m:
+            out.append(m.group(1).strip())
+    return out
+
+
+def extract_numbered(section: Optional[str]) -> List[str]:
+    if not section:
+        return []
+    out = []
+    for line in section.splitlines():
+        m = re.match(r'^\s*\d+\.\s+(.*)$', line)
+        if m:
+            out.append(m.group(1).strip())
+    return out
+
+
+def extract_inline_value(md: str, heading: str) -> Optional[str]:
+    section = extract_section(md, heading)
+    if not section:
+        return None
+    first = section.splitlines()[0].strip() if section.splitlines() else ''
+    return first or None
+
+
+def extract_key_files(md: str) -> List[str]:
+    section = extract_section(md, '关键文件')
+    return extract_bullets(section)
+
+
+def derive_execution_status(phase: Optional[str], blocker: Optional[str]) -> str:
+    phase_norm = (phase or '').strip().lower()
+    blocker_norm = (blocker or '').strip().lower()
+    if phase_norm in {'done', 'completed', 'complete'}:
+        return 'completed'
+    if blocker_norm and blocker_norm not in {'none', '无', '-'}:
+        return 'blocked'
+    if phase_norm in {'waiting'}:
+        return 'waiting'
+    if phase_norm:
+        return 'running'
+    return 'unknown'
+
+
+def session_id_from_context() -> str:
+    return 'repo_local_session'
+
+
+def build_materialized_state() -> Dict[str, Any]:
+    ss_text = read_text(SESSION_STATE)
+    wb_text = read_text(WORKING_BUFFER)
+
+    warnings: List[str] = [
+        'materialized_state is derived prompt-ready state, not authoritative truth'
+    ]
+
+    sources = {
+        'canonical': [],
+        'continuity_bridge': [],
+        'working_memory': [],
+        'summary_like': []
+    }
+    field_sources: Dict[str, str] = {}
+
+    objective = extract_inline_value(ss_text, 'Current Objective') if ss_text else None
+    phase = extract_inline_value(ss_text, 'Phase') if ss_text else None
+    branch = extract_inline_value(ss_text, 'Branch') if ss_text else None
+    blocker = extract_inline_value(ss_text, 'Blocker') if ss_text else None
+    next_steps = extract_numbered(extract_section(ss_text, '下一步')) if ss_text else []
+    key_files = extract_key_files(ss_text) if ss_text else []
+
+    current_focus = extract_inline_value(wb_text, 'Focus') if wb_text else None
+    immediate_plan = extract_numbered(extract_section(wb_text, 'Immediate Plan')) if wb_text else []
+    uncertainties = extract_bullets(extract_section(wb_text, 'Remaining Uncertainty')) if wb_text else []
+
+    if ss_text:
+        sources['continuity_bridge'].append('SESSION-STATE.md')
+    else:
+        warnings.append('SESSION-STATE.md missing; canonical continuity bridge data unavailable')
+
+    if wb_text:
+        sources['working_memory'].append('working-buffer.md')
+    else:
+        warnings.append('working-buffer.md missing; advisory reasoning fields unavailable')
+
+    if objective:
+        field_sources['execution.objective'] = 'SESSION-STATE.md'
+    else:
+        warnings.append('objective missing; left conservative/empty')
+        objective = ''
+
+    if phase:
+        field_sources['execution.phase'] = 'SESSION-STATE.md'
+    else:
+        warnings.append('phase missing; execution phase downgraded to unknown')
+        phase = 'unknown'
+
+    if branch:
+        field_sources['identity.branch'] = 'SESSION-STATE.md'
+
+    current_step = next_steps[0] if next_steps else ''
+    if current_step:
+        field_sources['execution.current_step'] = 'SESSION-STATE.md.next_step_derived'
+
+    blockers = []
+    if blocker and blocker.strip().lower() not in {'none', '无', '-'}:
+        blockers = [blocker.strip()]
+        field_sources['execution.blockers'] = 'SESSION-STATE.md'
+
+    if key_files:
+        field_sources['execution.key_files'] = 'SESSION-STATE.md'
+
+    if current_focus:
+        field_sources['reasoning.current_focus'] = 'working-buffer.md'
+    if immediate_plan:
+        field_sources['reasoning.immediate_plan'] = 'working-buffer.md.immediate_plan_derived'
+    if uncertainties:
+        field_sources['reasoning.uncertainties'] = 'working-buffer.md.remaining_uncertainty_derived'
+
+    state = {
+        'schema_version': 'materialized_state.v0',
+        'derived_at': now_iso(),
+        'authority': {
+            'is_authoritative_truth': False,
+            'usage_order': USAGE_ORDER,
+        },
+        'identity': {
+            'session_id': session_id_from_context(),
+            'branch': branch or ''
+        },
+        'execution': {
+            'objective': objective,
+            'phase': phase,
+            'current_step': current_step,
+            'execution_status': derive_execution_status(phase, blocker),
+            'blockers': blockers,
+            'active_children': [],
+            'verification': {
+                'pending': []
+            },
+            'key_files': key_files,
+        },
+        'reasoning': {
+            'current_focus': current_focus or '',
+            'immediate_plan': immediate_plan,
+            'reasoning_targets': [],
+            'uncertainties': uncertainties,
+            'priority_artifact_refs': [
+                'SESSION-STATE.md' if ss_text else '',
+                'working-buffer.md' if wb_text else ''
+            ]
+        },
+        'sources': sources,
+        'field_sources': field_sources,
+        'warnings': warnings,
+    }
+
+    # Remove empty artifact refs conservatively
+    state['reasoning']['priority_artifact_refs'] = [x for x in state['reasoning']['priority_artifact_refs'] if x]
+    return state
+
+
+def validate_materialized_state(obj: Dict[str, Any]) -> List[str]:
+    errs: List[str] = []
+    required_top = {
+        'schema_version', 'derived_at', 'authority', 'identity', 'execution',
+        'reasoning', 'sources', 'field_sources', 'warnings'
+    }
+    missing = required_top - set(obj.keys())
+    if missing:
+        errs.append(f'missing top-level keys: {sorted(missing)}')
+
+    if obj.get('schema_version') != 'materialized_state.v0':
+        errs.append('schema_version must be materialized_state.v0')
+
+    authority = obj.get('authority', {})
+    if authority.get('is_authoritative_truth') is not False:
+        errs.append('authority.is_authoritative_truth must be false')
+
+    usage = authority.get('usage_order', [])
+    for required in ['ledger_run_truth', 'materialized_state', 'SESSION-STATE.md', 'working-buffer.md', 'summary_like_artifacts']:
+        if required not in usage:
+            errs.append(f'authority.usage_order missing {required}')
+
+    identity = obj.get('identity', {})
+    if 'session_id' not in identity or not isinstance(identity.get('session_id'), str):
+        errs.append('identity.session_id missing or invalid')
+
+    execution = obj.get('execution', {})
+    for key in ['objective', 'phase', 'execution_status']:
+        if key not in execution:
+            errs.append(f'execution.{key} missing')
+
+    if execution.get('execution_status') not in {'running', 'blocked', 'waiting', 'completed', 'unknown'}:
+        errs.append('execution.execution_status invalid')
+
+    srcs = obj.get('sources', {})
+    for group in ['canonical', 'continuity_bridge', 'working_memory', 'summary_like']:
+        if group not in srcs:
+            errs.append(f'sources.{group} missing')
+
+    return errs
+
+
+def ensure_output_under_artifacts(path: Path):
+    artifacts = REPO / 'artifacts'
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(artifacts.resolve())
+    except Exception:
+        raise SystemExit('ERROR: output path must stay under artifacts/')
+
+
+def write_output(path: Path, obj: Dict[str, Any]):
+    ensure_output_under_artifacts(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+
+def cmd_check(output: Path) -> int:
+    if not output.exists():
+        print(json.dumps({'status': 'fail', 'error': f'missing output: {output}'}))
+        return 1
+    try:
+        obj = json.loads(output.read_text(encoding='utf-8'))
+    except Exception as e:
+        print(json.dumps({'status': 'fail', 'error': f'invalid json: {e}'}))
+        return 1
+    errs = validate_materialized_state(obj)
+    status = 'ok' if not errs else 'fail'
+    print(json.dumps({'status': status, 'errors': errs, 'output': str(output)}, ensure_ascii=False, indent=2))
+    return 0 if not errs else 1
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description='Generate derived materialized_state v0')
+    parser.add_argument('--output', default=str(DEFAULT_OUTPUT), help='Output path under artifacts/')
+    parser.add_argument('--check', action='store_true', help='Validate an existing output file')
+    parser.add_argument('--json', action='store_true', help='Print generated JSON to stdout')
+    args = parser.parse_args()
+
+    output = Path(args.output)
+
+    if args.check:
+        return cmd_check(output)
+
+    obj = build_materialized_state()
+    errs = validate_materialized_state(obj)
+    if errs:
+        print(json.dumps({'status': 'fail', 'errors': errs}, ensure_ascii=False, indent=2), file=sys.stderr)
+        return 1
+
+    write_output(output, obj)
+
+    if args.json:
+        print(json.dumps(obj, ensure_ascii=False, indent=2))
+    else:
+        print(json.dumps({'status': 'ok', 'output': str(output), 'warnings': obj.get('warnings', [])}, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
