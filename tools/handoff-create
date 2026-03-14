@@ -21,7 +21,7 @@ from pathlib import Path
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
-WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+WORKING_BUFFER = WORKSPACE / "working-buffer.md"
 HANDOFF = WORKSPACE / "handoff.md"
 
 

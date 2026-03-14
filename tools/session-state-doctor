@@ -23,7 +23,7 @@ from typing import Any, Dict, List
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
-WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+WORKING_BUFFER = WORKSPACE / "working-buffer.md"
 HANDOFF = WORKSPACE / "handoff.md"
 WAL_FILE = WORKSPACE / "state" / "wal" / "session_state_wal.jsonl"
 RECOVERY_SUMMARY = WORKSPACE / "artifacts" / "session_recovery" / "latest_recovery_summary.json"

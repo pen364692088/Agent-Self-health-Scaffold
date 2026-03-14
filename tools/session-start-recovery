@@ -57,7 +57,7 @@ def retrieve_memory_constraints() -> Dict[str, Any]:
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
-WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+WORKING_BUFFER = WORKSPACE / "working-buffer.md"
 HANDOFF = WORKSPACE / "handoff.md"
 LAST_SESSION_FILE = WORKSPACE / ".last_session_id"
 RECOVERY_DIR = WORKSPACE / "artifacts" / "session_recovery"

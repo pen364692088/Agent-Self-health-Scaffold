@@ -26,7 +26,7 @@ from typing import Any, Dict, Tuple
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
-WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
+WORKING_BUFFER = WORKSPACE / "working-buffer.md"
 HANDOFF = WORKSPACE / "handoff.md"
 
 # Frozen threshold bands (v1.1.1a)

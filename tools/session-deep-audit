@@ -20,7 +20,7 @@ EVENTS_FILE = WORKSPACE / "state/session_continuity_events.jsonl"
 SUMMARY_FILE = WORKSPACE / "artifacts/session_recovery/latest_recovery_summary.json"
 HANDOFF_FILE = WORKSPACE / "handoff.md"
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
-WORKING_BUFFER = WORKSPACE / "memory/working-buffer.md"
+WORKING_BUFFER = WORKSPACE / "working-buffer.md"
 
 def parse_events():
     """Parse all events from log."""
