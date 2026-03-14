@@ -1,24 +1,33 @@
 # SESSION-STATE.md
 
 ## Current Objective
-Repo Hygiene / Truth收口 - COMPLETE
+Phase 2.9 Prompt Limited Pilot - Shadow Mode Running
 
 ## Phase
-Phase 2.9 - Dual Gate Implemented, Repo Hygiene Complete
+Phase 2.9 - Shadow Mode Active, Collecting Samples
 
 ## Branch
 main
 
 ## Last Completed
-- Phase 2.9: Dual gate mechanism implemented
-- Repo hygiene: README, CURRENT_STATUS created
-- Config truth: metrics.effective_samples clarified
-- Directory map: 41 directories classified
+- Repo Hygiene / Truth收口
+- Gate 计算bug修复 + 一致性保护
+- Shadow mode enabled: 2026-03-14T10:59:48
+- 有效样本: 1/20
 
 ## Blocker
 None
 
 ## Next Action
-Pilot is ready. Start shadow mode when desired:
-  tools/prompt-pilot-preflight
-  tools/prompt-pilot-control --enable --mode shadow
+Continue shadow mode until:
+- Effective samples ≥ 20
+- Match rate ≥ 80%
+- Conflict rate ≤ 5%
+- Fallback rate ≤ 10%
+
+Daily check:
+  tools/prompt-pilot-control --status
+  tools/prompt-pilot-control --check-gate
+
+## Session Archived
+2026-03-14 - Compressed 62.5%, pushed to OpenViking
