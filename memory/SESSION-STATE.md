@@ -1,3 +1,9 @@
+# NON-LIVE ARCHIVE COPY — DO NOT USE AS LIVE CONTINUITY STATE
+
+> Status: archive-only / non-live / stop-write candidate
+> Live continuity source: `/SESSION-STATE.md`
+> Policy: active continuity/recovery tools must not treat this file as authoritative state.
+
 # SESSION-STATE.md
 
 ## Current State: Ready for /new

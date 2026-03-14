@@ -1,3 +1,9 @@
+# NON-LIVE ARCHIVE COPY — DO NOT USE AS LIVE WORKING MEMORY
+
+> Status: archive-only / non-live / stop-write candidate
+> Live continuity source: `/working-buffer.md`
+> Policy: active continuity/recovery tools must not treat this file as authoritative live working memory.
+
 # Working Buffer
 
 **Updated**: 2026-03-08T14:15:45-05:00
