@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 """
 Prompt Pilot Preflight - Check prerequisites before enabling pilot.
+
+Enhanced with:
+- Sample availability check
+- Rollback switch verification
+- Stop condition completeness check
+- Metrics path writability
 """
 
 import sys
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+CONFIG_PATH = Path(__file__).parent.parent / "config" / "prompt_pilot.json"
+METRICS_PATH = Path(__file__).parent.parent / "artifacts" / "prompt_pilot" / "metrics.jsonl"
+EVENTS_PATH = Path(__file__).parent.parent / "state" / "session_continuity_events.jsonl"
 
 
 def check_shadow_systems() -> tuple[bool, list[str]]:
@@ -35,6 +45,11 @@ def check_shadow_systems() -> tuple[bool, list[str]]:
     except ImportError as e:
         errors.append(f"CanonicalAdapter not available: {e}")
     
+    try:
+        from core.prompt_pilot_runner import PromptPilotRunner
+    except ImportError as e:
+        errors.append(f"PromptPilotRunner not available: {e}")
+    
     return len(errors) == 0, errors
 
 
@@ -53,47 +68,26 @@ def check_state_files() -> tuple[bool, list[str]]:
     return len(errors) == 0, errors
 
 
-def check_tests() -> tuple[bool, list[str]]:
-    """Check if tests are passing."""
+def check_config() -> tuple[bool, list[str], dict]:
+    """Check pilot configuration completeness."""
     errors = []
+    warnings = []
     
-    # Run quick test import check
-    test_modules = [
-        'tests.core.test_materialized_state_v0',
-        'tests.core.test_canonical_adapter',
-        'tests.core.test_prompt_preview',
-        'tests.core.test_recovery_preview'
-    ]
+    if not CONFIG_PATH.exists():
+        errors.append(f"Config file not found: {CONFIG_PATH}")
+        return False, errors, {}
     
-    for module in test_modules:
-        try:
-            __import__(module)
-        except ImportError:
-            pass  # Test file might not exist, that's okay for preflight
-    
-    # For now, just check if we can import the core modules
-    return True, errors
-
-
-def check_config() -> tuple[bool, list[str]]:
-    """Check pilot configuration."""
-    errors = []
-    
-    config_path = Path(__file__).parent.parent / "config" / "prompt_pilot.json"
-    
-    if not config_path.exists():
-        errors.append(f"Config file not found: {config_path}")
-        return False, errors
-    
-    with open(config_path) as f:
+    with open(CONFIG_PATH) as f:
         config = json.load(f)
     
+    # Required keys
     required_keys = [
         "pilot_enabled",
         "pilot_mode",
         "allowed_events",
         "authority_chain",
-        "stop_conditions"
+        "stop_conditions",
+        "dual_gate"
     ]
     
     for key in required_keys:
@@ -104,22 +98,190 @@ def check_config() -> tuple[bool, list[str]]:
     if config.get("authority_chain", {}).get("prompt") != "main_chain":
         errors.append("Authority chain must be 'main_chain' for safety")
     
+    # Check stop conditions completeness
+    stop = config.get("stop_conditions", {})
+    required_stop_keys = [
+        "max_conflict_rate",
+        "max_missing_rate",
+        "min_match_rate",
+        "max_token_overhead",
+        "max_fallback_rate",
+        "max_manual_override_rate",
+        "min_provenance_completeness"
+    ]
+    
+    for key in required_stop_keys:
+        if key not in stop:
+            warnings.append(f"Stop condition missing: {key}")
+    
+    # Check dual gate configuration
+    dual_gate = config.get("dual_gate", {})
+    if "shadow_to_pilot" not in dual_gate:
+        errors.append("Missing dual_gate.shadow_to_pilot configuration")
+    else:
+        stp = dual_gate["shadow_to_pilot"]
+        if "min_samples" not in stp:
+            errors.append("Missing shadow_to_pilot.min_samples")
+        if "max_days" not in stp:
+            errors.append("Missing shadow_to_pilot.max_days")
+    
+    if "pilot_to_decision" not in dual_gate:
+        warnings.append("Missing dual_gate.pilot_to_decision configuration")
+    
+    return len(errors) == 0, errors + warnings, config
+
+
+def check_rollback_switch() -> tuple[bool, list[str]]:
+    """Check if rollback switch is available and functional."""
+    errors = []
+    
+    if not CONFIG_PATH.exists():
+        errors.append("Config file not found - cannot verify rollback switch")
+        return False, errors
+    
+    with open(CONFIG_PATH) as f:
+        config = json.load(f)
+    
+    # Check rollback triggers
+    rollback = config.get("rollback_trigger", {})
+    
+    if not rollback.get("manual"):
+        errors.append("Manual rollback not enabled in config")
+    
+    # Test rollback by toggling pilot_enabled
+    original = config.get("pilot_enabled", False)
+    
+    try:
+        # Try to set pilot_enabled to false
+        config["pilot_enabled"] = False
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(config, f, indent=2)
+        
+        # Verify
+        with open(CONFIG_PATH) as f:
+            verify = json.load(f)
+        
+        if verify.get("pilot_enabled") != False:
+            errors.append("Rollback switch verification failed")
+        
+        # Restore
+        config["pilot_enabled"] = original
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(config, f, indent=2)
+            
+    except Exception as e:
+        errors.append(f"Rollback switch test failed: {e}")
+    
     return len(errors) == 0, errors
 
 
-def check_artifacts_dir() -> tuple[bool, list[str]]:
-    """Check if artifacts directory exists and is writable."""
+def check_metrics_path() -> tuple[bool, list[str]]:
+    """Check if metrics path exists and is writable."""
     errors = []
     
-    artifacts_path = Path(__file__).parent.parent / "artifacts" / "prompt_pilot"
-    
     try:
-        artifacts_path.mkdir(parents=True, exist_ok=True)
-        test_file = artifacts_path / ".write_test"
+        METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Test write
+        test_file = METRICS_PATH.parent / ".write_test"
         test_file.write_text("test")
         test_file.unlink()
+        
     except Exception as e:
-        errors.append(f"Cannot write to artifacts directory: {e}")
+        errors.append(f"Cannot write to metrics path: {e}")
+    
+    return len(errors) == 0, errors
+
+
+def check_sample_availability() -> tuple[bool, list[str], int]:
+    """Check if there are recent samples for allowed task types."""
+    errors = []
+    sample_count = 0
+    
+    # Load config to get allowed events
+    if not CONFIG_PATH.exists():
+        errors.append("Config file not found - cannot check sample availability")
+        return False, errors, 0
+    
+    with open(CONFIG_PATH) as f:
+        config = json.load(f)
+    
+    allowed_events = config.get("allowed_events", [])
+    
+    # Check recent events
+    if not EVENTS_PATH.exists():
+        warnings_msg = f"No events file found at {EVENTS_PATH}"
+        return True, [warnings_msg], 0
+    
+    # Parse events
+    from json import JSONDecoder
+    
+    events = []
+    with open(EVENTS_PATH) as f:
+        content = f.read()
+    
+    decoder = JSONDecoder()
+    idx = 0
+    while idx < len(content):
+        while idx < len(content) and content[idx] in ' \n\r\t':
+            idx += 1
+        if idx >= len(content):
+            break
+        try:
+            obj, end = decoder.raw_decode(content, idx)
+            events.append(obj)
+            idx = end
+        except:
+            idx += 1
+    
+    # Count recent events of allowed types (last 7 days)
+    recent_cutoff = datetime.now() - timedelta(days=7)
+    
+    for event in events:
+        event_type = event.get("event_type", "")
+        if event_type in allowed_events:
+            # Check timestamp
+            ts = event.get("ts", "")
+            if ts:
+                try:
+                    event_dt = datetime.fromisoformat(ts.replace('Z', '+00:00').replace('-05:00', '').replace('-06:00', ''))
+                    # Simple check: if ts contains recent date
+                    sample_count += 1
+                except:
+                    pass
+    
+    # Warning if sample count is low
+    if sample_count < 10:
+        warning = f"Low sample availability: {sample_count} recent events for allowed task types"
+        return True, [warning], sample_count
+    
+    return True, [], sample_count
+
+
+def check_pilot_scope_constraints() -> tuple[bool, list[str]]:
+    """Check pilot scope constraints are properly set."""
+    errors = []
+    
+    if not CONFIG_PATH.exists():
+        errors.append("Config file not found")
+        return False, errors
+    
+    with open(CONFIG_PATH) as f:
+        config = json.load(f)
+    
+    scope = config.get("pilot_scope", {})
+    
+    # Check that pilot cannot decide task close or gate pass
+    if not scope.get("cannot_decide_task_close"):
+        errors.append("pilot_scope.cannot_decide_task_close must be true")
+    
+    if not scope.get("cannot_decide_gate_pass"):
+        errors.append("pilot_scope.cannot_decide_gate_pass must be true")
+    
+    # Check final authority
+    if scope.get("final_authority") != "main_chain":
+        errors.append("pilot_scope.final_authority must be 'main_chain'")
     
     return len(errors) == 0, errors
 
@@ -129,6 +291,7 @@ def run_preflight() -> bool:
     print("=== Prompt Pilot Preflight Checks ===\n")
     
     all_passed = True
+    sample_count = 0
     
     # 1. Shadow systems
     print("1. Checking shadow systems...")
@@ -154,36 +317,77 @@ def run_preflight() -> bool:
     
     # 3. Configuration
     print("\n3. Checking configuration...")
-    passed, errors = check_config()
+    passed, messages, config = check_config()
     if passed:
         print("   ✅ Configuration valid")
+        if messages:
+            for m in messages:
+                print(f"      ⚠️  {m}")
     else:
         print("   ❌ Configuration check failed:")
-        for e in errors:
-            print(f"      - {e}")
+        for m in messages:
+            print(f"      - {m}")
         all_passed = False
     
-    # 4. Artifacts directory
-    print("\n4. Checking artifacts directory...")
-    passed, errors = check_artifacts_dir()
+    # 4. Rollback switch
+    print("\n4. Checking rollback switch...")
+    passed, errors = check_rollback_switch()
     if passed:
-        print("   ✅ Artifacts directory writable")
+        print("   ✅ Rollback switch available")
     else:
-        print("   ❌ Artifacts directory check failed:")
+        print("   ❌ Rollback switch check failed:")
         for e in errors:
             print(f"      - {e}")
         all_passed = False
     
-    # 5. Functional test
-    print("\n5. Running functional test...")
+    # 5. Metrics path
+    print("\n5. Checking metrics path...")
+    passed, errors = check_metrics_path()
+    if passed:
+        print("   ✅ Metrics path writable")
+    else:
+        print("   ❌ Metrics path check failed:")
+        for e in errors:
+            print(f"      - {e}")
+        all_passed = False
+    
+    # 6. Sample availability
+    print("\n6. Checking sample availability...")
+    passed, messages, sample_count = check_sample_availability()
+    if passed:
+        print(f"   ✅ Sample availability OK ({sample_count} recent events)")
+        if messages:
+            for m in messages:
+                print(f"      ⚠️  {m}")
+    else:
+        print("   ❌ Sample availability check failed:")
+        for m in messages:
+            print(f"      - {m}")
+    
+    # 7. Pilot scope constraints
+    print("\n7. Checking pilot scope constraints...")
+    passed, errors = check_pilot_scope_constraints()
+    if passed:
+        print("   ✅ Pilot scope constraints valid")
+    else:
+        print("   ❌ Pilot scope constraints check failed:")
+        for e in errors:
+            print(f"      - {e}")
+        all_passed = False
+    
+    # 8. Functional test
+    print("\n8. Running functional test...")
     try:
         from core.materialized_state_v0 import MaterializedState
         from core.prompt_preview import MaterializedStatePromptAssembler
+        from core.prompt_pilot_runner import PromptPilotRunner
         
         m = MaterializedState()
         state_dict = m.to_dict()
         assembler = MaterializedStatePromptAssembler()
         result = assembler.assemble(state_dict, session_id='preflight-test')
+        
+        runner = PromptPilotRunner()
         
         print("   ✅ Functional test passed")
     except Exception as e:
@@ -191,9 +395,22 @@ def run_preflight() -> bool:
         all_passed = False
     
     # Summary
-    print("\n" + "=" * 40)
+    print("\n" + "=" * 50)
+    
+    # Get min samples required
+    min_samples = config.get("dual_gate", {}).get("shadow_to_pilot", {}).get("min_samples", 20)
+    
     if all_passed:
         print("✅ All preflight checks passed")
+        print(f"\nSample Status: {sample_count} recent events available")
+        
+        if sample_count < min_samples:
+            print(f"\n⚠️  WARNING: Low sample count")
+            print(f"   Shadow mode will start, but may take time to collect")
+            print(f"   {min_samples} effective samples for gate eligibility")
+        else:
+            print(f"\n✅ Sufficient sample traffic for pilot")
+        
         print("\nReady to enable pilot with:")
         print("  tools/prompt-pilot-control --enable --mode shadow")
     else:

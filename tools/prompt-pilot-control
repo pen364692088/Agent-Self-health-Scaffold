@@ -8,13 +8,15 @@ Usage:
   prompt-pilot-control --disable [--reason "..."]
   prompt-pilot-control --set-mode shadow|pilot
   prompt-pilot-control --reset-metrics
+  prompt-pilot-control --check-gate
 """
 
 import sys
 import json
 import argparse
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Tuple
 
 CONFIG_PATH = Path(__file__).parent.parent / "config" / "prompt_pilot.json"
 METRICS_PATH = Path(__file__).parent.parent / "artifacts" / "prompt_pilot" / "metrics.jsonl"
@@ -23,40 +25,54 @@ METRICS_PATH = Path(__file__).parent.parent / "artifacts" / "prompt_pilot" / "me
 def load_config() -> dict:
     """Load pilot configuration."""
     if not CONFIG_PATH.exists():
-        return {
-            "pilot_enabled": False,
-            "pilot_mode": "shadow",
-            "allowed_events": ["recovery_success", "task_ready_to_close", "gate_completed"],
-            "blocked_events": ["subagent_spawn", "external_api_call", "user_message"],
-            "authority_chain": {"prompt": "main_chain", "recovery": "main_chain"},
-            "fallback_on_error": True,
-            "stop_conditions": {
-                "max_conflict_rate": 0.05,
-                "max_missing_rate": 0.05,
-                "min_match_rate": 0.80,
-                "max_token_overhead": 0.30
-            },
-            "rollback_trigger": {
-                "manual": True,
-                "auto_on_violation": True,
-                "auto_on_error_spike": True
-            },
-            "pilot_start_time": None,
-            "pilot_sample_count": 0,
-            "metrics": {
-                "total_calls": 0,
-                "successful_calls": 0,
-                "fallback_calls": 0,
-                "error_calls": 0,
-                "avg_match_rate": 0.0,
-                "avg_conflict_rate": 0.0,
-                "avg_missing_rate": 0.0,
-                "avg_token_overhead": 0.0
-            }
-        }
+        return get_default_config()
     
     with open(CONFIG_PATH) as f:
         return json.load(f)
+
+
+def get_default_config() -> dict:
+    """Get default configuration."""
+    return {
+        "pilot_enabled": False,
+        "pilot_mode": "shadow",
+        "allowed_events": ["recovery_success", "task_ready_to_close", "gate_completed"],
+        "blocked_events": ["subagent_spawn", "external_api_call", "user_message"],
+        "authority_chain": {"prompt": "main_chain", "recovery": "main_chain"},
+        "fallback_on_error": True,
+        "dual_gate": {
+            "shadow_to_pilot": {"min_samples": 20, "max_days": 7},
+            "pilot_to_decision": {"min_samples": 30, "max_days": 14}
+        },
+        "stop_conditions": {
+            "max_conflict_rate": 0.05,
+            "max_missing_rate": 0.05,
+            "min_match_rate": 0.80,
+            "max_token_overhead": 0.30,
+            "max_fallback_rate": 0.10,
+            "max_manual_override_rate": 0.05,
+            "min_provenance_completeness": 0.95
+        },
+        "rollback_trigger": {"manual": True, "auto_on_violation": True, "auto_on_error_spike": True},
+        "pilot_scope": {
+            "can_influence_prompt_assembly": True,
+            "can_influence_context_selection": True,
+            "cannot_decide_task_close": True,
+            "cannot_decide_gate_pass": True,
+            "final_authority": "main_chain"
+        },
+        "pilot_start_time": None,
+        "effective_sample_count": 0,
+        "metrics": {
+            "total_calls": 0, "effective_samples": 0, "successful_calls": 0,
+            "fallback_calls": 0, "error_calls": 0, "manual_overrides": 0,
+            "user_visible_anomalies": 0, "avg_match_rate": 0.0,
+            "avg_conflict_rate": 0.0, "avg_missing_rate": 0.0,
+            "avg_token_overhead": 0.0, "avg_fallback_rate": 0.0,
+            "avg_manual_override_rate": 0.0, "avg_provenance_completeness": 0.0,
+            "recent_stop_condition_hits": []
+        }
+    }
 
 
 def save_config(config: dict) -> None:
@@ -80,12 +96,174 @@ def log_event(event_type: str, details: dict) -> None:
         f.write(json.dumps(event) + '\n')
 
 
+def get_effective_sample_count(config: dict) -> int:
+    """Get count of effective samples from metrics log."""
+    if not METRICS_PATH.exists():
+        return 0
+    
+    count = 0
+    allowed_events = config.get("allowed_events", [])
+    
+    with open(METRICS_PATH) as f:
+        for line in f:
+            try:
+                event = json.loads(line)
+                # Effective sample: allowed event type, no error, not a config/preflight event
+                if (event.get("event_type") == "prompt_pilot_call" and
+                    event.get("task_type") in allowed_events and
+                    not event.get("error") and
+                    event.get("success")):
+                    count += 1
+            except:
+                pass
+    
+    return count
+
+
+def check_stop_conditions(config: dict) -> Tuple[List[str], List[str]]:
+    """Check stop conditions. Returns (violations, warnings)."""
+    violations = []
+    warnings = []
+    
+    metrics = config.get("metrics", {})
+    stop = config.get("stop_conditions", {})
+    
+    # Need at least 5 calls to check conditions meaningfully
+    if metrics.get("effective_samples", 0) < 5:
+        return violations, warnings
+    
+    # Check each stop condition
+    if metrics.get("avg_conflict_rate", 0) > stop.get("max_conflict_rate", 0.05):
+        violations.append(
+            f"Conflict rate {metrics['avg_conflict_rate']:.1%} > {stop['max_conflict_rate']:.1%}"
+        )
+    
+    if metrics.get("avg_missing_rate", 0) > stop.get("max_missing_rate", 0.05):
+        violations.append(
+            f"Missing rate {metrics['avg_missing_rate']:.1%} > {stop['max_missing_rate']:.1%}"
+        )
+    
+    if metrics.get("avg_match_rate", 0) < stop.get("min_match_rate", 0.80):
+        violations.append(
+            f"Match rate {metrics['avg_match_rate']:.1%} < {stop['min_match_rate']:.1%}"
+        )
+    
+    if metrics.get("avg_token_overhead", 0) > stop.get("max_token_overhead", 0.30):
+        violations.append(
+            f"Token overhead {metrics['avg_token_overhead']:.1%} > {stop['max_token_overhead']:.1%}"
+        )
+    
+    # Check new conditions (warning level)
+    if metrics.get("avg_fallback_rate", 0) > stop.get("max_fallback_rate", 0.10):
+        violations.append(
+            f"Fallback rate {metrics['avg_fallback_rate']:.1%} > {stop['max_fallback_rate']:.1%}"
+        )
+    
+    if metrics.get("avg_manual_override_rate", 0) > stop.get("max_manual_override_rate", 0.05):
+        violations.append(
+            f"Manual override rate {metrics['avg_manual_override_rate']:.1%} > {stop['max_manual_override_rate']:.1%}"
+        )
+    
+    if metrics.get("avg_provenance_completeness", 1.0) < stop.get("min_provenance_completeness", 0.95):
+        warnings.append(
+            f"Provenance completeness {metrics['avg_provenance_completeness']:.1%} < {stop['min_provenance_completeness']:.1%}"
+        )
+    
+    return violations, warnings
+
+
+def get_gate_status(config: dict) -> Dict[str, Any]:
+    """Get gate status for shadow->pilot transition."""
+    dual_gate = config.get("dual_gate", {})
+    shadow_gate = dual_gate.get("shadow_to_pilot", {})
+    
+    min_samples = shadow_gate.get("min_samples", 20)
+    max_days = shadow_gate.get("max_days", 7)
+    
+    effective_samples = get_effective_sample_count(config)
+    
+    # Check time elapsed
+    start_time = config.get("pilot_start_time")
+    days_elapsed = 0
+    time_ok = True
+    
+    if start_time:
+        start_dt = datetime.fromisoformat(start_time)
+        days_elapsed = (datetime.now() - start_dt).days
+        time_ok = days_elapsed <= max_days
+    
+    # Check stop conditions
+    violations, warnings = check_stop_conditions(config)
+    
+    # Check key metrics
+    metrics = config.get("metrics", {})
+    conflict_ok = metrics.get("avg_conflict_rate", 0) <= 0.05
+    match_ok = metrics.get("avg_match_rate", 1) >= 0.80
+    fallback_ok = metrics.get("avg_fallback_rate", 0) <= 0.10
+    
+    # Determine eligibility
+    samples_ok = effective_samples >= min_samples
+    all_conditions_ok = len(violations) == 0 and conflict_ok and match_ok and fallback_ok
+    
+    eligible = samples_ok and time_ok and all_conditions_ok
+    
+    return {
+        "min_samples_required": min_samples,
+        "effective_samples": effective_samples,
+        "samples_ok": samples_ok,
+        "max_days": max_days,
+        "days_elapsed": days_elapsed,
+        "time_ok": time_ok,
+        "violations": violations,
+        "warnings": warnings,
+        "conflict_ok": conflict_ok,
+        "match_ok": match_ok,
+        "fallback_ok": fallback_ok,
+        "eligible_for_pilot": eligible
+    }
+
+
+def get_recommendation(config: dict, gate_status: Dict[str, Any]) -> str:
+    """Get recommendation for next action."""
+    if not config.get("pilot_enabled"):
+        return "disabled"
+    
+    mode = config.get("pilot_mode", "shadow")
+    
+    if mode == "shadow":
+        if gate_status["eligible_for_pilot"]:
+            return "eligible_for_pilot"
+        elif gate_status["violations"]:
+            return "stay_shadow_fix_violations"
+        elif not gate_status["samples_ok"]:
+            return "stay_shadow_collect_samples"
+        else:
+            return "stay_shadow"
+    
+    elif mode == "pilot":
+        # Check pilot->decision gate
+        dual_gate = config.get("dual_gate", {})
+        pilot_gate = dual_gate.get("pilot_to_decision", {})
+        min_samples = pilot_gate.get("min_samples", 30)
+        effective_samples = get_effective_sample_count(config)
+        
+        if effective_samples >= min_samples and not gate_status["violations"]:
+            return "ready_for_decision"
+        elif gate_status["violations"]:
+            return "rollback_recommended"
+        else:
+            return "continue_pilot"
+    
+    return "unknown"
+
+
 def show_status() -> None:
-    """Show current pilot status."""
+    """Show current pilot status with enhanced metrics."""
     config = load_config()
     
     print("=== Prompt Pilot Status ===\n")
     
+    # Basic status
     status = "ENABLED" if config.get("pilot_enabled") else "DISABLED"
     mode = config.get("pilot_mode", "shadow")
     
@@ -94,41 +272,122 @@ def show_status() -> None:
     print(f"Authority: {config.get('authority_chain', {}).get('prompt', 'main_chain')}")
     
     if config.get("pilot_start_time"):
-        print(f"Started: {config['pilot_start_time']}")
+        start_dt = datetime.fromisoformat(config["pilot_start_time"])
+        elapsed = datetime.now() - start_dt
+        print(f"Started: {config['pilot_start_time']} ({elapsed.days} days ago)")
     
     print(f"\nAllowed Events: {', '.join(config.get('allowed_events', []))}")
     print(f"Blocked Events: {', '.join(config.get('blocked_events', []))}")
     
+    # Gate status
+    gate = get_gate_status(config)
+    
+    print(f"\n--- Gate Status ---")
+    print(f"Effective Samples: {gate['effective_samples']} / {gate['min_samples_required']} required")
+    print(f"Days Elapsed: {gate['days_elapsed']} / {gate['max_days']} max")
+    
+    # Core metrics
     metrics = config.get("metrics", {})
-    print(f"\n--- Metrics ---")
+    
+    print(f"\n--- Core Metrics ---")
     print(f"Total Calls: {metrics.get('total_calls', 0)}")
+    print(f"Effective Samples: {metrics.get('effective_samples', 0)}")
     print(f"Successful: {metrics.get('successful_calls', 0)}")
     print(f"Fallbacks: {metrics.get('fallback_calls', 0)}")
     print(f"Errors: {metrics.get('error_calls', 0)}")
+    print(f"Manual Overrides: {metrics.get('manual_overrides', 0)}")
+    print(f"User Visible Anomalies: {metrics.get('user_visible_anomalies', 0)}")
+    
+    print(f"\n--- Quality Metrics ---")
     print(f"Avg Match Rate: {metrics.get('avg_match_rate', 0):.1%}")
     print(f"Avg Conflict Rate: {metrics.get('avg_conflict_rate', 0):.1%}")
     print(f"Avg Missing Rate: {metrics.get('avg_missing_rate', 0):.1%}")
     print(f"Avg Token Overhead: {metrics.get('avg_token_overhead', 0):.1%}")
+    print(f"Avg Fallback Rate: {metrics.get('avg_fallback_rate', 0):.1%}")
+    print(f"Avg Manual Override Rate: {metrics.get('avg_manual_override_rate', 0):.1%}")
+    print(f"Avg Provenance Completeness: {metrics.get('avg_provenance_completeness', 0):.1%}")
     
-    # Check stop conditions
-    stop = config.get("stop_conditions", {})
-    violations = []
-    
-    if metrics.get("avg_conflict_rate", 0) > stop.get("max_conflict_rate", 0.05):
-        violations.append(f"Conflict rate {metrics['avg_conflict_rate']:.1%} > {stop['max_conflict_rate']:.1%}")
-    if metrics.get("avg_missing_rate", 0) > stop.get("max_missing_rate", 0.05):
-        violations.append(f"Missing rate {metrics['avg_missing_rate']:.1%} > {stop['max_missing_rate']:.1%}")
-    if metrics.get("avg_match_rate", 0) < stop.get("min_match_rate", 0.80) and metrics.get("total_calls", 0) > 10:
-        violations.append(f"Match rate {metrics['avg_match_rate']:.1%} < {stop['min_match_rate']:.1%}")
-    if metrics.get("avg_token_overhead", 0) > stop.get("max_token_overhead", 0.30):
-        violations.append(f"Token overhead {metrics['avg_token_overhead']:.1%} > {stop['max_token_overhead']:.1%}")
+    # Stop conditions
+    violations, warnings = check_stop_conditions(config)
     
     if violations:
         print(f"\n⚠️  STOP CONDITION VIOLATIONS:")
         for v in violations:
-            print(f"  - {v}")
+            print(f"  ❌ {v}")
+    elif warnings:
+        print(f"\n⚠️  WARNINGS:")
+        for w in warnings:
+            print(f"  ⚠️  {w}")
     else:
         print(f"\n✅ No stop condition violations")
+    
+    # Recommendation
+    recommendation = get_recommendation(config, gate)
+    
+    print(f"\n--- Recommendation ---")
+    if recommendation == "disabled":
+        print("Status: DISABLED")
+        print("Action: Run preflight, then enable shadow mode")
+    elif recommendation == "stay_shadow":
+        print("Status: SHADOW - collecting samples")
+        print(f"Action: Continue shadow until {gate['min_samples_required']} samples collected")
+    elif recommendation == "stay_shadow_collect_samples":
+        print(f"Status: SHADOW - need more samples ({gate['effective_samples']}/{gate['min_samples_required']})")
+        print("Action: Continue shadow mode")
+    elif recommendation == "stay_shadow_fix_violations":
+        print("Status: SHADOW - violations detected")
+        print("Action: Fix violations before switching to pilot")
+    elif recommendation == "eligible_for_pilot":
+        print("Status: ✅ ELIGIBLE FOR PILOT")
+        print("Action: Can switch to pilot mode with: --set-mode pilot")
+    elif recommendation == "continue_pilot":
+        print("Status: PILOT - continuing")
+        print("Action: Monitor metrics, wait for decision gate")
+    elif recommendation == "ready_for_decision":
+        print("Status: PILOT - ready for decision")
+        print("Action: Review metrics and make post-pilot decision")
+    elif recommendation == "rollback_recommended":
+        print("Status: ❌ ROLLBACK RECOMMENDED")
+        print("Action: Disable pilot and investigate violations")
+    else:
+        print(f"Status: {recommendation}")
+
+
+def check_gate() -> None:
+    """Check if gate conditions are met for transition."""
+    config = load_config()
+    gate = get_gate_status(config)
+    
+    print("=== Gate Check: Shadow -> Pilot ===\n")
+    
+    print(f"Samples: {gate['effective_samples']} / {gate['min_samples_required']} required")
+    print(f"  Status: {'✅ OK' if gate['samples_ok'] else '❌ INSUFFICIENT'}")
+    
+    print(f"\nTime: {gate['days_elapsed']} / {gate['max_days']} days max")
+    print(f"  Status: {'✅ OK' if gate['time_ok'] else '⚠️ EXCEEDED'}")
+    
+    print(f"\nConflict Rate: {'✅ OK' if gate['conflict_ok'] else '❌ EXCEEDED'}")
+    print(f"Match Rate: {'✅ OK' if gate['match_ok'] else '❌ BELOW THRESHOLD'}")
+    print(f"Fallback Rate: {'✅ OK' if gate['fallback_ok'] else '❌ EXCEEDED'}")
+    
+    if gate['violations']:
+        print(f"\n❌ Violations:")
+        for v in gate['violations']:
+            print(f"  - {v}")
+    
+    if gate['warnings']:
+        print(f"\n⚠️ Warnings:")
+        for w in gate['warnings']:
+            print(f"  - {w}")
+    
+    print(f"\n{'='*40}")
+    if gate['eligible_for_pilot']:
+        print("✅ ELIGIBLE FOR PILOT")
+        print("\nYou can now run:")
+        print("  tools/prompt-pilot-control --set-mode pilot")
+    else:
+        print("❌ NOT ELIGIBLE FOR PILOT")
+        print("\nContinue shadow mode until all conditions are met.")
 
 
 def enable_pilot(mode: str = "shadow") -> None:
@@ -153,22 +412,39 @@ def enable_pilot(mode: str = "shadow") -> None:
         print("Cannot enable pilot")
         return
     
+    # Check if trying to enable pilot mode directly
+    if mode == "pilot":
+        gate = get_gate_status(config)
+        if not gate["eligible_for_pilot"]:
+            print(f"\n❌ Cannot enable pilot mode directly")
+            print(f"   Effective samples: {gate['effective_samples']}/{gate['min_samples_required']}")
+            print(f"   Enable shadow mode first:")
+            print(f"     tools/prompt-pilot-control --enable --mode shadow")
+            return
+    
     # Enable pilot
     config["pilot_enabled"] = True
     config["pilot_mode"] = mode
     config["pilot_start_time"] = datetime.now().isoformat()
-    config["pilot_sample_count"] = 0
+    config["effective_sample_count"] = 0
     
     # Reset metrics
     config["metrics"] = {
         "total_calls": 0,
+        "effective_samples": 0,
         "successful_calls": 0,
         "fallback_calls": 0,
         "error_calls": 0,
+        "manual_overrides": 0,
+        "user_visible_anomalies": 0,
         "avg_match_rate": 0.0,
         "avg_conflict_rate": 0.0,
         "avg_missing_rate": 0.0,
-        "avg_token_overhead": 0.0
+        "avg_token_overhead": 0.0,
+        "avg_fallback_rate": 0.0,
+        "avg_manual_override_rate": 0.0,
+        "avg_provenance_completeness": 0.0,
+        "recent_stop_condition_hits": []
     }
     
     save_config(config)
@@ -181,6 +457,11 @@ def enable_pilot(mode: str = "shadow") -> None:
     print(f"\n✅ Pilot ENABLED in {mode} mode")
     print(f"   Authority chain: main_chain (shadow will not replace)")
     print(f"   Fallback on error: {config.get('fallback_on_error', True)}")
+    
+    if mode == "shadow":
+        print(f"\n   Collecting samples for gate check...")
+        print(f"   Need {config.get('dual_gate', {}).get('shadow_to_pilot', {}).get('min_samples', 20)} effective samples")
+        print(f"   Run --check-gate to see progress")
 
 
 def disable_pilot(reason: str = None) -> None:
@@ -213,9 +494,26 @@ def set_mode(mode: str) -> None:
         return
     
     config = load_config()
-    old_mode = config.get("pilot_mode", "shadow")
-    config["pilot_mode"] = mode
     
+    if not config.get("pilot_enabled"):
+        print("Pilot is not enabled. Enable it first:")
+        print("  tools/prompt-pilot-control --enable --mode shadow")
+        return
+    
+    old_mode = config.get("pilot_mode", "shadow")
+    
+    # Check gate if switching to pilot
+    if mode == "pilot" and old_mode != "pilot":
+        gate = get_gate_status(config)
+        if not gate["eligible_for_pilot"]:
+            print(f"❌ Cannot switch to pilot mode:")
+            print(f"   Effective samples: {gate['effective_samples']}/{gate['min_samples_required']}")
+            if gate["violations"]:
+                print(f"   Violations: {gate['violations']}")
+            print(f"\n   Continue shadow mode and collect more samples.")
+            return
+    
+    config["pilot_mode"] = mode
     save_config(config)
     
     log_event("pilot_mode_changed", {
@@ -232,15 +530,22 @@ def reset_metrics() -> None:
     
     config["metrics"] = {
         "total_calls": 0,
+        "effective_samples": 0,
         "successful_calls": 0,
         "fallback_calls": 0,
         "error_calls": 0,
+        "manual_overrides": 0,
+        "user_visible_anomalies": 0,
         "avg_match_rate": 0.0,
         "avg_conflict_rate": 0.0,
         "avg_missing_rate": 0.0,
-        "avg_token_overhead": 0.0
+        "avg_token_overhead": 0.0,
+        "avg_fallback_rate": 0.0,
+        "avg_manual_override_rate": 0.0,
+        "avg_provenance_completeness": 0.0,
+        "recent_stop_condition_hits": []
     }
-    config["pilot_sample_count"] = 0
+    config["effective_sample_count"] = 0
     
     save_config(config)
     
@@ -261,10 +566,13 @@ def main():
                         help='Mode when enabling')
     parser.add_argument('--reason', help='Reason for disabling')
     parser.add_argument('--reset-metrics', action='store_true', help='Reset metrics')
+    parser.add_argument('--check-gate', action='store_true', help='Check gate conditions')
     
     args = parser.parse_args()
     
-    if args.status or (not any([args.enable, args.disable, args.set_mode, args.reset_metrics])):
+    if args.check_gate:
+        check_gate()
+    elif args.status or (not any([args.enable, args.disable, args.set_mode, args.reset_metrics, args.check_gate])):
         show_status()
     elif args.enable:
         enable_pilot(args.mode)

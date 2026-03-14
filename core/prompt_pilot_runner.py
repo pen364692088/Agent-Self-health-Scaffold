@@ -14,6 +14,8 @@ CONSTRAINTS:
 - Does NOT modify live state
 - Does NOT enable recovery live
 - Fallback to main chain on any error
+- Cannot decide task close or gate pass
+- Final authority is always main_chain
 """
 
 import json
@@ -35,11 +37,13 @@ class PilotResult:
     """Result from a pilot run."""
     success: bool
     used_shadow: bool
+    is_effective_sample: bool
     match_rate: float
     conflict_count: int
     missing_count: int
     token_overhead: float
     fallback: bool
+    provenance_completeness: float
     error: Optional[str] = None
     shadow_prompt: Optional[str] = None
     main_prompt: Optional[str] = None
@@ -70,7 +74,12 @@ class PromptPilotRunner:
                 "allowed_events": [],
                 "authority_chain": {"prompt": "main_chain"},
                 "fallback_on_error": True,
-                "stop_conditions": {}
+                "stop_conditions": {},
+                "pilot_scope": {
+                    "cannot_decide_task_close": True,
+                    "cannot_decide_gate_pass": True,
+                    "final_authority": "main_chain"
+                }
             }
         
         with open(self.config_path) as f:
@@ -102,16 +111,24 @@ class PromptPilotRunner:
         config = self.load_config()
         return config.get("pilot_mode", "shadow")
     
-    def should_use_shadow(self, task_type: str) -> bool:
-        """Determine if shadow should be used for this task."""
-        if not self.is_enabled(task_type):
-            return False
+    def check_scope_permission(self, action: str) -> bool:
+        """Check if pilot is allowed to perform an action."""
+        config = self.load_config()
+        scope = config.get("pilot_scope", {})
         
-        mode = self.get_mode()
+        # Actions pilot cannot do
+        if action == "decide_task_close":
+            return not scope.get("cannot_decide_task_close", True)
+        if action == "decide_gate_pass":
+            return not scope.get("cannot_decide_gate_pass", True)
         
-        # In shadow mode, we just log comparison
-        # In pilot mode, we might use shadow output
-        return mode in ("shadow", "pilot")
+        # Actions pilot can do
+        if action == "influence_prompt_assembly":
+            return scope.get("can_influence_prompt_assembly", True)
+        if action == "influence_context_selection":
+            return scope.get("can_influence_context_selection", True)
+        
+        return False
     
     def run_shadow_assembly(
         self,
@@ -143,6 +160,11 @@ class PromptPilotRunner:
             
             state_dict = m.to_dict()
             
+            # Calculate provenance completeness
+            key_fields = ['objective', 'phase', 'next_step', 'blocker', 'branch']
+            present_fields = sum(1 for f in key_fields if state_dict.get(f) is not None)
+            provenance_completeness = present_fields / len(key_fields)
+            
             # Assemble prompt
             assembler = MaterializedStatePromptAssembler()
             result = assembler.assemble(state_dict, session_id=session_id)
@@ -166,7 +188,8 @@ class PromptPilotRunner:
                 "prompt_tokens": result.prompt_tokens,
                 "conflict_count": len(result.conflicts),
                 "missing_count": len(result.warnings),
-                "state_coverage": sum(1 for v in state_dict.values() if v is not None) / max(len(state_dict), 1)
+                "state_coverage": provenance_completeness,
+                "provenance_completeness": provenance_completeness
             }
             
             return prompt_text, metadata
@@ -183,21 +206,27 @@ class PromptPilotRunner:
         if shadow_metadata.get("error"):
             return 0.0
         
-        # If no main to compare, use coverage as proxy
+        # If no main to compare, use provenance completeness as proxy
         if not main_metadata:
-            return shadow_metadata.get("state_coverage", 0.8)
+            return shadow_metadata.get("provenance_completeness", 0.8)
         
         # Compare layers
         shadow_layers = set(shadow_metadata.get("layers", []))
         main_layers = set(main_metadata.get("layers", []))
         
         if not main_layers:
-            return shadow_metadata.get("state_coverage", 0.8)
+            return shadow_metadata.get("provenance_completeness", 0.8)
         
         overlap = len(shadow_layers & main_layers)
         return overlap / max(len(main_layers), 1)
     
-    def log_metrics(self, result: PilotResult, task_type: str, session_id: str) -> None:
+    def log_metrics(
+        self,
+        result: PilotResult,
+        task_type: str,
+        session_id: str,
+        is_manual_override: bool = False
+    ) -> None:
         """Log pilot metrics."""
         self.metrics_path.parent.mkdir(parents=True, exist_ok=True)
         
@@ -208,11 +237,14 @@ class PromptPilotRunner:
             "task_type": task_type,
             "success": result.success,
             "used_shadow": result.used_shadow,
+            "is_effective_sample": result.is_effective_sample,
             "match_rate": result.match_rate,
             "conflict_count": result.conflict_count,
             "missing_count": result.missing_count,
             "token_overhead": result.token_overhead,
             "fallback": result.fallback,
+            "provenance_completeness": result.provenance_completeness,
+            "manual_override": is_manual_override,
             "error": result.error
         }
         
@@ -230,16 +262,30 @@ class PromptPilotRunner:
             old_avg = metrics.get(name, 0.0)
             return (old_avg * (total - 1) + new_val) / total
         
+        # Count effective samples
+        effective_count = metrics.get("effective_samples", 0)
+        if result.is_effective_sample:
+            effective_count += 1
+        
         config["metrics"] = {
             "total_calls": total,
+            "effective_samples": effective_count,
             "successful_calls": metrics.get("successful_calls", 0) + (1 if result.success else 0),
             "fallback_calls": metrics.get("fallback_calls", 0) + (1 if result.fallback else 0),
             "error_calls": metrics.get("error_calls", 0) + (1 if result.error else 0),
+            "manual_overrides": metrics.get("manual_overrides", 0) + (1 if is_manual_override else 0),
+            "user_visible_anomalies": metrics.get("user_visible_anomalies", 0),
             "avg_match_rate": update_avg("avg_match_rate", result.match_rate),
             "avg_conflict_rate": update_avg("avg_conflict_rate", result.conflict_count / max(total, 1)),
             "avg_missing_rate": update_avg("avg_missing_rate", result.missing_count / max(total, 1)),
-            "avg_token_overhead": update_avg("avg_token_overhead", result.token_overhead)
+            "avg_token_overhead": update_avg("avg_token_overhead", result.token_overhead),
+            "avg_fallback_rate": (metrics.get("fallback_calls", 0) + (1 if result.fallback else 0)) / total,
+            "avg_manual_override_rate": (metrics.get("manual_overrides", 0) + (1 if is_manual_override else 0)) / total,
+            "avg_provenance_completeness": update_avg("avg_provenance_completeness", result.provenance_completeness),
+            "recent_stop_condition_hits": metrics.get("recent_stop_condition_hits", [])
         }
+        
+        config["effective_sample_count"] = effective_count
         
         self.save_config(config)
     
@@ -249,21 +295,35 @@ class PromptPilotRunner:
         metrics = config.get("metrics", {})
         stop = config.get("stop_conditions", {})
         
-        # Need at least 10 calls to check stop conditions
-        if metrics.get("total_calls", 0) < 10:
+        # Need at least 5 effective samples to check stop conditions
+        if metrics.get("effective_samples", 0) < 5:
             return None
         
+        violations = []
+        
         if metrics.get("avg_conflict_rate", 0) > stop.get("max_conflict_rate", 0.05):
-            return f"Conflict rate {metrics['avg_conflict_rate']:.1%} > {stop['max_conflict_rate']:.1%}"
+            violations.append("conflict_rate")
         
         if metrics.get("avg_missing_rate", 0) > stop.get("max_missing_rate", 0.05):
-            return f"Missing rate {metrics['avg_missing_rate']:.1%} > {stop['max_missing_rate']:.1%}"
+            violations.append("missing_rate")
         
         if metrics.get("avg_match_rate", 0) < stop.get("min_match_rate", 0.80):
-            return f"Match rate {metrics['avg_match_rate']:.1%} < {stop['min_match_rate']:.1%}"
+            violations.append("match_rate")
         
         if metrics.get("avg_token_overhead", 0) > stop.get("max_token_overhead", 0.30):
-            return f"Token overhead {metrics['avg_token_overhead']:.1%} > {stop['max_token_overhead']:.1%}"
+            violations.append("token_overhead")
+        
+        if metrics.get("avg_fallback_rate", 0) > stop.get("max_fallback_rate", 0.10):
+            violations.append("fallback_rate")
+        
+        if metrics.get("avg_manual_override_rate", 0) > stop.get("max_manual_override_rate", 0.05):
+            violations.append("manual_override_rate")
+        
+        if metrics.get("avg_provenance_completeness", 1.0) < stop.get("min_provenance_completeness", 0.95):
+            violations.append("provenance_completeness")
+        
+        if violations:
+            return f"Stop conditions violated: {', '.join(violations)}"
         
         return None
     
@@ -273,7 +333,8 @@ class PromptPilotRunner:
         session_id: str,
         context: Optional[Dict[str, Any]] = None,
         main_prompt: Optional[str] = None,
-        main_metadata: Optional[Dict[str, Any]] = None
+        main_metadata: Optional[Dict[str, Any]] = None,
+        is_manual_override: bool = False
     ) -> PilotResult:
         """
         Run the pilot for a given task.
@@ -284,6 +345,7 @@ class PromptPilotRunner:
             context: Optional state context
             main_prompt: Main chain prompt (for comparison)
             main_metadata: Main chain metadata
+            is_manual_override: Whether this is a manual override
         
         Returns:
             PilotResult with metrics and status
@@ -293,11 +355,13 @@ class PromptPilotRunner:
             return PilotResult(
                 success=True,
                 used_shadow=False,
+                is_effective_sample=False,
                 match_rate=0.0,
                 conflict_count=0,
                 missing_count=0,
                 token_overhead=0.0,
                 fallback=False,
+                provenance_completeness=0.0,
                 error="Pilot not enabled for this task type"
             )
         
@@ -312,11 +376,13 @@ class PromptPilotRunner:
             return PilotResult(
                 success=False,
                 used_shadow=False,
+                is_effective_sample=False,
                 match_rate=0.0,
                 conflict_count=0,
                 missing_count=0,
                 token_overhead=0.0,
                 fallback=True,
+                provenance_completeness=0.0,
                 error=f"Stop condition violated: {stop_violation}"
             )
         
@@ -328,39 +394,52 @@ class PromptPilotRunner:
             result = PilotResult(
                 success=False,
                 used_shadow=False,
+                is_effective_sample=False,
                 match_rate=0.0,
                 conflict_count=0,
                 missing_count=0,
                 token_overhead=0.0,
                 fallback=True,
+                provenance_completeness=0.0,
                 error=shadow_metadata["error"]
             )
-            self.log_metrics(result, task_type, session_id)
+            self.log_metrics(result, task_type, session_id, is_manual_override)
             return result
         
         # Calculate metrics
         match_rate = self.calculate_match_rate(shadow_metadata, main_metadata)
         conflict_count = shadow_metadata.get("conflict_count", 0)
         missing_count = shadow_metadata.get("missing_count", 0)
-        token_overhead = 0.0  # Would need actual token counts
+        token_overhead = 0.0
+        provenance_completeness = shadow_metadata.get("provenance_completeness", 0.0)
+        
+        # Determine if this is an effective sample
+        # Effective sample: no error, success, and in allowed events
+        is_effective = (
+            not shadow_metadata.get("error") and
+            conflict_count == 0 and
+            provenance_completeness >= 0.5  # At least half of key fields present
+        )
         
         # Determine if we should use shadow output
         mode = self.get_mode()
-        used_shadow = mode == "pilot" and not conflict_count
+        used_shadow = mode == "pilot" and conflict_count == 0 and is_effective
         
         result = PilotResult(
             success=True,
             used_shadow=used_shadow,
+            is_effective_sample=is_effective,
             match_rate=match_rate,
             conflict_count=conflict_count,
             missing_count=missing_count,
             token_overhead=token_overhead,
             fallback=False,
+            provenance_completeness=provenance_completeness,
             shadow_prompt=shadow_prompt,
             main_prompt=main_prompt
         )
         
-        self.log_metrics(result, task_type, session_id)
+        self.log_metrics(result, task_type, session_id, is_manual_override)
         
         return result
 
