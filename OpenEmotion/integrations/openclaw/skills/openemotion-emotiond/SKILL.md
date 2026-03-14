@@ -4,7 +4,7 @@ description: "OpenEmotion emotiond integration for OpenClaw agents"
 metadata:
   clawdbot:
     emoji: "🧠"
-version: 2.0.0
+version: 2.1.0
 ---
 
 # OpenEmotion Emotiond Integration
@@ -186,3 +186,89 @@ If context missing/stale:
 - Classification: ~50-100 tokens per message
 - Context read: ~100-200 tokens
 - Total overhead: ~150-300 tokens per interaction
+
+---
+
+## Plan Injection (Read-only) - v2.1
+
+### Overview
+
+The Plan Injection Patch adds `/plan` API integration to reply generation. Plan fields are **advisory only** and affect reply text, not tool selection, task state, or control flow.
+
+### Reading Plan Fields
+
+Before generating your reply, check context.json for the `plan` field:
+
+```json
+{
+  "target_id": "telegram:8420019401",
+  "plan": {
+    "tone": "warm",
+    "intent": "repair",
+    "key_points": ["acknowledge concern", "offer support"],
+    "constraints": ["don't be defensive"],
+    "focus_target": "user",
+    "emotion": { "valence": 0.3, "arousal": 0.2 },
+    "relationship": { "bond": 0.75, "trust": 0.60 }
+  },
+  "decision": { ... },
+  "guidance": { ... },
+  "injection_metadata": {
+    "gate_result": "allowed",
+    "latency_ms": 45,
+    "fallback_triggered": false
+  }
+}
+```
+
+### Using Plan Fields
+
+| Field | Usage |
+|-------|-------|
+| `tone` | Match your response style: soft/warm/guarded/cold |
+| `intent` | Guide your intent: repair/distance/seek/set_boundary/retaliate |
+| `key_points` | Topics to address naturally in your reply |
+| `constraints` | Topics/behaviors to avoid |
+| `focus_target` | Who/what to focus on in reply |
+| `emotion` | Emotional flavor for expression calibration |
+| `relationship` | Bond/trust values for response intensity |
+
+### Important Boundaries
+
+**Plan fields affect reply text ONLY. They do NOT influence:**
+
+- Which tools you call
+- How tasks are scheduled
+- Task state transitions
+- Checkpoint data
+- Control commands (/approve, /deny, etc.)
+- Subagent behavior
+
+**If plan is missing or invalid:**
+- Proceed normally without it
+- Use decision/guidance if available
+- Default to neutral, helpful tone
+
+### Gate Behavior
+
+Plan injection is **gated** by message type:
+
+| Path Type | Plan Injected? |
+|-----------|----------------|
+| Normal chat | ✅ Yes |
+| Slash commands | ❌ No |
+| Task control (/approve, etc.) | ❌ No |
+| Tool execution | ❌ No |
+
+Check `injection_metadata.gate_result` to see if plan was injected.
+
+### Fallback Scenarios
+
+When plan fails, `injection_metadata.fallback_triggered` will be true. Common reasons:
+
+- `feature_disabled`: Plan injection turned off
+- `timeout`: API call timed out
+- `emotiond_unavailable`: Emotiond not running
+- `schema_invalid`: Response didn't match expected format
+
+In all cases, proceed normally with your response.
