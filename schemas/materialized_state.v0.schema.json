@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "materialized_state.v0.schema.json",
+  "title": "MaterializedState v0",
+  "description": "Materialized state from SESSION-STATE.md and working-buffer.md",
+  "type": "object",
+  "required": [
+    "materialized_at",
+    "sources_checked",
+    "uncertainty_flag",
+    "field_sources",
+    "field_resolutions"
+  ],
+  "properties": {
+    "objective": {
+      "type": ["string", "null"],
+      "description": "Current task objective"
+    },
+    "phase": {
+      "type": ["string", "null"],
+      "description": "Current phase"
+    },
+    "branch": {
+      "type": ["string", "null"],
+      "description": "Current git branch"
+    },
+    "blocker": {
+      "type": ["string", "null"],
+      "description": "Current blocker if any"
+    },
+    "next_step": {
+      "type": ["string", "null"],
+      "description": "Next action to take"
+    },
+    "next_actions": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "List of next actions"
+    },
+    "field_sources": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/$defs/FieldSource"
+        }
+      },
+      "description": "Source info for each field"
+    },
+    "field_resolutions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/FieldResolution"
+      },
+      "description": "Resolved values for each field"
+    },
+    "materialized_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of materialization"
+    },
+    "sources_checked": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Which sources were checked"
+    },
+    "uncertainty_flag": {
+      "type": "boolean",
+      "description": "True if critical fields are missing"
+    },
+    "recovery_required": {
+      "type": "boolean",
+      "description": "True if recovery is required"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "FieldSource": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["valid", "empty", "missing"],
+          "description": "Status of the field value"
+        },
+        "value": {
+          "type": ["string", "null"],
+          "description": "Normalized value"
+        },
+        "raw": {
+          "type": ["string", "null"],
+          "description": "Raw extracted value"
+        },
+        "source_file": {
+          "type": ["string", "null"],
+          "description": "Source file name"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FieldResolution": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["valid", "missing"],
+          "description": "Status of the resolution"
+        },
+        "value": {
+          "type": ["string", "null"],
+          "description": "Resolved value"
+        },
+        "chosen_source": {
+          "type": ["string", "null"],
+          "description": "Which source was chosen"
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Reason for choice"
+        },
+        "conflicts": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/$defs/ConflictInfo"
+          },
+          "description": "Conflicting values from other sources"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConflictInfo": {
+      "type": "object",
+      "required": ["source", "value", "priority"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Source name"
+        },
+        "value": {
+          "type": "string",
+          "description": "Value from this source"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Priority of this source"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

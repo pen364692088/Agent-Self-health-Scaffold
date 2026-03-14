@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""
+materialize-state - CLI wrapper for StateMaterializerV0
+
+Materializes state from SESSION-STATE.md and working-buffer.md.
+
+Usage:
+  materialize-state [--json] [--schema-validate]
+  materialize-state --fields
+  materialize-state --health
+
+v0 Constraints:
+- Reads only SESSION-STATE.md and working-buffer.md (root level)
+- No handoff/capsule/summary/distill integration
+- No write-back to continuity sources
+- No second live state
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+# Add workspace to path
+WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
+sys.path.insert(0, str(WORKSPACE))
+
+from core.materialized_state_v0 import (
+    StateMaterializerV0,
+    MaterializedState,
+    TRACKED_FIELDS,
+)
+
+
+def get_current_branch() -> Optional[str]:
+    """Get current git branch."""
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True, text=True, cwd=WORKSPACE, timeout=5
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def validate_against_schema(state_dict: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+    """Validate output against JSON schema."""
+    try:
+        import jsonschema
+    except ImportError:
+        return False, "jsonschema not installed"
+    
+    schema_path = WORKSPACE / "schemas" / "materialized_state.v0.schema.json"
+    if not schema_path.exists():
+        return False, f"Schema not found: {schema_path}"
+    
+    try:
+        schema = json.loads(schema_path.read_text())
+        jsonschema.validate(state_dict, schema)
+        return True, None
+    except jsonschema.ValidationError as e:
+        return False, str(e.message)
+    except Exception as e:
+        return False, str(e)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Materialize state from continuity sources",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  materialize-state --json           # Output as JSON
+  materialize-state --fields         # Show tracked fields
+  materialize-state --schema-validate # Validate against schema
+  materialize-state --health         # Health check
+"""
+    )
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument("--schema-validate", action="store_true", help="Validate against JSON schema")
+    parser.add_argument("--fields", action="store_true", help="Show tracked fields")
+    parser.add_argument("--health", action="store_true", help="Health check")
+    parser.add_argument("--workspace", type=str, help="Workspace path (default: ~/.openclaw/workspace)")
+    
+    args = parser.parse_args()
+    
+    # Override workspace if specified
+    if args.workspace:
+        global WORKSPACE
+        WORKSPACE = Path(args.workspace).expanduser().resolve()
+        sys.path.insert(0, str(WORKSPACE))
+    
+    # Health check
+    if args.health:
+        result = {
+            "status": "healthy",
+            "workspace": str(WORKSPACE),
+            "session_state_exists": (WORKSPACE / "SESSION-STATE.md").exists(),
+            "working_buffer_exists": (WORKSPACE / "working-buffer.md").exists(),
+        }
+        print(json.dumps(result))
+        return 0
+    
+    # Show tracked fields
+    if args.fields:
+        print("Tracked fields:")
+        for f in TRACKED_FIELDS:
+            print(f"  - {f}")
+        return 0
+    
+    # Materialize state
+    session_state_path = WORKSPACE / "SESSION-STATE.md"
+    working_buffer_path = WORKSPACE / "working-buffer.md"
+    
+    materializer = StateMaterializerV0(
+        session_state_path=session_state_path,
+        working_buffer_path=working_buffer_path
+    )
+    
+    branch = get_current_branch()
+    state = materializer.materialize(branch=branch)
+    state_dict = state.to_dict()
+    
+    # Schema validation
+    if args.schema_validate:
+        valid, error = validate_against_schema(state_dict)
+        if not valid:
+            print(f"Schema validation failed: {error}", file=sys.stderr)
+            return 1
+        state_dict["_schema_validated"] = True
+    
+    # Output
+    if args.json or True:
+        print(json.dumps(state_dict, indent=2, ensure_ascii=False))
+    else:
+        # Human-readable output
+        print(f"Objective: {state.objective or 'N/A'}")
+        print(f"Phase: {state.phase or 'N/A'}")
+        print(f"Branch: {state.branch or 'N/A'}")
+        print(f"Blocker: {state.blocker or 'None'}")
+        print(f"Next Step: {state.next_step or 'N/A'}")
+        print(f"Uncertainty: {state.uncertainty_flag}")
+        print(f"Sources: {', '.join(state.sources_checked)}")
+    
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
