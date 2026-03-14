@@ -26,6 +26,33 @@ Y
 - Avoid filler and empty enthusiasm.
 - Prefer durable mechanisms over fragile cleverness.
 
+**测试套件：**
+- `tests/test_execution_policy.py` (13/13 通过)
+
+### 7) 消息发送规则 (强制) ⭐⭐⭐
+
+**任何发送给用户的消息，如果包含"完成"类内容，必须用 safe-message。**
+
+```bash
+# ❌ 错误 - 直接用 message tool
+message --action send --to user --message "任务已完成"
+
+# ✅ 正确 - 通过 safe-message
+safe-message --task-id <id> --to user --message "实现完成"
+```
+
+### 8) 子代理完成自动通知 / 推进边界 ⭐⭐⭐⭐⭐
+
+当前边界：
+- `callback-worker` 只负责触发 `subtask-orchestrate resume`
+- 真正推进只允许在 `subtask-orchestrate resume` 内发生
+- 不允许 worker 自己成为第二个编排入口
+
+验证命令：
+```bash
+journalctl --user -u callback-worker --since "5 min ago"
+```
+
 
 **测试套件：**
 - `tests/test_execution_policy.py` (13/13 通过)

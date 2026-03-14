@@ -37,6 +37,9 @@ WORKFLOW_FILE = WORKSPACE / "WORKFLOW_STATE.json"
 ADVANCE_TOOL = WORKSPACE / "tools" / "handle-subagent-complete"
 RUN_STATE_TOOL = WORKSPACE / "tools" / "run-state"
 
+# Ensure orchestrator directory exists
+ORCHESTRATOR_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def run_command(cmd: list, capture: bool = True) -> tuple:
     """运行命令，返回 (success, output)"""

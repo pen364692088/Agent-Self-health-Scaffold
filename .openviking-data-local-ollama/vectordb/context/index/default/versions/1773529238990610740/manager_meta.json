@@ -1,7 +1,7 @@
 {
     "CollectionName": "context",
     "IndexName": "default",
-    "UpdateTimeStamp": 1773506442278796972,
+    "UpdateTimeStamp": 1773529238990610740,
     "ScalarIndex": [
         {
             "FieldName": "active_count",
@@ -46,7 +46,7 @@
     ],
     "VectorIndex": {
         "IndexType": "flat",
-        "ElementCount": 392,
+        "ElementCount": 396,
         "MaxElementCount": 511,
         "Dimension": 1024,
         "Distance": "ip",

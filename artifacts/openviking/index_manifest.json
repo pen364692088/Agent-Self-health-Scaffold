@@ -1224,6 +1224,24 @@
       "embedding_complete": true,
       "embedding_coverage_pct": 1.0,
       "indexed_at": "2026-03-14T16:40:42.719869+00:00"
+    },
+    "viking://resources/user/sessions/daily/memory_distilled_12/memory_distilled.md": {
+      "doc_id": "viking://resources/user/sessions/daily/memory_distilled_12/memory_distilled.md",
+      "doc_content_hash": "1561900b33729c1901305ef73903606a9872a7e787c2090f4d110b2b19c80dcc",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T23:00:36.762645+00:00"
+    },
+    "viking://resources/user/memory/memory_12/memory.md": {
+      "doc_id": "viking://resources/user/memory/memory_12/memory.md",
+      "doc_content_hash": "cc6271098d41b2433e05ca964d267c61372eb43d4bcd329de9a7f4023cef9fa7",
+      "chunker_version": "deterministic_chunker.v2",
+      "embedding_version": "openviking.default",
+      "embedding_complete": true,
+      "embedding_coverage_pct": 1.0,
+      "indexed_at": "2026-03-14T23:00:39.407356+00:00"
     }
   }
 }

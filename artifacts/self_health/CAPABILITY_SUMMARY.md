@@ -1,6 +1,6 @@
 # Capability Summary
 
-**Generated**: 2026-03-14T17:56:28.764855+00:00
+**Generated**: 2026-03-14T22:59:13.248515+00:00
 
 ## Overview
 
@@ -42,7 +42,7 @@
 ### Key Metrics
 
 - Restored Status: True
-- High Pressure Sessions: 6
+- High Pressure Sessions: 2
 - OpenViking Retrieval: available
 
 ## Degraded Capabilities

@@ -1,0 +1,246 @@
+#!/bin/bash
+# CLI Manifest Manager - 统一管理 PATH 工具
+# Usage: cli-manifest [install|check|list|add|remove]
+
+set -e
+
+WORKSPACE="${HOME}/.openclaw/workspace"
+MANIFEST="${WORKSPACE}/tools/cli-manifest.json"
+INSTALL_TARGET="${HOME}/.local/bin"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check if manifest exists
+check_manifest() {
+    if [[ ! -f "$MANIFEST" ]]; then
+        log_error "Manifest not found: $MANIFEST"
+        exit 1
+    fi
+}
+
+# Install all required tools
+cmd_install() {
+    check_manifest
+    log_info "Installing CLI tools from manifest..."
+    
+    # Ensure install target exists
+    mkdir -p "$INSTALL_TARGET"
+    
+    # Get required tools from manifest
+    local tools=$(jq -r '.tools | to_entries[] | select(.value.required == true) | .key' "$MANIFEST")
+    
+    local installed=0
+    local skipped=0
+    
+    for tool in $tools; do
+        local tool_path=$(jq -r ".tools[\"$tool\"].path" "$MANIFEST")
+        local full_path="${WORKSPACE}/${tool_path}"
+        local target="${INSTALL_TARGET}/${tool}"
+        
+        if [[ ! -f "$full_path" ]]; then
+            log_warn "Tool not found: $full_path"
+            continue
+        fi
+        
+        if [[ -L "$target" ]]; then
+            # Check if symlink points to correct location
+            local current=$(readlink "$target")
+            if [[ "$current" == "$full_path" ]]; then
+                log_info "Already installed: $tool"
+                ((skipped++))
+                continue
+            else
+                log_warn "Updating symlink: $tool"
+                rm "$target"
+            fi
+        elif [[ -e "$target" ]]; then
+            log_warn "Backing up existing: $tool"
+            mv "$target" "${target}.backup.$(date +%s)"
+        fi
+        
+        ln -s "$full_path" "$target"
+        log_info "Installed: $tool"
+        ((installed++))
+    done
+    
+    echo ""
+    log_info "Done: $installed installed, $skipped skipped"
+}
+
+# Check installation status
+cmd_check() {
+    check_manifest
+    log_info "Checking CLI tools installation..."
+    
+    local tools=$(jq -r '.tools | keys[]' "$MANIFEST")
+    local ok=0
+    local missing=0
+    local wrong=0
+    
+    for tool in $tools; do
+        local tool_path=$(jq -r ".tools[\"$tool\"].path" "$MANIFEST")
+        local full_path="${WORKSPACE}/${tool_path}"
+        local target="${INSTALL_TARGET}/${tool}"
+        local required=$(jq -r ".tools[\"$tool\"].required" "$MANIFEST")
+        
+        if [[ -L "$target" ]]; then
+            local current=$(readlink "$target")
+            if [[ "$current" == "$full_path" ]]; then
+                echo -e "${GREEN}✓${NC} $tool (required: $required)"
+                ((ok++))
+            else
+                echo -e "${YELLOW}⚠${NC} $tool -> $current (expected: $full_path)"
+                ((wrong++))
+            fi
+        elif [[ -e "$target" ]]; then
+            echo -e "${YELLOW}⚠${NC} $tool (not a symlink)"
+            ((wrong++))
+        else
+            if [[ "$required" == "true" ]]; then
+                echo -e "${RED}✗${NC} $tool (REQUIRED, missing)"
+                ((missing++))
+            else
+                echo -e "${YELLOW}○${NC} $tool (optional, missing)"
+            fi
+        fi
+    done
+    
+    echo ""
+    if [[ $missing -gt 0 ]]; then
+        log_error "$missing required tools missing. Run: cli-manifest install"
+        return 1
+    elif [[ $wrong -gt 0 ]]; then
+        log_warn "$wrong tools have issues. Run: cli-manifest install"
+        return 2
+    else
+        log_info "All tools OK"
+        return 0
+    fi
+}
+
+# List all tools
+cmd_list() {
+    check_manifest
+    echo "Registered CLI tools:"
+    echo ""
+    
+    jq -r '.tools | to_entries[] | 
+        "  \(.key)" + 
+        "\n    Category: \(.value.category)" +
+        "\n    Required: \(.value.required)" +
+        "\n    Description: \(.value.description)" +
+        "\n    Path: \(.value.path)" +
+        "\n"' "$MANIFEST"
+}
+
+# Add a new tool to manifest
+cmd_add() {
+    local name="$1"
+    local path="$2"
+    local category="${3:-misc}"
+    local description="${4:-}"
+    local required="${5:-false}"
+    
+    if [[ -z "$name" || -z "$path" ]]; then
+        log_error "Usage: cli-manifest add <name> <path> [category] [description] [required]"
+        exit 1
+    fi
+    
+    check_manifest
+    
+    # Update manifest
+    local tmp=$(mktemp)
+    jq ".tools[\"$name\"] = {
+        \"path\": \"$path\",
+        \"category\": \"$category\",
+        \"description\": \"$description\",
+        \"required\": $required,
+        \"since\": \"$(date +%Y-%m-%d)\"
+    }" "$MANIFEST" > "$tmp" && mv "$tmp" "$MANIFEST"
+    
+    log_info "Added to manifest: $name"
+    
+    # Auto-install if required
+    if [[ "$required" == "true" ]]; then
+        cmd_install
+    fi
+}
+
+# Remove a tool from manifest and PATH
+cmd_remove() {
+    local name="$1"
+    
+    if [[ -z "$name" ]]; then
+        log_error "Usage: cli-manifest remove <name>"
+        exit 1
+    fi
+    
+    check_manifest
+    
+    # Remove from PATH
+    local target="${INSTALL_TARGET}/${name}"
+    if [[ -L "$target" ]]; then
+        rm "$target"
+        log_info "Removed from PATH: $name"
+    fi
+    
+    # Remove from manifest
+    local tmp=$(mktemp)
+    jq "del(.tools[\"$name\"])" "$MANIFEST" > "$tmp" && mv "$tmp" "$MANIFEST"
+    
+    log_info "Removed from manifest: $name"
+}
+
+# Main
+case "${1:-}" in
+    install)
+        cmd_install
+        ;;
+    check)
+        cmd_check
+        ;;
+    list)
+        cmd_list
+        ;;
+    add)
+        cmd_add "$2" "$3" "$4" "$5" "$6"
+        ;;
+    remove)
+        cmd_remove "$2"
+        ;;
+    *)
+        echo "CLI Manifest Manager"
+        echo ""
+        echo "Usage: cli-manifest [command]"
+        echo ""
+        echo "Commands:"
+        echo "  install          Install all required tools to PATH"
+        echo "  check            Check installation status"
+        echo "  list             List all registered tools"
+        echo "  add <name> <path> [category] [desc] [required]"
+        echo "                   Add a new tool to manifest"
+        echo "  remove <name>    Remove a tool from manifest and PATH"
+        echo ""
+        echo "Examples:"
+        echo "  cli-manifest install"
+        echo "  cli-manifest check"
+        echo "  cli-manifest add my-tool tools/my-tool.sh orchestration \"My tool\" true"
+        exit 1
+        ;;
+esac

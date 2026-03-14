@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "description": "CLI tools manifest - 登记应暴露到 PATH 的工具",
+  "install_target": "~/.local/bin",
+  "tools": {
+    "subtask-orchestrate": {
+      "path": "tools/subtask-orchestrate",
+      "category": "orchestration",
+      "description": "子代理编排正式入口",
+      "required": true,
+      "since": "2026-03-14"
+    },
+    "subagent-inbox": {
+      "path": "tools/subagent-inbox",
+      "category": "orchestration",
+      "description": "子代理邮箱管理",
+      "required": true,
+      "since": "2026-03-14"
+    },
+    "spawn-with-callback": {
+      "path": "tools/spawn-with-callback",
+      "category": "orchestration",
+      "description": "带回调的子代理启动",
+      "required": true,
+      "since": "2026-03-14"
+    },
+    "subagent-completion-handler": {
+      "path": "tools/subagent-completion-handler",
+      "category": "orchestration",
+      "description": "子代理完成处理",
+      "required": false,
+      "since": "2026-03-14"
+    },
+    "handle-subagent-complete": {
+      "path": "tools/handle-subagent-complete",
+      "category": "orchestration",
+      "description": "子代理完成推进",
+      "required": false,
+      "since": "2026-03-14"
+    },
+    "run-state": {
+      "path": "tools/run-state",
+      "category": "state",
+      "description": "运行状态管理",
+      "required": false,
+      "since": "2026-03-14"
+    }
+  },
+  "categories": {
+    "orchestration": {
+      "description": "子代理编排核心工具",
+      "priority": 1
+    },
+    "state": {
+      "description": "状态管理工具",
+      "priority": 2
+    }
+  }
+}
