@@ -97,7 +97,16 @@ def log_event(event_type: str, details: dict) -> None:
 
 
 def get_effective_sample_count(config: dict) -> int:
-    """Get count of effective samples from metrics log."""
+    """
+    Get count of effective samples from metrics log.
+    
+    An effective sample must meet ALL conditions:
+    1. event_type == "prompt_pilot_call"
+    2. task_type in allowed_events
+    3. success == True
+    4. is_effective_sample == True (added 2026-03-14, fixes gate calculation bug)
+    5. no error
+    """
     if not METRICS_PATH.exists():
         return 0
     
@@ -108,11 +117,12 @@ def get_effective_sample_count(config: dict) -> int:
         for line in f:
             try:
                 event = json.loads(line)
-                # Effective sample: allowed event type, no error, not a config/preflight event
+                # Effective sample: ALL conditions must be met
                 if (event.get("event_type") == "prompt_pilot_call" and
                     event.get("task_type") in allowed_events and
                     not event.get("error") and
-                    event.get("success")):
+                    event.get("success") and
+                    event.get("is_effective_sample")):  # CRITICAL: must check this field
                     count += 1
             except:
                 pass
