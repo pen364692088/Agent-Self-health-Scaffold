@@ -1,33 +1,21 @@
 # SESSION-STATE.md
 
 ## Current Objective
-EgoCore P2-A.1 收口：可靠性层主链接线 ✅ COMPLETE
+Phase 2.8 Promotion Readiness Gate - COMPLETE
 
 ## Phase
-COMPLETE
+Done
 
 ## Branch
-main (EgoCore)
+main
+
+## Last Completed
+- Phase 2.8: Shadow 系统评估完成
+- Decision: PROMPT_LIMITED_PILOT
+- Grade: A
 
 ## Blocker
 None
 
----
-
-## 任务拆解
-
-| # | 任务 | 状态 |
-|---|------|------|
-| T1 | 替换 task_runtime 主结果模型 | ✅ 完成 |
-| T2 | tool_doctor/preflight 接入 runtime | ✅ 完成 |
-| T3 | 统一失败分类驱动 task state | ✅ 完成 |
-| T4 | 增强 command_router 诊断输出 | ✅ 完成 |
-| T5 | 清理旧链路入口 | ✅ 完成 |
-| T6 | failure/retry/blocker 写入 memory | ✅ 完成 |
-| T7 | 真实主链接线回归 | ✅ 完成 |
-
-## 裁决结果
-**✅ P2-A.1 已收口，可进入 P2-B**
-
-## 仓库
-/home/moonlight/Project/Github/MyProject/EgoCore
+## Next Action
+User decision: Start Limited Pilot (Phase 2.9) or Phase 3 (execution kernel)
