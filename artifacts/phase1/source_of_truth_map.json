@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-03-14T06:00:00-05:00",
+  "phase": "phase1_audit_only",
+  "hierarchy": [
+    "ledger_run_truth",
+    "materialized_state_future",
+    "session_state_live_bridge",
+    "working_memory_live_bridge",
+    "handoff_capsule_summary_distill",
+    "transcript_ui"
+  ],
+  "live_sources": {
+    "session_state": "SESSION-STATE.md",
+    "working_buffer": "working-buffer.md"
+  },
+  "non_live_sources": [
+    {
+      "path": "memory/SESSION-STATE.md",
+      "status": "stop_write_candidate",
+      "reason": "duplicate_live_state"
+    },
+    {
+      "path": "memory/working-buffer.md",
+      "status": "stop_write_candidate",
+      "reason": "duplicate_live_working_memory"
+    }
+  ],
+  "auxiliary_only": [
+    {
+      "path": "handoff.md",
+      "role": "handoff_summary",
+      "authoritative": false
+    },
+    {
+      "path": "artifacts/capsules",
+      "role": "compressed_recall_artifacts",
+      "authoritative": false
+    },
+    {
+      "path": "artifacts/distilled",
+      "role": "offline_archive_distill",
+      "authoritative": false
+    }
+  ],
+  "tools": [
+    {
+      "path": "tools/session-start-recovery",
+      "current_role": "continuity_recovery",
+      "reads": [
+        "SESSION-STATE.md",
+        "memory/working-buffer.md",
+        "handoff.md",
+        "artifacts/capsules/*.json",
+        "state/wal/session_state_wal.jsonl",
+        "state/durable_execution/RUN_STATE.json"
+      ],
+      "writes": [
+        ".last_session_id",
+        "artifacts/session_recovery/*"
+      ],
+      "problem_type": [
+        "wrong_live_buffer_path",
+        "capsule_auxiliary_signal_overreach_risk",
+        "workspace_hardcoded"
+      ],
+      "suggested_action": "rewire",
+      "priority": "P0",
+      "risk": "critical"
+    },
+    {
+      "path": "tools/prompt-assemble",
+      "current_role": "prompt_assembly",
+      "reads": [
+        "--state input",
+        "--history input",
+        "tools/context-budget-check",
+        "tools/context-compress",
+        "tools/context-retrieve"
+      ],
+      "writes": [
+        "stdout_json_only"
+      ],
+      "problem_type": [
+        "history_state_centric_not_materialized_state",
+        "summary_recall_weight_risk",
+        "workspace_hardcoded"
+      ],
+      "suggested_action": "rewire_later",
+      "priority": "P1",
+      "risk": "high"
+    },
+    {
+      "path": "tools/context-compress",
+      "current_role": "online_compression_executor",
+      "reads": [
+        "--state input",
+        "--history input",
+        "tools/context-budget-check",
+        "tools/capsule-builder"
+      ],
+      "writes": [
+        "artifacts/compression_events/*.json",
+        "compression_events.jsonl",
+        "artifacts/capsules references in enforced mode"
+      ],
+      "problem_type": [
+        "capsule_summary_can_be_misread_as_state",
+        "workspace_hardcoded"
+      ],
+      "suggested_action": "keep_with_authority_limits",
+      "priority": "P1",
+      "risk": "high"
+    },
+    {
+      "path": "tools/capsule-builder",
+      "current_role": "session_capsule_builder_wrapper",
+      "reads": [
+        "delegates_to_v1_v2_v3"
+      ],
+      "writes": [
+        "artifacts/capsules/*.json (via delegated implementation)"
+      ],
+      "problem_type": [
+        "capsule_family_overload_risk"
+      ],
+      "suggested_action": "restrict_to_session_capsule",
+      "priority": "P2",
+      "risk": "medium_high"
+    },
+    {
+      "path": "tools/archive-with-distill",
+      "current_role": "offline_archive_pipeline",
+      "reads": [
+        "memory/YYYY-MM-DD.md",
+        "memory.md",
+        "tools/distill-content"
+      ],
+      "writes": [
+        "artifacts/distilled/*",
+        "backup_repo_git_commit"
+      ],
+      "problem_type": [
+        "offline_online_boundary_blur",
+        "workspace_hardcoded"
+      ],
+      "suggested_action": "keep_offline_only",
+      "priority": "P1",
+      "risk": "high"
+    },
+    {
+      "path": "tools/distill-content",
+      "current_role": "offline_llm_distill",
+      "reads": [
+        "arbitrary_input_file",
+        "~/.openclaw/openclaw.json"
+      ],
+      "writes": [
+        "output file or stdout"
+      ],
+      "problem_type": [
+        "summary_not_raw_evidence",
+        "offline_summary_can_be_misused_as_truth",
+        "workspace_hardcoded"
+      ],
+      "suggested_action": "keep_offline_only",
+      "priority": "P1",
+      "risk": "high"
+    }
+  ],
+  "usurpation_paths": [
+    {
+      "path": "handoff.md -> state judgment",
+      "status": "forbidden",
+      "risk": "high"
+    },
+    {
+      "path": "memory/working-buffer.md -> recovery live source",
+      "status": "must_rewire",
+      "risk": "critical"
+    },
+    {
+      "path": "capsule -> authoritative recovery state",
+      "status": "forbidden",
+      "risk": "high"
+    },
+    {
+      "path": "distilled output -> prompt primary source",
+      "status": "forbidden_by_default",
+      "risk": "high"
+    }
+  ],
+  "next_actions": [
+    "rewire continuity tools to root working-buffer.md",
+    "mark memory/SESSION-STATE.md and memory/working-buffer.md as stop-write/archive candidates",
+    "do not modify main execution chain yet",
+    "start phase2 only after live source unification"
+  ]
+}
