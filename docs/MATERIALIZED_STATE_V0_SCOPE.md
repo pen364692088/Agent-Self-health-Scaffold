@@ -4,7 +4,7 @@
 **Status**: Feature Frozen
 **Created**: 2026-03-14
 **Updated**: 2026-03-14
-**Phase**: Phase 2.5 COMPLETE (Shadow Mode)
+**Phase**: Phase 2.6 COMPLETE (Shadow Mode)
 
 ---
 
@@ -15,6 +15,8 @@
 Phase 2.4 新增 `core/canonical_adapter.py`，提供只读 shadow 接入 canonical sources。
 
 Phase 2.5 新增 `core/prompt_preview.py`，提供 shadow prompt preview 和 dual-run comparison。
+
+Phase 2.6 新增 `core/recovery_preview.py`，提供 shadow recovery preview 和与主 recovery flow 的对比。
 
 ---
 
@@ -60,10 +62,6 @@ Phase 2.5 新增 `core/prompt_preview.py`，提供 shadow prompt preview 和 dua
 materialize-state --shadow-compare
 ```
 
-生成：
-- JSON report: `artifacts/shadow_compare/shadow_compare_*.json`
-- Markdown summary: `artifacts/shadow_compare/shadow_compare_*.md`
-
 ### Shadow Mode 约束
 - **只读**: 不修改任何 canonical source
 - **Shadow only**: 不替代 bridge state
@@ -79,38 +77,60 @@ materialize-state --shadow-compare
 
 ### Prompt Preview 功能
 ```bash
-# Basic preview
 materialize-state --prompt-preview
-
-# Compare with main prompt-assemble
 materialize-state --prompt-preview --compare-with-main
 ```
-
-生成：
-- JSON preview: `artifacts/prompt_preview/prompt_preview_*.json`
-- Markdown summary: `artifacts/prompt_preview/prompt_preview_*.md`
-- Dual-run compare (if requested): `artifacts/prompt_preview/dual_run_compare_*.json`
 
 ### Prompt Preview 约束
 - **Shadow mode**: 不替代 main prompt chain
 - **No authority**: MaterializedState 不是 prompt authority
 - **Conflicts NOT included**: 冲突字段不静默进入 prompt
 - **Explicit warnings**: Missing blocker 触发显式警告
-- **No silent behavior**: 所有问题必须明确报告
 
 ### Prompt Layers
 1. **Resident Layer**: objective, phase, branch, blocker
 2. **Action Layer**: next_step, next_actions
 3. **Metadata Layer**: sources_checked, field_sources_summary
 
-### Dual-Run Comparison
-比较 main prompt-assemble 与 shadow preview：
-- Token usage comparison
-- Layer coverage comparison
-- Quality metrics:
-  - Completeness score
-  - Consistency assessment
-  - Observability features
+---
+
+## Phase 2.6: Recovery Preview Shadow Mode
+
+### 新增模块
+`core/recovery_preview.py` - MaterializedState + CanonicalAdapter recovery preview。
+
+### Recovery Preview 功能
+```bash
+materialize-state --recovery-preview
+materialize-state --recovery-preview --compare-with-main
+```
+
+生成：
+- JSON preview: `artifacts/recovery_preview/recovery_preview_*.json`
+- Markdown summary: `artifacts/recovery_preview/recovery_preview_*.md`
+- Recovery compare (if requested): `artifacts/recovery_preview/recovery_compare_*.json`
+
+### Recovery Preview 约束
+- **Shadow mode**: 不替代 main recovery chain
+- **No authority**: MaterializedState 不是 recovery authority
+- **No real recovery**: 不触发真实恢复动作
+- **Conflicts tracked, not used**: 冲突字段追踪但不静默使用
+- **Explicit warnings**: Missing blocker 触发显式警告
+
+### Recovery Fields
+- `objective` - 当前任务目标
+- `phase` - 当前阶段
+- `next_step` - 下一步动作
+- `blocker` - 当前阻塞项
+
+### Recovery Comparison
+比较 main recovery 与 shadow preview：
+- Field differences (objective, phase, next_step, blocker)
+- Phase comparison
+- Next step comparison
+- Blocker comparison
+- Warnings comparison
+- Provenance comparison
 - Recommendations
 
 ---
@@ -119,14 +139,15 @@ materialize-state --prompt-preview --compare-with-main
 
 以下功能明确不在 v0 范围内：
 
-1. **不接 recovery** - 不与 recovery 流程集成
+1. **不接 recovery 主链** - RecoveryPreview 是 shadow only，不替代 main recovery chain
 2. **不接 canonical 主链** - CanonicalAdapter 是 shadow only，不替代 bridge state
 3. **不接 handoff/capsule/summary/distill** - 不读取这些文件作为输入
 4. **不新增第二套 live state** - 只读，不写回
 5. **不写回 continuity 源文件** - Read-only boundary
 6. **不让 canonical shadow 替代 bridge** - Shadow compare 仅用于 observability
-7. **不让 shadow preview 替代 main prompt chain** - 仅用于 comparison
+7. **不让 shadow preview 替代 main chains** - 仅用于 comparison
 8. **不静默包含冲突字段** - 冲突必须明确标记
+9. **不触发真实恢复动作** - Recovery preview 是 read-only
 
 ---
 
@@ -143,12 +164,11 @@ materialize-state --shadow-compare
 
 # Prompt preview (shadow mode)
 materialize-state --prompt-preview
-
-# Compare with main chain
 materialize-state --prompt-preview --compare-with-main
 
-# 指定输出目录
-materialize-state --prompt-preview --output-dir ./reports
+# Recovery preview (shadow mode)
+materialize-state --recovery-preview
+materialize-state --recovery-preview --compare-with-main
 
 # Schema 验证
 materialize-state --json --schema-validate
@@ -165,40 +185,18 @@ materialize-state --fields
 ## Contract Tests
 
 ### MaterializedState v0
-`tests/core/test_materialized_state_v0.py` (30 tests):
-- Schema compliance tests
-- Field extraction tests
-- Conflict resolution tests
-- Materialization tests
-- Read-only boundary tests
-- CLI compatibility tests
-- Normalization tests
-- Integration tests
+`tests/core/test_materialized_state_v0.py` (30 tests)
 
 ### CanonicalAdapter
-`tests/core/test_canonical_adapter.py` (26 tests):
-- Read-only boundary tests
-- Connection tests
-- Field extraction tests
-- Shadow comparison tests
-- Coverage reporting tests
-- Conflict detection tests
-- Integration tests
-- Merge stub tests
+`tests/core/test_canonical_adapter.py` (26 tests)
 
 ### PromptPreview
-`tests/core/test_prompt_preview.py` (31 tests):
-- Token estimation tests
-- Prompt assembly tests
-- Conflict handling tests
-- Shadow mode boundary tests
-- Dual-run comparison tests
-- Quality metrics tests
-- Integration tests
+`tests/core/test_prompt_preview.py` (31 tests)
 
-**Total: 87 tests**
+### RecoveryPreview
+`tests/core/test_recovery_preview.py` (29 tests)
 
-Golden fixtures: `tests/core/fixtures/materialized_state_v0_golden_fixtures.json`
+**Total: 116 tests**
 
 ---
 
@@ -221,9 +219,6 @@ Golden fixtures: `tests/core/fixtures/materialized_state_v0_golden_fixtures.json
 `uncertainty_flag = True` 当：
 - `objective` 字段缺失或为空
 
-不触发 uncertainty 的字段缺失：
-- `phase`, `branch`, `blocker`, `next_step`, `next_actions`
-
 ---
 
 ## Files Created/Modified
@@ -233,31 +228,18 @@ Golden fixtures: `tests/core/fixtures/materialized_state_v0_golden_fixtures.json
 | `core/materialized_state_v0.py` | 核心模块 (Phase 2.3) |
 | `core/canonical_adapter.py` | Canonical adapter shadow mode (Phase 2.4) |
 | `core/prompt_preview.py` | Prompt preview shadow mode (Phase 2.5) |
+| `core/recovery_preview.py` | Recovery preview shadow mode (Phase 2.6) |
 | `schemas/materialized_state.v0.schema.json` | JSON Schema |
-| `tests/core/test_materialized_state_v0.py` | Contract tests (30) |
-| `tests/core/test_canonical_adapter.py` | Contract tests (26) |
-| `tests/core/test_prompt_preview.py` | Contract tests (31) |
-| `tests/core/fixtures/*_golden_fixtures.json` | Golden fixtures |
+| `tests/core/test_*.py` | Contract tests (116) |
 | `tools/materialize-state` | CLI wrapper |
 | `docs/MATERIALIZED_STATE_V0_SCOPE.md` | 本文档 |
 
 ---
 
-## Compatibility
-
-- 现有 `core/state_materializer.py` (RunStateMaterializer) 保持不变
-- 现有 `tests/ledger/test_state_materializer.py` 全部通过
-- CLI 输出格式保持向后兼容
-- Shadow compare 不影响主链路
-- Prompt preview 不替代 main prompt chain
-
----
-
 ## Next Steps (Future Phases)
 
-1. **Phase 2.6**: Integrate with recovery flows
-2. **Phase 2.7**: Add handoff/capsule input sources
-3. **Phase 2.8**: Merge canonical into bridge state (with explicit conflict resolution)
-4. **Phase 3**: Task execution kernel
+1. **Phase 2.7**: Add handoff/capsule input sources
+2. **Phase 2.8**: Merge canonical into bridge state (with explicit conflict resolution)
+3. **Phase 3**: Task execution kernel
 
 这些步骤在 v0 中明确不做。

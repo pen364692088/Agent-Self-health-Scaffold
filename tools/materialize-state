@@ -8,6 +8,7 @@ Usage:
   materialize-state [--json] [--schema-validate]
   materialize-state --shadow-compare [--output-dir DIR]
   materialize-state --prompt-preview [--compare-with-main]
+  materialize-state --recovery-preview [--compare-with-main]
   materialize-state --fields
   materialize-state --health
 
@@ -27,6 +28,12 @@ Phase 2.5:
 - Dual-run compare with main prompt-assemble
 - Conflicts NOT silently included in prompt
 - Missing blocker explicit warning
+
+Phase 2.6:
+- Recovery preview from MaterializedState + CanonicalAdapter
+- Dual-run compare with main recovery flow
+- Does NOT trigger real recovery actions
+- All conflict fields tracked, not silently used
 """
 
 from __future__ import annotations
@@ -56,6 +63,11 @@ from core.prompt_preview import (
     MaterializedStatePromptAssembler,
     DualRunComparator,
     create_shadow_prompt_preview,
+)
+from core.recovery_preview import (
+    RecoveryPreviewGenerator,
+    RecoveryCompareGenerator,
+    create_recovery_preview,
 )
 
 
@@ -222,6 +234,121 @@ def run_main_prompt_assemble(session_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def run_main_recovery() -> Optional[Dict[str, Any]]:
+    """Run main recovery chain (read-only check mode)."""
+    recovery_tool = WORKSPACE / "tools" / "session-start-recovery"
+    
+    if not recovery_tool.exists():
+        return None
+    
+    try:
+        result = subprocess.run(
+            [str(recovery_tool), "--check", "--json"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+    except Exception:
+        pass
+    
+    return None
+
+
+def save_recovery_preview_artifacts(preview_dict, compare_dict, output_dir: Path) -> Dict[str, Path]:
+    """Save recovery preview artifacts."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    artifacts = {}
+    
+    # Preview JSON
+    preview_path = output_dir / f"recovery_preview_{timestamp}.json"
+    preview_path.write_text(json.dumps(preview_dict, indent=2, ensure_ascii=False))
+    artifacts["preview_json"] = preview_path
+    
+    # Compare JSON (if available)
+    if compare_dict:
+        compare_path = output_dir / f"recovery_compare_{timestamp}.json"
+        compare_path.write_text(json.dumps(compare_dict, indent=2, ensure_ascii=False))
+        artifacts["compare_json"] = compare_path
+    
+    # Human-readable summary
+    summary_path = output_dir / f"recovery_preview_{timestamp}.md"
+    md_lines = [
+        "# Recovery Preview (Shadow Mode)",
+        "",
+        f"**Generated**: {preview_dict['generated_at']}",
+        "",
+        "## ⚠️ Shadow Mode Notice",
+        "",
+        "This is a SHADOW preview. It does NOT replace the main recovery chain.",
+        "It does NOT trigger real recovery actions.",
+        "Use for comparison and assessment only.",
+        "",
+        "## Recovery Fields",
+        "",
+        f"- **Objective**: {preview_dict.get('objective') or 'N/A'}",
+        f"- **Phase**: {preview_dict.get('phase') or 'N/A'}",
+        f"- **Next Step**: {preview_dict.get('next_step') or 'N/A'}",
+        f"- **Blocker**: {preview_dict.get('blocker') or 'None'}",
+        f"- **Should Recover**: {'Yes' if preview_dict.get('should_recover') else 'No'}",
+        "",
+    ]
+    
+    if preview_dict.get("warnings"):
+        md_lines.append("## ⚠️ Warnings")
+        md_lines.append("")
+        for w in preview_dict["warnings"]:
+            md_lines.append(f"- {w}")
+        md_lines.append("")
+    
+    if preview_dict.get("conflicts"):
+        md_lines.append("## Conflicts Detected")
+        md_lines.append("")
+        md_lines.append("**Note**: Conflicts are tracked but NOT silently used.")
+        md_lines.append("")
+        for c in preview_dict["conflicts"]:
+            md_lines.append(f"- **{c['field']}**: bridge=`{c['bridge_value']}` vs canonical=`{c['canonical_value']}`")
+        md_lines.append("")
+    
+    if preview_dict.get("uncertainty_flag"):
+        md_lines.append("## 🚨 Uncertainty Flag")
+        md_lines.append("")
+        md_lines.append("Critical fields are missing. Recovery may be needed.")
+        md_lines.append("")
+    
+    # Add comparison if available
+    if compare_dict:
+        md_lines.append("---")
+        md_lines.append("")
+        md_lines.append("# Recovery Comparison")
+        md_lines.append("")
+        
+        # Field differences
+        field_diff = compare_dict.get("field_differences", {})
+        md_lines.append("## Field Differences")
+        md_lines.append("")
+        for field_name, diff in field_diff.items():
+            match_icon = "✅" if diff.get("match") else "❌"
+            md_lines.append(f"- **{field_name}**: {match_icon}")
+            md_lines.append(f"  - Main: `{diff.get('main_value')}`")
+            md_lines.append(f"  - Shadow: `{diff.get('shadow_value')}`")
+        md_lines.append("")
+        
+        # Recommendations
+        if compare_dict.get("recommendations"):
+            md_lines.append("## Recommendations")
+            md_lines.append("")
+            for r in compare_dict["recommendations"]:
+                md_lines.append(f"- {r}")
+            md_lines.append("")
+    
+    summary_path.write_text("\n".join(md_lines))
+    artifacts["summary_md"] = summary_path
+    
+    return artifacts
+
+
 def save_prompt_preview_artifacts(preview_dict, compare_dict, output_dir: Path) -> Dict[str, Path]:
     """Save prompt preview artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -328,7 +455,7 @@ Examples:
   materialize-state --json           # Output as JSON
   materialize-state --shadow-compare # Compare with canonical sources
   materialize-state --prompt-preview # Generate prompt preview (shadow mode)
-  materialize-state --prompt-preview --compare-with-main  # Compare with main chain
+  materialize-state --recovery-preview # Generate recovery preview (shadow mode)
   materialize-state --fields         # Show tracked fields
   materialize-state --health         # Health check
 """
@@ -337,9 +464,10 @@ Examples:
     parser.add_argument("--schema-validate", action="store_true", help="Validate against JSON schema")
     parser.add_argument("--shadow-compare", action="store_true", help="Compare with canonical sources (shadow mode)")
     parser.add_argument("--prompt-preview", action="store_true", help="Generate prompt preview from MaterializedState")
-    parser.add_argument("--compare-with-main", action="store_true", help="Compare with main prompt-assemble chain")
+    parser.add_argument("--recovery-preview", action="store_true", help="Generate recovery preview from MaterializedState (shadow mode)")
+    parser.add_argument("--compare-with-main", action="store_true", help="Compare with main chain")
     parser.add_argument("--output-dir", type=str, help="Output directory for artifacts")
-    parser.add_argument("--session-id", type=str, default="default", help="Session ID for prompt preview")
+    parser.add_argument("--session-id", type=str, default="default", help="Session ID")
     parser.add_argument("--fields", action="store_true", help="Show tracked fields")
     parser.add_argument("--health", action="store_true", help="Health check")
     parser.add_argument("--workspace", type=str, help="Workspace path (default: ~/.openclaw/workspace)")
@@ -411,6 +539,44 @@ Examples:
         
         if compare_dict:
             result["dual_run_compare"] = compare_dict
+        
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+    
+    # Recovery preview
+    if args.recovery_preview:
+        # Get canonical state if available
+        canonical_state = None
+        adapter = CanonicalAdapter(workspace_path=WORKSPACE)
+        if adapter.connect():
+            canonical_fields = adapter.extract_canonical_fields()
+            canonical_state = {
+                name: {"value": f.value, "source": f.source}
+                for name, f in canonical_fields.items()
+            }
+        
+        preview = create_recovery_preview(state_dict, canonical_state, session_id=args.session_id)
+        preview_dict = preview.to_dict()
+        
+        compare_dict = None
+        if args.compare_with_main:
+            # Run main recovery
+            main_recovery = run_main_recovery()
+            if main_recovery:
+                comparator = RecoveryCompareGenerator()
+                compare = comparator.compare(main_recovery, preview)
+                compare_dict = compare.to_dict()
+        
+        output_dir = Path(args.output_dir) if args.output_dir else WORKSPACE / "artifacts" / "recovery_preview"
+        artifacts = save_recovery_preview_artifacts(preview_dict, compare_dict, output_dir)
+        
+        result = {
+            "recovery_preview": preview_dict,
+            "artifacts": {k: str(v) for k, v in artifacts.items()}
+        }
+        
+        if compare_dict:
+            result["recovery_compare"] = compare_dict
         
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
