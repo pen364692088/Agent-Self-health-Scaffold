@@ -1,0 +1,811 @@
+# Agent-Self-health-Scaffold
+
+## 接入“状态驱动上下文组装 + working memory + 工具输出压缩 + 子代理蒸馏”
+
+## 同时替换 / 改接 / 禁用重复功能的强制执行版任务单
+
+---
+
+## 一、目标
+
+对现有 Agent-Self-health-Scaffold 做一次结构治理与能力升级，达成以下目标：
+
+1. 接入四项能力：
+   - 状态驱动上下文组装
+   - working memory
+   - 工具输出压缩
+   - 子代理蒸馏
+
+2. 清理当前重复、重叠、边界打架的功能模块，避免：
+   - 多真相源
+   - 摘要层篡权
+   - 恢复链与压缩链互相污染
+   - 子代理结果层和蒸馏层重复
+
+3. 保持核心原则不变：
+   - **task/run ledger 才是真相层**
+   - transcript / summary / capsule / working memory 都只能是派生层或辅助层
+   - 新能力必须作为 **Context Support Plane** 接入，不能替代 durable execution 主链
+
+---
+
+## 二、结论先行
+
+本次不是“再叠四个功能模块”，而是：
+
+> **先固定 truth hierarchy，再把四项能力接到 Context Support Plane，服务恢复、续跑、父子任务接力，不得产生第二套执行真相。**
+
+如果不先治理边界，直接扩展现有 context-compress / working-buffer / handoff / distill / child callback 体系，最终高概率会出现：
+
+- ledger 说 A，working memory 说 B，prompt 读 C，恢复按 D 执行
+- capsule / summary 变成“伪真相层”
+- 子代理完成回执和蒸馏摘要互相打架
+- 在线压缩链与离线归档链相互污染
+
+---
+
+## 三、强制架构原则
+
+### 1. 真相层级必须固定
+
+统一以下 hierarchy，任何模块不得违反：
+
+```text
+Ledger / Run Truth
+> Materialized State
+> Working Memory
+> Prompt Capsules / Summaries / Distilled Context
+> Transcript / UI Render
+```
+
+解释：
+
+- **Ledger / Run Truth**：唯一 authoritative source
+- **Materialized State**：从 truth 抽取出来的 prompt-friendly live state
+- **Working Memory**：短期推理焦点层，不得决定执行真相
+- **Capsule / Summary / Distilled Context**：临时上下文辅助层
+- **Transcript/UI**：展示层
+
+### 2. 双轨原则必须成立
+
+凡是压缩、蒸馏、摘要类能力，必须保留：
+
+- **raw evidence**
+- **compressed consumption form**
+
+禁止“只留摘要不留原始证据”。
+
+### 3. 摘要层不得篡权
+
+以下内容只能从 ledger / receipt / raw artifact 判断，不得从 summary 判断：
+
+- task final status
+- child final status
+- gate pass/fail
+- repair 是否真正应用
+- step pointer
+- verification 是否完成
+
+### 4. Context Support Plane 不得决定执行结果
+
+新接入的四块只能做：
+
+- 提供更好的 prompt 输入
+- 提供更好的恢复辅助
+- 提供更高质量的父子任务交接
+
+不能做：
+
+- 决定 run 状态
+- 决定 child 完成状态
+- 决定 ledger 写入真相
+
+---
+
+## 四、现状映射：当前仓库里已经存在的相关模块
+
+本次改造不是从 0 开始。现有仓库里已经有不少半成品或相邻模块。
+
+### 1. 已有的上下文压缩/组装骨架
+
+- `tools/context-budget-check`
+- `tools/context-compress`
+- `tools/context-retrieve`
+- `tools/prompt-assemble`
+- `tools/capsule-builder`
+- `schemas/session_capsule.v1.schema.json`
+- `schemas/active_state.v1.schema.json`
+- `schemas/compression_event.v1.schema.json`
+
+### 2. 已有的 session continuity / working memory 骨架
+
+- `SESSION-STATE.md`
+- `working-buffer.md`
+- `handoff.md`
+- `tools/session-start-recovery`
+- `tools/session-state-doctor`
+
+### 3. 已有的蒸馏/归档骨架
+
+- `tools/distill-content`
+- `tools/archive-with-distill`
+- `artifacts/distilled/*`
+
+### 4. 已有的 self-health 主链骨架
+
+- task/run/repair/gate 相关 schema / docs / orchestrator
+- `tools/agent-self-health-scheduler`
+- `tools/gate-self-health-check`
+- recovery orchestrator / ledger / rebuild 相关设计
+
+### 5. 已有的风险点
+
+当前最需要警惕的不是“没有模块”，而是“多个相邻模块已经开始重叠”。
+
+---
+
+## 五、现有系统需要先处理的重复 / 冲突点
+
+## A. Working memory / session state 重复
+
+已知存在高风险重复：
+
+- `SESSION-STATE.md`
+- `working-buffer.md`
+- `memory/SESSION-STATE.md`
+- `memory/working-buffer.md`
+
+### 强制处理要求
+
+必须先审计并分类这几类文件：
+
+1. **唯一 live 文件**
+2. **mirror / cache**
+3. **archive / historical**
+4. **废弃文件**
+
+### 目标
+
+最终必须达到：
+
+- 只有一份 live `SESSION-STATE`
+- 只有一份 live `working-buffer`
+- 其他同名文件必须：
+  - 改名
+  - 标记 archive
+  - 或直接禁用/停写
+
+### 禁止
+
+禁止 prompt-assemble、recovery、compaction 同时从多个同名 state 文件读取。
+
+---
+
+## B. 压缩链与蒸馏链重叠
+
+当前疑似重复链：
+
+- `context-compress`
+- `context-retrieve`
+- `capsule-builder`
+- `archive-with-distill`
+- `distill-content`
+
+### 强制处理要求
+
+必须重新划分职责：
+
+#### 在线链
+
+用于当前推理和恢复辅助：
+
+- `context-compress`
+- `context-retrieve`
+- `prompt-assemble`
+- `capsule-builder`（仅 session capsule）
+
+#### 离线链
+
+用于归档和长期沉淀：
+
+- `archive-with-distill`
+- `distill-content`
+
+### 目标
+
+在线链和离线链不能混写、混读、混用同一结果作为主输入。
+
+### 禁止
+
+禁止将 archive distill 结果直接当作在线主 prompt 输入，除非通过明确 retrieval 入口。
+
+---
+
+## C. Capsule 概念混用
+
+当前/未来至少有三种 capsule：
+
+1. session capsule
+2. tool result summary
+3. child completion package
+
+### 强制处理要求
+
+不能继续做“万能 capsule”。
+
+建议拆成三套 schema：
+
+- `session_context_capsule`
+- `tool_output_summary`
+- `child_continuation_package`
+
+允许字段风格统一，但禁止 schema 混成一个对象。
+
+---
+
+## D. 子代理结果层和蒸馏层重叠
+
+现有 durable orchestration 已经有 receipt / callback / resume 逻辑。
+
+### 强制处理要求
+
+新加的子代理蒸馏只能作为：
+
+- **parent-ready continuation package**
+
+不能替代：
+
+- durable receipt
+- child truth ledger
+- callback execution truth
+
+### 目标
+
+父代理继续时必须优先依赖：
+
+1. receipt
+2. child structured result
+3. distilled context
+
+而不是反过来。
+
+---
+
+## 六、重构后的目标分层
+
+## L0. Execution Truth Plane
+
+保留并强化，不允许被新层替代：
+
+- Task Ledger
+- Run Ledger
+- Recovery Orchestrator
+- Reconciler
+- Durable Parent/Child Orchestration
+- Verification / rollback
+
+## L1. Context Support Plane
+
+本次接入的新主层：
+
+- State Materializer
+- Prompt Assembler
+- Working Memory
+- Tool Output Compactor
+- Child Distill Adapter
+
+## L2. Observability Plane
+
+监控与报告层：
+
+- Metrics
+- Incident capture
+- Shadow report
+- Health dashboard
+
+### 分层边界
+
+- L0 决定“真实发生了什么”和“下一步真实该做什么”
+- L1 决定“为了更稳地推理，需要把哪些状态装进 prompt”
+- L2 决定“如何观测、审计、解释系统行为”
+
+### 非法越权示例
+
+以下都属于必须禁止的越权：
+
+- 用 handoff / summary 判断 task 已完成
+- 用 working memory 判断 child 已完成
+- 用 capsule 判断 gate 已通过
+- 用 distill 内容取代 raw receipt
+
+---
+
+## 七、具体模块改造方案
+
+## 1. 新增 `state_materializer`
+
+### 目的
+
+把 ledger / run truth 转成 prompt-ready live state，作为 prompt 组装的唯一状态入口。
+
+### 输入
+
+- task ledger
+- run ledger
+- current step pointer
+- blockers
+- active child tasks
+- verification state
+
+### 输出
+
+`materialized_state.json`
+
+### 必须满足
+
+- 只读 truth
+- 不自己决定真相
+- 可重建
+- 可审计
+
+### 替换/改接要求
+
+- `prompt-assemble` 不再直接解释 ledger 原始全量事件
+- `session-start-recovery` 不再自行拼一套平行状态
+- 所有 prompt 相关状态读取优先走 `state_materializer`
+
+### 最小字段建议
+
+```json
+{
+  "task_id": "task_001",
+  "run_id": "run_001",
+  "objective": "stabilize context support plane integration",
+  "phase": "verification",
+  "current_step": "unify_live_working_memory_source",
+  "blockers": [],
+  "active_children": [],
+  "pending_verifications": ["prompt_assemble_smoke", "recovery_replay_smoke"],
+  "recent_repairs": [],
+  "evidence_refs": []
+}
+```
+
+---
+
+## 2. 收敛 working memory
+
+### 目的
+
+把 working memory 降级成“推理控制面”，而不是真相数据库。
+
+### 允许写入
+
+- current_focus
+- hypotheses
+- unresolved_decisions
+- next_reasoning_targets
+- priority_artifact_refs
+- current blocker summary
+- parent waiting notes
+
+### 禁止写入
+
+- final task status
+- authoritative child final status
+- step completion truth
+- gate pass/fail truth
+- actual repair applied truth
+
+### 替换/禁用要求
+
+- 统一只保留一份 live `working-buffer`
+- 其他 working-buffer 同名文件：
+  - 改接为 archive
+  - 或停写
+  - 或删除引用
+
+### 额外要求
+
+working memory 必须支持：
+
+- TTL / decay 机制
+- 可整体重建失败时安全丢弃
+- 清空后系统仍能从 L0 truth 恢复
+
+---
+
+## 3. 新增 `tool_output_compactor`
+
+### 目的
+
+把工具结果从“全文噪声”变成“原始证据 + prompt摘要”。
+
+### 每次关键工具执行必须双写
+
+输出：
+
+- raw artifact
+- structured summary
+
+### 推荐结构
+
+```json
+{
+  "tool_name": "shell",
+  "run_id": "toolrun_001",
+  "timestamp": "2026-03-14T06:30:00Z",
+  "raw_ref": "artifacts/tool_runs/toolrun_001/output.log",
+  "exit_code": 1,
+  "result_category": "test_failure",
+  "summary": [
+    "pytest failed in tests/test_context_builder.py",
+    "missing import in state_materializer",
+    "working-memory duplicate source still present"
+  ],
+  "decision_relevance": "blocks verification",
+  "next_action_hint": "fix import and unify live working-buffer"
+}
+```
+
+### 改接要求
+
+- 工具 wrapper 层直接产出 summary
+- prompt-assemble 只读 summary，不读原始长日志
+- recovery/debug/audit 仍可通过 `raw_ref` 回看证据
+
+### 禁用要求
+
+- 禁止在 reply 阶段才临时总结工具结果
+- 禁止 compaction 再反向替代原始工具结果
+
+---
+
+## 4. 新增 `child_distill_adapter`
+
+### 目的
+
+把子代理结果转成父代理可继续消费的 continuation package。
+
+### 必须输出
+
+- child_task_id
+- objective
+- final_status
+- produced_artifacts
+- changed_files
+- tests_run
+- test_results
+- verification_result
+- unresolved_risks
+- recommended_parent_next_action
+- key_decisions
+- open_loops
+- hard_constraints
+- distilled_context_for_parent_prompt
+
+### 关键原则
+
+- 前半部分是 machine-readable truth-adjacent result
+- 最后一部分才是 prompt 辅助摘要
+
+### 改接要求
+
+- 父代理恢复时先读 receipt / structured result
+- 再读 `distilled_context_for_parent_prompt`
+- 不再直接吃子代理自由文本长总结作为主依据
+
+### 禁止
+
+禁止出现以下路径：
+
+- child 回一段长文本
+- parent 只读长文本
+- parent 依据长文本自行猜测 child 是否成功
+
+---
+
+## 5. 重构 `prompt-assemble`
+
+### 目的
+
+改成真正的状态驱动上下文组装器。
+
+### 输入只能来自四类
+
+1. `materialized_state`
+2. `working_memory`
+3. `retrieved_recall`
+4. `tool_output_summaries`
+
+### 不应直接读取
+
+- 全量 transcript
+- 原始 ledger 全量事件
+- 大段原始工具日志
+- archive distill 全文
+
+### 替换要求
+
+- 旧的“以 history 为中心”的 prompt 拼装逻辑降级
+- 新逻辑改为“以 materialized state 为中心”
+
+### 推荐输出结构
+
+```json
+{
+  "resident": {...},
+  "active": {...},
+  "recall": {...},
+  "tool_summaries": [...],
+  "assembly_decisions": [...],
+  "evidence_refs": [...]
+}
+```
+
+---
+
+## 八、模块映射：现有工具如何改接
+
+| 现有模块 | 当前角色 | 目标角色 | 处理动作 |
+|---|---|---|---|
+| `tools/prompt-assemble` | 以 history 为中心的组装器 | 状态驱动组装器 | 重构 |
+| `tools/context-compress` | 在线压缩执行器 | 在线预算治理组件 | 改接 |
+| `tools/context-retrieve` | recall 检索器 | L1 recall provider | 保留+改接 |
+| `tools/capsule-builder` | session capsule 生成器 | 仅 session capsule | 收口职责 |
+| `tools/distill-content` | 内容蒸馏 | 离线归档蒸馏 | 降级到 offline |
+| `tools/archive-with-distill` | 归档+蒸馏 | offline archive pipeline | 保留 |
+| `tools/session-start-recovery` | 恢复入口+状态拼装 | 恢复入口 | 改接到 materializer |
+| `SESSION-STATE.md` | continuity state | live state file | 保留单一 live |
+| `working-buffer.md` | working memory | 单一 live working memory | 保留单一 live |
+| `memory/SESSION-STATE.md` | 疑似重复状态 | archive/mirror/停写 | 审计后处理 |
+| `memory/working-buffer.md` | 疑似重复 working memory | archive/mirror/停写 | 审计后处理 |
+
+---
+
+## 九、哪些现有功能应该替换 / 改接 / 禁用
+
+## 需要替换
+
+### 1. 直接从历史拼 prompt 的逻辑
+
+替换为：
+
+- `state_materializer + prompt_assembler`
+
+### 2. 子代理完成后只返回自然语言总结的路径
+
+替换为：
+
+- `receipt + child_continuation_package`
+
+---
+
+## 需要改接
+
+### 1. `session-start-recovery`
+
+改接为：
+
+- 从 ledger / truth 读
+- 调用 `state_materializer`
+- 再由 `prompt-assemble` 装配
+
+### 2. `context-compress`
+
+改接为：
+
+- 在线预算治理工具
+- 不再兼任 archive distill
+
+### 3. `capsule-builder`
+
+改接为：
+
+- 明确只负责 session capsule
+- 不再泛化成所有摘要容器
+
+### 4. 所有关键工具 wrapper
+
+改接为：
+
+- raw + summary 双写
+
+---
+
+## 需要禁用或停写
+
+### 1. 重复的 live state 文件
+
+凡不是唯一 live source 的：
+
+- 停写
+- 改名 archive
+- 移除读取路径
+
+### 2. 用 summary 决定真相的逻辑
+
+凡存在以下判断方式的都要禁用：
+
+- “从 handoff / capsule 判断任务是否完成”
+- “从 working memory 判断 child 是否结束”
+- “从 distill summary 判断 gate 是否通过”
+
+### 3. 让 archive distill 直接进入在线主 prompt 的路径
+
+默认禁用，除非通过 retrieval gate。
+
+---
+
+## 十、执行顺序
+
+## Phase 1：先清边界
+
+1. 审计所有 state / working / handoff / capsule / distill 文件
+2. 画出 source-of-truth map
+3. 明确唯一 live source
+4. 停写重复 live 文件
+5. 写死 hierarchy 规则
+
+### 验收
+
+- 不再存在多个 live `SESSION-STATE`
+- 不再存在多个 live `working-buffer`
+- prompt/recovery 各自读取路径可解释
+
+---
+
+## Phase 2：接状态驱动上下文组装
+
+6. 实现 `state_materializer`
+7. 改造 `prompt-assemble`
+8. 让 recovery 走 materialized state
+9. history-only prompt path 降级
+
+### 验收
+
+- prompt 输入来源可列举
+- 相同 truth 下，多次组装结果一致性高
+- 减少对 transcript 的依赖
+
+---
+
+## Phase 3：接工具输出压缩
+
+10. 在关键工具 wrapper 实现 raw + summary 双写
+11. prompt 只吃 summary
+12. debug/audit 可追 raw_ref
+
+### 验收
+
+- 长日志不再直接淹没 prompt
+- 任一 summary 都能追溯到 raw artifact
+- 恢复/debug 不丢证据
+
+---
+
+## Phase 4：接子代理蒸馏
+
+13. 定义 `child_continuation_package` schema
+14. 子代理完成时产出 package
+15. 父代理优先消费 structured package + receipt
+16. 自由文本总结降级为附加材料
+
+### 验收
+
+- 父代理可在不读长文本的情况下继续
+- child 结果恢复一致
+- 不依赖自然语言猜测 child 状态
+
+---
+
+## Phase 5：最后强化 working memory
+
+17. 统一单一 live working memory
+18. 严格限制字段范围
+19. 增加 TTL / decay / overwrite 策略
+20. 明确其权重低于 materialized state
+
+### 验收
+
+- working memory 只影响推理焦点，不影响执行真相
+- 清空 working memory 后系统仍能从 truth 恢复
+- 不再出现“working memory 比 ledger 更像真相”的情况
+
+---
+
+## 十一、必须输出的交付物
+
+1. `docs/STATE_TRUTH_HIERARCHY.md`
+   - 明确 truth hierarchy
+   - 明确各层职责和禁止事项
+
+2. `docs/CONTEXT_SUPPORT_PLANE_DESIGN.md`
+   - 描述新接入的四块如何工作
+   - 与 L0/L2 的边界
+
+3. `docs/DUPLICATE_MODULE_AUDIT.md`
+   - 当前重复模块与处理结果
+   - 替换 / 改接 / 禁用清单
+
+4. `schemas/materialized_state.schema.json`
+5. `schemas/tool_output_summary.schema.json`
+6. `schemas/child_continuation_package.schema.json`
+
+7. 代码层改动：
+   - `state_materializer`
+   - `prompt_assemble` 改造
+   - `tool_output_compactor`
+   - `child_distill_adapter`
+   - working memory single-live-source 治理
+
+8. 验证文档：
+   - `artifacts/verification/CONTEXT_SUPPORT_INTEGRATION_REPORT.md`
+
+---
+
+## 十二、强制验收标准
+
+### A. 真相唯一性
+
+- 任一任务状态只能从 ledger / run truth 得到 authoritative 判断
+- working memory / capsule / distill 不得覆盖 truth
+
+### B. 恢复稳定性
+
+- 清空 transcript 后仍能恢复任务推进
+- 清空 working memory 后仍能从 truth + materialized state 恢复
+
+### C. 工具抗噪性
+
+- 长工具输出不直接进入主 prompt
+- 任一关键结论都可回溯 raw artifact
+
+### D. 子代理可持续接力
+
+- 父代理不依赖子代理长文本总结，也能继续推进
+- 子代理状态判断不靠自然语言推断
+
+### E. 去重完成
+
+- 不存在多个 live session-state / working-buffer
+- 不存在 summary 决定 truth 的链路
+- 不存在 archive distill 直接充当在线主上下文的默认路径
+
+---
+
+## 十三、禁止事项
+
+系统执行过程中，明确禁止以下行为：
+
+1. 新增任何第二套“真相状态文件”
+2. 让 working memory 决定 task status / child status
+3. 用 capsule / distill / handoff 替代 ledger 判断
+4. 删除原始工具日志，只保留摘要
+5. 让子代理只返回自由文本总结，不返回结构化 completion package
+6. 在未统一 live source 前继续扩展 working memory 功能
+7. 把在线压缩链和离线归档蒸馏链混成一个逻辑
+
+---
+
+## 十四、给系统的一句话执行口径
+
+**本次不是新增功能优先，而是“先治理重复与边界，再接入四项能力”；任何新模块都不得成为新的 truth source。**
+
+---
+
+## 十五、落地建议（推荐实施姿势）
+
+如果要从今天开始执行，推荐按以下口径落地：
+
+- 第 1 周只做边界治理和 source-of-truth map，不急着写新功能
+- 第 2 周先把 `state_materializer` 和 `prompt-assemble` 打通
+- 第 3 周再接 `tool_output_compactor`
+- 第 4 周最后接 `child_distill_adapter`
+- working memory 强化放到最后，不要一开始就扩字段
+
+原因很简单：
+
+> **先把“谁有权定义真相”搞清楚，再优化“模型看见什么”。**
+
+否则就是把上下文工程做得更漂亮，但主执行链仍然不可靠。
