@@ -299,9 +299,26 @@ def show_status() -> None:
     # Core metrics
     metrics = config.get("metrics", {})
     
+    # === CONSISTENCY CHECK (CRITICAL) ===
+    # Gate Status uses get_effective_sample_count() from metrics log
+    # Core Metrics uses config["metrics"]["effective_samples"]
+    # These MUST match - if not, it indicates a bug in calculation
+    gate_samples = gate['effective_samples']
+    core_samples = metrics.get('effective_samples', 0)
+    consistency_violation = gate_samples != core_samples
+    
     print(f"\n--- Core Metrics ---")
     print(f"Total Calls: {metrics.get('total_calls', 0)}")
     print(f"Effective Samples: {metrics.get('effective_samples', 0)}")
+    
+    # Alert if inconsistency detected
+    if consistency_violation:
+        print(f"\n🚨 CONSISTENCY ALERT 🚨")
+        print(f"  Gate Status shows: {gate_samples} effective samples")
+        print(f"  Core Metrics shows: {core_samples} effective samples")
+        print(f"  ❌ MISMATCH DETECTED - calculation bug possible")
+        print(f"  Run: python3 tests/test_effective_sample_count.py")
+    
     print(f"Successful: {metrics.get('successful_calls', 0)}")
     print(f"Fallbacks: {metrics.get('fallback_calls', 0)}")
     print(f"Errors: {metrics.get('error_calls', 0)}")
@@ -370,8 +387,23 @@ def check_gate() -> None:
     
     print("=== Gate Check: Shadow -> Pilot ===\n")
     
+    # === CONSISTENCY CHECK (CRITICAL) ===
+    metrics = config.get("metrics", {})
+    gate_samples = gate['effective_samples']
+    core_samples = metrics.get('effective_samples', 0)
+    consistency_violation = gate_samples != core_samples
+    
     print(f"Samples: {gate['effective_samples']} / {gate['min_samples_required']} required")
     print(f"  Status: {'✅ OK' if gate['samples_ok'] else '❌ INSUFFICIENT'}")
+    
+    # Alert if inconsistency detected
+    if consistency_violation:
+        print(f"\n🚨 CONSISTENCY ALERT 🚨")
+        print(f"  Gate calculation: {gate_samples} samples")
+        print(f"  Core Metrics: {core_samples} samples")
+        print(f"  ❌ MISMATCH - Gate calculation may be incorrect")
+        print(f"  Run: python3 tests/test_effective_sample_count.py")
+        print()
     
     print(f"\nTime: {gate['days_elapsed']} / {gate['max_days']} days max")
     print(f"  Status: {'✅ OK' if gate['time_ok'] else '⚠️ EXCEEDED'}")
