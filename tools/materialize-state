@@ -2,7 +2,7 @@
 """
 materialize-state - Derived materialized_state v0 generator
 
-Reads only:
+Reads only (default):
 - SESSION-STATE.md
 - working-buffer.md
 
@@ -23,9 +23,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import jsonschema
+
 REPO = Path('/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold')
-SESSION_STATE = REPO / 'SESSION-STATE.md'
-WORKING_BUFFER = REPO / 'working-buffer.md'
+DEFAULT_SESSION_STATE = REPO / 'SESSION-STATE.md'
+DEFAULT_WORKING_BUFFER = REPO / 'working-buffer.md'
 DEFAULT_OUTPUT = REPO / 'artifacts' / 'materialized_state' / 'latest.json'
 SCHEMA_PATH = REPO / 'schemas' / 'materialized_state.v0.schema.json'
 
@@ -46,6 +48,10 @@ def read_text(path: Path) -> str:
     if not path.exists():
         return ''
     return path.read_text(encoding='utf-8', errors='ignore')
+
+
+def load_schema() -> Dict[str, Any]:
+    return json.loads(SCHEMA_PATH.read_text(encoding='utf-8'))
 
 
 def extract_section(md: str, heading: str) -> Optional[str]:
@@ -105,18 +111,18 @@ def derive_execution_status(phase: Optional[str], blocker: Optional[str]) -> str
         return 'blocked'
     if phase_norm in {'waiting'}:
         return 'waiting'
-    if phase_norm:
-        return 'running'
-    return 'unknown'
+    if phase_norm in {'', 'unknown'}:
+        return 'unknown'
+    return 'running'
 
 
 def session_id_from_context() -> str:
     return 'repo_local_session'
 
 
-def build_materialized_state() -> Dict[str, Any]:
-    ss_text = read_text(SESSION_STATE)
-    wb_text = read_text(WORKING_BUFFER)
+def build_materialized_state(session_state_path: Path, working_buffer_path: Path) -> Dict[str, Any]:
+    ss_text = read_text(session_state_path)
+    wb_text = read_text(working_buffer_path)
 
     warnings: List[str] = [
         'materialized_state is derived prompt-ready state, not authoritative truth'
@@ -223,23 +229,12 @@ def build_materialized_state() -> Dict[str, Any]:
         'warnings': warnings,
     }
 
-    # Remove empty artifact refs conservatively
     state['reasoning']['priority_artifact_refs'] = [x for x in state['reasoning']['priority_artifact_refs'] if x]
     return state
 
 
-def validate_materialized_state(obj: Dict[str, Any]) -> List[str]:
+def semantic_contract_errors(obj: Dict[str, Any]) -> List[str]:
     errs: List[str] = []
-    required_top = {
-        'schema_version', 'derived_at', 'authority', 'identity', 'execution',
-        'reasoning', 'sources', 'field_sources', 'warnings'
-    }
-    missing = required_top - set(obj.keys())
-    if missing:
-        errs.append(f'missing top-level keys: {sorted(missing)}')
-
-    if obj.get('schema_version') != 'materialized_state.v0':
-        errs.append('schema_version must be materialized_state.v0')
 
     authority = obj.get('authority', {})
     if authority.get('is_authoritative_truth') is not False:
@@ -250,23 +245,46 @@ def validate_materialized_state(obj: Dict[str, Any]) -> List[str]:
         if required not in usage:
             errs.append(f'authority.usage_order missing {required}')
 
-    identity = obj.get('identity', {})
-    if 'session_id' not in identity or not isinstance(identity.get('session_id'), str):
-        errs.append('identity.session_id missing or invalid')
+    srcs = obj.get('sources', {})
+    if srcs.get('summary_like') not in ([], None):
+        errs.append('v0 sources.summary_like must remain empty for primary derivation path')
 
     execution = obj.get('execution', {})
-    for key in ['objective', 'phase', 'execution_status']:
-        if key not in execution:
-            errs.append(f'execution.{key} missing')
+    reasoning = obj.get('reasoning', {})
+    field_sources = obj.get('field_sources', {})
 
-    if execution.get('execution_status') not in {'running', 'blocked', 'waiting', 'completed', 'unknown'}:
-        errs.append('execution.execution_status invalid')
+    forbidden_advisory_overrides = {
+        'execution.objective': 'working-buffer.md',
+        'execution.phase': 'working-buffer.md',
+        'execution.current_step': 'working-buffer.md',
+        'execution.blockers': 'working-buffer.md',
+        'execution.active_children': 'working-buffer.md',
+        'execution.verification': 'working-buffer.md',
+    }
+    for field, forbidden_prefix in forbidden_advisory_overrides.items():
+        src = field_sources.get(field, '')
+        if src.startswith(forbidden_prefix):
+            errs.append(f'{field} must not be sourced from advisory-only working-buffer.md')
 
-    srcs = obj.get('sources', {})
-    for group in ['canonical', 'continuity_bridge', 'working_memory', 'summary_like']:
-        if group not in srcs:
-            errs.append(f'sources.{group} missing')
+    if not isinstance(reasoning, dict):
+        errs.append('reasoning must be an object')
+    if not isinstance(execution, dict):
+        errs.append('execution must be an object')
 
+    return errs
+
+
+def validate_with_schema(obj: Dict[str, Any]) -> List[str]:
+    errs: List[str] = []
+    try:
+        schema = load_schema()
+        jsonschema.validate(instance=obj, schema=schema)
+    except jsonschema.ValidationError as e:
+        path = '.'.join(str(p) for p in e.absolute_path)
+        errs.append(f'schema validation failed at {path or "<root>"}: {e.message}')
+    except Exception as e:
+        errs.append(f'schema validation error: {e}')
+    errs.extend(semantic_contract_errors(obj))
     return errs
 
 
@@ -294,7 +312,7 @@ def cmd_check(output: Path) -> int:
     except Exception as e:
         print(json.dumps({'status': 'fail', 'error': f'invalid json: {e}'}))
         return 1
-    errs = validate_materialized_state(obj)
+    errs = validate_with_schema(obj)
     status = 'ok' if not errs else 'fail'
     print(json.dumps({'status': status, 'errors': errs, 'output': str(output)}, ensure_ascii=False, indent=2))
     return 0 if not errs else 1
@@ -302,6 +320,8 @@ def cmd_check(output: Path) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Generate derived materialized_state v0')
+    parser.add_argument('--session-state', default=str(DEFAULT_SESSION_STATE), help='Path to SESSION-STATE.md input')
+    parser.add_argument('--working-buffer', default=str(DEFAULT_WORKING_BUFFER), help='Path to working-buffer.md input')
     parser.add_argument('--output', default=str(DEFAULT_OUTPUT), help='Output path under artifacts/')
     parser.add_argument('--check', action='store_true', help='Validate an existing output file')
     parser.add_argument('--json', action='store_true', help='Print generated JSON to stdout')
@@ -312,8 +332,8 @@ def main() -> int:
     if args.check:
         return cmd_check(output)
 
-    obj = build_materialized_state()
-    errs = validate_materialized_state(obj)
+    obj = build_materialized_state(Path(args.session_state), Path(args.working_buffer))
+    errs = validate_with_schema(obj)
     if errs:
         print(json.dumps({'status': 'fail', 'errors': errs}, ensure_ascii=False, indent=2), file=sys.stderr)
         return 1
