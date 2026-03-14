@@ -1,0 +1,36 @@
+{
+  "schema_version": "materialized_state.v0",
+  "derived_at": "2026-03-14T12:00:00Z",
+  "authority": {
+    "is_authoritative_truth": false,
+    "usage_order": [
+      "ledger_run_truth",
+      "materialized_state",
+      "SESSION-STATE.md",
+      "working-buffer.md",
+      "summary_like_artifacts"
+    ]
+  },
+  "identity": {
+    "session_id": "session_example"
+  },
+  "execution": {
+    "objective": "example objective",
+    "phase": "unknown",
+    "execution_status": "unknown"
+  },
+  "reasoning": {},
+  "sources": {
+    "canonical": [],
+    "continuity_bridge": ["SESSION-STATE.md"],
+    "working_memory": ["working-buffer.md"],
+    "summary_like": []
+  },
+  "field_sources": {
+    "execution.objective": "SESSION-STATE.md"
+  },
+  "warnings": [
+    "minimal example only",
+    "not authoritative truth"
+  ]
+}

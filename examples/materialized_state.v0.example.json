@@ -1,0 +1,89 @@
+{
+  "schema_version": "materialized_state.v0",
+  "derived_at": "2026-03-14T11:55:00Z",
+  "authority": {
+    "is_authoritative_truth": false,
+    "usage_order": [
+      "ledger_run_truth",
+      "materialized_state",
+      "SESSION-STATE.md",
+      "working-buffer.md",
+      "summary_like_artifacts"
+    ]
+  },
+  "identity": {
+    "session_id": "telegram:8420019401",
+    "task_id": "task_telegram_durable_outbound",
+    "run_id": "run_20260314_telegram_outbound_fix",
+    "branch": "main"
+  },
+  "execution": {
+    "objective": "闭环 Telegram 原事故链，统一进 durable outbound queue，并补 E2E/telemetry",
+    "phase": "inprogress",
+    "current_step": "confirm incident path and unify telegram direct reply path",
+    "execution_status": "running",
+    "blockers": [],
+    "active_children": [],
+    "verification": {
+      "pending": [
+        "incident-path-confirmation",
+        "dedupe-identity-design",
+        "e2e-interruption-coverage"
+      ]
+    },
+    "key_files": [
+      "src/telegram/bot-message-dispatch.ts",
+      "src/telegram/bot/delivery.replies.ts",
+      "src/infra/outbound/deliver.ts"
+    ]
+  },
+  "reasoning": {
+    "current_focus": "不要继续横向铺 Web/WhatsApp。先把 Telegram 原事故链收口。",
+    "immediate_plan": [
+      "锁定 14:40/14:45 对应路径与代码入口",
+      "设计最小改动让 Telegram 复用 outbound adapter/queue",
+      "把 dedupe identity 设计进 delivery ledger"
+    ],
+    "reasoning_targets": [
+      "事故命中的 Telegram 分支",
+      "reply_to / thread fallback / chunking 语义保持",
+      "send 成功但 ack 未落盘的恢复重复发风险"
+    ],
+    "uncertainties": [
+      "lane preview/edit 路径是否也必须全量并入 durable queue",
+      "原事故发生在 final answer、fallback send、还是 native command direct reply 分支"
+    ],
+    "priority_artifact_refs": [
+      "SESSION-STATE.md",
+      "working-buffer.md"
+    ]
+  },
+  "sources": {
+    "canonical": [
+      "run truth unavailable in current design snapshot"
+    ],
+    "continuity_bridge": [
+      "SESSION-STATE.md"
+    ],
+    "working_memory": [
+      "working-buffer.md"
+    ],
+    "summary_like": []
+  },
+  "field_sources": {
+    "identity.branch": "SESSION-STATE.md",
+    "execution.objective": "SESSION-STATE.md",
+    "execution.phase": "SESSION-STATE.md",
+    "execution.current_step": "SESSION-STATE.md.next_step_derived",
+    "execution.blockers": "SESSION-STATE.md",
+    "execution.key_files": "SESSION-STATE.md",
+    "reasoning.current_focus": "working-buffer.md",
+    "reasoning.immediate_plan": "working-buffer.md.immediate_plan_derived",
+    "reasoning.reasoning_targets": "working-buffer.md.remaining_uncertainty_derived",
+    "reasoning.uncertainties": "working-buffer.md.remaining_uncertainty_derived"
+  },
+  "warnings": [
+    "materialized_state.v0 is derived prompt-ready state, not authoritative truth",
+    "canonical ledger/run truth was not wired into this example"
+  ]
+}

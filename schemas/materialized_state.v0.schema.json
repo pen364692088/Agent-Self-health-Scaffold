@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "materialized_state.v0.schema.json",
+  "title": "Materialized State v0",
+  "description": "Derived prompt-ready state view. Not an authoritative truth source.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "derived_at",
+    "authority",
+    "identity",
+    "execution",
+    "reasoning",
+    "sources",
+    "field_sources",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "materialized_state.v0"
+    },
+    "derived_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "authority": {
+      "type": "object",
+      "required": ["is_authoritative_truth", "usage_order"],
+      "properties": {
+        "is_authoritative_truth": {
+          "type": "boolean",
+          "const": false
+        },
+        "usage_order": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 5,
+          "description": "Expected order: ledger/run truth > materialized_state > SESSION-STATE.md > working-buffer.md > summary-like artifacts"
+        }
+      },
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "required": ["session_id"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "task_id": { "type": "string" },
+        "run_id": { "type": "string" },
+        "branch": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "required": ["objective", "phase", "execution_status"],
+      "properties": {
+        "objective": { "type": "string" },
+        "phase": { "type": "string" },
+        "current_step": { "type": "string" },
+        "execution_status": { "type": "string", "enum": ["running", "blocked", "waiting", "completed", "unknown"] },
+        "blockers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "active_children": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["child_id", "status"],
+            "properties": {
+              "child_id": { "type": "string" },
+              "status": { "type": "string" },
+              "role": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "verification": {
+          "type": "object",
+          "properties": {
+            "pending": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "last_verified_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        },
+        "key_files": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "reasoning": {
+      "type": "object",
+      "properties": {
+        "current_focus": { "type": "string" },
+        "immediate_plan": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reasoning_targets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "uncertainties": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "priority_artifact_refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "object",
+      "required": ["canonical", "continuity_bridge", "working_memory", "summary_like"],
+      "properties": {
+        "canonical": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "continuity_bridge": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "working_memory": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "summary_like": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "field_sources": {
+      "type": "object",
+      "description": "Per-field provenance for auditability",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}
