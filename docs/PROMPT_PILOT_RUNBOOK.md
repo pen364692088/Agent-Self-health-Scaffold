@@ -7,15 +7,24 @@
 tools/prompt-pilot-control --status
 ```
 
+### Gate Check (Dual Gate)
+```bash
+# Check if eligible to switch from shadow to pilot
+tools/prompt-pilot-control --check-gate
+```
+
 ### Enable Pilot
 ```bash
 # Pre-flight check first
 tools/prompt-pilot-preflight
 
-# Enable in shadow mode (recommended first step)
+# Enable in shadow mode (REQUIRED first step)
 tools/prompt-pilot-control --enable --mode shadow
 
-# After observation period, switch to pilot mode
+# Monitor until gate conditions met (NOT time-based!)
+tools/prompt-pilot-control --check-gate
+
+# When gate passes, switch to pilot mode
 tools/prompt-pilot-control --set-mode pilot
 ```
 
@@ -28,10 +37,61 @@ tools/prompt-pilot-control --disable
 tools/prompt-pilot-control --disable --reason "conflict rate exceeded"
 ```
 
-### Reset Metrics
+---
+
+## Dual Gate Mechanism (IMPORTANT)
+
+### Gate 1: Shadow → Pilot
+
+**You CANNOT switch to pilot based on time alone.**
+
+| Condition | Requirement | Current |
+|-----------|-------------|---------|
+| Effective Samples | ≥ 20 | Check with --check-gate |
+| Max Observation | ≤ 7 days | Time limit |
+| Match Rate | ≥ 80% | Quality gate |
+| Conflict Rate | ≤ 5% | Safety gate |
+| Fallback Rate | ≤ 10% | Stability gate |
+
+**To check eligibility**:
 ```bash
-tools/prompt-pilot-control --reset-metrics
+tools/prompt-pilot-control --check-gate
 ```
+
+**Output when NOT eligible**:
+```
+Samples: 15 / 20 required
+  Status: ❌ INSUFFICIENT
+```
+
+**Output when eligible**:
+```
+✅ ELIGIBLE FOR PILOT
+You can now run:
+  tools/prompt-pilot-control --set-mode pilot
+```
+
+### Gate 2: Pilot → Decision
+
+| Condition | Requirement |
+|-----------|-------------|
+| Effective Samples | ≥ 30 |
+| Max Observation | ≤ 14 days |
+
+**Possible Decisions**:
+- `expand_prompt_pilot` - All metrics good
+- `continue_pilot_and_patch_gaps` - Minor issues
+- `escalate_to_phase_3` - Major issues
+
+### Effective Sample Definition
+
+A sample is "effective" only if ALL conditions met:
+1. ✅ Task type in allowed list (recovery_success, task_ready_to_close, gate_completed)
+2. ✅ Actually executed through pilot path
+3. ✅ No configuration errors
+4. ✅ Success = True
+5. ✅ Conflict count = 0
+6. ✅ Provenance completeness ≥ 50%
 
 ---
 
@@ -42,30 +102,23 @@ tools/prompt-pilot-control --reset-metrics
 # 1. Check status
 tools/prompt-pilot-control --status
 
-# 2. Check for violations
-# (shown in status output)
+# 2. Check gate progress
+tools/pilot-pilot-control --check-gate
 
-# 3. Review metrics
-cat artifacts/prompt_pilot/metrics.jsonl | tail -20 | jq .
+# 3. Review violations
+# (shown in status output)
 ```
 
-### Weekly Review
+### Gate Progress Monitoring
 ```bash
-# 1. Aggregate metrics
-cat artifacts/prompt_pilot/metrics.jsonl | jq -s '
-{
-  total: length,
-  successful: map(select(.success)) | length,
-  fallbacks: map(select(.fallback)) | length,
-  avg_match: (map(.match_rate) | add / length)
-}
-'
+# Check if ready to switch modes
+tools/prompt-pilot-control --check-gate
 
-# 2. Check for patterns
-cat artifacts/prompt_pilot/metrics.jsonl | jq -r .error | sort | uniq -c
-
-# 3. Review conflict patterns
-cat artifacts/prompt_pilot/metrics.jsonl | jq 'select(.conflict_count > 0)'
+# Sample output:
+# Samples: 18 / 20 required
+#   Status: ❌ INSUFFICIENT
+# 
+# Continue shadow mode until 20 samples collected.
 ```
 
 ---
@@ -95,26 +148,14 @@ cat artifacts/prompt_pilot/metrics.jsonl | jq 'select(.conflict_count > 0)'
 3. If persistent, disable pilot
 4. Check for data quality issues
 
-### Error Spike
+### Fallback Rate High
 
-**Symptoms**: Multiple errors in short time
-
-**Response**:
-1. Check error logs:
-   ```bash
-   cat artifacts/prompt_pilot/metrics.jsonl | jq 'select(.error != null)'
-   ```
-2. If systematic error, disable pilot
-3. Fix error source before re-enabling
-
-### Fallback Loop
-
-**Symptoms**: Frequent fallbacks to main chain
+**Symptoms**: Fallback rate > 10%
 
 **Response**:
 1. Check fallback reasons
-2. If fallback rate > 5%, investigate
-3. Consider staying in shadow mode longer
+2. If persistent, stay in shadow mode
+3. Do NOT switch to pilot until resolved
 
 ---
 
@@ -128,13 +169,13 @@ tools/prompt-pilot-control --disable --reason "manual rollback"
 # 2. Verify main chain is working
 # (Run a test task)
 
-# 3. Document reason in session notes
+# 3. Document reason
 echo "$(date): Rollback - <reason>" >> artifacts/prompt_pilot/rollback_log.txt
 ```
 
 ### Auto Rollback
-- Triggered automatically when stop condition violated
-- Logs to metrics.jsonl with `error` field
+- Triggered when stop condition violated
+- Logs to metrics.jsonl with error field
 - Pilot disabled in config
 
 ---
@@ -143,57 +184,41 @@ echo "$(date): Rollback - <reason>" >> artifacts/prompt_pilot/rollback_log.txt
 
 ### Key Metrics to Watch
 
-| Metric | Healthy Range | Warning | Critical |
-|--------|---------------|---------|----------|
+| Metric | Healthy | Warning | Critical |
+|--------|---------|---------|----------|
 | Match Rate | 85-100% | 80-85% | < 80% |
 | Conflict Rate | 0-3% | 3-5% | > 5% |
 | Missing Rate | 0-2% | 2-5% | > 5% |
 | Fallback Rate | 0-5% | 5-10% | > 10% |
 | Error Rate | 0% | 0-1% | > 1% |
 
-### Sample Dashboard Query
+### Gate Progress Metrics
+
+| Metric | Purpose |
+|--------|---------|
+| effective_samples | Count toward gate threshold |
+| days_elapsed | Time toward max observation |
+| eligible_for_pilot | Boolean gate status |
+
+---
+
+## Post-Pilot Decision
+
+### Before Making Decision
+
+Run gate check and verify:
 ```bash
-# Last hour summary
-cat artifacts/prompt_pilot/metrics.jsonl | \
-  jq -s 'map(select(.timestamp > "2026-03-14T09:00")) |
-  {
-    calls: length,
-    success_rate: (map(select(.success)) | length / length * 100),
-    avg_match: (map(.match_rate) | add / length * 100),
-    conflicts: map(.conflict_count) | add,
-    fallbacks: map(select(.fallback)) | length
-  }'
+tools/prompt-pilot-control --check-gate
+tools/prompt-pilot-control --status
 ```
 
----
+### Decision Criteria
 
-## Escalation Path
-
-1. **Level 1**: Operator can disable/enable pilot
-2. **Level 2**: Investigate root cause (check state files, shadow systems)
-3. **Level 3**: Engage development team if systematic issue
-4. **Level 4**: Consider reverting to Phase 2.8 (pre-pilot)
-
----
-
-## Post-Pilot Checklist
-
-### Before Expanding Pilot
-
-- [ ] Match rate ≥ 85% for 7 days
-- [ ] Conflict rate ≤ 3% for 7 days
-- [ ] Fallback rate ≤ 5% for 7 days
-- [ ] Zero unhandled errors
-- [ ] All stop conditions passing
-- [ ] Operator confidence high
-
-### Before Ending Pilot
-
-- [ ] Document final metrics
-- [ ] Document lessons learned
-- [ ] Make post-pilot decision
-- [ ] Update design documents
-- [ ] Archive pilot data
+| Decision | When |
+|----------|------|
+| `expand_prompt_pilot` | All metrics pass, ≥30 samples |
+| `continue_pilot_and_patch_gaps` | 1-2 metrics slightly off |
+| `escalate_to_phase_3` | Multiple metrics failing |
 
 ---
 
@@ -205,12 +230,9 @@ cat artifacts/prompt_pilot/metrics.jsonl | \
 |-----|------|-------------|
 | pilot_enabled | bool | Master switch |
 | pilot_mode | string | "shadow" or "pilot" |
-| allowed_events | array | Task types allowed |
-| blocked_events | array | Task types blocked |
-| authority_chain | object | Which chain is authority |
-| fallback_on_error | bool | Auto-fallback on error |
-| stop_conditions | object | Thresholds for auto-stop |
-| rollback_trigger | object | What triggers rollback |
+| dual_gate.shadow_to_pilot.min_samples | int | Gate threshold (20) |
+| dual_gate.shadow_to_pilot.max_days | int | Max observation (7) |
+| metrics.effective_samples | int | **AUTHORITATIVE** sample count |
 
 ### Stop Conditions
 
@@ -220,11 +242,38 @@ cat artifacts/prompt_pilot/metrics.jsonl | \
 | max_missing_rate | 0.05 | Max 5% missing fields |
 | min_match_rate | 0.80 | Min 80% match |
 | max_token_overhead | 0.30 | Max 30% token increase |
+| max_fallback_rate | 0.10 | Max 10% fallbacks |
+| max_manual_override_rate | 0.05 | Max 5% overrides |
+| min_provenance_completeness | 0.95 | Min 95% completeness |
+
+---
+
+## Key Points to Remember
+
+### ⚠️ Gate is NOT Time-Based
+
+- ❌ WRONG: "Wait 1-2 weeks then switch to pilot"
+- ✅ RIGHT: "Wait for ≥20 effective samples AND all conditions pass"
+
+### ⚠️ Authority is ALWAYS main_chain
+
+- Pilot can INFLUENCE prompt assembly
+- Pilot can INFLUENCE context selection
+- Pilot CANNOT decide task close
+- Pilot CANNOT decide gate pass
+- Final authority is ALWAYS main_chain
+
+### ⚠️ Recovery is NEVER Live
+
+- RecoveryPreview is shadow only
+- No recovery pilot mode
+- No recovery live mode
 
 ---
 
 ## Support
 
+- **Current Status**: `CURRENT_STATUS.md`
 - **Logs**: `artifacts/prompt_pilot/metrics.jsonl`
 - **Config**: `config/prompt_pilot.json`
 - **Design**: `PHASE_2_9_DESIGN.md`

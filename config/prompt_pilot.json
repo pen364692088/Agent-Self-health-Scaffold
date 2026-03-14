@@ -16,6 +16,8 @@
     "recovery": "main_chain"
   },
   "fallback_on_error": true,
+  
+  "_comment": "=== DUAL GATE CONFIGURATION ===",
   "dual_gate": {
     "shadow_to_pilot": {
       "min_samples": 20,
@@ -37,20 +39,26 @@
       ]
     }
   },
+  
+  "_comment_stop_conditions": "=== STOP CONDITIONS (violations trigger auto-disable) ===",
   "stop_conditions": {
     "max_conflict_rate": 0.05,
     "max_missing_rate": 0.05,
-    "min_match_rate": 0.8,
-    "max_token_overhead": 0.3,
-    "max_fallback_rate": 0.1,
+    "min_match_rate": 0.80,
+    "max_token_overhead": 0.30,
+    "max_fallback_rate": 0.10,
     "max_manual_override_rate": 0.05,
     "min_provenance_completeness": 0.95
   },
+  
+  "_comment_rollback": "=== ROLLBACK TRIGGERS ===",
   "rollback_trigger": {
     "manual": true,
     "auto_on_violation": true,
     "auto_on_error_spike": true
   },
+  
+  "_comment_scope": "=== PILOT SCOPE CONSTRAINTS (cannot be changed without code review) ===",
   "pilot_scope": {
     "can_influence_prompt_assembly": true,
     "can_influence_context_selection": true,
@@ -58,11 +66,16 @@
     "cannot_decide_gate_pass": true,
     "final_authority": "main_chain"
   },
-  "pilot_start_time": "2026-03-14T10:10:30.461809",
-  "effective_sample_count": 0,
+  
+  "pilot_start_time": null,
+  
+  "_comment_metrics": "=== METRICS (AUTHORITATIVE SOURCE) ===",
+  "_comment_metrics_note": "metrics.effective_samples is the AUTHORITATIVE count for gate decisions",
+  "_comment_display_note": "effective_sample_count at root level is DERIVED from metrics.effective_samples for display only",
+  
   "metrics": {
     "total_calls": 0,
-    "effective_samples": 5,
+    "effective_samples": 0,
     "successful_calls": 0,
     "fallback_calls": 0,
     "error_calls": 0,
@@ -76,5 +89,8 @@
     "avg_manual_override_rate": 0.0,
     "avg_provenance_completeness": 0.0,
     "recent_stop_condition_hits": []
-  }
+  },
+  
+  "_comment_derived": "=== DERIVED FIELDS (for display/convenience, not authoritative) ===",
+  "effective_sample_count": 0
 }
