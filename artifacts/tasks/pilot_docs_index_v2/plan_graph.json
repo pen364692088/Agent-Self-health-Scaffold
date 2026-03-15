@@ -1,0 +1,50 @@
+{
+  "task_id": "pilot_docs_index_v2",
+  "steps": [
+    {
+      "step_id": "S01",
+      "step_type": "analyze",
+      "title": "Analyze docs directory",
+      "goal": "List all markdown files in docs/ directory"
+    },
+    {
+      "step_id": "S02",
+      "step_type": "modify_files",
+      "title": "Create index file",
+      "goal": "Generate INDEX.md with links to all docs",
+      "depends_on": [
+        "S01"
+      ]
+    },
+    {
+      "step_id": "S03",
+      "step_type": "verify_outputs",
+      "title": "Verify index",
+      "goal": "Confirm INDEX.md exists and has content",
+      "depends_on": [
+        "S02"
+      ]
+    },
+    {
+      "step_id": "S04",
+      "step_type": "execute_shell",
+      "title": "Closeout",
+      "goal": "Generate final report",
+      "depends_on": [
+        "S03"
+      ]
+    }
+  ],
+  "dependencies": {
+    "S01": [],
+    "S02": [
+      "S01"
+    ],
+    "S03": [
+      "S02"
+    ],
+    "S04": [
+      "S03"
+    ]
+  }
+}

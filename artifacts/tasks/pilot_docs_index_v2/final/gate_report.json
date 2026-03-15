@@ -1,0 +1,174 @@
+{
+  "task_id": "pilot_docs_index_v2",
+  "validated_at": "2026-03-15T13:24:50.961473Z",
+  "all_passed": true,
+  "gates": {
+    "gate_a": {
+      "gate_name": "Gate A: Contract",
+      "passed": true,
+      "checks": [
+        {
+          "name": "task_state.json exists",
+          "passed": true
+        },
+        {
+          "name": "TASK.md exists",
+          "passed": true
+        },
+        {
+          "name": "ledger.jsonl exists",
+          "passed": true
+        },
+        {
+          "name": "step_packet S01",
+          "passed": true
+        },
+        {
+          "name": "result S01",
+          "passed": true
+        },
+        {
+          "name": "step_packet S02",
+          "passed": true
+        },
+        {
+          "name": "result S02",
+          "passed": true
+        },
+        {
+          "name": "step_packet S03",
+          "passed": true
+        },
+        {
+          "name": "result S03",
+          "passed": true
+        },
+        {
+          "name": "step_packet S04",
+          "passed": true
+        },
+        {
+          "name": "result S04",
+          "passed": true
+        },
+        {
+          "name": "evidence/ directory exists",
+          "passed": true
+        },
+        {
+          "name": "handoff/ directory exists",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "warnings": []
+    },
+    "gate_b": {
+      "gate_name": "Gate B: E2E",
+      "passed": true,
+      "checks": [
+        {
+          "name": "step S01 status",
+          "passed": true,
+          "details": "success"
+        },
+        {
+          "name": "step S02 status",
+          "passed": true,
+          "details": "success"
+        },
+        {
+          "name": "step S03 status",
+          "passed": true,
+          "details": "success"
+        },
+        {
+          "name": "step S04 status",
+          "passed": true,
+          "details": "success"
+        },
+        {
+          "name": "All steps completed",
+          "passed": true
+        },
+        {
+          "name": "evidence for S01",
+          "passed": true
+        },
+        {
+          "name": "evidence for S02",
+          "passed": true
+        },
+        {
+          "name": "evidence for S03",
+          "passed": true
+        },
+        {
+          "name": "evidence for S04",
+          "passed": true
+        },
+        {
+          "name": "SUMMARY.md exists",
+          "passed": false
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "SUMMARY.md not found"
+      ]
+    },
+    "gate_c": {
+      "gate_name": "Gate C: Integrity",
+      "passed": true,
+      "checks": [
+        {
+          "name": "state has task_id",
+          "passed": true
+        },
+        {
+          "name": "state has status",
+          "passed": true
+        },
+        {
+          "name": "state has created_at",
+          "passed": true
+        },
+        {
+          "name": "state has updated_at",
+          "passed": true
+        },
+        {
+          "name": "state has steps",
+          "passed": true
+        },
+        {
+          "name": "ledger has events",
+          "passed": true,
+          "details": "10 events"
+        },
+        {
+          "name": "task_completed event exists",
+          "passed": true
+        },
+        {
+          "name": "step S01 has proof",
+          "passed": true
+        },
+        {
+          "name": "step S02 has proof",
+          "passed": true
+        },
+        {
+          "name": "step S03 has proof",
+          "passed": true
+        },
+        {
+          "name": "step S04 has proof",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "warnings": []
+    }
+  }
+}

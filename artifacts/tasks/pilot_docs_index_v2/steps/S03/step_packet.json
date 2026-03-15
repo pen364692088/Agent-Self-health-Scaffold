@@ -1,0 +1,14 @@
+{
+  "step_id": "S03",
+  "step_type": "verify_outputs",
+  "title": "Verify index",
+  "goal": "Confirm INDEX.md exists and has content",
+  "execution": {
+    "expected_files": [
+      "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/docs/INDEX.md"
+    ]
+  },
+  "depends_on": [
+    "S02"
+  ]
+}

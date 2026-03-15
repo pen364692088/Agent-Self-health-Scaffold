@@ -1,0 +1,56 @@
+{
+  "task_id": "pilot_docs_index_v2",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-15T13:24:20.914356Z",
+  "updated_at": "2026-03-15T13:24:20.928504Z",
+  "contract": {
+    "objective": "Generate documentation index for Agent-Self-health-Scaffold",
+    "repository": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold",
+    "branch": "main",
+    "acceptance_criteria": [
+      "Index file created at docs/INDEX.md",
+      "Index lists all markdown files in docs/",
+      "Index is properly formatted"
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "S01",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-15T13:24:20.917299Z",
+      "error": null
+    },
+    {
+      "step_id": "S02",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-15T13:24:20.919974Z",
+      "error": null
+    },
+    {
+      "step_id": "S03",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-15T13:24:20.922260Z",
+      "error": null
+    },
+    {
+      "step_id": "S04",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-15T13:24:20.928465Z",
+      "error": null
+    }
+  ],
+  "current_step": null,
+  "blocked_on": null,
+  "artifacts_dir": "artifacts/tasks/pilot_docs_index_v2",
+  "ledger_path": "artifacts/tasks/pilot_docs_index_v2/ledger.jsonl",
+  "metadata": {}
+}

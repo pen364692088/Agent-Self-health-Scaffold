@@ -1,0 +1,12 @@
+{
+  "step_id": "S04",
+  "step_type": "execute_shell",
+  "title": "Closeout",
+  "goal": "Generate final report",
+  "execution": {
+    "command": "wc -l /home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/docs/INDEX.md"
+  },
+  "depends_on": [
+    "S03"
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "execution_receipt.schema.json",
+  "title": "Execution Receipt",
+  "description": "Receipt for real step execution - machine-verifiable proof of what was executed",
+  "type": "object",
+  "required": [
+    "step_id",
+    "execution_type",
+    "status",
+    "started_at",
+    "completed_at",
+    "checksum"
+  ],
+  "properties": {
+    "step_id": {
+      "type": "string",
+      "description": "Step identifier",
+      "pattern": "^S[0-9]+$"
+    },
+    "execution_type": {
+      "type": "string",
+      "enum": ["analyze", "execute_shell", "execute_python", "modify_files", "run_tests", "verify_outputs"],
+      "description": "Type of execution performed"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "failed", "blocked", "retryable"],
+      "description": "Execution status"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Execution start timestamp"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Execution completion timestamp"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Execution duration in milliseconds"
+    },
+    "command": {
+      "type": ["string", "null"],
+      "description": "Command executed (for shell type)"
+    },
+    "exit_code": {
+      "type": ["integer", "null"],
+      "description": "Process exit code"
+    },
+    "stdout_path": {
+      "type": ["string", "null"],
+      "description": "Path to stdout capture file"
+    },
+    "stderr_path": {
+      "type": ["string", "null"],
+      "description": "Path to stderr capture file"
+    },
+    "changed_files": {
+      "type": "array",
+      "description": "Files modified during execution",
+      "items": {
+        "type": "object",
+        "required": ["path", "action"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["created", "modified", "deleted"],
+            "description": "Action taken on file"
+          },
+          "lines_added": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lines_removed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hash_before": {
+            "type": "string"
+          },
+          "hash_after": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "generated_files": {
+      "type": "array",
+      "description": "Files created by execution",
+      "items": {
+        "type": "string"
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "description": "Structured outputs from execution",
+      "additionalProperties": true
+    },
+    "error": {
+      "type": ["object", "null"],
+      "description": "Error details if execution failed",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["command_failed", "timeout", "permission_denied", "not_found", "unexpected"]
+        },
+        "message": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "stderr_snippet": {
+          "type": "string",
+          "description": "Last N lines of stderr"
+        }
+      }
+    },
+    "retryable": {
+      "type": "boolean",
+      "description": "Whether failure is retryable"
+    },
+    "environment": {
+      "type": "object",
+      "description": "Execution environment info",
+      "properties": {
+        "cwd": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    "checksum": {
+      "type": "string",
+      "description": "SHA256 checksum of receipt for integrity",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional execution metadata",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
