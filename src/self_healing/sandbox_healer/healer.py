@@ -415,9 +415,9 @@ class SandboxHealer:
                     cwd=sandbox_path,
                     capture_output=True
                 )
-                # 只运行 self_healing 相关测试
+                # 运行 self_healing E2E 测试脚本（直接运行，不是 pytest）
                 result = subprocess.run(
-                    ["python", "-m", "pytest", "tests/test_self_healing_e2e.py", "-v"],
+                    ["python", "tests/test_self_healing_e2e.py"],
                     cwd=sandbox_path,
                     capture_output=True,
                     text=True,
@@ -427,13 +427,21 @@ class SandboxHealer:
                 logs.append(result.stdout)
                 logs.append(result.stderr)
                 
-                # self_healing E2E 测试是脚本形式，没有 pytest 测试函数，所以应该通过
-                return ValidationResult(
-                    gate_name="Gate B: E2E",
-                    passed=True,
-                    details="Self-healing E2E 测试完成",
-                    logs=logs
-                )
+                # 检查输出中是否包含关键成功标记
+                if "evidence_1_edit_failed_remediation: ✅ 通过" in result.stdout:
+                    return ValidationResult(
+                        gate_name="Gate B: E2E",
+                        passed=True,
+                        details="Self-healing E2E 测试通过",
+                        logs=logs
+                    )
+                else:
+                    return ValidationResult(
+                        gate_name="Gate B: E2E",
+                        passed=False,
+                        details="E2E 测试未通过",
+                        logs=logs
+                    )
             else:
                 # 没有可收集的测试，跳过
                 return ValidationResult(
@@ -451,19 +459,8 @@ class SandboxHealer:
             )
     
     def _run_gate_c(self, sandbox_path: Path) -> ValidationResult:
-        """Gate C: Preflight 检查"""
+        """Gate C: Preflight 检查 - 运行 tool_doctor"""
         logs = []
-        
-        # 检查 tool_doctor 是否存在
-        tool_doctor_path = sandbox_path / "scripts" / "tool_doctor.py"
-        if not tool_doctor_path.exists():
-            # tool_doctor 不存在，跳过
-            return ValidationResult(
-                gate_name="Gate C: Preflight",
-                passed=True,
-                details="Preflight 检查跳过 (tool_doctor 不存在)",
-                logs=logs
-            )
         
         # 运行 tool_doctor 检查
         try:
@@ -492,11 +489,10 @@ class SandboxHealer:
                     logs=logs
                 )
         except Exception as e:
-            # tool_doctor 执行异常，跳过
             return ValidationResult(
                 gate_name="Gate C: Preflight",
-                passed=True,
-                details=f"Preflight 检查跳过 ({e})",
+                passed=False,
+                details=f"Preflight 检查异常: {e}",
                 logs=logs
             )
     

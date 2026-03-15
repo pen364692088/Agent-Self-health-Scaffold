@@ -1,0 +1,23 @@
+{
+  "bundle_id": "4ba33efb",
+  "timestamp": "2026-03-15T02:13:29.024684",
+  "failure_type": "edit_failed",
+  "tool_name": "edit",
+  "tool_input": {
+    "file_path": "src/example_809019.py",
+    "old_string": "def old_func_809019():",
+    "new_string": "def new_func_809019():"
+  },
+  "stderr": "Error: old_string not found in file 809019",
+  "stack_trace": null,
+  "related_files": [
+    "src/example.py"
+  ],
+  "branch": "main",
+  "commit": "e426a0a",
+  "recent_actions": [],
+  "environment": {},
+  "risk_level": "medium",
+  "similar_historical_issues": [],
+  "signature": "aabde76392ea1519"
+}

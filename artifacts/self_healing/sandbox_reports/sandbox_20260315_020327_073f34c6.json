@@ -1,0 +1,20 @@
+{
+  "report_id": "sandbox_20260315_020327_073f34c6",
+  "timestamp": "2026-03-15T02:03:29.224720",
+  "bundle_id": "073f34c6",
+  "candidate_id": "test_exec_001",
+  "sandbox_path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/.sandbox/auto-fix-073f34c6-test_exec_001",
+  "branch_name": "auto-fix-073f34c6-test_exec_001",
+  "applied_successfully": false,
+  "validation_results": [],
+  "patch_path": null,
+  "validation_report_path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/self_healing/sandbox_reports/sandbox_20260315_020327_073f34c6.json",
+  "rollback_script_path": "",
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_changed": [],
+  "negative_check_passed": false,
+  "regression_tests_passed": false,
+  "approved_for_merge": false,
+  "rejection_reason": "Gate B 失败: 测试失败"
+}

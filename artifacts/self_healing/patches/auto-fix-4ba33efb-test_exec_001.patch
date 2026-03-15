@@ -1,0 +1,13 @@
+diff --git a/artifacts/self_healing/e2e_test_results.json b/artifacts/self_healing/e2e_test_results.json
+index 7cbe2f0..6b65584 100644
+--- a/artifacts/self_healing/e2e_test_results.json
++++ b/artifacts/self_healing/e2e_test_results.json
+@@ -1,7 +1,7 @@
+ {
+   "evidence_1_edit_failed_remediation": {
+     "passed": true,
+-    "bundle_id": "bc697020",
++    "bundle_id": "82e92c6d",
+     "signature": "edit_failed+target_missing+none+file_not_found+example",
+     "candidates_count": 3,
+     "gate_a_passed": true,

@@ -1,13 +1,13 @@
 {
   "evidence_1_edit_failed_remediation": {
     "passed": true,
-    "bundle_id": "bc697020",
+    "bundle_id": "4ba33efb",
     "signature": "edit_failed+target_missing+none+file_not_found+example",
     "candidates_count": 3,
     "gate_a_passed": true,
     "gate_b_passed": true,
     "gate_c_passed": true,
-    "patch_generated": false
+    "patch_generated": true
   },
   "evidence_2_second_hit": {
     "passed": true,

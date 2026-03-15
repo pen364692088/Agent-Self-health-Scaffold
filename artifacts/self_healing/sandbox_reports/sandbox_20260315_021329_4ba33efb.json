@@ -1,0 +1,38 @@
+{
+  "report_id": "sandbox_20260315_021329_4ba33efb",
+  "timestamp": "2026-03-15T02:13:32.626829",
+  "bundle_id": "4ba33efb",
+  "candidate_id": "test_exec_001",
+  "sandbox_path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/.sandbox/auto-fix-4ba33efb-test_exec_001",
+  "branch_name": "auto-fix-4ba33efb-test_exec_001",
+  "applied_successfully": true,
+  "validation_results": [
+    {
+      "gate_name": "Gate A: Contract",
+      "passed": true,
+      "details": "Contract 验证通过"
+    },
+    {
+      "gate_name": "Gate B: E2E",
+      "passed": true,
+      "details": "Self-healing E2E 测试通过"
+    },
+    {
+      "gate_name": "Gate C: Preflight",
+      "passed": true,
+      "details": "Preflight 检查通过"
+    }
+  ],
+  "patch_path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/self_healing/patches/auto-fix-4ba33efb-test_exec_001.patch",
+  "validation_report_path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/self_healing/sandbox_reports/sandbox_20260315_021329_4ba33efb.json",
+  "rollback_script_path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/self_healing/sandbox_reports/rollback_test_exec_001.sh",
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_changed": [
+    "artifacts/self_healing/e2e_test_results.json"
+  ],
+  "negative_check_passed": true,
+  "regression_tests_passed": true,
+  "approved_for_merge": true,
+  "rejection_reason": null
+}
