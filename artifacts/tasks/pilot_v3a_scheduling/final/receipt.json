@@ -1,0 +1,17 @@
+{
+  "receipt_id": "receipt_pilot_v3a_scheduling",
+  "task_id": "pilot_v3a_scheduling",
+  "status": "completed",
+  "completed_at": "2026-03-15T07:30:00Z",
+  "evidence": {
+    "task_state": "artifacts/tasks/pilot_v3a_scheduling/task_state.json",
+    "summary": "artifacts/tasks/pilot_v3a_scheduling/final/SUMMARY.md",
+    "gate_report": "artifacts/tasks/pilot_v3a_scheduling/final/gate_report.json",
+    "tests": "tests/test_v3a_scheduling.py"
+  },
+  "verification": {
+    "tests_passed": 25,
+    "all_gates_passed": true,
+    "v2_baseline_preserved": true
+  }
+}

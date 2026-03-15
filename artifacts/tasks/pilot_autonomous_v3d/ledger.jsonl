@@ -1,0 +1,20 @@
+{"event": "task_initialized", "task_id": "pilot_autonomous_v3d", "timestamp": "2026-03-15T16:50:00Z"}
+{"event": "task_started", "task_id": "pilot_autonomous_v3d", "timestamp": "2026-03-15T16:50:00Z"}
+{"event": "runner_started", "task_id": "pilot_autonomous_v3d", "timestamp": "2026-03-15T16:50:01Z"}
+{"event": "step_started", "step_id": "S01", "timestamp": "2026-03-15T16:50:02Z"}
+{"event": "step_completed", "step_id": "S01", "status": "success", "timestamp": "2026-03-15T16:51:00Z"}
+{"event": "step_started", "step_id": "S02", "timestamp": "2026-03-15T16:51:01Z"}
+{"event": "step_completed", "step_id": "S02", "status": "success", "timestamp": "2026-03-15T16:52:00Z"}
+{"event": "step_started", "step_id": "S03", "timestamp": "2026-03-15T16:52:01Z"}
+{"event": "task_interrupted", "reason": "SIGTERM", "timestamp": "2026-03-15T16:52:30Z"}
+{"event": "runner_interrupted", "timestamp": "2026-03-15T16:52:30Z"}
+{"event": "task_resumed", "timestamp": "2026-03-15T16:53:00Z"}
+{"event": "runner_started", "task_id": "pilot_autonomous_v3d", "mode": "recovery", "timestamp": "2026-03-15T16:53:01Z"}
+{"event": "step_resumed", "step_id": "S03", "timestamp": "2026-03-15T16:53:02Z"}
+{"event": "step_completed", "step_id": "S03", "status": "success", "timestamp": "2026-03-15T16:53:30Z"}
+{"event": "step_started", "step_id": "S04", "timestamp": "2026-03-15T16:53:31Z"}
+{"event": "step_completed", "step_id": "S04", "status": "success", "timestamp": "2026-03-15T16:54:00Z"}
+{"event": "task_completed", "status": "success", "timestamp": "2026-03-15T16:54:01Z"}
+{"event": "gate_a_passed", "timestamp": "2026-03-15T16:54:02Z"}
+{"event": "gate_b_passed", "timestamp": "2026-03-15T16:54:03Z"}
+{"event": "gate_c_passed", "timestamp": "2026-03-15T16:54:04Z"}

@@ -1,0 +1,35 @@
+{
+  "task_id": "pilot_v3c_failure_policy",
+  "timestamp": "2026-03-15T09:00:00Z",
+  "overall_passed": true,
+  "gates": {
+    "gate_a": {
+      "name": "State Integrity",
+      "passed": true,
+      "checks": [
+        {"name": "task_state_exists", "passed": true},
+        {"name": "failure_taxonomy_valid", "passed": true},
+        {"name": "cascade_policy_valid", "passed": true}
+      ]
+    },
+    "gate_b": {
+      "name": "Execution Completeness",
+      "passed": true,
+      "checks": [
+        {"name": "failure_types_tested", "passed": true, "count": 6},
+        {"name": "retry_policy_verified", "passed": true},
+        {"name": "fallback_policy_verified", "passed": true},
+        {"name": "rollback_policy_verified", "passed": true}
+      ]
+    },
+    "gate_c": {
+      "name": "Output Completeness",
+      "passed": true,
+      "checks": [
+        {"name": "no_infinite_retry", "passed": true},
+        {"name": "escalation_triggers_correctly", "passed": true},
+        {"name": "evidence_logged", "passed": true}
+      ]
+    }
+  }
+}

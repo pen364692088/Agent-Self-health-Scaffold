@@ -1,0 +1,58 @@
+{
+  "task_id": "pilot_v3c_failure_policy",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-15T08:30:00Z",
+  "updated_at": "2026-03-15T09:00:00Z",
+  "contract": {
+    "objective": "验证 v3-C Failure Policy Engine 能力",
+    "repository": "Agent-Self-health-Scaffold",
+    "branch": "main",
+    "acceptance_criteria": [
+      "failure taxonomy 分类正确",
+      "retry policy 生效",
+      "fallback policy 生效",
+      "rollback policy 生效",
+      "escalation threshold 生效"
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "S01",
+      "title": "Failure Taxonomy 验证",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S02",
+      "title": "Retry Policy 测试",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S03",
+      "title": "Fallback Policy 测试",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S04",
+      "title": "Rollback Policy 测试",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S05",
+      "title": "Escalation 测试",
+      "status": "success",
+      "attempts": 1
+    }
+  ],
+  "current_step": null,
+  "artifacts_dir": "artifacts/tasks/pilot_v3c_failure_policy",
+  "metadata": {
+    "failure_types_tested": 6,
+    "retry_scenarios": 5,
+    "fallback_scenarios": 3
+  }
+}

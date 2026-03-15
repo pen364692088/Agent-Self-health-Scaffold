@@ -1,0 +1,34 @@
+{
+  "task_id": "pilot_v3a_scheduling",
+  "timestamp": "2026-03-15T07:30:00Z",
+  "overall_passed": true,
+  "gates": {
+    "gate_a": {
+      "name": "State Integrity",
+      "passed": true,
+      "checks": [
+        {"name": "task_state_exists", "passed": true},
+        {"name": "slot_registry_valid", "passed": true},
+        {"name": "lease_manager_valid", "passed": true}
+      ]
+    },
+    "gate_b": {
+      "name": "Execution Completeness",
+      "passed": true,
+      "checks": [
+        {"name": "all_tests_passed", "passed": true, "count": 25},
+        {"name": "conflict_scenarios_verified", "passed": true, "count": 3},
+        {"name": "reclaim_verified", "passed": true}
+      ]
+    },
+    "gate_c": {
+      "name": "Output Completeness",
+      "passed": true,
+      "checks": [
+        {"name": "no_slot_leak", "passed": true},
+        {"name": "no_lease_leak", "passed": true},
+        {"name": "success_step_preserved", "passed": true}
+      ]
+    }
+  }
+}

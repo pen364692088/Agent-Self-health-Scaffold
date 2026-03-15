@@ -1,0 +1,57 @@
+{
+  "task_id": "pilot_v3a_scheduling",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-15T07:00:00Z",
+  "updated_at": "2026-03-15T07:30:00Z",
+  "contract": {
+    "objective": "验证 v3-A 调度与占用控制能力",
+    "repository": "Agent-Self-health-Scaffold",
+    "branch": "main",
+    "acceptance_criteria": [
+      "slot 分配正常",
+      "冲突拒绝/排队生效",
+      "stale slot 可 reclaim",
+      "success step 不重跑"
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "S01",
+      "title": "Worker Slot 注册",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S02",
+      "title": "Slot Lease 获取",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S03",
+      "title": "冲突检测与拒绝",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S04",
+      "title": "Reclaim 过期 Slot",
+      "status": "success",
+      "attempts": 1
+    },
+    {
+      "step_id": "S05",
+      "title": "验证 Success Step 不重跑",
+      "status": "success",
+      "attempts": 1
+    }
+  ],
+  "current_step": null,
+  "artifacts_dir": "artifacts/tasks/pilot_v3a_scheduling",
+  "metadata": {
+    "tests_passed": 25,
+    "conflict_scenarios_verified": 3,
+    "reclaim_verified": true
+  }
+}

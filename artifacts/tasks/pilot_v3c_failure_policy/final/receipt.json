@@ -1,0 +1,18 @@
+{
+  "receipt_id": "receipt_pilot_v3c_failure_policy",
+  "task_id": "pilot_v3c_failure_policy",
+  "status": "completed",
+  "completed_at": "2026-03-15T09:00:00Z",
+  "evidence": {
+    "task_state": "artifacts/tasks/pilot_v3c_failure_policy/task_state.json",
+    "summary": "artifacts/tasks/pilot_v3c_failure_policy/final/SUMMARY.md",
+    "gate_report": "artifacts/tasks/pilot_v3c_failure_policy/final/gate_report.json",
+    "taxonomy": "config/failure_taxonomy.yaml",
+    "tests": "tests/test_cascade_failure_policy.py"
+  },
+  "verification": {
+    "failure_types_tested": 6,
+    "all_gates_passed": true,
+    "v2_baseline_preserved": true
+  }
+}
