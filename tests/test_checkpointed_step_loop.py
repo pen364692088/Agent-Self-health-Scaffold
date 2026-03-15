@@ -347,6 +347,11 @@ class TestCompletionGatekeeper:
             (evidence_dir / "output.txt").write_text("output")
         
         can_announce, reason = gatekeeper.can_announce_completion()
+        
+        # 需要添加 task_completed 事件才能通过 Gate C
+        dossier._append_ledger("task_completed", {"status": "completed"})
+        
+        can_announce, reason = gatekeeper.can_announce_completion()
         assert can_announce is True
 
 
@@ -441,6 +446,9 @@ class TestE2ERecovery:
                 evidence_dir = new_dossier.evidence_dir / step_id
                 evidence_dir.mkdir(exist_ok=True)
                 (evidence_dir / "output.txt").write_text(f"Evidence for {step_id}")
+            
+            # 添加 task_completed 事件（Gate C 要求）
+            new_dossier._append_ledger("task_completed", {"status": "completed"})
             
             gatekeeper = CompletionGatekeeper(new_dossier)
             can_announce, reason = gatekeeper.can_announce_completion()

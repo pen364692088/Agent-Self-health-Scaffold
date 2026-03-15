@@ -239,11 +239,17 @@ class CompletionGatekeeper:
             })
             
             # 检查是否有 task_completed 事件
-            completed_events = [e for e in ledger_events if e.get("action") == "task_completed"]
-            if completed_events:
-                result.checks.append({"name": "task_completed event exists", "passed": True})
+            # 规则：任务标记为 completed 时，必须有 task_completed 事件
+            if state_data.get("status") == "completed":
+                completed_events = [e for e in ledger_events if e.get("action") == "task_completed"]
+                if completed_events:
+                    result.checks.append({"name": "task_completed event exists", "passed": True})
+                else:
+                    # 必须有 task_completed 事件才能宣称完成
+                    result.errors.append("Task marked completed but no task_completed event in ledger")
+                    result.checks.append({"name": "task_completed event exists", "passed": False})
             else:
-                result.warnings.append("No task_completed event in ledger")
+                result.warnings.append("Task not marked as completed in state")
         else:
             result.errors.append("No ledger events found")
             result.checks.append({"name": "ledger has events", "passed": False})
