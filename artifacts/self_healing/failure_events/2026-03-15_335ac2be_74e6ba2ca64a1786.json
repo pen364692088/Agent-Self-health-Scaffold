@@ -1,0 +1,23 @@
+{
+  "bundle_id": "335ac2be",
+  "timestamp": "2026-03-15T05:25:21.046149",
+  "failure_type": "edit_failed",
+  "tool_name": "edit",
+  "tool_input": {
+    "file_path": "src/example_321041.py",
+    "old_string": "def old_func_321041():",
+    "new_string": "def new_func_321041():"
+  },
+  "stderr": "Error: old_string not found in file 321041",
+  "stack_trace": null,
+  "related_files": [
+    "src/example.py"
+  ],
+  "branch": "main",
+  "commit": "4fefc88",
+  "recent_actions": [],
+  "environment": {},
+  "risk_level": "medium",
+  "similar_historical_issues": [],
+  "signature": "74e6ba2ca64a1786"
+}
