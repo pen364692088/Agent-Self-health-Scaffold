@@ -315,6 +315,10 @@ class TestCompletionGatekeeper:
         evidence_dir2.mkdir(exist_ok=True)
         (evidence_dir2 / "test.txt").write_text("evidence")
         
+        # 创建 SUMMARY.md (必需产物)
+        dossier.final_dir.mkdir(exist_ok=True)
+        (dossier.final_dir / "SUMMARY.md").write_text("# Task Summary\n\nCompleted successfully.")
+        
         result = gatekeeper.run_gate_b()
         
         assert result.passed is True
@@ -350,6 +354,10 @@ class TestCompletionGatekeeper:
         
         # 需要添加 task_completed 事件才能通过 Gate C
         dossier._append_ledger("task_completed", {"status": "completed"})
+        
+        # 需要 SUMMARY.md (必需产物)
+        dossier.final_dir.mkdir(exist_ok=True)
+        (dossier.final_dir / "SUMMARY.md").write_text("# Task Summary\n\nCompleted successfully.")
         
         can_announce, reason = gatekeeper.can_announce_completion()
         assert can_announce is True
@@ -449,6 +457,10 @@ class TestE2ERecovery:
             
             # 添加 task_completed 事件（Gate C 要求）
             new_dossier._append_ledger("task_completed", {"status": "completed"})
+            
+            # 创建 SUMMARY.md (Gate B 要求)
+            new_dossier.final_dir.mkdir(exist_ok=True)
+            (new_dossier.final_dir / "SUMMARY.md").write_text("# Task Summary\n\nCompleted successfully.")
             
             gatekeeper = CompletionGatekeeper(new_dossier)
             can_announce, reason = gatekeeper.can_announce_completion()

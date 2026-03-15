@@ -1,0 +1,102 @@
+{
+  "baseline_name": "checkpointed_step_loop_v2",
+  "version": "2.0.0",
+  "status": "frozen",
+  "accepted_on": "2026-03-15T16:00:00Z",
+  
+  "protected_task": {
+    "task_id": "pilot_docs_index_v2",
+    "task_path": "artifacts/tasks/pilot_docs_index_v2",
+    "description": "Documentation index generation - 4 steps real task",
+    "steps": 4,
+    "real_output": "docs/INDEX.md"
+  },
+  
+  "protected_artifacts": [
+    "artifacts/tasks/pilot_docs_index_v2/final/SUMMARY.md",
+    "artifacts/tasks/pilot_docs_index_v2/final/gate_report.json",
+    "artifacts/tasks/pilot_docs_index_v2/final/receipt.json",
+    "artifacts/tasks/pilot_docs_index_v2/task_state.json",
+    "artifacts/tasks/pilot_docs_index_v2/ledger.jsonl",
+    "docs/INDEX.md"
+  ],
+  
+  "protected_rules": {
+    "gate_integrity": {
+      "description": "all_passed=true must not have any failed checks",
+      "enforcement": "hard_fail"
+    },
+    "summary_required": {
+      "description": "SUMMARY.md is a required artifact for Gate B",
+      "enforcement": "hard_fail"
+    },
+    "receipt_sync": {
+      "description": "receipt.json must be synchronized with gate_report.json",
+      "enforcement": "hard_fail"
+    },
+    "task_completed_event": {
+      "description": "task_state.status=completed requires task_completed event in ledger",
+      "enforcement": "hard_fail"
+    },
+    "no_reexecution": {
+      "description": "Successfully completed steps must not be re-executed after recovery",
+      "enforcement": "hard_fail"
+    },
+    "pilot_output_exists": {
+      "description": "docs/INDEX.md must exist as pilot task output",
+      "enforcement": "hard_fail"
+    }
+  },
+  
+  "required_gates": {
+    "gate_a": {
+      "name": "Contract",
+      "required_checks": 13,
+      "description": "Schema, step packets, results, directories"
+    },
+    "gate_b": {
+      "name": "E2E",
+      "required_checks": 10,
+      "description": "Step status, evidence, SUMMARY.md"
+    },
+    "gate_c": {
+      "name": "Integrity",
+      "required_checks": 11,
+      "description": "State consistency, ledger events, proof"
+    }
+  },
+  
+  "allowed_change_scope": [
+    "add_new_tests",
+    "add_regression_checks",
+    "add_optional_fields",
+    "add_new_step_types",
+    "documentation_improvements",
+    "performance_optimizations_preserving_behavior"
+  ],
+  
+  "breaking_conditions": [
+    "gate_rules_modified_causes_passed_task_to_fail",
+    "protected_task_directory_deleted_or_moved",
+    "execution_receipt_schema_breaking_change",
+    "step_packet_schema_breaking_change",
+    "summary_md_no_longer_required",
+    "gate_strictness_reduced",
+    "recovery_capability_broken",
+    "no_reexecution_guarantee_broken",
+    "protected_artifacts_deleted"
+  ],
+  
+  "regression_checks": {
+    "script_path": "tools/check_v2_baseline.py",
+    "test_path": "tests/test_v2_baseline_guard.py",
+    "run_command": "python tools/check_v2_baseline.py --task pilot_docs_index_v2"
+  },
+  
+  "metadata": {
+    "created_by": "OpenClaw",
+    "repository": "Agent-Self-health-Scaffold",
+    "branch": "main",
+    "commit_baseline_created": "TBD"
+  }
+}
