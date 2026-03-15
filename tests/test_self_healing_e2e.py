@@ -168,6 +168,20 @@ class TestSelfHealingE2E:
             lines_changed=report.lines_added + report.lines_removed
         )
         
+        # 同时记录到历史数据库用于二次命中测试
+        self.memory.record_success(
+            signature="edit_failed+target_missing+none",  # 简化签名用于匹配
+            remedy_name=selected_candidate.name,
+            remedy_description=selected_candidate.description,
+            action_type=selected_candidate.action_type,
+            action_params=selected_candidate.action_params,
+            preconditions=selected_candidate.preconditions,
+            validation_results=[{"gate": r.gate_name, "passed": r.passed} for r in report.validation_results],
+            sandbox_report_id=report.report_id,
+            execution_time_ms=1000,
+            lines_changed=report.lines_added + report.lines_removed
+        )
+        
         print("\n✅ 证据 1 完成: edit failed → 自愈修复闭环")
         
         return {

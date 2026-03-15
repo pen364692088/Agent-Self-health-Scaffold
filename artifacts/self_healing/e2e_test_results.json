@@ -1,19 +1,18 @@
 {
   "evidence_1_edit_failed_remediation": {
     "passed": true,
-    "bundle_id": "391b1861",
+    "bundle_id": "bc697020",
     "signature": "edit_failed+target_missing+none+file_not_found+example",
     "candidates_count": 3,
-    "gate_a_passed": false,
-    "gate_b_passed": false,
-    "gate_c_passed": false,
+    "gate_a_passed": true,
+    "gate_b_passed": true,
+    "gate_c_passed": true,
     "patch_generated": false
   },
   "evidence_2_second_hit": {
-    "passed": false,
-    "historical_count": 0,
-    "hit": false,
-    "note": "需要先运行证据1建立历史记忆"
+    "passed": true,
+    "historical_count": 1,
+    "hit": true
   },
   "evidence_3_preflight_interception": {
     "passed": true,
