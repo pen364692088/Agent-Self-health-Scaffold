@@ -1,0 +1,74 @@
+{
+  "observation_window": {
+    "id": "obs_v1_20260315",
+    "start_time": "2026-03-15T05:17:00",
+    "end_time": "2026-03-29T05:17:00",
+    "duration_days": 14,
+    "baseline_tag": "self-health-v1-obs-day0",
+    "status": "active"
+  },
+  
+  "metrics": {
+    "recurrence_rate_by_signature": {
+      "description": "按签名的复发率",
+      "target": "< 10%",
+      "collection_interval_hours": 24
+    },
+    "auto_remediation_success_rate": {
+      "description": "自动修复成功率",
+      "target": "> 80%",
+      "collection_interval_hours": 24
+    },
+    "false_fix_rate": {
+      "description": "误修率",
+      "target": "< 5%",
+      "collection_interval_hours": 24
+    },
+    "rollback_count": {
+      "description": "回滚次数",
+      "target": "< 3/周",
+      "collection_interval_hours": 24
+    },
+    "prevention_hit_rate": {
+      "description": "预防规则命中率",
+      "target": "记录趋势",
+      "collection_interval_hours": 24
+    }
+  },
+  
+  "restrictions": {
+    "scope_expansion": false,
+    "gate_definition_changes": false,
+    "auto_merge_to_main": false,
+    "external_learning_to_main": false,
+    "high_risk_auto_modify": false
+  },
+  
+  "allowed_operations": {
+    "bug_fixes_in_sandbox": true,
+    "shadow_learning": true,
+    "metrics_collection": true,
+    "manual_review_merge": true
+  },
+  
+  "evaluation_questions": [
+    "人工继续: 是否仍需频繁人工介入？",
+    "重复泄漏: 是否有签名反复泄漏？",
+    "ledger 分叉: 记忆是否出现不一致？",
+    "恢复后停滞: 修复后系统是否正常工作？",
+    "恢复风暴: 是否出现级联修复？"
+  ],
+  
+  "daily_check_template": {
+    "date": "",
+    "metrics": {
+      "recurrence_rate": null,
+      "success_rate": null,
+      "false_fix_rate": null,
+      "rollback_count": null,
+      "prevention_hits": null
+    },
+    "anomalies": [],
+    "notes": ""
+  }
+}
