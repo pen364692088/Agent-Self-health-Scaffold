@@ -1,9 +1,9 @@
 {
   "task_id": "demo_checkpointed_step_loop_v1",
   "version": "v1.0",
-  "status": "created",
+  "status": "completed",
   "created_at": "2026-03-15T12:13:44.691708Z",
-  "updated_at": "2026-03-15T12:13:44.694982Z",
+  "updated_at": "2026-03-15T12:24:21.414545Z",
   "contract": {
     "objective": "Demo: Checkpointed Step Loop v1 \u6062\u590d\u80fd\u529b\u6f14\u793a",
     "repository": "/tmp/demo_repo",
@@ -25,22 +25,22 @@
     },
     {
       "step_id": "S02",
-      "status": "pending",
-      "attempts": 0,
+      "status": "success",
+      "attempts": 1,
       "started_at": null,
-      "completed_at": null,
+      "completed_at": "2026-03-15T12:24:21.412518Z",
       "error": null
     },
     {
       "step_id": "S03",
-      "status": "pending",
-      "attempts": 0,
+      "status": "success",
+      "attempts": 1,
       "started_at": null,
-      "completed_at": null,
+      "completed_at": "2026-03-15T12:24:21.414456Z",
       "error": null
     }
   ],
-  "current_step": "S02",
+  "current_step": null,
   "blocked_on": null,
   "artifacts_dir": "artifacts/tasks/demo_checkpointed_step_loop_v1",
   "ledger_path": "artifacts/tasks/demo_checkpointed_step_loop_v1/ledger.jsonl",
