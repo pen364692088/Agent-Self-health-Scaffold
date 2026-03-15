@@ -1,6 +1,6 @@
 {
   "task_id": "demo_checkpointed_step_loop_v1",
-  "validated_at": "2026-03-15T12:24:21.418696Z",
+  "validated_at": "2026-03-15T12:49:28.945828Z",
   "all_passed": true,
   "gates": {
     "gate_a": {
@@ -125,7 +125,11 @@
         {
           "name": "ledger has events",
           "passed": true,
-          "details": "7 events"
+          "details": "8 events"
+        },
+        {
+          "name": "task_completed event exists",
+          "passed": true
         },
         {
           "name": "step S01 has proof",
@@ -141,9 +145,7 @@
         }
       ],
       "errors": [],
-      "warnings": [
-        "No task_completed event in ledger"
-      ]
+      "warnings": []
     }
   }
 }
