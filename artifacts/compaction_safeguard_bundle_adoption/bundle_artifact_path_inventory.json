@@ -1,7 +1,0 @@
-{
-  "install_dir": "/home/moonlight/.npm-global/lib/node_modules/openclaw",
-  "live_bundle": "/home/moonlight/.npm-global/lib/node_modules/openclaw/dist/reply-C5LKjXcC.js",
-  "gateway_entry": "/home/moonlight/.npm-global/lib/node_modules/openclaw/dist/index.js",
-  "nested_standalone_dist_compaction": "/home/moonlight/.npm-global/lib/node_modules/openclaw/node_modules/@mariozechner/pi-coding-agent/dist/core/compaction/compaction.js",
-  "nested_standalone_dist_agent_session": "/home/moonlight/.npm-global/lib/node_modules/openclaw/node_modules/@mariozechner/pi-coding-agent/dist/core/agent-session.js"
-}

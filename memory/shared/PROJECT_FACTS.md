@@ -1,1 +1,0 @@
-/home/moonlight/.openclaw/shared/facts/PROJECT_FACTS.md

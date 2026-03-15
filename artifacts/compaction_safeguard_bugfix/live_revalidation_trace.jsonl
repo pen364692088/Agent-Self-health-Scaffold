@@ -1,5 +1,0 @@
-{"ts": 1773019012.25379, "event": "entered_target_zone", "context_pct": 82, "context_tokens_k": 164, "compactions": 0}
-{"ts": 1773019012.2538037, "event": "controlled_internal_ramp", "method": "read existing session transcript chunk", "risk": "low"}
-{"ts": 1773019111.8969984, "event": "entered_over_threshold_zone", "context_pct": 87, "compactions": 0}
-{"ts": 1773019139.9990222, "event": "controlled_internal_ramp_2", "method": "read large reset transcript chunk", "risk": "low"}
-{"ts": 1773019183.67678, "event": "false_positive_recurred", "log_ts": "2026-03-08T20:18:47.533-05:00", "message": "Compaction safeguard: cancelling compaction with no real conversation messages to summarize."}

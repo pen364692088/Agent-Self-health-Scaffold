@@ -1,8 +1,0 @@
-[Unit]
-Description=OpenClaw Agent Self-Health Full Mode
-After=default.target
-
-[Service]
-Type=oneshot
-ExecStart=%h/.openclaw/workspace/tools/agent-self-health-scheduler --mode full --json
-WorkingDirectory=%h/.openclaw/workspace

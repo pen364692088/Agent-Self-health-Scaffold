@@ -1,9 +1,0 @@
-{
-  "enabled": true,
-  "mode": "shadow",
-  "started_at": "2026-03-09T15:01:00-06:00",
-  "version": "1.0",
-  "exit_criteria_file": "docs/context_compression/SHADOW_EXIT_CRITERIA.md",
-  "minimum_duration_days": 3,
-  "recommended_duration_days": 7
-}

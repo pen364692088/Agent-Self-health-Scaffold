@@ -1,8 +1,0 @@
-{
-  "checkedAt": "2026-03-09T03:33:20Z",
-  "session": "agent:main:telegram:direct:8420019401",
-  "before": { "ratio": 0.59 },
-  "after": { "ratio": 0.60 },
-  "delta": 0.01,
-  "interpretation": "no context rollback attributable to successful compaction was observed"
-}

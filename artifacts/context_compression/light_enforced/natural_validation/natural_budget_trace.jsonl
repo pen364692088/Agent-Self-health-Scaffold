@@ -1,2 +1,0 @@
-{"ts":"2026-03-07T23:52:00-06:00","session_id":"89cbc6ee-8dae-4a70-bb27-32fcf4fac44c","turn":0,"estimated_tokens":162000,"max_tokens":200000,"budget_ratio":0.81,"phase":"candidate","threshold_hit":null,"recommended_action":"observe"}
-{"ts": "2026-03-07T23:53:45.424343", "session_id": "89cbc6ee-8dae-4a70-bb27-32fcf4fac44c", "turn": 1, "estimated_tokens": 165000, "max_tokens": 200000, "budget_ratio": 0.825, "phase": "candidate", "threshold_hit": null, "recommended_action": "observe", "note": "Natural growth in progress, approaching 0.85 threshold"}

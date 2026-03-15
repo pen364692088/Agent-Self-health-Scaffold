@@ -1,132 +1,106 @@
+# Python
 __pycache__/
-.pytest_cache/
-*.pyc
-*.pyo
-*.pyd
-.venv/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
 venv/
-
-# Sensitive config files with secrets
-cerebras_config.json
-
-# Runtime lock files
-*.pid
-*.lock
-
-# Session state
-.last_session_id
-
-# Logs - all runtime generated
-logs/
-
-# Reports - generated outputs
-reports/
-
-# Processed events - transient state
-events/processed/
-
-# Mailbox outputs - delivered messages
-mailbox/out/
-
-# Session archives - local history
-session-archives/
-
-# State directory - runtime state
-state/
-
-# Integration traces - contains PII
-integrations/openclaw/traces/
-
-# Memory runtime files - local caches
-memory/.bootstrap_state.json
-memory/.dedup_cache.json
-memory/.locks/
-memory/daily_summaries.jsonl
-memory/entry_state.json
-memory/events.log
-memory/regression_cron.log
-memory/regression_report.json
-memory/reports/daily/
-memory/review_queue.json
-memory/sweeper_stats.json
-memory/sweeper_stats_prev.json
-memory/tests/retrieval_regression.json
-memory/tuning_recommendations.json
-memory/use_link_audit.json
-memory/golden_fixtures/
-
-# Artifacts - runtime generated (keep docs)
-artifacts/context_compression/sessions/
-artifacts/context_compression/validation/samples/
-artifacts/context_compression/validation/reports/
-artifacts/openviking/archive/
-artifacts/openviking/ops_runs/
-artifacts/openviking/audit-sample/
-artifacts/openviking/backfill-sample*/
-artifacts/openviking/ingest-sample/
-artifacts/openviking/historical_*/
-artifacts/openviking/p*_*/
-artifacts/openviking/run-*/
-artifacts/openviking/ops_runs/
-artifacts/self_health/state/
-artifacts/self_health/incidents/
-artifacts/self_health/proposals/
-artifacts/self_health/probes/
-artifacts/self_health/probe_tests/
-artifacts/self_health/runtime/
-artifacts/self_health/coverage_audit/soak/
-artifacts/self_health/locks/
-artifacts/self_health/gate_reports/
-artifacts/self_health/capability_incidents/
-artifacts/self_health/audit/
-artifacts/self_health/locks/
-artifacts/execution_policy/
-artifacts/monitoring/
-artifacts/health_audit/
-artifacts/receipts/
-artifacts/session_recovery/
-artifacts/session_reuse/incidents/
-artifacts/session_reuse/probe/
-artifacts/openviking-l2-fix/
-artifacts/lane_ownership_trace/
-artifacts/main_context_unknown_check/
-artifacts/memory_freeze/
-artifacts/memory_preflight/
-artifacts/memory_rehydration/
-artifacts/overnight_product_builder/
-artifacts/phase1_recovery_report.md
-artifacts/r3_prep/
-artifacts/real_session_compaction_test/
-artifacts/receipts/
-artifacts/route_rebind_guard/
-artifacts/runtime_audit/
-artifacts/unattended_recovery_*.md
-artifacts/valid_native_revalidation/
-
-# Self-health dynamic files (keep structure)
-artifacts/self_health/state/current_health.json
-artifacts/self_health/state/health_history.jsonl
-artifacts/self_health/incidents/incident_*.json
-artifacts/self_health/proposals/proposal_*.json
-artifacts/self_health/audit/health_audit.jsonl
-artifacts/self_health/recovery_logs/
-artifacts/cache/
-artifacts/logs/
-
-# Output files
-output.txt
-
-# Node modules
-node_modules/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+.openviking*/
+.openviking-data*/
+
+# Session/State files
+checkpoints/
+session*/
+state/
+ledger/
+heartbeat/
+*.jsonl
+
+# Runtime artifacts (except allowed)
+artifacts/context_compression/
+artifacts/distilled/
+artifacts/integration/
+artifacts/openviking/
+artifacts/prompt_pilot/
+artifacts/prompt_preview/
+artifacts/recovery_preview/
+artifacts/shadow_compare/
+artifacts/auto_resume/
+artifacts/self_health/
+artifacts/session_reuse/
+artifacts/test_tmp/
+artifacts/materialized_state/
+
+# Runtime modules (belongs to EgoCore)
+modules/
+
+# Runtime core implementation (belongs to EgoCore)
+core/reconciler/
+core/state_materializer.py
+core/task_ledger.py
+core/canonical_adapter.py
+core/materialized_state_v0.py
+core/prompt_pilot_runner.py
+core/prompt_preview.py
+core/recovery_preview.py
+
+# Runtime config
+config/prompt_pilot.json
+cerebras_config.json
+
+# Other projects
+OpenEmotion/
+OpenEmotion_MVP5/
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Audit working directory (temporary)
+# Lock files
+*.pid
+*.lock
+.callback-worker.pid
+.last_session_id

@@ -1,8 +1,0 @@
-{
-  "valid": false,
-  "issues": [
-    "Sample count 0 < 200",
-    "Coverage rate 25.0% < 75%"
-  ],
-  "warnings": []
-}

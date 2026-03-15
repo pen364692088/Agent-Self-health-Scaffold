@@ -1,1 +1,0 @@
-/home/moonlight/.openclaw/shared/runbooks/GATE_FLOW.md

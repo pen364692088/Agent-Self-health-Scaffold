@@ -1,4 +1,0 @@
-{"ts": "2026-03-08T22:10:00-05:00", "event": "session_recovery", "result": "success", "blocker": "None. Lane is free."}
-{"ts": "2026-03-08T22:10:30-05:00", "event": "entrypoint_identified", "method": "sessions.compact RPC", "source": "openclaw gateway call"}
-{"ts": "2026-03-08T22:11:00-05:00", "event": "native_compaction_invoked", "params": {"key": "telegram:direct:8420019401"}, "result": {"ok": true, "compacted": false, "kept": 48}}
-{"ts": "2026-03-08T22:12:00-05:00", "event": "compaction_result_analyzed", "result": {"ok": true, "compacted": false, "kept": 48}, "reason": "no real conversation messages"}

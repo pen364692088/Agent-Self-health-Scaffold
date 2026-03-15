@@ -1,8 +1,0 @@
-{
-  "checkedAt": "2026-03-09T03:33:20Z",
-  "session": "agent:main:telegram:direct:8420019401",
-  "before": { "compactions": 0 },
-  "after": { "compactions": 0 },
-  "delta": 0,
-  "interpretation": "no native compaction restoration observed during post-adoption minimal revalidation window"
-}

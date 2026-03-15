@@ -1,8 +1,0 @@
-{
-  "version": "manifest_diff.v1",
-  "left_count": 1,
-  "right_count": 1,
-  "missing_in_right": [],
-  "extra_in_right": [],
-  "conflicts": []
-}

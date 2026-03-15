@@ -1,5 +1,0 @@
-{"ts": 1773019012.2910104, "checkpoint": "before_watch", "expected": "native compaction or absence of false-positive"}
-{"ts": 1773019025.2766821, "source": "openclaw status", "tokens_k": 144, "limit_k": 200, "ratio_pct": 72}
-{"ts": 1773019129.2931693, "source": "post_pulse_openclaw_status"}
-{"ts": 1773019147.1022298, "checkpoint": "post_ramp_2"}
-{"ts": 1773019183.6768463, "checkpoint": "failure_observed", "context": "174k/200k (87%)", "compactions": 0, "false_positive_recurred": true}
