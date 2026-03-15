@@ -1,0 +1,166 @@
+# Gate 定义契约 - 机读格式
+# 版本: 1.0
+# 生效日期: 2026-03-15
+
+schema_version: "1.0"
+project: Agent-Self-health-Scaffold
+
+# Gate 定义
+gates:
+  - id: gate_a
+    name: "Gate A: Contract"
+    description: "变更符合契约、不碰禁区"
+    required: true
+    severity: critical
+    check_type: static_analysis
+    validator: validation/gate_a_contract.py
+    
+    # 禁区定义
+    forbidden_patterns:
+      - "SOUL.md"
+      - "IDENTITY.md"
+      - "SELF_HEALING_CONTRACT.md"
+      - "policy/"
+      - "contracts/"
+      - ".github/workflows/gate*.yml"
+      - "validation/**"
+      - "scripts/tool_doctor.py"
+      - "CODEOWNERS"
+    
+    # 变更限制
+    max_lines_changed: 100
+    max_files_changed: 10
+    
+    # 判定规则
+    verdict:
+      pass: "所有禁区检查通过且变更大小在限制内"
+      fail: "触及禁区或变更过大"
+      skip: "N/A - 此 Gate 不允许 SKIP"
+
+  - id: gate_b
+    name: "Gate B: E2E"
+    description: "端到端测试通过"
+    required: true
+    severity: critical
+    check_type: test_execution
+    validator: validation/gate_b_e2e.py
+    
+    # 测试范围
+    test_scope: "self_healing"
+    test_command: "python tests/test_self_healing_e2e.py"
+    timeout_seconds: 180
+    
+    # 成功判定
+    success_markers:
+      - "evidence_1_edit_failed_remediation: ✅ 通过"
+      - "evidence_2_second_hit: ✅ 通过"
+      - "evidence_3_preflight_interception: ✅ 通过"
+    
+    # 判定规则
+    verdict:
+      pass: "所有 E2E 测试标记通过"
+      fail: "任一测试失败或超时"
+      skip: "N/A - 此 Gate 不允许 SKIP"
+
+  - id: gate_c
+    name: "Gate C: Preflight"
+    description: "tool_doctor 健康检查"
+    required: true
+    severity: critical
+    check_type: health_check
+    validator: validation/gate_c_preflight.py
+    
+    # 检查项
+    checks:
+      - name: python_version
+        command: "python --version"
+        expected: "Python 3."
+      - name: git_available
+        command: "git --version"
+        expected: "git version"
+      - name: pytest_available
+        command: "python -m pytest --version"
+        expected: "pytest"
+      - name: project_structure
+        paths:
+          - "src/"
+          - "tests/"
+          - "scripts/"
+    
+    # 判定规则
+    verdict:
+      pass: "所有健康检查通过"
+      fail: "任一检查失败或脚本不存在"
+      skip: "N/A - 此 Gate 不允许 SKIP"
+
+# 判定规则元数据
+verdict_rules:
+  # 严格模式: 缺失 = FAIL
+  missing_is_fail: true
+  
+  # SKIP 限制
+  skip_allowed: false
+  skip_requires_reason: true
+  skip_must_be_predefined: true
+  
+  # 结果有效性
+  result_must_be_machine_readable: true
+  result_must_include_evidence: true
+  result_must_be_auditable: true
+
+# 高保护区
+protected_zones:
+  - path: "policy/"
+    description: "Gate 定义与策略"
+    auto_remediation_writable: false
+    
+  - path: "contracts/"
+    description: "系统契约"
+    auto_remediation_writable: false
+    
+  - path: ".github/workflows/gate*.yml"
+    description: "CI Gate 工作流"
+    auto_remediation_writable: false
+    
+  - path: "validation/**"
+    description: "Gate 验证器"
+    auto_remediation_writable: false
+    
+  - path: "scripts/tool_doctor.py"
+    description: "健康检查脚本"
+    auto_remediation_writable: false
+    
+  - path: "CODEOWNERS"
+    description: "代码所有者配置"
+    auto_remediation_writable: false
+
+# 权限隔离
+permissions:
+  auto_remediation_account:
+    read: "*"
+    write:
+      - "src/self_healing/**"
+      - "tests/**"
+      - "artifacts/**"
+      - "memory/**"
+    deny:
+      - "policy/**"
+      - "contracts/**"
+      - ".github/workflows/**"
+      - "validation/**"
+      - "scripts/tool_doctor.py"
+      - "CODEOWNERS"
+      - "SELF_HEALING_CONTRACT.md"
+
+# 审计要求
+audit:
+  log_format: json
+  required_fields:
+    - timestamp
+    - gate_id
+    - verdict
+    - evidence_paths
+    - validator_version
+    - checksum
+  retention_days: 90
+  immutable: true

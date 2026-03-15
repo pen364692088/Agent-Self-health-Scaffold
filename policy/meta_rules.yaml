@@ -1,0 +1,204 @@
+# 元规则 - 防止自愈系统修改 Gate 的核心规则
+# 版本: 1.0
+# 生效日期: 2026-03-15
+
+schema_version: "1.0"
+
+# 元规则 1: 契约外置
+meta_rule_1_contract_externalization:
+  description: "契约必须外置，不能只写在提示词里"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "所有 Gate 定义必须存储在 policy/gates.yaml"
+    - "所有契约必须存储在 contracts/"
+    - "禁止在代码注释中定义 Gate 逻辑"
+    - "禁止在提示词中覆盖 Gate 定义"
+
+# 元规则 2: 三者分离
+meta_rule_2_separation_of_concerns:
+  description: "Gate 定义、Gate 执行、Gate 判定三者分离"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "Gate 定义: 由 policy/gates.yaml 负责"
+    - "Gate 执行: 由 .github/workflows/ 或独立 runner 负责"
+    - "Gate 判定: 由 validation/gate_*.py 负责"
+    - "自愈系统只能生成候选修复，不能执行或判定 Gate"
+
+# 元规则 3: 不能自判通过
+meta_rule_3_no_self_judgment:
+  description: "自愈系统只能提交候选修复，不能自判通过"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "自愈系统禁止修改 validation/ 目录"
+    - "自愈系统禁止修改 .github/workflows/"
+    - "自愈系统禁止输出'全部通过'等判定结论"
+    - "判定必须由独立 policy judge 执行"
+
+# 元规则 4: SKIP 不等于 PASS
+meta_rule_4_skip_is_not_pass:
+  description: "SKIP 不等于 PASS"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "SKIP 必须显式声明原因"
+    - "SKIP 必须被 gates.yaml 预先定义"
+    - "SKIP 不计入'全部通过'统计"
+    - "禁止将 SKIP 渲染为 ✅ 通过"
+
+# 元规则 5: 缺失默认 FAIL
+meta_rule_5_missing_is_fail:
+  description: "缺失依赖/缺失产物默认 FAIL（fail-closed）"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "脚本不存在 -> FAIL"
+    - "配置不存在 -> FAIL"
+    - "结果缺失 -> FAIL"
+    - "解析失败 -> FAIL"
+    - "超时 -> FAIL"
+
+# 元规则 6: 修复 PR 不得改 Gate
+meta_rule_6_repair_pr_no_gate_change:
+  description: "修复 PR 不得修改 Gate 定义"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "PR 触碰 policy/ -> 自动拒绝"
+    - "PR 触碰 contracts/ -> 自动拒绝"
+    - "PR 触碰 validation/ -> 自动拒绝"
+    - "PR 触碰 .github/workflows/gate* -> 自动拒绝"
+
+# 元规则 7: Gate 变更需单独 PR
+meta_rule_7_gate_change_separate_pr:
+  description: "Gate 变更必须走单独 PR"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "Gate 变更 PR 必须包含: 变更原因"
+    - "Gate 变更 PR 必须包含: 旧口径 vs 新口径"
+    - "Gate 变更 PR 必须包含: 风险分析"
+    - "Gate 变更 PR 必须包含: 回滚方案"
+    - "Gate 变更 PR 必须由 CODEOWNERS 审批"
+
+# 元规则 8: 优先修根因
+meta_rule_8_fix_root_cause_first:
+  description: "Gate 失败后优先修根因，不得先放宽 Gate"
+  enforcement: strict
+  violation_action: WARN_THEN_DOWNGRADE
+  
+  requirements:
+    - "失败后首先尝试修复根因"
+    - "禁止在根因未修复时放宽 Gate"
+    - "连续两次违规后自动降级自愈级别"
+    - "降级路径: L3 -> L2 -> L1 -> L0"
+
+# 元规则 9: 例外必须记录
+meta_rule_9_exception_must_be_logged:
+  description: "任何例外必须结构化记录"
+  enforcement: strict
+  violation_action: FAIL
+  
+  requirements:
+    - "例外必须记录到 policy/exceptions.yaml"
+    - "例外必须包含: 原因、有效期、审批人"
+    - "例外必须包含: 风险缓解措施"
+    - "过期例外自动失效"
+
+# 元规则 10: 降级机制
+meta_rule_10_auto_downgrade:
+  description: "连续违规后自动降级"
+  enforcement: strict
+  violation_action: AUTO_DOWNGRADE
+  
+  requirements:
+    - "连续 2 次触发违规 -> 降级一级"
+    - "降级后必须人工确认才能恢复"
+    - "降级记录必须审计"
+    - "降级期间禁止 L3 自动合入"
+
+# 违规检测规则
+violation_detection:
+  # 检测模式
+  patterns:
+    - name: "gate_modification"
+      description: "修改 Gate 定义"
+      paths:
+        - "policy/**"
+        - "contracts/**"
+        - "validation/**"
+        - ".github/workflows/gate*"
+      action: FAIL
+      
+    - name: "skip_as_pass"
+      description: "将 SKIP 伪装为 PASS"
+      patterns_in_output:
+        - "SKIP.*✅"
+        - "SKIP.*通过"
+        - "SKIP.*PASS"
+      action: FAIL
+      
+    - name: "missing_as_pass"
+      description: "将缺失伪装为通过"
+      patterns_in_output:
+        - "不存在.*通过"
+        - "缺失.*通过"
+        - "跳过.*通过"
+      action: FAIL
+      
+    - name: "self_judgment"
+      description: "自愈系统自判通过"
+      patterns_in_output:
+        - "全部通过"
+        - "所有.*通过"
+        - "验收完成.*通过"
+      action: WARN
+
+# 执行架构
+execution_architecture:
+  components:
+    - name: subject
+      description: "被测对象: self-healing system"
+      permissions: generate_remediation_only
+      
+    - name: gate_runner
+      description: "独立执行器: CI / workflow"
+      permissions: execute_tests
+      
+    - name: policy_judge
+      description: "独立判定器: validation/gate_*.py"
+      permissions: render_verdict
+      
+    - name: audit_logger
+      description: "独立审计: gate_result.json"
+      permissions: write_immutable_logs
+
+# 判定口径
+verdict_vocabulary:
+  allowed:
+    - PASS
+    - FAIL
+    - SKIP
+  
+  forbidden:
+    - "通过"
+    - "成功"
+    - "完成"
+    - "OK"
+    - "✅"
+    - "🎉"
+  
+  skip_requirements:
+    - machine_readable_reason: true
+    - predefined_in_contract: true
+    - not_counted_as_pass: true
+    - explicit_declaration: true

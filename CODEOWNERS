@@ -1,0 +1,26 @@
+# CODEOWNERS - 高保护区代码所有者
+# 版本: 1.0
+# 生效日期: 2026-03-15
+
+# 全局默认
+* @moonlight
+
+# 高保护区 - 需要额外审批
+policy/ @moonlight @admin
+contracts/ @moonlight @admin
+.github/workflows/gate*.yml @moonlight @admin
+validation/ @moonlight @admin
+scripts/tool_doctor.py @moonlight @admin
+CODEOWNERS @moonlight @admin
+SELF_HEALING_CONTRACT.md @moonlight @admin
+
+# 自愈系统代码 - 可由自愈系统修改
+src/self_healing/ @moonlight
+
+# 测试代码 - 可由自愈系统修改
+tests/ @moonlight
+
+# 产物目录 - 自动生成
+artifacts/ @moonlight
+memory/ @moonlight
+.sandbox/ @moonlight

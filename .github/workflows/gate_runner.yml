@@ -1,0 +1,182 @@
+name: Gate Runner
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+
+jobs:
+  gate_a_contract:
+    name: Gate A - Contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+      
+      - name: Run Gate A
+        run: |
+          python validation/gate_a_contract.py \
+            '${{ steps.changed-files.outputs.all_changed_files }}' \
+            '${{ steps.changed-files.outputs.added_lines }}' \
+            '${{ steps.changed-files.outputs.all_changed_files_count }}'
+      
+      - name: Upload Gate A result
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate_a_result
+          path: gate_a_result.json
+
+  gate_b_e2e:
+    name: Gate B - E2E
+    runs-on: ubuntu-latest
+    needs: gate_a_contract
+    if: needs.gate_a_contract.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install pytest pyyaml
+      
+      - name: Run Gate B
+        run: |
+          python validation/gate_b_e2e.py .
+      
+      - name: Upload Gate B result
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate_b_result
+          path: gate_b_result.json
+
+  gate_c_preflight:
+    name: Gate C - Preflight
+    runs-on: ubuntu-latest
+    needs: gate_a_contract
+    if: needs.gate_a_contract.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Run Gate C
+        run: |
+          python validation/gate_c_preflight.py .
+      
+      - name: Upload Gate C result
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate_c_result
+          path: gate_c_result.json
+
+  policy_judge:
+    name: Policy Judge
+    runs-on: ubuntu-latest
+    needs: [gate_a_contract, gate_b_e2e, gate_c_preflight]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all gate results
+        uses: actions/download-artifact@v4
+        with:
+          path: gate_results
+      
+      - name: Aggregate results
+        run: |
+          python -c "
+          import json
+          import sys
+          
+          gates = ['gate_a', 'gate_b', 'gate_c']
+          results = {}
+          
+          for gate in gates:
+              try:
+                  with open(f'gate_results/{gate}_result/result.json') as f:
+                      results[gate] = json.load(f)
+              except:
+                  results[gate] = {'verdict': 'FAIL', 'error': 'Result not found'}
+          
+          # 判定规则
+          all_pass = all(r.get('verdict') == 'PASS' for r in results.values())
+          any_fail = any(r.get('verdict') == 'FAIL' for r in results.values())
+          
+          final_verdict = 'PASS' if all_pass else 'FAIL'
+          
+          report = {
+              'final_verdict': final_verdict,
+              'gate_results': results,
+              'timestamp': '${{ github.event.pull_request.updated_at }}',
+              'pr_number': '${{ github.event.pull_request.number }}'
+          }
+          
+          with open('validation_report.json', 'w') as f:
+              json.dump(report, f, indent=2)
+          
+          print(json.dumps(report, indent=2))
+          sys.exit(0 if final_verdict == 'PASS' else 1)
+          "
+      
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation_report
+          path: validation_report.json
+
+  check_protected_paths:
+    name: Check Protected Paths
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+      
+      - name: Check protected paths
+        run: |
+          python -c "
+          import json
+          import sys
+          
+          protected_paths = [
+              'policy/',
+              'contracts/',
+              '.github/workflows/gate',
+              'validation/',
+              'scripts/tool_doctor.py',
+              'CODEOWNERS',
+              'SELF_HEALING_CONTRACT.md'
+          ]
+          
+          changed_files = json.loads('${{ steps.changed-files.outputs.all_changed_files }}')
+          violations = []
+          
+          for file in changed_files:
+              for protected in protected_paths:
+                  if protected in file:
+                      violations.append(f'{file} touches protected path: {protected}')
+          
+          if violations:
+              print('FAIL: Protected paths modified')
+              for v in violations:
+                  print(f'  - {v}')
+              sys.exit(1)
+          else:
+              print('PASS: No protected paths modified')
+              sys.exit(0)
+          "
