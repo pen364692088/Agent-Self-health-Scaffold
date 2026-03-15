@@ -1,6 +1,6 @@
 {
   "task_id": "pilot_docs_index_v2",
-  "validated_at": "2026-03-15T13:24:50.961473Z",
+  "validated_at": "2026-03-15T13:50:22.113638Z",
   "all_passed": true,
   "gates": {
     "gate_a": {
@@ -109,13 +109,11 @@
         },
         {
           "name": "SUMMARY.md exists",
-          "passed": false
+          "passed": true
         }
       ],
       "errors": [],
-      "warnings": [
-        "SUMMARY.md not found"
-      ]
+      "warnings": []
     },
     "gate_c": {
       "gate_name": "Gate C: Integrity",

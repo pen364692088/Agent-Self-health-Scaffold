@@ -136,7 +136,13 @@ class CompletionGatekeeper:
             result.warnings.append("handoff/ directory not found")
             result.checks.append({"name": "handoff/ directory exists", "passed": False})
         
-        result.passed = len(result.errors) == 0
+        # 完整性校验：检查是否有任何 check.passed=false
+        failed_checks = [c for c in result.checks if not c.get("passed", True)]
+        if failed_checks:
+            result.errors.append(f"{len(failed_checks)} checks failed")
+            result.passed = False
+        else:
+            result.passed = len(result.errors) == 0
         return result
     
     def run_gate_b(self) -> GateResult:
@@ -188,10 +194,18 @@ class CompletionGatekeeper:
         if summary_file.exists():
             result.checks.append({"name": "SUMMARY.md exists", "passed": True})
         else:
-            result.warnings.append("SUMMARY.md not found")
+            # SUMMARY.md 是必需产物
+            result.errors.append("SUMMARY.md not found in final/")
             result.checks.append({"name": "SUMMARY.md exists", "passed": False})
         
-        result.passed = len(result.errors) == 0
+        # 完整性校验：检查是否有任何 check.passed=false
+        failed_checks = [c for c in result.checks if not c.get("passed", True)]
+        if failed_checks:
+            # 如果有任何 failed check，整体必须 failed
+            result.errors.append(f"{len(failed_checks)} checks failed")
+            result.passed = False
+        else:
+            result.passed = len(result.errors) == 0
         return result
     
     def run_gate_c(self) -> GateResult:
@@ -272,7 +286,13 @@ class CompletionGatekeeper:
                     else:
                         result.checks.append({"name": f"step {step['step_id']} has proof", "passed": True})
         
-        result.passed = len(result.errors) == 0
+        # 完整性校验：检查是否有任何 check.passed=false
+        failed_checks = [c for c in result.checks if not c.get("passed", True)]
+        if failed_checks:
+            result.errors.append(f"{len(failed_checks)} checks failed")
+            result.passed = False
+        else:
+            result.passed = len(result.errors) == 0
         return result
     
     def create_receipt(self) -> Dict[str, Any]:
