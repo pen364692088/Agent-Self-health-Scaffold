@@ -1,0 +1,20 @@
+{
+  "report_id": "sandbox_20260315_012723_886ad445",
+  "timestamp": "2026-03-15T01:27:23.562896",
+  "bundle_id": "886ad445",
+  "candidate_id": "minimal_8347",
+  "sandbox_path": "unknown",
+  "branch_name": "auto-fix/886ad445/minimal_8347",
+  "applied_successfully": false,
+  "validation_results": [],
+  "patch_path": null,
+  "validation_report_path": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/self_healing/sandbox_reports/sandbox_20260315_012723_886ad445.json",
+  "rollback_script_path": "",
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_changed": [],
+  "negative_check_passed": false,
+  "regression_tests_passed": false,
+  "approved_for_merge": false,
+  "rejection_reason": "异常: Failed to create worktree: Preparing worktree (checking out 'auto-fix/886ad445/minimal_8347')\nfatal: 'auto-fix/886ad445/minimal_8347' is already used by worktree at '/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold'\n"
+}

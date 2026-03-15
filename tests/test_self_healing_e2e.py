@@ -46,15 +46,17 @@ class TestSelfHealingE2E:
         print("证据 1: edit failed → 自愈修复闭环")
         print("="*60)
         
-        # 模拟 edit failed
+        # 模拟 edit failed (使用唯一标识避免去重)
+        import time
+        unique_id = str(int(time.time() * 1000))[-6:]
         failure_type = "edit_failed"
         tool_name = "edit"
         tool_input = {
-            "file_path": "src/example.py",
-            "old_string": "def old_func():",
-            "new_string": "def new_func():"
+            "file_path": f"src/example_{unique_id}.py",
+            "old_string": f"def old_func_{unique_id}():",
+            "new_string": f"def new_func_{unique_id}():"
         }
-        stderr = "Error: old_string not found in file"
+        stderr = f"Error: old_string not found in file {unique_id}"
         related_files = ["src/example.py"]
         
         print(f"\n[1] 失败发生: {failure_type}")

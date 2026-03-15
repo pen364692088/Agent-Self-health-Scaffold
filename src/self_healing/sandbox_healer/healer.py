@@ -236,15 +236,28 @@ class SandboxHealer:
                 pass
             shutil.rmtree(sandbox_path, ignore_errors=True)
         
-        # 确保分支不存在
+        # 确保分支不存在（使用更短的分支名）
+        short_branch = f"auto-fix/{bundle_id[:8]}"
         try:
             subprocess.run(
-                ["git", "branch", "-D", new_branch],
+                ["git", "branch", "-D", short_branch],
                 cwd=self.workspace,
                 capture_output=True
             )
         except:
             pass
+        
+        # 清理现有 worktree
+        try:
+            subprocess.run(
+                ["git", "worktree", "prune"],
+                cwd=self.workspace,
+                capture_output=True
+            )
+        except:
+            pass
+        
+        new_branch = short_branch
         
         # 创建新分支
         result = subprocess.run(
