@@ -1,0 +1,23 @@
+{
+  "evidence_1_edit_failed_remediation": {
+    "passed": true,
+    "bundle_id": "5ee4fd5d",
+    "signature": "edit_failed+target_missing+none+file_not_found+example",
+    "candidates_count": 3,
+    "gate_a_passed": false,
+    "gate_b_passed": false,
+    "gate_c_passed": false,
+    "patch_generated": false
+  },
+  "evidence_2_second_hit": {
+    "passed": false,
+    "historical_count": 0,
+    "hit": false,
+    "note": "需要先运行证据1建立历史记忆"
+  },
+  "evidence_3_preflight_interception": {
+    "passed": true,
+    "intercepted": true,
+    "rule": "保护核心身份文件"
+  }
+}

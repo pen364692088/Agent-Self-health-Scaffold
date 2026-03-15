@@ -221,27 +221,63 @@ class SandboxHealer:
     def _create_sandbox(self, base_branch: str, new_branch: str) -> Path:
         """创建沙箱 worktree"""
         # 创建临时目录
-        sandbox_path = self.sandbox_base / f"{new_branch.replace('/', '_')}"
+        sandbox_name = new_branch.replace('/', '_').replace(' ', '_')
+        sandbox_path = self.sandbox_base / sandbox_name
         
         # 如果已存在，先删除
         if sandbox_path.exists():
-            shutil.rmtree(sandbox_path)
+            try:
+                subprocess.run(
+                    ["git", "worktree", "remove", str(sandbox_path), "--force"],
+                    cwd=self.workspace,
+                    capture_output=True
+                )
+            except:
+                pass
+            shutil.rmtree(sandbox_path, ignore_errors=True)
         
-        # 创建 worktree
-        subprocess.run(
-            ["git", "worktree", "add", str(sandbox_path), base_branch],
-            cwd=self.workspace,
-            check=True,
-            capture_output=True
-        )
+        # 确保分支不存在
+        try:
+            subprocess.run(
+                ["git", "branch", "-D", new_branch],
+                cwd=self.workspace,
+                capture_output=True
+            )
+        except:
+            pass
         
         # 创建新分支
-        subprocess.run(
+        result = subprocess.run(
             ["git", "checkout", "-b", new_branch],
-            cwd=sandbox_path,
-            check=True,
-            capture_output=True
+            cwd=self.workspace,
+            capture_output=True,
+            text=True
         )
+        
+        if result.returncode != 0:
+            raise Exception(f"Failed to create branch: {result.stderr}")
+        
+        # 创建 worktree
+        result = subprocess.run(
+            ["git", "worktree", "add", str(sandbox_path), new_branch],
+            cwd=self.workspace,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            # 回滚分支创建
+            subprocess.run(
+                ["git", "checkout", "main"],
+                cwd=self.workspace,
+                capture_output=True
+            )
+            subprocess.run(
+                ["git", "branch", "-D", new_branch],
+                cwd=self.workspace,
+                capture_output=True
+            )
+            raise Exception(f"Failed to create worktree: {result.stderr}")
         
         return sandbox_path
     
