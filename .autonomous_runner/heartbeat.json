@@ -1,0 +1,13 @@
+{
+  "runner_id": "runner_cd5542b4",
+  "timestamp": "2026-03-15T18:34:57.741939Z",
+  "state": "starting",
+  "stats": {
+    "tasks_scanned": 0,
+    "tasks_scheduled": 0,
+    "tasks_retried": 0,
+    "tasks_recovered": 0,
+    "steps_executed": 0,
+    "errors": 0
+  }
+}

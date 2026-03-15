@@ -1,0 +1,250 @@
+# Autonomy Policy Configuration - 自治策略配置
+# 版本: v3-E
+# 日期: 2026-03-15
+
+# === 运行模式 ===
+# shadow: 只记录不执行，用于测试和观察
+# guarded-auto: 默认模式，高风险操作需要审批
+# full-auto: 完全自动，仅阻断关键风险
+mode: "guarded-auto"
+
+# === 默认可自治的动作 ===
+# 这些动作可以自动执行，无需人工干预
+allowed_actions:
+  # 信息获取类
+  - read_document          # 读取文档
+  - list_files             # 列出文件
+  - check_status           # 检查状态
+  - read_logs              # 读取日志
+  
+  # 测试类
+  - run_test               # 运行测试
+  - run_lint               # 运行 lint
+  - run_type_check         # 运行类型检查
+  
+  # 小范围修改类
+  - small_code_fix         # 小范围代码修复 (< 50 行)
+  - fix_typo               # 修复错别字
+  - update_comment         # 更新注释
+  - format_code            # 格式化代码
+  
+  # 报告生成类
+  - write_report           # 写报告
+  - generate_summary       # 生成摘要
+  - create_documentation   # 创建文档
+  
+  # 任务管理类
+  - task_split             # 任务拆分
+  - task_schedule          # 任务调度
+  - task_prioritize        # 任务优先级调整
+  
+  # 恢复类
+  - retry                  # 重试失败操作
+  - reclaim                # 回收资源
+  - rollback               # 回滚到上一状态
+  - restore_backup         # 从备份恢复
+  
+  # 监控类
+  - health_check           # 健康检查
+  - collect_metrics        # 收集指标
+  - send_heartbeat         # 发送心跳
+
+# === 必须阻断的动作 ===
+# 这些动作完全禁止自动执行
+forbidden_actions:
+  # 大规模破坏类
+  - mass_delete            # 大规模删除文件 (> 10 个文件)
+  - wipe_directory         # 清空目录
+  - recursive_force_delete # 递归强制删除
+  
+  # 规则修改类
+  - modify_gate_rules      # 修改 Gate 硬规则
+  - modify_policy_config   # 修改策略配置
+  - disable_safety_checks  # 禁用安全检查
+  
+  # 基线破坏类
+  - destroy_baseline       # 破坏 baseline 受保护产物
+  - delete_test_baseline   # 删除测试基线
+  - corrupt_ledger         # 损坏账本
+  
+  # 外部高风险类
+  - external_destructive   # 外部高风险 destructive 操作
+  - remote_command_exec    # 远程命令执行
+  - modify_firewall        # 修改防火墙规则
+  
+  # 敏感操作类
+  - credential_operation   # 涉及敏感凭据操作
+  - payment_operation      # 涉及支付操作
+  - account_operation      # 涉及账号操作
+  - key_rotation           # 密钥轮换
+  - secret_exposure        # 暴露敏感信息
+
+# === 需要审批的动作 ===
+# 这些动作需要人工确认后才能执行
+approval_required_actions:
+  # 代码变更类
+  - large_code_change      # 大范围代码修改 (> 50 行)
+  - refactor_module        # 重构模块
+  - api_change             # API 变更
+  - database_migration     # 数据库迁移
+  
+  # 外部交互类
+  - external_api_call      # 外部 API 调用
+  - webhook_trigger        # Webhook 触发
+  - notification_send      # 发送通知 (非心跳)
+  
+  # 发布类
+  - new_feature_implement  # 新功能实现
+  - deploy_operation       # 部署操作
+  - release_publish        # 发布版本
+  
+  # 配置变更类
+  - config_change          # 配置变更
+  - environment_change     # 环境变量变更
+  - dependency_upgrade     # 依赖升级
+
+# === 自定义规则 ===
+# 可以覆盖默认行为
+custom_rules:
+  - action_type: "git_push"
+    category: "approval_required"
+    risk_threshold: "medium"
+    description: "Git push 操作需要审批"
+    conditions:
+      require_clean_working_dir: true
+      blocked_branches:
+        - "main"
+        - "master"
+        - "production"
+    exemptions:
+      - "feature/*"
+      - "bugfix/*"
+  
+  - action_type: "file_delete"
+    category: "approval_required"
+    risk_threshold: "medium"
+    description: "文件删除需要审批"
+    conditions:
+      max_files: 5
+      exclude_patterns:
+        - "*.tmp"
+        - "*.log"
+        - "__pycache__/*"
+    exemptions: []
+  
+  - action_type: "install_package"
+    category: "approval_required"
+    risk_threshold: "medium"
+    description: "安装新包需要审批"
+    conditions:
+      allowed_sources:
+        - "npm"
+        - "pip"
+      blocked_packages:
+        - "eval"
+        - "vm2"
+    exemptions: []
+
+# === 安全停止条件 ===
+# 触发后系统进入安全停止状态
+safe_stop_conditions:
+  - name: "consecutive_blocks_exceeded"
+    description: "连续被阻断的操作超过阈值"
+    check_function: "_check_consecutive_blocks"
+    severity: "critical"
+    auto_recoverable: false
+  
+  - name: "risk_gate_unavailable"
+    description: "RiskGate 不可用"
+    check_function: "_check_risk_gate_available"
+    severity: "error"
+    auto_recoverable: true
+  
+  - name: "baseline_integrity_violation"
+    description: "基线完整性被破坏"
+    check_function: "_check_baseline_integrity"
+    severity: "critical"
+    auto_recoverable: false
+  
+  - name: "policy_config_corrupted"
+    description: "策略配置损坏"
+    check_function: "_check_policy_config_valid"
+    severity: "error"
+    auto_recoverable: true
+  
+  - name: "evidence_log_full"
+    description: "证据日志达到容量上限"
+    check_function: "_check_evidence_log_capacity"
+    severity: "warning"
+    auto_recoverable: true
+  
+  - name: "memory_pressure_high"
+    description: "内存压力过高"
+    check_function: "_check_memory_pressure"
+    severity: "warning"
+    auto_recoverable: true
+
+# === 风险阈值配置 ===
+risk_thresholds:
+  # 不同模式下的风险处理策略
+  shadow:
+    low: "execute"
+    medium: "execute"
+    high: "execute"
+    critical: "block"
+  
+  guarded-auto:
+    low: "execute"
+    medium: "execute_with_warning"
+    high: "pause_for_approval"
+    critical: "block"
+  
+  full-auto:
+    low: "execute"
+    medium: "execute"
+    high: "execute_with_warning"
+    critical: "block"
+
+# === 审批配置 ===
+approval:
+  # 审批超时 (秒)
+  timeout_seconds: 300
+  
+  # 默认审批者
+  default_approvers:
+    - "admin"
+  
+  # 审批渠道
+  channels:
+    - "telegram"
+    - "cli"
+  
+  # 自动拒绝超时
+  auto_reject_timeout_seconds: 600
+
+# === 日志配置 ===
+logging:
+  # 证据日志路径
+  evidence_log_path: "logs/autonomy_evidence.jsonl"
+  
+  # 日志保留天数
+  retention_days: 30
+  
+  # 日志级别
+  level: "INFO"
+
+# === 指标配置 ===
+metrics:
+  # 启用指标收集
+  enabled: true
+  
+  # 指标报告间隔 (秒)
+  report_interval_seconds: 60
+  
+  # 关键指标
+  tracked_metrics:
+    - "decision_count_by_type"
+    - "block_rate"
+    - "approval_rate"
+    - "safe_stop_trigger_count"
+    - "average_decision_time_ms"

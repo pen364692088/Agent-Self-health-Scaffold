@@ -1,0 +1,1558 @@
+{
+  "total_files": 192,
+  "by_extension": {
+    ".md": 170,
+    ".json": 13,
+    ".jsonl": 5,
+    ".log": 2,
+    ".yaml": 1,
+    ".lock": 1
+  },
+  "by_source_kind": {
+    "session_log": 157,
+    "technical_note": 12,
+    "metrics": 2,
+    "state": 2,
+    "template": 1,
+    "config": 5,
+    "drift_event": 1,
+    "policy": 2,
+    "rule": 1,
+    "retrieval_event": 6,
+    "schema": 1
+  },
+  "by_scope": {
+    "projects": 190
+  },
+  "by_tkr_layer": {
+    "knowledge": 172,
+    "retrieval": 9,
+    "truth": 9
+  },
+  "by_tier": {
+    "hot": 32,
+    "warm": 158
+  },
+  "records": [
+    {
+      "id": "mem_20260314_001",
+      "source_file": "2026-03-09-bundle-adoption.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_002",
+      "source_file": "2026-02-23-2308.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_003",
+      "source_file": "2026-02-24-0722.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_004",
+      "source_file": "2026-03-06-1423.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_005",
+      "source_file": "2026-03-03-orchestrator-debug.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_006",
+      "source_file": "sweeper_stats.json",
+      "source_kind": "metrics",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_007",
+      "source_file": "working-buffer.md",
+      "source_kind": "state",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_008",
+      "source_file": "2026-03-06-1648.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_009",
+      "source_file": "2026-02-27-session-archive.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_010",
+      "source_file": "2026-02-24-0132.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_011",
+      "source_file": "2026-03-03-write-workaround.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_012",
+      "source_file": ".dedup_cache.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_013",
+      "source_file": "2026-03-06-agent-update.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_014",
+      "source_file": "2026-03-10-context-diagnosis.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_015",
+      "source_file": "2026-02-22-1520.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_016",
+      "source_file": "2026-03-04-rlock-deadlock-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_017",
+      "source_file": "2026-03-04-smart-stable-v2-wrapup.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_018",
+      "source_file": "2026-03-03-original.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_019",
+      "source_file": "2026-02-21-0816.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_020",
+      "source_file": "2026-02-22-1557.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_021",
+      "source_file": "ENTRY_TEMPLATE.md",
+      "source_kind": "template",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_022",
+      "source_file": "2026-03-03-semantic-correction.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_023",
+      "source_file": "2026-03-05-tool-gate-check.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_024",
+      "source_file": "2026-03-04-job-system-complete.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_025",
+      "source_file": "2026-02-28-emotion-tests.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_026",
+      "source_file": "2026-02-25-daily-briefing.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_027",
+      "source_file": "2026-03-04.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_028",
+      "source_file": "2026-03-04-mvp11-aegis-complete.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_029",
+      "source_file": "sweeper_stats_prev.json",
+      "source_kind": "metrics",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_030",
+      "source_file": "2026-03-05.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_031",
+      "source_file": "2026-03-05-cycle-closure.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_032",
+      "source_file": "2026-02-27-testbot-config.md",
+      "source_kind": "config",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_033",
+      "source_file": "2026-02-27-model-config-test.md",
+      "source_kind": "config",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_034",
+      "source_file": "events_drift.jsonl",
+      "source_kind": "drift_event",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_035",
+      "source_file": "regression_report.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_036",
+      "source_file": "2026-03-07-s1-validator-worker.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_037",
+      "source_file": "2026-02-25-cron-cleanup.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_038",
+      "source_file": "2026-03-09-evaluator-calibration.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_039",
+      "source_file": "2026-02-28-world-event-auth.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_040",
+      "source_file": "context-management-policy.md",
+      "source_kind": "policy",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_041",
+      "source_file": "use_link_audit.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_042",
+      "source_file": "2026-03-06.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_043",
+      "source_file": "2026-02-24-0720.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_044",
+      "source_file": ".bootstrap_state.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_045",
+      "source_file": "SESSION-STATE.md",
+      "source_kind": "state",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_046",
+      "source_file": "2026-03-09-test-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_047",
+      "source_file": "2026-02-28-edit-silent-option.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_048",
+      "source_file": "2026-03-05-mvp11-ci-hardening.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_049",
+      "source_file": "2026-02-28-world-event-subtypes.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_050",
+      "source_file": "2026-03-05-archival-workflow.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_051",
+      "source_file": "2026-03-06-trust-anchor.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_052",
+      "source_file": "2026-02-22.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_053",
+      "source_file": "2026-03-09-compaction-revalidation.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_054",
+      "source_file": "MAINTENANCE.md",
+      "source_kind": "rule",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_055",
+      "source_file": "retrieval_regression.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_056",
+      "source_file": "2026-03-04-ledger-replay.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_057",
+      "source_file": "2026-03-05-toolchain-optimization.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_058",
+      "source_file": "2026-03-03-use-link-audit.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_059",
+      "source_file": "session-summary-2025-06-17-final.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_060",
+      "source_file": "expected_alerts.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_061",
+      "source_file": "2026-02-26-1103.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_062",
+      "source_file": "2026-02-28-mvp5-emergent-core.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_063",
+      "source_file": "2026-03-11.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_064",
+      "source_file": "2026-03-03-emoji-emotion-mapping.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_065",
+      "source_file": "events.log",
+      "source_kind": "retrieval_event",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_066",
+      "source_file": "2026-02-26-0343.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_067",
+      "source_file": "2026-02-22-0242.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_068",
+      "source_file": "2026-02-22-0040.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_069",
+      "source_file": "2026-03-04-mvp10-docs.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_070",
+      "source_file": "2026-02-27-glm5-vs-kimi-k2-5.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_071",
+      "source_file": "2026-02-24-0733.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_072",
+      "source_file": "2026-03-05-callback-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_073",
+      "source_file": "2026-03-09.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_074",
+      "source_file": "2026-03-09-v3-baseline.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_075",
+      "source_file": "2026-02-23-0213.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_076",
+      "source_file": "2026-03-04-callback-handler-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_077",
+      "source_file": "2026-02-28-mvp5-implementation.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_078",
+      "source_file": "2026-02-26-openrouter-model-config.md",
+      "source_kind": "config",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_079",
+      "source_file": "2026-03-04-memory-hardening-v125.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_080",
+      "source_file": "2026-03-05-guardrails-verified.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_081",
+      "source_file": "2026-03-06-project-check.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_082",
+      "source_file": "2026-03-06-godmode-comparison.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_083",
+      "source_file": "2026-03-06-self-report-interpreter.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_084",
+      "source_file": "2026-03-06-shadow-hardening.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_085",
+      "source_file": "2026-02-28-emotiond-mvp-push.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_086",
+      "source_file": "2026-02-28-2016.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_087",
+      "source_file": "2026-03-03-orchestrator-v2-verification.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_088",
+      "source_file": "2026-03-05-c3-gates.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_089",
+      "source_file": "2026-03-03-0550.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_090",
+      "source_file": "2026-02-25.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_091",
+      "source_file": "2026-02-23-0103.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_092",
+      "source_file": "2026-03-07.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_093",
+      "source_file": "manager-callback-policy-2026-02-21.md",
+      "source_kind": "policy",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_094",
+      "source_file": "EVENT_SCHEMA.md",
+      "source_kind": "schema",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_095",
+      "source_file": "2026-02-28-target-prediction.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_096",
+      "source_file": "2026-02-22-1611.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_097",
+      "source_file": "2026-02-28-multi-spawn-conflict.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_098",
+      "source_file": "2026-03-04-mvp11-lucidloop.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_099",
+      "source_file": "tuning_recommendations.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_100",
+      "source_file": "2026-02-24.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_101",
+      "source_file": "2026-02-28-mvp4-completion.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_102",
+      "source_file": "2026-02-22-0342.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_103",
+      "source_file": "2026-03-01-auto-tune-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_104",
+      "source_file": "2026-03-07-callback-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_105",
+      "source_file": "2026-02-24-0815.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_106",
+      "source_file": "2026-03-06-inbox-orchestration.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_107",
+      "source_file": "scoring-canary-runbook.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_108",
+      "source_file": "2026-02-28-mvp-security-complete.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_109",
+      "source_file": "2026-02-23-1901.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_110",
+      "source_file": "obs_2026-03-03.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_111",
+      "source_file": "2026-02-28-mvp3-complete.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_112",
+      "source_file": "2026-03-06-shadow-verification.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_113",
+      "source_file": "2026-02-22-1245.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_114",
+      "source_file": "2026-03-06-godmode-strategy.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_115",
+      "source_file": "2026-03-08.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_116",
+      "source_file": "2026-02-21-0913.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_117",
+      "source_file": "2026-03-05-ops-monitoring.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_118",
+      "source_file": "2026-03-04-mvp11-progress.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_119",
+      "source_file": "2026-03-04-zombie-cleanup.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_120",
+      "source_file": "2026-02-28-session-start.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_121",
+      "source_file": "2026-02-28-import-reload-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_122",
+      "source_file": "2026-03-05-0357.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_123",
+      "source_file": "2026-03-06-srap-integration.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_124",
+      "source_file": "2026-02-24-0203.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_125",
+      "source_file": "2026-03-03-memory-compression.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_126",
+      "source_file": "2026-02-25-memory-mechanisms.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_127",
+      "source_file": "2026-03-06-context-pressure.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_128",
+      "source_file": "2026-02-28-emotiond-mvp-5.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_129",
+      "source_file": "2026-02-22-1243.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_130",
+      "source_file": "regression_cron.log",
+      "source_kind": "retrieval_event",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_131",
+      "source_file": "2026-02-24-0240.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_132",
+      "source_file": "2026-03-03-archived.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_133",
+      "source_file": "2026-03-02-summary.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_134",
+      "source_file": "2026-02-20-1643.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_135",
+      "source_file": "2026-03-09-source-trace.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_136",
+      "source_file": "events_golden.jsonl",
+      "source_kind": "retrieval_event",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_137",
+      "source_file": "2026-03-06-testbot-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_138",
+      "source_file": "2026-02-28-session-startup.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_139",
+      "source_file": "2026-02-22-1903.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_140",
+      "source_file": "2026-03-02.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_141",
+      "source_file": "memory-2026-03-03.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_142",
+      "source_file": "2026-02-25-searxng-agent.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_143",
+      "source_file": "2026-02-28-emotiond-integration.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_144",
+      "source_file": "2026-03-04-openviking-config-fix.md",
+      "source_kind": "config",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_145",
+      "source_file": "expected_dashboard.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_146",
+      "source_file": "2026-03-09-unknown-context.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_147",
+      "source_file": "2026-03-06-subagent-callback.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_148",
+      "source_file": "2026-02-24-0608.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_149",
+      "source_file": "2026-03-04-callback-handler-v2.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_150",
+      "source_file": "2026-03-05-longrun-eval.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_151",
+      "source_file": "2026-03-03-diagnostic.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_152",
+      "source_file": "2026-02-26.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_153",
+      "source_file": "2026-03-04-0921.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_154",
+      "source_file": "2026-03-04-tool-gates-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_155",
+      "source_file": "2026-03-05-mvp11-implementation.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_156",
+      "source_file": "2025-06-17.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_157",
+      "source_file": "2026-03-03-tool-merge.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_158",
+      "source_file": "2026-02-28-execution-workflow.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_159",
+      "source_file": "2026-02-27-cerebras-config.md",
+      "source_kind": "config",
+      "scope": "projects",
+      "tkr_layer": "truth",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_160",
+      "source_file": "2026-02-25-local-ollama-setup.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_161",
+      "source_file": "2026-02-27-session-wrap-up.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_162",
+      "source_file": "2026-02-24-0553.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_163",
+      "source_file": "2026-02-20-2033.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_164",
+      "source_file": "entry_state.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_165",
+      "source_file": "daily_summaries.jsonl",
+      "source_kind": "retrieval_event",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_166",
+      "source_file": "2026-03-03-mvp77-verification.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_167",
+      "source_file": "2026-03-03-session-memory.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_168",
+      "source_file": "2026-02-23-2230.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_169",
+      "source_file": "2026-02-28.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_170",
+      "source_file": "2026-03-09-gate1-repair.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_171",
+      "source_file": "review_queue.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_172",
+      "source_file": "2026-02-28-causal-eval.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_173",
+      "source_file": "site-ship-handoff-2026-02-21-1840.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_174",
+      "source_file": "2026-02-23.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_175",
+      "source_file": "2026-02-22-1242.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_176",
+      "source_file": "2026-02-26-medic-resume-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_177",
+      "source_file": "obs_2026-03-03.json",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_178",
+      "source_file": "2026-02-27.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_179",
+      "source_file": "2026-03-03.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_180",
+      "source_file": "2026-02-23-0219.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_181",
+      "source_file": "2026-02-28-session-cleanup.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_182",
+      "source_file": "2026-02-21-0809.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_183",
+      "source_file": "site-ship-retro-2026-02-21.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_184",
+      "source_file": "2026-03-05-yaml-syntax-fix.md",
+      "source_kind": "technical_note",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_185",
+      "source_file": "2026-03-05-orchestration-hardening.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260314_186",
+      "source_file": "2026-03-06-git-branch-merge.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_187",
+      "source_file": "2026-03-03-emotion-ownership.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "warm"
+    },
+    {
+      "id": "mem_20260314_188",
+      "source_file": "2026-02-22-0515.md",
+      "source_kind": "session_log",
+      "scope": "projects",
+      "tkr_layer": "knowledge",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260315_189",
+      "source_file": "evolution/successes.jsonl",
+      "source_kind": "retrieval_event",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "hot"
+    },
+    {
+      "id": "mem_20260315_190",
+      "source_file": "evolution/prevention_rules.jsonl",
+      "source_kind": "retrieval_event",
+      "scope": "projects",
+      "tkr_layer": "retrieval",
+      "tier": "warm"
+    }
+  ]
+}
