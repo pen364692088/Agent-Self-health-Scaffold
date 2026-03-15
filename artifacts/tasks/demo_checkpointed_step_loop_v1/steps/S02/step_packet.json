@@ -1,0 +1,71 @@
+{
+  "step_id": "S02",
+  "version": "v1.0",
+  "title": "\u5904\u7406",
+  "goal": "\u6267\u884c\u4e3b\u8981\u5904\u7406\u903b\u8f91",
+  "description": "",
+  "inputs": [
+    {
+      "name": "S01_init_done",
+      "path": "artifacts/tasks/demo_checkpointed_step_loop_v1/evidence/S01/",
+      "type": "file",
+      "required": true,
+      "from_step": "S01"
+    }
+  ],
+  "allowed_files": [
+    "*"
+  ],
+  "expected_outputs": [
+    {
+      "name": "process_done",
+      "path": "artifacts/tasks/demo_checkpointed_step_loop_v1/evidence/S02/process_done",
+      "type": "file",
+      "validator": null,
+      "required": true
+    },
+    {
+      "name": "result",
+      "path": "artifacts/tasks/demo_checkpointed_step_loop_v1/steps/S02/result.json",
+      "type": "file",
+      "validator": "json_schema:step_result.schema.json",
+      "required": true
+    }
+  ],
+  "exit_criteria": [
+    "Output 'process_done' exists at artifacts/tasks/demo_checkpointed_step_loop_v1/evidence/S02/process_done",
+    "Output 'result' exists at artifacts/tasks/demo_checkpointed_step_loop_v1/steps/S02/result.json"
+  ],
+  "failure_policy": {
+    "max_retries": 3,
+    "backoff": "exponential",
+    "backoff_base_ms": 1000,
+    "on_failure": "block",
+    "notify_on": [
+      "blocked",
+      "failed"
+    ]
+  },
+  "depends_on": [
+    "S01"
+  ],
+  "timeout_seconds": 300,
+  "checkpoint_before": true,
+  "metadata": {
+    "task_id": "demo_checkpointed_step_loop_v1",
+    "compiled_at": "2026-03-15T12:13:44.693027Z",
+    "source": {
+      "step_id": "S02",
+      "title": "\u5904\u7406",
+      "goal": "\u6267\u884c\u4e3b\u8981\u5904\u7406\u903b\u8f91",
+      "depends_on": [
+        "S01"
+      ],
+      "outputs": [
+        {
+          "name": "process_done"
+        }
+      ]
+    }
+  }
+}

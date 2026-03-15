@@ -1,0 +1,50 @@
+{
+  "task_id": "demo_checkpointed_step_loop_v1",
+  "steps": [
+    {
+      "step_id": "S01",
+      "title": "\u521d\u59cb\u5316",
+      "goal": "\u521b\u5efa\u521d\u59cb\u6587\u4ef6\u7ed3\u6784",
+      "outputs": [
+        {
+          "name": "init_done"
+        }
+      ]
+    },
+    {
+      "step_id": "S02",
+      "title": "\u5904\u7406",
+      "goal": "\u6267\u884c\u4e3b\u8981\u5904\u7406\u903b\u8f91",
+      "depends_on": [
+        "S01"
+      ],
+      "outputs": [
+        {
+          "name": "process_done"
+        }
+      ]
+    },
+    {
+      "step_id": "S03",
+      "title": "\u6536\u5c3e",
+      "goal": "\u751f\u6210\u6700\u7ec8\u8f93\u51fa",
+      "depends_on": [
+        "S02"
+      ],
+      "outputs": [
+        {
+          "name": "final_output"
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "S01": [],
+    "S02": [
+      "S01"
+    ],
+    "S03": [
+      "S02"
+    ]
+  }
+}
