@@ -1,0 +1,567 @@
+【强制执行版任务单｜将 Agent-Self-health-Scaffold 现有记忆能力升维整合为统一 Memory Kernel】
+
+目标
+不是从零重做“新记忆系统”，而是把 Agent-Self-health-Scaffold 现有分散的记忆相关能力
+（文件型长期记忆、状态沉淀、决策记录、检索协同、规则锚点、恢复链记忆）
+整合为一个统一、可治理、可检索、可桥接、可回滚的 Memory Kernel，
+并最终以低耦合方式服务 OpenClaw 主流程。
+
+本任务的第一成功标准：
+系统仍然稳定运行。
+记忆增强模块失败时，主链不能跟着失败。
+
+────────────────
+一、先纠正目标（强制）
+────────────────
+
+本次任务不是：
+1. 再造一套与现有 memory/ 平行的新记忆系统
+2. 直接把第三方 memory-lancedb-pro 接入系统
+3. 直接替换 ledger / runtime / recovery 的真相源地位
+4. 把所有 Markdown 记忆粗暴迁移到向量库
+5. 把自动捕获当作绝对可信事实写入主链
+
+本次任务是：
+1. 对现有记忆相关机制做统一抽象
+2. 形成一个“Memory Kernel（记忆增强内核）”
+3. 明确三层边界：Truth / Knowledge / Retrieval
+4. 让现有组件从“分散协作”升级为“统一编排”
+5. 通过桥接层为 OpenClaw 提供增强记忆，而不是接管主链真相源
+
+一句话定位：
+Scaffold 现阶段缺的不是 memory capability，
+而是 unified memory kernel。
+
+────────────────
+二、统一架构定义（强制）
+────────────────
+
+将现有记忆能力统一收口为 3 层：
+
+A. Truth Memory（真相层，不可替代）
+职责：
+- ledger
+- runtime state
+- recovery state
+- checkpoints
+- execution truth
+- transcript rebuild truth
+
+要求：
+- 只作为 authority source
+- 不允许被 recall 结果反向覆盖
+- 不允许向量检索结果直接改写本层
+
+B. Knowledge Memory（知识层，可沉淀）
+职责：
+- 稳定规则
+- 用户长期偏好
+- 决策结论
+- 项目约束
+- 可复用经验
+- trust-anchor
+- 高价值 notes / decisions / status
+
+要求：
+- 可结构化
+- 可导出
+- 可审计
+- 可升级成检索对象
+
+C. Retrieval Memory（召回层，可演进）
+职责：
+- keyword search
+- semantic search
+- hybrid rank
+- scope filter
+- recall plan
+- capture plan
+- mirror/export
+- observability
+
+要求：
+- 只负责“何时取回什么”
+- 不直接成为 authority
+- 失败时必须 fail-open
+
+强制边界：
+Truth > Knowledge > Retrieval
+任何冲突，以上述优先级裁决。
+
+────────────────
+三、最终要做成什么（强制）
+────────────────
+
+在 Agent-Self-health-Scaffold 内新增统一模块：
+
+memory_kernel/
+
+建议目录：
+- contract/memory/
+- core/memory/
+- adapters/memory/
+- integration/memory/
+- observability/memory/
+- scripts/memory/
+- docs/memory/
+- tests/memory/
+
+其中职责如下：
+
+1. contract/memory
+定义统一契约：
+- MemoryRecord
+- MemoryScope
+- MemorySearchQuery
+- MemorySearchResult
+- CaptureDecision
+- RecallDecision
+- MemorySourceKind
+- MemoryImportance
+- RetentionPolicy
+- ConflictResolutionPolicy
+
+2. core/memory
+统一核心能力：
+- store / upsert
+- search
+- hybrid rank
+- dedupe
+- scope control
+- capture planning
+- recall planning
+- promotion / decay
+- mirror planning
+
+3. adapters/memory
+后端与桥接：
+- markdown adapter
+- lancedb adapter（可选）
+- sqlite fallback
+- embedding provider
+- rerank provider
+- openviking adapter
+- qmd adapter（若仍使用）
+
+4. integration/memory
+与现有系统接桥：
+- agent lifecycle hooks
+- session hooks
+- task hooks
+- repair success hooks
+- openclaw bridge
+
+5. observability/memory
+可观测与可审计：
+- stats
+- recall trace
+- capture trace
+- scope audit
+- conflict log
+- export / mirror
+
+────────────────
+四、必须保留的现有资产（强制）
+────────────────
+
+以下现有资产不得粗暴废弃：
+1. memory/ 目录
+2. checkpoints/
+3. trust-anchor/
+4. notes/
+5. CHECKPOINT.md
+6. CURRENT_STATUS.md
+7. DECISIONS.md
+8. SESSION-STATE.md（若存在）
+9. OpenViking 协同链
+10. 现有恢复链 / ledger / runtime 真相源
+
+规则：
+- 先映射，再整合
+- 先桥接，再替换
+- 先 shadow，再 main
+- 未完成映射，不得删旧链
+
+────────────────
+五、借鉴 memory-lancedb-pro 的范围（强制）
+────────────────
+
+允许借鉴的设计思想：
+1. hybrid retrieval（向量 + 关键词）
+2. multi-scope isolation
+3. auto-capture
+4. auto-recall
+5. metadata-rich records
+6. lifecycle / decay / promotion
+7. management CLI
+8. recall trace / stats / export
+
+禁止照搬的部分：
+1. 直接插件式替换主 memory slot
+2. 让新模块成为唯一记忆真相源
+3. 自动捕获直接晋升为权威事实
+4. 不经审计全量灌入旧记忆
+5. 让 recall 注入污染主链状态
+
+────────────────
+六、执行阶段（必须按顺序）
+────────────────
+
+阶段 M0：全量盘点
+目标：
+弄清楚 Scaffold 里已经有哪些“记忆相关机制”，分别解决什么问题。
+
+必须产物：
+- docs/memory/MEMORY_CAPABILITY_AUDIT.md
+- docs/memory/MEMORY_ASSET_MAP.md
+- docs/memory/MEMORY_CONFLICT_BOUNDARY.md
+
+必须盘点：
+1. 哪些目录/文件属于 Truth Memory
+2. 哪些目录/文件属于 Knowledge Memory
+3. 哪些组件属于 Retrieval Memory
+4. OpenViking 当前承担什么角色
+5. 哪些现有 hooks 会碰到记忆链
+6. 哪些文件是高价值长期信息
+7. 哪些内容只是临时噪音
+8. 哪些地方存在重复存储/重复摘要/重复检索
+9. 哪些组件未来必须桥接到统一 kernel
+10. 哪些组件绝对不能动
+
+验收标准：
+- 形成完整分类表
+- 每个组件都有“职责 / 真相级别 / 是否替代 / 是否整合”标记
+
+阶段 M1：Memory Contract 先行
+目标：
+统一抽象，禁止继续分散实现。
+
+必须产物：
+- contract/memory/types.py
+- contract/memory/policies.py
+- contract/memory/errors.py
+- docs/memory/MEMORY_CONTRACT.md
+
+最低契约：
+- MemoryRecord
+- source_kind
+- scope
+- tags
+- confidence
+- importance
+- retention
+- created_at / updated_at
+- source_ref / source_path
+- authority_level
+- retrieval_eligibility
+- capture_reason
+- recall_reason
+
+验收标准：
+- 所有字段可序列化
+- 无具体后端耦合
+- 能覆盖现有 memory/*.md 与规则文件
+
+阶段 M2：现有资产统一映射
+目标：
+先把现有部件映射进统一模型，而不是先引入新后端。
+
+必须产物：
+- core/memory/source_mapper.py
+- core/memory/truth_classifier.py
+- core/memory/knowledge_classifier.py
+- docs/memory/MEMORY_MAPPING_RULES.md
+
+必须实现：
+1. 将现有文件/目录映射为 MemoryRecord
+2. 按 Truth / Knowledge / Retrieval 分类
+3. 给每条记录打 authority_level
+4. 标记是否允许被召回
+5. 标记是否允许自动更新
+6. 标记是否允许进入向量索引
+
+验收标准：
+- 旧资产可被统一枚举
+- 不丢 source_path / source_ref
+- 可以解释“为什么它属于这一层”
+
+阶段 M3：统一查询服务
+目标：
+让现有记忆来源从“多入口”变成“单查询面”。
+
+必须产物：
+- core/memory/memory_service.py
+- core/memory/memory_search.py
+- core/memory/memory_ranker.py
+- core/memory/memory_scope.py
+- tests/memory/test_memory_search.py
+
+必须能力：
+1. keyword search
+2. semantic search（可选后端）
+3. hybrid rank
+4. metadata filter
+5. scope filter
+6. authority-aware ranking
+7. dedupe
+8. top-k recall
+
+硬规则：
+- Truth 记录默认不走“自由召回叙述”，只做精确引用
+- Knowledge 记录允许语义召回
+- Retrieval 结果必须带 trace
+
+阶段 M4：自动捕获治理
+目标：
+把“哪些东西值得长期记住”收口成白名单策略。
+
+必须产物：
+- core/memory/memory_capture.py
+- docs/memory/CAPTURE_POLICY.md
+- tests/memory/test_memory_capture.py
+
+自动捕获白名单：
+1. 用户长期偏好
+2. 项目稳定设定
+3. 决策结论
+4. 修复经验
+5. 可复用规则
+6. 长期约束
+7. trust-anchor 级内容
+
+自动捕获默认禁止：
+1. 一次性闲聊
+2. 未确认推测
+3. 临时日志
+4. 大段调试输出
+5. 噪音性系统文本
+6. 只在单次任务有效的短期上下文
+
+硬规则：
+- 自动捕获只能进入 pending / candidate 状态
+- 未经规则确认不得晋升为 authority knowledge
+- 必须有 capture_reason
+
+阶段 M5：自动召回治理
+目标：
+让召回变准，而不是变多。
+
+必须产物：
+- core/memory/memory_recall.py
+- docs/memory/RECALL_POLICY.md
+- tests/memory/test_memory_recall.py
+
+必须能力：
+1. 按任务类型决定是否召回
+2. 按 scope 召回
+3. 按 source_kind 过滤
+4. top-k 限制
+5. relevance + authority 双排序
+6. recall trace 输出
+7. 冲突标记
+
+硬规则：
+- recall 默认小流量
+- 不允许无限注入 prompt
+- Truth 只允许精确引用，不允许被总结后冒充原文
+- 召回结果必须可解释“为什么出现”
+
+阶段 M6：后端演进，不先侵入主链
+目标：
+先把统一 kernel 跑通，再扩后端。
+
+优先顺序：
+1. markdown/native backend
+2. sqlite fallback
+3. LanceDB backend（可选）
+4. rerank provider（可选）
+
+必须产物：
+- adapters/memory/markdown_backend.py
+- adapters/memory/sqlite_backend.py
+- adapters/memory/lancedb_backend.py（可选）
+- adapters/memory/openviking_adapter.py
+- observability/memory/memory_stats.py
+
+要求：
+- 没有 LanceDB 时也必须可运行
+- 新后端失败时自动降级
+- 所有后端都不能改写 Truth Memory
+
+阶段 M7：可观测、可审计、可导出
+目标：
+解决黑箱问题。
+
+必须产物：
+- observability/memory/memory_trace.py
+- observability/memory/memory_audit.py
+- core/memory/memory_mirror.py
+- artifacts/memory/MEMORY_MIRROR_SAMPLE.md
+
+必须支持：
+1. list
+2. inspect
+3. stats
+4. export
+5. source trace
+6. recall trace
+7. capture trace
+8. conflict log
+
+阶段 M8：Scaffold 内部桥接
+目标：
+先在 Scaffold 内部生效，不直接碰 OpenClaw 主流程。
+
+桥接点建议：
+1. agent_start 前 recall
+2. turn_end 后 candidate capture
+3. task_complete 后经验沉淀
+4. repair_success 后经验记录
+5. session_end 时轻量总结（可选）
+
+必须产物：
+- integration/memory/agent_hooks.py
+- integration/memory/session_hooks.py
+- integration/memory/task_hooks.py
+- tests/memory/test_memory_hooks.py
+
+硬规则：
+- hooks 全关时系统照常运行
+- hooks 开启失败时主链照常运行
+- memory kernel 不能成为运行硬依赖
+
+阶段 M9：OpenClaw Bridge
+目标：
+通过桥接方式，而不是替代方式，为 OpenClaw 提供增强记忆。
+
+必须产物：
+- integration/memory/openclaw_bridge.py
+- docs/memory/OPENC LAW_MEMORY_BRIDGE.md
+- tests/memory/test_openclaw_bridge.py
+
+启用模式必须支持：
+- off
+- shadow
+- canary
+- on
+
+启用顺序强制：
+off → shadow → canary → limited-on → full-on
+
+────────────────
+七、Gate A / B / C（强制）
+────────────────
+
+Gate A：Contract / Mapping
+必须完成：
+1. MEMORY_CAPABILITY_AUDIT.md
+2. MEMORY_ASSET_MAP.md
+3. MEMORY_CONFLICT_BOUNDARY.md
+4. MEMORY_CONTRACT.md
+5. MEMORY_MAPPING_RULES.md
+6. CAPTURE_POLICY.md
+7. RECALL_POLICY.md
+
+Gate B：E2E
+至少跑通：
+1. 旧文件可映射为统一 MemoryRecord
+2. keyword search 正常
+3. scope 隔离正常
+4. capture 不会灌入大量噪音
+5. recall 不会污染主 prompt
+6. Truth 记录不会被召回摘要篡改
+7. hooks 开关不影响主系统运行
+8. backend 异常时自动降级
+9. restart 后索引/记录仍可用
+10. OpenClaw bridge 在 shadow 模式可运行
+
+Gate C：Preflight
+必须有：
+1. 配置校验
+2. 路径校验
+3. scope 校验
+4. backend 可用性校验
+5. mirror/export 校验
+6. trace 输出校验
+7. rollback dry-run
+8. observability 输出校验
+
+────────────────
+八、回滚方案（必须先做）
+────────────────
+
+必须提供：
+- scripts/memory/disable_memory_kernel.sh
+- scripts/memory/rollback_memory_kernel.sh
+- artifacts/memory/ROLLBACK_DRILL.md
+
+要求：
+1. 一键关闭 memory kernel
+2. 保留数据，不丢历史
+3. 关闭后旧链照常运行
+4. 恢复后可重新启用
+5. 回滚过程有审计记录
+
+────────────────
+九、最终交付物（必须）
+────────────────
+
+文档：
+- docs/memory/MEMORY_CAPABILITY_AUDIT.md
+- docs/memory/MEMORY_ASSET_MAP.md
+- docs/memory/MEMORY_CONFLICT_BOUNDARY.md
+- docs/memory/MEMORY_CONTRACT.md
+- docs/memory/MEMORY_MAPPING_RULES.md
+- docs/memory/CAPTURE_POLICY.md
+- docs/memory/RECALL_POLICY.md
+- docs/memory/OPENC LAW_MEMORY_BRIDGE.md
+
+代码：
+- contract/memory/*
+- core/memory/*
+- adapters/memory/*
+- integration/memory/*
+- observability/memory/*
+- scripts/memory/*
+
+测试：
+- tests/memory/test_memory_search.py
+- tests/memory/test_memory_capture.py
+- tests/memory/test_memory_recall.py
+- tests/memory/test_memory_hooks.py
+- tests/memory/test_openclaw_bridge.py
+
+报告：
+- artifacts/memory/MEMORY_SMOKE.md
+- artifacts/memory/MEMORY_SCOPE_REPORT.md
+- artifacts/memory/MEMORY_CAPTURE_NOISE_REPORT.md
+- artifacts/memory/MEMORY_RECALL_QUALITY.md
+- artifacts/memory/ROLLBACK_DRILL.md
+
+────────────────
+十、禁止事项（再次强调）
+────────────────
+
+1. 禁止把 Retrieval Memory 冒充 Truth Memory
+2. 禁止直接删除现有 memory/ 和状态文件
+3. 禁止自动捕获直接写成权威规则
+4. 禁止未做映射就引入新后端替换旧链
+5. 禁止 recall 无限注入 prompt
+6. 禁止 memory kernel 成为主系统单点依赖
+7. 禁止未做回滚演练就切主
+8. 禁止只做代码不做审计文档
+
+────────────────
+十一、最终成功标准
+────────────────
+
+只有同时满足以下条件才算成功：
+
+1. Scaffold 现有分散记忆能力被统一抽象
+2. Truth / Knowledge / Retrieval 三层边界清晰
+3. 统一 Memory Kernel 已可运行
+4. recall/capture 可解释、可审计、可降级
+5. 不破坏 ledger / recovery / runtime authority
+6. 对 OpenClaw 可桥接、可渐进启用
+7. 关闭 memory kernel 后系统仍能正常工作
+8. 文档、代码、测试、回滚全部齐全

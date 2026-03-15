@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "auto_start_decision.schema.json",
+  "title": "Auto Start Decision",
+  "description": "Decision record for automatic task start and progression",
+  "type": "object",
+  "required": ["decision_id", "timestamp", "message_event_id", "decision_type", "reason", "mode", "action"],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "description": "Unique decision identifier (UUID)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp of decision"
+    },
+    "message_event_id": {
+      "type": "string",
+      "description": "ID of the triggering message event"
+    },
+    "decision_type": {
+      "type": "string",
+      "enum": [
+        "DIRECT_REPLY",
+        "CREATE_TASK",
+        "CONTINUE_TASK",
+        "CONTROL",
+        "SAFE_MODE",
+        "MANUAL_MODE",
+        "BLOCKED"
+      ],
+      "description": "Type of decision made"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable reason for the decision"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["shadow", "guarded-auto", "full-auto"],
+      "description": "Current running mode"
+    },
+    "risk_level": {
+      "type": ["string", "null"],
+      "enum": ["low", "medium", "high", "critical", null],
+      "description": "Risk level if applicable"
+    },
+    "classification": {
+      "type": "object",
+      "description": "Message classification details",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["chat", "new_task", "continue_task", "control", "approval"],
+          "description": "Classified message type"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Classification confidence score"
+        },
+        "task_id": {
+          "type": ["string", "null"],
+          "description": "Associated task ID if continue_task"
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Action type to take"
+        },
+        "task_id": {
+          "type": ["string", "null"],
+          "description": "Task ID if creating or continuing a task"
+        },
+        "requires_approval": {
+          "type": "boolean",
+          "description": "Whether approval is required"
+        },
+        "approval_id": {
+          "type": ["string", "null"],
+          "description": "Approval request ID if applicable"
+        },
+        "reply_message": {
+          "type": ["string", "null"],
+          "description": "Message to send as reply"
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "description": "Checks performed during decision",
+      "properties": {
+        "kill_switch_enabled": {
+          "type": "boolean",
+          "description": "Was kill switch enabled"
+        },
+        "main_flow_enabled": {
+          "type": "boolean",
+          "description": "Was main flow enabled"
+        },
+        "idempotency_check": {
+          "type": "string",
+          "enum": ["pass", "already_processed", "fail"],
+          "description": "Result of idempotency check"
+        },
+        "authorization_check": {
+          "type": "string",
+          "enum": ["authorized", "unauthorized", "not_required"],
+          "description": "Result of authorization check"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "additionalProperties": true
+    }
+  }
+}

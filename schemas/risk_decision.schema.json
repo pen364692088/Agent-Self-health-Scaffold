@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "risk_decision.schema.json",
+  "title": "Risk Decision",
+  "description": "Risk assessment decision for operations",
+  "type": "object",
+  "required": ["decision_id", "timestamp", "operation", "risk_level", "action"],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "description": "Unique decision identifier (UUID)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp of decision"
+    },
+    "operation": {
+      "type": "object",
+      "required": ["type", "description"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["shell_command", "file_operation", "git_operation", "api_call", "other"],
+          "description": "Operation type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable operation description"
+        },
+        "command": {
+          "type": ["string", "null"],
+          "description": "Shell command if applicable"
+        },
+        "target_path": {
+          "type": ["string", "null"],
+          "description": "Target file path if applicable"
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional operation details"
+        }
+      }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Assessed risk level"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason for risk assessment"
+    },
+    "matched_patterns": {
+      "type": "array",
+      "description": "Risk patterns that matched",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Pattern that matched"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["medium", "high", "critical"],
+            "description": "Pattern severity"
+          }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["execute", "execute_with_warning", "pause_for_approval", "block"],
+          "description": "Recommended action"
+        },
+        "message": {
+          "type": ["string", "null"],
+          "description": "Message to display to user"
+        },
+        "approval_id": {
+          "type": ["string", "null"],
+          "description": "Approval request ID if action is pause_for_approval"
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["shadow", "guarded-auto", "full-auto"],
+          "description": "Current running mode"
+        },
+        "task_id": {
+          "type": ["string", "null"],
+          "description": "Associated task ID"
+        },
+        "step_id": {
+          "type": ["string", "null"],
+          "description": "Associated step ID"
+        }
+      }
+    }
+  }
+}

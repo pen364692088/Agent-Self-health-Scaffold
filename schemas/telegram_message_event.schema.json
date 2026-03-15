@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "telegram_message_event.schema.json",
+  "title": "Telegram Message Event",
+  "description": "Standardized Telegram message event for main flow integration",
+  "type": "object",
+  "required": ["event_id", "event_type", "timestamp", "source", "content", "context"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique event identifier (UUID)",
+      "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "telegram_message",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp when event was received"
+    },
+    "source": {
+      "type": "object",
+      "required": ["platform", "chat_id", "user_id", "message_id", "update_id"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "const": "telegram",
+          "description": "Source platform"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Telegram chat ID"
+        },
+        "user_id": {
+          "type": "string",
+          "description": "Telegram user ID"
+        },
+        "username": {
+          "type": ["string", "null"],
+          "description": "Telegram username (optional)"
+        },
+        "message_id": {
+          "type": "string",
+          "description": "Telegram message ID"
+        },
+        "thread_id": {
+          "type": ["string", "null"],
+          "description": "Thread ID for group chat threads"
+        },
+        "reply_to_message_id": {
+          "type": ["string", "null"],
+          "description": "Original message ID if this is a reply"
+        },
+        "update_id": {
+          "type": "string",
+          "description": "Telegram update ID for idempotency"
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Message text content"
+        },
+        "entities": {
+          "type": "array",
+          "description": "Telegram message entities (commands, mentions, etc.)",
+          "items": {
+            "type": "object",
+            "required": ["type", "offset", "length"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["bot_command", "mention", "hashtag", "url", "email", "phone_number", "bold", "italic", "code", "pre", "text_link", "text_mention"],
+                "description": "Entity type"
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Character offset in text"
+              },
+              "length": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Entity length in characters"
+              }
+            }
+          }
+        },
+        "attachments": {
+          "type": "array",
+          "description": "Message attachments",
+          "items": {
+            "type": "object",
+            "required": ["type", "file_id"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["photo", "document", "audio", "video", "voice", "sticker", "animation"],
+                "description": "Attachment type"
+              },
+              "file_id": {
+                "type": "string",
+                "description": "Telegram file ID"
+              },
+              "file_name": {
+                "type": ["string", "null"],
+                "description": "Original file name"
+              },
+              "mime_type": {
+                "type": ["string", "null"],
+                "description": "MIME type"
+              },
+              "file_size": {
+                "type": ["integer", "null"],
+                "description": "File size in bytes"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "required": ["is_private_chat", "is_group_chat", "is_reply", "has_command"],
+      "properties": {
+        "is_private_chat": {
+          "type": "boolean",
+          "description": "Whether this is a private chat"
+        },
+        "is_group_chat": {
+          "type": "boolean",
+          "description": "Whether this is a group chat"
+        },
+        "is_reply": {
+          "type": "boolean",
+          "description": "Whether this message is a reply"
+        },
+        "has_command": {
+          "type": "boolean",
+          "description": "Whether this message contains a bot command"
+        },
+        "command": {
+          "type": ["string", "null"],
+          "description": "Extracted command if has_command is true"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "additionalProperties": true
+    }
+  }
+}

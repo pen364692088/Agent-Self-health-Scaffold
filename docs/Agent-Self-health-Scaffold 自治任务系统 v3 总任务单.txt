@@ -1,0 +1,379 @@
+
+# 给 OpenClaw 的强制执行版总任务单
+
+## 任务名称
+
+`Agent-Self-health-Scaffold 自治任务系统 v3 总任务单`
+
+## 仓库
+
+`Agent-Self-health-Scaffold`
+
+本地地址:/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold
+
+
+## 一、总目标
+
+在当前已冻结的 `Checkpointed Step Loop v2 baseline` 基础上，继续演进系统，使其满足以下能力：
+
+1. 服务启动后默认自动启用
+2. 新输入可自动转为 task dossier
+3. 系统可自动规划长任务并持续推进
+4. 失败后可自动分类、重试、回滚、重规划
+5. 低中风险问题尽量无人监管自修复
+6. 高风险动作自动阻断，不得越权
+7. 最终完成必须继续由 truth / evidence / Gate 决定
+
+---
+
+## 二、最终形态定义
+
+本任务完成后，系统应满足：
+
+`启动`
+→ `自动进入工作循环`
+→ `接收输入`
+→ `生成 dossier`
+→ `自动拆分 parent/child/steps`
+→ `调度执行`
+→ `失败自动归因与修复`
+→ `必要时自动重规划`
+→ `通过 Gate 收口`
+→ `持续监听下一批任务`
+
+只有以下情况才允许暂停等待人工：
+
+* 高风险 destructive 操作
+* 安全/权限边界冲突
+* 多次重试后仍无法解决的真实 blocker
+* 外部依赖不可达且无 fallback
+
+---
+
+## 三、硬约束
+
+整个 v3 开发必须遵守：
+
+1. 不得破坏 `v2 baseline frozen`
+2. 不得降低 Gate 严格度
+3. 不得回退“成功步骤不重跑”
+4. 不得把 transcript 当真相源
+5. 不得为了“看起来自治”而绕过 evidence / receipt / Gate
+6. 不得把高风险动作纳入默认自动执行
+7. 不得用 mock 闭环冒充真实自治闭环
+
+---
+
+## 四、v3 总体拆分
+
+v3 固定分为 5 个阶段，顺序不得颠倒：
+
+| 阶段   | 名称                    | 目标                       |
+| ---- | --------------------- | ------------------------ |
+| v3-A | 调度与占用控制               | 解决 slot、lease、冲突、reclaim |
+| v3-B | 父子任务编排 + 自动规划         | 让系统自己拆任务、派任务、重规划         |
+| v3-C | Failure Policy Engine | 让系统自己处理常见失败              |
+| v3-D | Autonomous Runner     | 让系统自动启用、自动继续、自动恢复        |
+| v3-E | Autonomy Policy Layer | 让系统知道什么能自动做，什么必须阻断       |
+
+---
+
+# v3-A：调度与占用控制
+
+## 真实目标
+
+在不破坏 v2 baseline 的前提下，引入最小可控调度层。
+
+## 必须实现
+
+* worker slot registry
+* scheduler admission control
+* slot + lease 一致性
+* conflict avoidance
+* reclaim 机制
+* 最小公平性
+
+## 验收标准
+
+* 没有 slot 不得执行
+* 没有 lease 不得执行
+* stale slot 可 reclaim
+* success step 不得重跑
+* 至少能演示一次冲突拒绝/排队
+* 不破坏 `pilot_docs_index_v2`
+
+---
+
+# v3-B：父子任务编排 + 自动规划
+
+## 真实目标
+
+让系统从“会执行 step”升级为“会自己把长期任务拆成任务树并持续推进”。
+
+## 必须实现
+
+* intake → task dossier 自动生成
+* parent task / child task 模型
+* task decomposition
+* dependency graph
+* step packet 自动编译
+* blocked 时自动重规划
+* child result 汇总回 parent
+
+## 要解决的核心问题
+
+* 长任务不能只靠单条线性步骤推进
+* 计划不能一次生成后永不变化
+* 子任务完成后必须能回流到主任务真相层
+
+## 验收标准
+
+* 一个真实输入可自动拆成 parent + 多个 child
+* child 可独立推进、独立恢复
+* parent 能根据 child 结果自动更新
+* 至少演示一次 replan
+* 不依赖聊天上下文保存全流程状态
+
+---
+
+# v3-C：Failure Policy Engine
+
+## 真实目标
+
+让系统在无人监管场景下，先自己判断并尝试修复问题，而不是直接停住。
+
+## 必须实现
+
+* failure taxonomy
+* retry policy
+* fallback policy
+* rollback policy
+* escalation threshold
+* fix strategy map
+
+## 最低失败分类
+
+至少支持：
+
+* retryable
+* blocked
+* dependency_missing
+* integrity_failure
+* policy_blocked
+* fatal
+
+## 核心链路
+
+`失败`
+→ `归因`
+→ `选择修复策略`
+→ `执行修复`
+→ `重新验证`
+→ `继续 / 升级 / 回滚`
+
+## 验收标准
+
+* 常见 shell/python/file/test 失败可自动归类
+* 至少 3 类常见失败能自动修复或 fallback
+* 多次失败后能停止盲目重试
+* 失败修复过程必须有 receipt/evidence
+* 不允许“修了一点就直接宣布完成”
+
+---
+
+# v3-D：Autonomous Runner
+
+## 真实目标
+
+让系统从“需要人手动触发继续”变成“默认自动启用、自动持续推进”。
+
+## 必须实现
+
+* service startup loop
+* pending task scanner
+* scheduler loop
+* retry loop
+* stuck task detector
+* restart recovery loop
+* heartbeat / health monitor
+
+## 启动后应发生的行为
+
+* 自动恢复未完成任务
+* 自动扫描待办任务
+* 自动调度下一步
+* 自动处理 retryable failure
+* 自动继续长任务
+* 空闲时保持监听，不退出主循环
+
+## 验收标准
+
+* 服务启动后无需人工发“继续”
+* 有未完成任务时会自动推进
+* crash 后重启可恢复运行循环
+* stuck task 可被重新扫描并处理
+* 至少完成一次“启动后无人干预推进任务到收口”
+
+---
+
+# v3-E：Autonomy Policy Layer
+
+## 真实目标
+
+让系统拥有“默认自动推进”的能力，同时明确什么不能自动做。
+
+## 必须实现
+
+* allowed actions
+* forbidden actions
+* approval-required actions
+* risk levels
+* safe-stop conditions
+* policy evidence log
+
+## 默认可自治的动作
+
+* 读文档
+* 跑测试
+* 小范围代码修复
+* 写报告
+* 任务拆分与调度
+* 重试 / reclaim / rollback
+
+## 必须阻断的动作
+
+* 大规模删除文件
+* 修改 Gate 硬规则
+* 破坏 baseline 受保护产物
+* 外部高风险 destructive 操作
+* 涉及敏感凭据/支付/账号的动作
+* 未授权跨仓库 destructive 变更
+
+## 验收标准
+
+* 每个执行动作都有风险级别
+* 高风险动作默认被阻断
+* policy blocked 必须有明确 evidence
+* 不允许为了“完成任务”绕过 policy
+
+---
+
+## 五、统一架构要求
+
+v3 全部阶段必须继续围绕现有真相层展开：
+
+* `task_state`
+* `ledger`
+* `step_packet`
+* `result`
+* `execution_receipt`
+* `handoff`
+* `gate_report`
+* `receipt`
+
+新增任何模块，都必须接到这条主链上，不允许另起一套平行 truth system。
+
+---
+
+## 六、统一 Gate
+
+每个子阶段都必须继续走 Gate A / B / C。
+
+### Gate A：Contract
+
+检查：
+
+* 设计文档
+* schema
+* 实现文件
+* 测试文件
+* artifact 路径
+* 与 v2 baseline 的兼容性说明
+
+### Gate B：E2E
+
+检查：
+
+* 对应阶段的真实链路是否跑通
+* 至少 1 个真实 pilot
+* 至少 1 个失败或冲突场景
+* 至少 1 次恢复或重规划场景
+
+### Gate C：Integrity
+
+检查：
+
+* task_state / ledger / receipt / evidence 一致
+* 不允许无 evidence 的完成
+* 不允许 success step 被重跑
+* 不允许 `all_passed=true` 但有 failed checks
+* 不允许破坏 baseline 受保护规则
+
+---
+
+## 七、优先级与顺序
+
+必须严格按这个顺序推进：
+
+1. v3-A 完成并收口
+2. v3-B 完成并收口
+3. v3-C 完成并收口
+4. v3-D 完成并收口
+5. v3-E 完成并收口
+
+禁止并行乱开多个大阶段。
+原因：调度不稳，编排会乱；编排不稳，失败策略会乱；失败策略不稳，自动运行只会扩大错误。
+
+---
+
+## 八、阶段完成定义
+
+只有同时满足以下条件，某阶段才算完成：
+
+1. 功能实现已提交
+2. 测试已通过
+3. 至少 1 条真实链路 artifact 已生成
+4. Gate A/B/C 全通过
+5. 公开证据与汇报一致
+6. 未破坏 v2 baseline
+
+---
+
+## 九、最终总体验收标准
+
+v3 全部完成时，系统必须能做到：
+
+* 启动即进入自治工作状态
+* 自动把输入转为任务
+* 自动规划长任务
+* 自动拆 parent/child/steps
+* 自动调度执行
+* 自动处理常见失败
+* 自动恢复和重规划
+* 高风险动作自动阻断
+* 完成收口继续靠证据和 Gate
+
+换句话说：
+
+**你不盯着，它也能推进；
+但它不会因为“想完成”而越权乱做。**
+
+---
+
+## 十、OpenClaw 执行要求
+
+执行时必须遵守：
+
+1. 每阶段先出设计与契约，再进实现
+2. 每阶段必须做真实 pilot，不接受纯 mock 收口
+3. 所有 blocker 要写入 artifact，不得只写在聊天里
+4. 发现目标与当前阶段不匹配时，优先重规划，不得硬做
+5. 任何会影响 v2 baseline 的改动必须先标注为 breaking risk
+6. 阶段没收口，不得跳下一阶段
+
+---
+
+## 十一、一句话执行指令
+
+请基于当前已冻结的 `Checkpointed Step Loop v2 baseline`，按 `v3-A 调度与占用控制 → v3-B 父子任务编排 + 自动规划 → v3-C Failure Policy Engine → v3-D Autonomous Runner → v3-E Autonomy Policy Layer` 的顺序，持续把 `Agent-Self-health-Scaffold` 演进为一个默认自动启用、可自动规划长任务、可在低中风险场景下无人监管自修复、并在高风险场景下自动阻断的自治任务系统；全过程不得破坏 v2 baseline、不得降低 Gate 严格度、不得回退“成功步骤不重跑”和 evidence-first completion 原则。
+
