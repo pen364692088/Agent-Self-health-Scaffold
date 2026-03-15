@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "worker_slot.schema.json",
+  "title": "Worker Slot",
+  "description": "Worker slot for scheduling and occupancy control",
+  "type": "object",
+  "required": [
+    "slot_id",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "slot_id": {
+      "type": "string",
+      "description": "Unique slot identifier",
+      "pattern": "^slot_[a-z0-9_]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["free", "reserved", "running", "stale"],
+      "description": "Current slot status"
+    },
+    "holder": {
+      "type": ["object", "null"],
+      "description": "Current holder of the slot",
+      "properties": {
+        "task_id": {
+          "type": "string"
+        },
+        "step_id": {
+          "type": "string"
+        },
+        "worker_id": {
+          "type": "string"
+        },
+        "session_key": {
+          "type": "string"
+        }
+      }
+    },
+    "reserved_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When slot was reserved"
+    },
+    "started_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When execution started"
+    },
+    "last_heartbeat_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Last heartbeat timestamp"
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 300,
+      "description": "Slot timeout in seconds"
+    },
+    "heartbeat_interval_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "default": 30,
+      "description": "Expected heartbeat interval"
+    },
+    "max_missed_heartbeats": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 3,
+      "description": "Max missed heartbeats before stale"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "allocation_history": {
+      "type": "array",
+      "description": "History of slot allocations",
+      "items": {
+        "type": "object",
+        "properties": {
+          "holder": { "type": "object" },
+          "reserved_at": { "type": "string" },
+          "released_at": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

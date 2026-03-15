@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "scheduler_decision.schema.json",
+  "title": "Scheduler Decision",
+  "description": "Scheduler admission decision for step execution",
+  "type": "object",
+  "required": [
+    "decision",
+    "timestamp",
+    "task_id",
+    "step_id"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["admit", "reject", "queue"],
+      "description": "Scheduler decision"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason for the decision"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Task ID"
+    },
+    "step_id": {
+      "type": "string",
+      "description": "Step ID"
+    },
+    "worker_id": {
+      "type": "string",
+      "description": "Worker requesting execution"
+    },
+    "allocated_slot": {
+      "type": ["object", "null"],
+      "description": "Slot allocated if admitted",
+      "properties": {
+        "slot_id": { "type": "string" },
+        "allocated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "allocated_lease": {
+      "type": ["object", "null"],
+      "description": "Lease allocated if admitted",
+      "properties": {
+        "lease_id": { "type": "string" },
+        "acquired_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "queue_position": {
+      "type": ["integer", "null"],
+      "description": "Position in queue if queued"
+    },
+    "estimated_wait_seconds": {
+      "type": ["integer", "null"],
+      "description": "Estimated wait time if queued"
+    },
+    "conflict_info": {
+      "type": ["object", "null"],
+      "description": "Conflict information if rejected",
+      "properties": {
+        "conflict_type": {
+          "type": "string",
+          "enum": ["step_contention", "slot_contention", "resource_contention", "lease_contention"]
+        },
+        "conflicting_holder": { "type": "object" },
+        "resolution": { "type": "string" }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Decision timestamp"
+    },
+    "scheduler_id": {
+      "type": "string",
+      "description": "ID of scheduler making decision"
+    }
+  },
+  "additionalProperties": false
+}
