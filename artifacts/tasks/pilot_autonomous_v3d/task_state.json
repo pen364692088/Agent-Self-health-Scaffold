@@ -1,0 +1,54 @@
+{
+  "task_id": "pilot_autonomous_v3d",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-15T16:50:00Z",
+  "updated_at": "2026-03-15T16:54:00Z",
+  "contract": {
+    "objective": "验证 Autonomous Runner 完整生命周期",
+    "repository": "Agent-Self-health-Scaffold",
+    "branch": "main"
+  },
+  "steps": [
+    {
+      "step_id": "S01",
+      "status": "success",
+      "attempts": 1,
+      "started_at": "2026-03-15T16:50:00Z",
+      "completed_at": "2026-03-15T16:51:00Z"
+    },
+    {
+      "step_id": "S02",
+      "status": "success",
+      "attempts": 1,
+      "started_at": "2026-03-15T16:51:00Z",
+      "completed_at": "2026-03-15T16:52:00Z"
+    },
+    {
+      "step_id": "S03",
+      "status": "interrupted",
+      "attempts": 1,
+      "started_at": "2026-03-15T16:52:00Z"
+    },
+    {
+      "step_id": "S03",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-15T16:53:00Z",
+      "completed_at": "2026-03-15T16:53:30Z"
+    },
+    {
+      "step_id": "S04",
+      "status": "success",
+      "attempts": 1,
+      "started_at": "2026-03-15T16:53:30Z",
+      "completed_at": "2026-03-15T16:54:00Z"
+    }
+  ],
+  "current_step": null,
+  "artifacts_dir": "artifacts/tasks/pilot_autonomous_v3d",
+  "metadata": {
+    "recovery_count": 1,
+    "runner_mode": "guarded-auto"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "receipt_id": "receipt_pilot_autonomous_v3d",
+  "task_id": "pilot_autonomous_v3d",
+  "status": "completed",
+  "completed_at": "2026-03-15T16:54:00Z",
+  "evidence": {
+    "task_state": "artifacts/tasks/pilot_autonomous_v3d/task_state.json",
+    "ledger": "artifacts/tasks/pilot_autonomous_v3d/ledger.jsonl",
+    "summary": "artifacts/tasks/pilot_autonomous_v3d/final/SUMMARY.md",
+    "gate_report": "artifacts/tasks/pilot_autonomous_v3d/final/gate_report.json"
+  },
+  "verification": {
+    "all_steps_completed": true,
+    "all_gates_passed": true,
+    "no_contradictions": true
+  }
+}

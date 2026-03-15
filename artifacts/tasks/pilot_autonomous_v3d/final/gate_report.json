@@ -1,0 +1,34 @@
+{
+  "task_id": "pilot_autonomous_v3d",
+  "timestamp": "2026-03-15T16:54:04Z",
+  "overall_passed": true,
+  "gates": {
+    "gate_a": {
+      "name": "State Integrity",
+      "passed": true,
+      "checks": [
+        {"name": "task_state_exists", "passed": true},
+        {"name": "ledger_exists", "passed": true},
+        {"name": "steps_directory_exists", "passed": true}
+      ]
+    },
+    "gate_b": {
+      "name": "Execution Completeness",
+      "passed": true,
+      "checks": [
+        {"name": "all_steps_completed", "passed": true},
+        {"name": "summary_exists", "passed": true},
+        {"name": "no_pending_steps", "passed": true}
+      ]
+    },
+    "gate_c": {
+      "name": "Output Completeness",
+      "passed": true,
+      "checks": [
+        {"name": "task_state_valid", "passed": true},
+        {"name": "ledger_events_complete", "passed": true},
+        {"name": "receipt_synced", "passed": true}
+      ]
+    }
+  }
+}

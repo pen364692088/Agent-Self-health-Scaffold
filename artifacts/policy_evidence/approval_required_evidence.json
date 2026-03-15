@@ -1,0 +1,20 @@
+{
+  "evidence_id": "6b6f669a-355c-4615-8012-7a7b2e26c367",
+  "timestamp": "2026-03-15T21:48:31.802423Z",
+  "action_type": "config_change",
+  "operation_summary": "Modify core autonomy policy configuration",
+  "decision": "require_approval",
+  "risk_level": "low",
+  "matched_rules": [
+    "risk_assessment:low",
+    "approval_required:config_change"
+  ],
+  "safe_stop_triggered": null,
+  "context": {
+    "context": "configuration_update",
+    "initiator": "autonomy_test"
+  },
+  "expected_decision": "require_approval",
+  "test_passed": true,
+  "description": "Modifying core config requires human approval"
+}
