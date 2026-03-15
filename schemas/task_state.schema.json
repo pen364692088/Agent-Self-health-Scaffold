@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "task_state.schema.json",
+  "title": "Task State",
+  "description": "Machine-readable task state - the control plane for task execution and recovery",
+  "type": "object",
+  "required": [
+    "task_id",
+    "version",
+    "status",
+    "created_at",
+    "updated_at",
+    "steps",
+    "current_step",
+    "contract"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Unique task identifier",
+      "pattern": "^task_[a-z0-9_]+$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "pattern": "^v[0-9]+\\.[0-9]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["created", "running", "blocked", "completed", "failed"],
+      "description": "Current task status"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Task creation timestamp (ISO 8601)"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp (ISO 8601)"
+    },
+    "contract": {
+      "type": "object",
+      "required": ["objective", "repository", "acceptance_criteria"],
+      "properties": {
+        "objective": {
+          "type": "string",
+          "description": "Task objective in human-readable form"
+        },
+        "repository": {
+          "type": "string",
+          "description": "Target repository path"
+        },
+        "branch": {
+          "type": "string",
+          "description": "Target branch"
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of acceptance criteria"
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "List of step states",
+      "items": {
+        "type": "object",
+        "required": ["step_id", "status", "attempts"],
+        "properties": {
+          "step_id": {
+            "type": "string",
+            "pattern": "^S[0-9]+$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "running", "success", "failed_retryable", "failed_blocked", "failed_terminal"]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "started_at": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "error": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "current_step": {
+      "type": ["string", "null"],
+      "description": "Currently executing or next step to execute",
+      "pattern": "^S[0-9]+$"
+    },
+    "blocked_on": {
+      "type": ["string", "null"],
+      "description": "Reason for blocked status"
+    },
+    "artifacts_dir": {
+      "type": "string",
+      "description": "Path to task artifacts directory"
+    },
+    "ledger_path": {
+      "type": "string",
+      "description": "Path to task ledger file"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

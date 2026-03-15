@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "step_lease.schema.json",
+  "title": "Step Lease",
+  "description": "Lease mechanism to prevent duplicate execution and enable safe recovery",
+  "type": "object",
+  "required": [
+    "step_id",
+    "owner",
+    "acquired_at",
+    "expires_at",
+    "status"
+  ],
+  "properties": {
+    "step_id": {
+      "type": "string",
+      "description": "Step identifier",
+      "pattern": "^S[0-9]+$"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Worker or agent ID that holds the lease",
+      "minLength": 1
+    },
+    "owner_session_key": {
+      "type": "string",
+      "description": "Session key of lease owner"
+    },
+    "acquired_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when lease was acquired"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when lease expires"
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "description": "Time-to-live in seconds",
+      "minimum": 1,
+      "default": 300
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "expired", "released", "revoked"],
+      "description": "Current lease status"
+    },
+    "heartbeat": {
+      "type": "object",
+      "description": "Heartbeat tracking",
+      "properties": {
+        "last_heartbeat_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "heartbeat_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "default": 30000
+        },
+        "missed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_missed": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "reclaim_count": {
+      "type": "integer",
+      "description": "Number of times this lease has been reclaimed",
+      "minimum": 0,
+      "default": 0
+    },
+    "max_reclaims": {
+      "type": "integer",
+      "description": "Maximum allowed reclaims before step is marked as problematic",
+      "minimum": 0,
+      "default": 3
+    },
+    "acquisition_history": {
+      "type": "array",
+      "description": "History of lease acquisitions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "owner": { "type": "string" },
+          "acquired_at": { "type": "string", "format": "date-time" },
+          "released_at": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional lease metadata",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

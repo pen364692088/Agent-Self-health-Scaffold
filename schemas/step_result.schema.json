@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "step_result.schema.json",
+  "title": "Step Result",
+  "description": "Outcome of a step execution - the machine-readable result record",
+  "type": "object",
+  "required": [
+    "step_id",
+    "status",
+    "started_at",
+    "completed_at",
+    "attempts"
+  ],
+  "properties": {
+    "step_id": {
+      "type": "string",
+      "description": "Step identifier",
+      "pattern": "^S[0-9]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "failed", "blocked", "retryable"],
+      "description": "Step execution status"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Execution start timestamp"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Execution completion timestamp"
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of attempts made"
+    },
+    "changed_files": {
+      "type": "array",
+      "description": "Files modified by this step",
+      "items": {
+        "type": "object",
+        "required": ["path", "action"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["created", "modified", "deleted"],
+            "description": "Action taken on file"
+          },
+          "lines_added": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lines_removed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "description": "Step outputs",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean", "object", "array", "null"]
+      }
+    },
+    "tests": {
+      "type": "object",
+      "description": "Test execution results",
+      "properties": {
+        "run": {
+          "type": "boolean",
+          "description": "Whether tests were run"
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Path to full test output"
+        }
+      }
+    },
+    "evidence_path": {
+      "type": "string",
+      "description": "Path to evidence directory for this step"
+    },
+    "handoff_path": {
+      "type": "string",
+      "description": "Path to handoff markdown file"
+    },
+    "next_step_hint": {
+      "type": ["string", "null"],
+      "description": "Suggested next step",
+      "pattern": "^S[0-9]+$"
+    },
+    "uncertainty": {
+      "type": ["string", "null"],
+      "description": "Any uncertainty or caveats about the result"
+    },
+    "error": {
+      "type": ["object", "null"],
+      "description": "Error details if status is not success",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Error type classification"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "stack_trace": {
+          "type": "string",
+          "description": "Stack trace if available"
+        },
+        "recoverable": {
+          "type": "boolean",
+          "description": "Whether this error is recoverable"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Execution metrics",
+      "properties": {
+        "duration_ms": {
+          "type": "integer"
+        },
+        "tokens_used": {
+          "type": "integer"
+        },
+        "files_read": {
+          "type": "integer"
+        },
+        "files_written": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": true
+    },
+    "checksum": {
+      "type": "string",
+      "description": "Checksum of result for integrity verification",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

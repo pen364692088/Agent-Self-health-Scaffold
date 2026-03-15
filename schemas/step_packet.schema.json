@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "step_packet.schema.json",
+  "title": "Step Packet",
+  "description": "Self-contained execution instruction for a single step - must be executable independently",
+  "type": "object",
+  "required": [
+    "step_id",
+    "version",
+    "title",
+    "goal",
+    "inputs",
+    "allowed_files",
+    "expected_outputs",
+    "exit_criteria",
+    "failure_policy",
+    "depends_on"
+  ],
+  "properties": {
+    "step_id": {
+      "type": "string",
+      "description": "Unique step identifier within task",
+      "pattern": "^S[0-9]+$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "pattern": "^v[0-9]+\\.[0-9]+$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short human-readable step title",
+      "maxLength": 100
+    },
+    "goal": {
+      "type": "string",
+      "description": "What this step achieves"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed step description"
+    },
+    "inputs": {
+      "type": "array",
+      "description": "Input dependencies for this step",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Input name"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to input file or directory"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory", "value"],
+            "description": "Input type"
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          },
+          "from_step": {
+            "type": "string",
+            "description": "Step ID this input comes from",
+            "pattern": "^S[0-9]+$"
+          }
+        }
+      }
+    },
+    "allowed_files": {
+      "type": "array",
+      "description": "Files this step is allowed to modify",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expected_outputs": {
+      "type": "array",
+      "description": "Expected outputs from this step",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Output name"
+          },
+          "path": {
+            "type": "string",
+            "description": "Expected output path"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory", "value"],
+            "description": "Output type"
+          },
+          "validator": {
+            "type": "string",
+            "description": "Validation command or schema"
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    "exit_criteria": {
+      "type": "array",
+      "description": "Conditions that must be met for step to be considered complete",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "failure_policy": {
+      "type": "object",
+      "description": "How to handle failures",
+      "properties": {
+        "max_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "backoff": {
+          "type": "string",
+          "enum": ["none", "linear", "exponential"],
+          "default": "exponential"
+        },
+        "backoff_base_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1000
+        },
+        "on_failure": {
+          "type": "string",
+          "enum": ["block", "skip", "abort"],
+          "default": "block"
+        },
+        "notify_on": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["retry", "blocked", "failed"]
+          },
+          "default": ["blocked", "failed"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "depends_on": {
+      "type": "array",
+      "description": "Step IDs this step depends on",
+      "items": {
+        "type": "string",
+        "pattern": "^S[0-9]+$"
+      }
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "description": "Maximum execution time in seconds",
+      "minimum": 1,
+      "default": 300
+    },
+    "checkpoint_before": {
+      "type": "boolean",
+      "description": "Create checkpoint before executing this step",
+      "default": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional step metadata",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
