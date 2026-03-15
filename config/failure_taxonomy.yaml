@@ -1,0 +1,311 @@
+# Failure Taxonomy - 故障分类体系
+# 版本: 1.0
+# 日期: 2026-03-14
+
+# L1 故障分类 - 高层类别
+l1_categories:
+  permission_path:
+    name: "权限/路径"
+    description: "文件或目录权限不足，或路径问题"
+    severity: high
+    auto_remediation: false
+    examples:
+      - "Permission denied"
+      - "EACCES"
+      - "access denied"
+    common_causes:
+      - "运行用户权限不足"
+      - "文件被其他进程锁定"
+      - "SELinux/AppArmor 限制"
+
+  file_not_found:
+    name: "文件不存在"
+    description: "目标文件或目录不存在"
+    severity: medium
+    auto_remediation: true
+    examples:
+      - "No such file or directory"
+      - "ENOENT"
+      - "FileNotFoundError"
+    common_causes:
+      - "路径拼写错误"
+      - "文件尚未创建"
+      - "工作目录不正确"
+
+  edit_contract:
+    name: "Edit 契约不满足"
+    description: "edit 工具的 old_string 不匹配"
+    severity: medium
+    auto_remediation: true
+    examples:
+      - "old_string not found"
+      - "does not contain"
+      - "content mismatch"
+    common_causes:
+      - "文件已被其他修改"
+      - "old_string 拼写错误"
+      - "编码问题导致不匹配"
+
+  context_missing:
+    name: "上下文缺失"
+    description: "执行所需信息不足"
+    severity: medium
+    auto_remediation: false
+    examples:
+      - "insufficient context"
+      - "missing information"
+    common_causes:
+      - "前置步骤未完成"
+      - "环境变量未设置"
+      - "依赖服务未启动"
+
+  dependency_build:
+    name: "依赖/构建异常"
+    description: "依赖缺失或构建失败"
+    severity: high
+    auto_remediation: true
+    examples:
+      - "module not found"
+      - "ImportError"
+      - "build failed"
+    common_causes:
+      - "依赖未安装"
+      - "版本不兼容"
+      - "编译器缺失"
+
+  concurrency_order:
+    name: "并发/消息顺序冲突"
+    description: "多线程/多进程冲突或消息顺序问题"
+    severity: critical
+    auto_remediation: false
+    examples:
+      - "race condition"
+      - "deadlock"
+      - "message order conflict"
+    common_causes:
+      - "并发写入同一资源"
+      - "消息处理顺序错误"
+      - "锁机制不完善"
+
+  test_assertion:
+    name: "测试断言失败"
+    description: "测试用例未通过"
+    severity: medium
+    auto_remediation: true
+    examples:
+      - "AssertionError"
+      - "expected X but got Y"
+    common_causes:
+      - "代码逻辑错误"
+      - "测试用例过时"
+      - "环境差异"
+
+  framework_contract:
+    name: "框架契约变化"
+    description: "框架接口或契约变更"
+    severity: high
+    auto_remediation: false
+    examples:
+      - "interface changed"
+      - "schema validation failed"
+    common_causes:
+      - "框架版本升级"
+      - "API 废弃"
+      - "配置格式变化"
+
+  hallucination:
+    name: "幻觉性修改"
+    description: "生成了不存在的内容或操作"
+    severity: critical
+    auto_remediation: false
+    examples:
+      - "hallucinated file"
+      - "non-existent function"
+    common_causes:
+      - "模型幻觉"
+      - "上下文污染"
+      - "过时的训练数据"
+
+  unknown:
+    name: "未知"
+    description: "无法分类的问题"
+    severity: high
+    auto_remediation: false
+
+# L2 根因签名 - 精确指纹
+l2_signatures:
+  # Edit 相关
+  target_missing:
+    name: "目标文本缺失"
+    description: "edit 的 old_string 在文件中找不到"
+    l1_category: edit_contract
+    remediation_strategy: "retry_with_fresh_read"
+    prevention:
+      - "edit 前重新读取文件"
+      - "使用更精确的匹配模式"
+
+  file_dirty:
+    name: "文件已变更"
+    description: "文件在读取后被其他操作修改"
+    l1_category: edit_contract
+    remediation_strategy: "retry_with_stash"
+    prevention:
+      - "使用原子操作"
+      - "加锁保护"
+
+  wrong_file:
+    name: "错误文件"
+    description: "操作了错误的文件"
+    l1_category: file_not_found
+    remediation_strategy: "correct_path"
+    prevention:
+      - "路径验证"
+      - "文件存在性检查"
+
+  # Tool 相关
+  permission_denied:
+    name: "权限拒绝"
+    description: "没有足够权限执行操作"
+    l1_category: permission_path
+    remediation_strategy: "elevate_or_request"
+    prevention:
+      - "前置权限检查"
+      - "使用适当用户运行"
+
+  path_missing:
+    name: "PATH 缺失"
+    description: "命令不在 PATH 中"
+    l1_category: dependency_build
+    remediation_strategy: "fix_path_or_install"
+    prevention:
+      - "环境检查脚本"
+      - "依赖预安装"
+
+  timeout:
+    name: "超时"
+    description: "操作超时"
+    l1_category: dependency_build
+    remediation_strategy: "increase_timeout_or_retry"
+    prevention:
+      - "合理设置超时"
+      - "异步处理"
+
+  # Runtime 相关
+  message_order_conflict:
+    name: "消息顺序冲突"
+    description: "消息处理顺序错误"
+    l1_category: concurrency_order
+    remediation_strategy: "reorder_or_buffer"
+    prevention:
+      - "消息队列"
+      - "顺序保证机制"
+
+  concurrent_session_write:
+    name: "并发会话写入"
+    description: "多个会话同时写入"
+    l1_category: concurrency_order
+    remediation_strategy: "lock_or_queue"
+    prevention:
+      - "会话锁"
+      - "写队列"
+
+  state_corruption:
+    name: "状态损坏"
+    description: "内部状态不一致"
+    l1_category: concurrency_order
+    remediation_strategy: "restore_from_backup"
+    prevention:
+      - "状态校验"
+      - "定期备份"
+
+# 上下文提示
+context_hints:
+  branch_dirty:
+    name: "分支未提交"
+    description: "工作目录有未提交更改"
+    impact: "可能影响文件内容判断"
+
+  path_missing:
+    name: "PATH 缺失"
+    description: "环境变量 PATH 设置不正确"
+    impact: "无法找到可执行文件"
+
+  env_missing:
+    name: "环境变量缺失"
+    description: "必要的环境变量未设置"
+    impact: "配置无法加载"
+
+  network_issue:
+    name: "网络问题"
+    description: "网络连接异常"
+    impact: "外部依赖无法访问"
+
+# 修复策略映射
+remediation_strategies:
+  retry_with_fresh_read:
+    name: "重新读取后重试"
+    description: "重新读取文件内容后再次尝试 edit"
+    auto_applicable: true
+    risk: low
+
+  retry_with_stash:
+    name: "暂存后重试"
+    description: "暂存当前更改，重新读取后重试"
+    auto_applicable: true
+    risk: medium
+
+  correct_path:
+    name: "修正路径"
+    description: "修正文件路径后重试"
+    auto_applicable: true
+    risk: low
+
+  elevate_or_request:
+    name: "提升权限或请求授权"
+    description: "使用 sudo 或请求用户授权"
+    auto_applicable: false
+    risk: high
+
+  fix_path_or_install:
+    name: "修复 PATH 或安装依赖"
+    description: "添加 PATH 或安装缺失的依赖"
+    auto_applicable: true
+    risk: medium
+
+  increase_timeout_or_retry:
+    name: "增加超时或重试"
+    description: "增加超时时间或重试操作"
+    auto_applicable: true
+    risk: low
+
+  reorder_or_buffer:
+    name: "重排序或缓冲"
+    description: "调整消息顺序或添加缓冲"
+    auto_applicable: false
+    risk: high
+
+  lock_or_queue:
+    name: "加锁或队列"
+    description: "添加锁机制或写入队列"
+    auto_applicable: false
+    risk: medium
+
+  restore_from_backup:
+    name: "从备份恢复"
+    description: "从最近的备份恢复状态"
+    auto_applicable: true
+    risk: medium
+
+# 统计指标
+metrics:
+  - name: "signature_match_rate"
+    description: "签名匹配成功率"
+    target: ">= 0.8"
+
+  - name: "l1_classification_accuracy"
+    description: "L1 分类准确率"
+    target: ">= 0.9"
+
+  - name: "unknown_category_rate"
+    description: "未知类别比例"
+    target: "< 0.1"

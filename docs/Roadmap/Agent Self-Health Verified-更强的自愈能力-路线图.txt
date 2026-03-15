@@ -1,0 +1,428 @@
+
+# 一、路线图
+
+## 总目标
+
+把 Agent-Self-health-Scaffold 从“出错后补救”升级成：
+
+**失败接管 → 诊断归因 → 候选修复 → 沙箱验证 → 渐进采纳 → 经验沉淀 → 预防复发 → 影子进化**
+
+目标不是“永不再犯”，而是：
+
+* 同类问题可识别
+* 可自动拦截或自动修复
+* 可回归验证
+* 复发率持续下降
+* 外部学习只在影子层生效，不能直接污染主链
+
+---
+
+## Phase 0：边界与契约先立住
+
+### 目标
+
+先把系统边界锁死，防止后面“自愈”变成“自毁”。
+
+### 要做
+
+* 定义失败接管范围
+
+  * edit failed
+  * tool failed
+  * test failed
+  * build failed
+  * runtime failed
+* 定义禁止自动修改区
+
+  * 核心身份/系统提示
+  * 安全策略
+  * 凭据/密钥
+  * 主调度器核心
+  * 验证器/Gate 代码
+* 定义修复级别
+
+  * L0 观察
+  * L1 沙箱修复
+  * L2 修复分支提交
+  * L3 受限自动合入
+* 统一 Gate
+
+  * Gate A: Contract
+  * Gate B: E2E
+  * Gate C: Preflight tool_doctor
+
+### 产物
+
+* `SELF_HEALING_CONTRACT.md`
+* `SELF_HEALING_BOUNDARIES.md`
+* `SELF_HEALING_LEVELS.md`
+
+### 退出条件
+
+* 所有自动动作都能被 level 和 policy 限制
+* 高风险目录默认不可自动改
+
+---
+
+## Phase 1：失败接管与事件包
+
+### 目标
+
+把“报错文本”变成“可诊断对象”。
+
+### 要做
+
+实现 `failure-orchestrator`：
+
+* 接收失败事件
+* 生成 `failure bundle`
+* 做去重与签名化
+* 路由给后续 planner
+
+### failure bundle 至少包含
+
+* tool / action 名称
+* 输入摘要
+* stderr / stack trace
+* 相关文件
+* 当前分支 / commit
+* 最近操作轨迹
+* 环境信息
+* 风险等级
+* 是否命中历史相似问题
+
+### 产物
+
+* `src/self_healing/failure_orchestrator.*`
+* `artifacts/self_healing/failure_events/`
+* `FAILURE_BUNDLE_SCHEMA.json`
+
+### 退出条件
+
+* 任一 `edit failed` 都能生成标准 bundle
+* 同类错误可聚类，不会每次都当新问题处理
+
+---
+
+## Phase 2：归因与问题签名
+
+### 目标
+
+不要只看报错字面，要形成可复用的“问题指纹”。
+
+### 要做
+
+建立两层诊断：
+
+### L1 故障分类
+
+* 权限/路径
+* 文件不存在
+* edit 契约不满足
+* 上下文缺失
+* 依赖/构建异常
+* 并发/消息顺序冲突
+* 测试断言失败
+* 框架契约变化
+* 幻觉性修改
+
+### L2 根因签名
+
+例如：
+
+* `edit_failed + target_missing + branch_dirty`
+* `tool_failed + permission_denied + PATH_missing`
+* `runtime_failed + message_order_conflict + concurrent_session_write`
+
+### 产物
+
+* `problem_signature.ts|py`
+* `failure_taxonomy.yaml`
+* `SIGNATURE_MATCH_RULES.md`
+
+### 退出条件
+
+* 历史问题可以通过 signature 命中
+* 相似问题能聚到同一类，不再每次从零分析
+
+---
+
+## Phase 3：候选修复方案池 + 评分器
+
+### 目标
+
+不是让模型拍脑袋修，而是多个候选方案竞争。
+
+### 要做
+
+实现 `remedy-planner`：
+
+* 检索历史成功案例
+* 生成 3~5 个候选修法
+* 对候选方案打分排序
+
+### 推荐评分维度
+
+* 成功概率
+* 可验证性
+* 可逆性
+* 变更半径
+* 历史命中成功率
+* 风险惩罚
+
+### 方案优先级
+
+1. 最小改动修复
+2. 回退到最近稳定点并重放
+3. 历史模板修复
+4. 外部相似模式改写
+5. 升级人工/冻结主链
+
+### 产物
+
+* `remedy_planner.*`
+* `strategy_ranker.*`
+* `REMEDIATION_SCORING.md`
+
+### 退出条件
+
+* 同一问题至少能给出多个候选方案
+* 默认优先低风险、可验证、可逆方案
+
+---
+
+## Phase 4：沙箱自愈执行器
+
+### 目标
+
+所有修复先在隔离环境验证，不污染主链。
+
+### 要做
+
+实现 `sandbox-healer`：
+
+* 建临时 worktree / 分支
+* 应用修复方案
+* 执行 Gate A/B/C
+* 输出 patch / 报告 / 回滚信息
+
+### 必须包含
+
+* dry-run
+* rollback 记录
+* 关键回归集
+* negative check（不能只测“眼前报错消失”）
+
+### 产物
+
+* `sandbox_healer.*`
+* `verification_runner.*`
+* `SELF_HEALING_VALIDATION_REPORT.md`
+
+### 退出条件
+
+* 自动修复只发生在沙箱
+* 未过 Gate 的方案绝不进入正式采纳层
+
+---
+
+## Phase 5：经验沉淀与预防系统
+
+### 目标
+
+真正做到“记住”，而不是只记日志。
+
+### 要做
+
+实现 `evolution-memory`：
+
+保存四类知识：
+
+### A. 问题记忆
+
+* signature
+* 触发条件
+* 场景
+* 影响范围
+
+### B. 成功修复记忆
+
+* 方案
+* 成功前提
+* 验证结果
+* 成本
+
+### C. 失败修复记忆
+
+* 哪些修法误修
+* 哪些条件下不能用
+
+### D. 预防规则
+
+* edit 前 preflight 检查
+* 高危目录保护
+* 操作前置约束
+* 自动补回归测试
+
+### 产物
+
+* `evolution_memory.*`
+* `self_healing_memory.db/jsonl`
+* `PREVENTION_RULES.yaml`
+
+### 退出条件
+
+* 同类问题第二次出现时，系统优先走历史模板
+* 高危错误能在 edit 前被 preflight 拦截
+
+---
+
+## Phase 6：影子学习与受限进化
+
+### 目标
+
+可以学习，但不能直接改主链。
+
+### 要做
+
+实现三段式外部学习：
+
+### 1. 采集
+
+只采：
+
+* 官方文档
+* 官方 issue / PR
+* 成熟框架模式
+* 高质量工程经验
+
+### 2. 蒸馏
+
+转成内部结构：
+
+* pattern card
+* anti-pattern card
+* remediation template
+* rollout template
+
+### 3. 影子验证
+
+* 只进 shadow planner
+* benchmark replay
+* offline simulation
+* 观察期评估后再晋升
+
+### 产物
+
+* `external_pattern_collector.*`
+* `pattern_cards/`
+* `SHADOW_LEARNING_REPORT.md`
+
+### 退出条件
+
+* 新知识默认只影响 shadow planner
+* 通过观察窗口后才允许正式采纳
+
+---
+
+## Phase 7：渐进采纳与观测运营
+
+### 目标
+
+系统可以长期跑，但保持可控。
+
+### 要做
+
+建立运行指标：
+
+* failure capture rate
+* auto-remediation success rate
+* false-fix rate
+* recurrence rate by signature
+* prevention hit rate
+* rollback count
+* mean time to recover
+
+### 产物
+
+* `SELF_HEALING_DASHBOARD.md`
+* `metrics/*.json`
+* `daily_check.*`
+
+### 退出条件
+
+* 能用指标判断系统是否真的越来越好
+* 不是靠主观感觉说“更聪明了”
+
+---
+
+# 二、阶段顺序建议
+
+## 第一阶段（先闭环）
+
+只做：
+
+* Phase 0
+* Phase 1
+* Phase 2
+* Phase 3
+* Phase 4
+
+先把：
+**失败接管 → 候选修复 → 沙箱验证**
+跑通。
+
+---
+
+## 第二阶段（再变聪明）
+
+再做：
+
+* Phase 5
+
+把：
+**经验沉淀 → 预防复发**
+做起来。
+
+---
+
+## 第三阶段（最后才做进化）
+
+最后做：
+
+* Phase 6
+* Phase 7
+
+把：
+**影子学习 → 渐进采纳 → 指标运营**
+接上。
+
+---
+
+# 三、你当前最该盯的验收标准
+
+不是“它会不会自己改代码”，而是下面这些：
+
+### P0
+
+* `edit failed` 能被自动接管
+* 能生成 failure bundle
+* 能出多个候选修法
+* 能在沙箱验证
+* 能产出 patch + report
+
+### P1
+
+* 同类问题第二次出现时能命中历史经验
+* 能在 edit 前拦截已知高危问题
+* 能自动补充回归测试
+
+### P2
+
+* 新学到的模式不会直接污染主链
+* 有 shadow 学习和晋升机制
+* 有数据证明复发率下降
+
+---
+
+
