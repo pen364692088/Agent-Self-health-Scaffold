@@ -121,14 +121,14 @@ class SandboxHealer:
         6. 清理沙箱
         """
         report_id = f"sandbox_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{bundle_id[:8]}"
-        branch_name = f"auto-fix/{bundle_id[:8]}/{candidate.candidate_id}"
+        branch_name = f"auto-fix-{bundle_id[:8]}-{candidate.candidate_id}"
         
         sandbox_path = None
         validation_results = []
         
         try:
             # 1. 创建沙箱
-            sandbox_path = self._create_sandbox(original_branch, branch_name)
+            sandbox_path = self._create_sandbox(original_branch, branch_name, bundle_id)
             
             # 2. 应用修复
             applied = self._apply_remedy(sandbox_path, candidate)
@@ -218,7 +218,7 @@ class SandboxHealer:
             # self._cleanup_sandbox(sandbox_path)
             pass
     
-    def _create_sandbox(self, base_branch: str, new_branch: str) -> Path:
+    def _create_sandbox(self, base_branch: str, new_branch: str, bundle_id: str = "") -> Path:
         """创建沙箱 worktree"""
         # 创建临时目录
         sandbox_name = new_branch.replace('/', '_').replace(' ', '_')
@@ -237,7 +237,7 @@ class SandboxHealer:
             shutil.rmtree(sandbox_path, ignore_errors=True)
         
         # 确保分支不存在（使用更短的分支名）
-        short_branch = f"auto-fix/{bundle_id[:8]}"
+        short_branch = f"auto-fix-{bundle_id[:8]}" if bundle_id else new_branch
         try:
             subprocess.run(
                 ["git", "branch", "-D", short_branch],
@@ -259,37 +259,15 @@ class SandboxHealer:
         
         new_branch = short_branch
         
-        # 创建新分支
+        # 使用 worktree add -b 直接创建新分支（更简洁）
         result = subprocess.run(
-            ["git", "checkout", "-b", new_branch],
+            ["git", "worktree", "add", "-b", new_branch, str(sandbox_path)],
             cwd=self.workspace,
             capture_output=True,
             text=True
         )
         
         if result.returncode != 0:
-            raise Exception(f"Failed to create branch: {result.stderr}")
-        
-        # 创建 worktree
-        result = subprocess.run(
-            ["git", "worktree", "add", str(sandbox_path), new_branch],
-            cwd=self.workspace,
-            capture_output=True,
-            text=True
-        )
-        
-        if result.returncode != 0:
-            # 回滚分支创建
-            subprocess.run(
-                ["git", "checkout", "main"],
-                cwd=self.workspace,
-                capture_output=True
-            )
-            subprocess.run(
-                ["git", "branch", "-D", new_branch],
-                cwd=self.workspace,
-                capture_output=True
-            )
             raise Exception(f"Failed to create worktree: {result.stderr}")
         
         return sandbox_path

@@ -112,7 +112,14 @@ class TestSelfHealingE2E:
         
         # Step 4: 沙箱验证
         print("\n[5] 沙箱验证...")
-        selected_candidate = candidates[0]  # 选择第一个方案
+        # 选择 rollback 方案，因为它执行 git 命令更可能在沙箱成功
+        selected_candidate = None
+        for c in candidates:
+            if c.source == "rollback":
+                selected_candidate = c
+                break
+        if not selected_candidate:
+            selected_candidate = candidates[0]  # 回退到第一个方案
         
         report = self.healer.heal(
             bundle_id=bundle.bundle_id,

@@ -104,3 +104,4 @@ Thumbs.db
 *.lock
 .callback-worker.pid
 .last_session_id
+.sandbox/
