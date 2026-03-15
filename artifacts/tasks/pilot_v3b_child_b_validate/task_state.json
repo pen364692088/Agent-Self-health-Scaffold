@@ -1,0 +1,17 @@
+{
+  "task_id": "pilot_v3b_child_b_validate",
+  "task_name": "Child B - Validate index",
+  "description": "Optional child task to validate index file integrity",
+  "parent_task_id": "pilot_v3b_parent_child",
+  "status": "completed",
+  "created_at": "2026-03-15T17:31:00Z",
+  "updated_at": "2026-03-15T17:36:00Z",
+  "steps": {
+    "S01": {"step_id": "S01", "step_name": "Check index exists", "status": "completed", "attempts": 1},
+    "S02": {"step_id": "S02", "step_name": "Verify links", "status": "completed", "attempts": 1}
+  },
+  "metadata": {
+    "relation_type": "optional",
+    "failure_policy": "continue_with_warning"
+  }
+}

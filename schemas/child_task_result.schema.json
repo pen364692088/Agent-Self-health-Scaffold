@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "child_task_result.schema.json",
+  "title": "Child Task Result",
+  "description": "Schema for child task results collected by parent in Checkpointed Step Loop v3-B",
+  "type": "object",
+  "required": [
+    "child_task_id",
+    "parent_task_id",
+    "status",
+    "artifacts",
+    "gate_passed",
+    "collected_at"
+  ],
+  "properties": {
+    "child_task_id": {
+      "type": "string",
+      "description": "Task ID of the child task",
+      "pattern": "^task_[a-zA-Z0-9_]+$"
+    },
+    "parent_task_id": {
+      "type": "string",
+      "description": "Task ID of the parent task",
+      "pattern": "^task_[a-zA-Z0-9_]+$"
+    },
+    "status": {
+      "type": "string",
+      "description": "Final status of the child task",
+      "enum": ["completed", "failed", "cancelled"]
+    },
+    "artifacts": {
+      "type": "object",
+      "description": "Paths to child task artifacts",
+      "required": ["summary_path", "gate_report_path", "receipt_path"],
+      "properties": {
+        "summary_path": {
+          "type": "string",
+          "description": "Path to child's SUMMARY.md"
+        },
+        "gate_report_path": {
+          "type": "string",
+          "description": "Path to child's gate_report.json"
+        },
+        "receipt_path": {
+          "type": "string",
+          "description": "Path to child's receipt.json"
+        },
+        "additional_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "path": { "type": "string" }
+            }
+          },
+          "description": "Additional artifacts produced by child"
+        }
+      }
+    },
+    "gate_passed": {
+      "type": "boolean",
+      "description": "Whether child's gate check passed"
+    },
+    "failure_class": {
+      "type": ["string", "null"],
+      "description": "Classification of failure if child failed",
+      "enum": ["execution_error", "gate_failure", "timeout", "cancelled", "resource_conflict", null]
+    },
+    "failure_message": {
+      "type": ["string", "null"],
+      "description": "Human-readable failure message"
+    },
+    "collected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when result was collected"
+    },
+    "relationship_id": {
+      "type": "string",
+      "description": "Reference to the relationship record",
+      "pattern": "^rel_[a-zA-Z0-9_]+$"
+    }
+  },
+  "additionalProperties": false
+}

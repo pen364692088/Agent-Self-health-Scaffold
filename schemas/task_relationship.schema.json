@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "task_relationship.schema.json",
+  "title": "Task Relationship",
+  "description": "Schema for parent-child task relationships in Checkpointed Step Loop v3-B",
+  "type": "object",
+  "required": [
+    "relationship_id",
+    "parent_task_id",
+    "child_task_id",
+    "relation_type",
+    "failure_policy",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "description": "Unique identifier for this relationship",
+      "pattern": "^rel_[a-zA-Z0-9_]+$"
+    },
+    "parent_task_id": {
+      "type": "string",
+      "description": "Task ID of the parent task",
+      "pattern": "^task_[a-zA-Z0-9_]+$"
+    },
+    "child_task_id": {
+      "type": "string",
+      "description": "Task ID of the child task",
+      "pattern": "^task_[a-zA-Z0-9_]+$"
+    },
+    "relation_type": {
+      "type": "string",
+      "description": "Type of relationship",
+      "enum": ["required", "optional"],
+      "default": "required"
+    },
+    "failure_policy": {
+      "type": "string",
+      "description": "How parent should handle child failure",
+      "enum": ["block_parent", "continue_with_warning", "cancel_children"],
+      "default": "block_parent"
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the relationship",
+      "enum": ["created", "dispatched", "running", "completed", "failed", "cancelled"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when relationship was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when relationship was last updated"
+    },
+    "result_ref": {
+      "type": ["string", "null"],
+      "description": "Path to child's result summary (null until child completes)"
+    },
+    "child_gate_result": {
+      "type": ["boolean", "null"],
+      "description": "Result of child's gate check (null until child completes)"
+    }
+  },
+  "additionalProperties": false
+}

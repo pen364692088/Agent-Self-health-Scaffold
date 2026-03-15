@@ -1,0 +1,46 @@
+{
+  "task_id": "pilot_v3b_parent_child",
+  "task_name": "v3-B Parent-Child Orchestration Pilot",
+  "description": "Demonstrates parent-child task orchestration with result collection and failure policies",
+  "status": "completed",
+  "created_at": "2026-03-15T17:30:00Z",
+  "updated_at": "2026-03-15T17:45:00Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "Initialize parent task",
+      "status": "completed",
+      "attempts": 1
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "Create child tasks",
+      "status": "completed",
+      "attempts": 1
+    },
+    "S03": {
+      "step_id": "S03",
+      "step_name": "Wait for children",
+      "status": "completed",
+      "attempts": 1
+    },
+    "S04": {
+      "step_id": "S04",
+      "step_name": "Collect child results",
+      "status": "completed",
+      "attempts": 1
+    },
+    "S05": {
+      "step_id": "S05",
+      "step_name": "Generate final summary",
+      "status": "completed",
+      "attempts": 1
+    }
+  },
+  "current_step": null,
+  "attempts": {},
+  "metadata": {
+    "v3b_feature": "parent_child_orchestration",
+    "child_count": 2
+  }
+}

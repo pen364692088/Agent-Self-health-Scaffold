@@ -1,0 +1,45 @@
+{
+  "task_id": "pilot_v3b_parent_child",
+  "steps": [
+    {
+      "step_id": "S01",
+      "name": "Initialize parent task",
+      "type": "execute_shell",
+      "command": "echo 'Initializing parent task'"
+    },
+    {
+      "step_id": "S02",
+      "name": "Create child tasks",
+      "type": "create_child_tasks",
+      "children": [
+        {
+          "name": "Child A - Scan docs",
+          "relation_type": "required",
+          "failure_policy": "block_parent"
+        },
+        {
+          "name": "Child B - Validate index",
+          "relation_type": "optional",
+          "failure_policy": "continue_with_warning"
+        }
+      ]
+    },
+    {
+      "step_id": "S03",
+      "name": "Wait for children",
+      "type": "wait_for_children"
+    },
+    {
+      "step_id": "S04",
+      "name": "Collect child results",
+      "type": "collect_child_results"
+    },
+    {
+      "step_id": "S05",
+      "name": "Generate final summary",
+      "type": "execute_shell",
+      "command": "cat artifacts/tasks/pilot_v3b_parent_child/final/SUMMARY.md"
+    }
+  ],
+  "created_at": "2026-03-15T17:30:00Z"
+}

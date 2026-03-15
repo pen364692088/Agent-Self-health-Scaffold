@@ -1,0 +1,40 @@
+{
+  "gate": "parent_completion",
+  "parent_task_id": "pilot_v3b_parent_child",
+  "checks": [
+    {
+      "check": "all_required_children_completed",
+      "passed": true,
+      "total_required": 1,
+      "completed": 1,
+      "pending": [],
+      "details": "1/1 required children completed"
+    },
+    {
+      "check": "required_child_artifacts_exist",
+      "passed": true,
+      "missing": [],
+      "details": "All artifact paths verified"
+    },
+    {
+      "check": "required_child_gates_passed",
+      "passed": true,
+      "failed_gates": [],
+      "details": "All required child gates passed"
+    },
+    {
+      "check": "no_blocking_child_failures",
+      "passed": true,
+      "details": "No required child failures with block_parent policy"
+    },
+    {
+      "check": "no_orphaned_children",
+      "passed": true,
+      "orphaned": [],
+      "total_children": 2,
+      "details": "All children tracked"
+    }
+  ],
+  "all_passed": true,
+  "timestamp": "2026-03-15T17:45:00Z"
+}

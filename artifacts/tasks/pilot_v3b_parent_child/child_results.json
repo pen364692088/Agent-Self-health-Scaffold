@@ -1,0 +1,33 @@
+{
+  "parent_task_id": "pilot_v3b_parent_child",
+  "collected_results": [
+    {
+      "child_task_id": "pilot_v3b_child_a_scan",
+      "parent_task_id": "pilot_v3b_parent_child",
+      "status": "completed",
+      "artifacts": {
+        "summary_path": "artifacts/tasks/pilot_v3b_child_a_scan/final/SUMMARY.md",
+        "gate_report_path": "artifacts/tasks/pilot_v3b_child_a_scan/final/gate_report.json",
+        "receipt_path": "artifacts/tasks/pilot_v3b_child_a_scan/final/receipt.json"
+      },
+      "gate_passed": true,
+      "failure_class": null,
+      "collected_at": "2026-03-15T17:35:30Z",
+      "relationship_id": "rel_v3b_child_a"
+    },
+    {
+      "child_task_id": "pilot_v3b_child_b_validate",
+      "parent_task_id": "pilot_v3b_parent_child",
+      "status": "completed",
+      "artifacts": {
+        "summary_path": "artifacts/tasks/pilot_v3b_child_b_validate/final/SUMMARY.md",
+        "gate_report_path": "artifacts/tasks/pilot_v3b_child_b_validate/final/gate_report.json",
+        "receipt_path": "artifacts/tasks/pilot_v3b_child_b_validate/final/receipt.json"
+      },
+      "gate_passed": true,
+      "failure_class": null,
+      "collected_at": "2026-03-15T17:36:30Z",
+      "relationship_id": "rel_v3b_child_b"
+    }
+  ]
+}
