@@ -1,0 +1,125 @@
+{
+  "audit_metadata": {
+    "audit_time": "2026-03-16T21:30:00Z",
+    "auditor": "Manager (Coordinator AI)",
+    "audit_type": "governance_infrastructure_truth_verification"
+  },
+  "expected_artifacts": [
+    {
+      "name": "policy_entry_registry.yaml",
+      "expected_path": "contracts/policy_entry_registry.yaml",
+      "purpose": "入口注册表 - 定义所有主链入口及其治理状态",
+      "scaffold_exists": false,
+      "workspace_exists": false,
+      "git_history_exists": false,
+      "verdict": "NOT_FOUND"
+    },
+    {
+      "name": "governance-hard-gate",
+      "expected_path": "tools/governance-hard-gate",
+      "purpose": "硬门禁检查工具 - 阻断未注册入口接入主链",
+      "scaffold_exists": false,
+      "workspace_exists": false,
+      "git_history_exists": false,
+      "verdict": "NOT_FOUND"
+    },
+    {
+      "name": "policy-entry-reconcile",
+      "expected_path": "tools/policy-entry-reconcile",
+      "purpose": "入口对账工具 - 发现未注册入口和 registry/实现不一致",
+      "scaffold_exists": false,
+      "workspace_exists": false,
+      "git_history_exists": false,
+      "verdict": "NOT_FOUND"
+    },
+    {
+      "name": "governance_hard_gate/",
+      "expected_path": "artifacts/governance_hard_gate/",
+      "purpose": "硬门禁交付产物 - 验证报告、证据等",
+      "scaffold_exists": false,
+      "workspace_exists": false,
+      "git_history_exists": false,
+      "verdict": "NOT_FOUND"
+    },
+    {
+      "name": "governance_exceptions.yaml",
+      "expected_path": "contracts/governance_exceptions.yaml",
+      "purpose": "例外注册表 - 记录结构化例外",
+      "scaffold_exists": false,
+      "workspace_exists": false,
+      "git_history_exists": false,
+      "verdict": "NOT_FOUND"
+    },
+    {
+      "name": "GOVERNANCE_EXCEPTION_POLICY.md",
+      "expected_path": "docs/GOVERNANCE_EXCEPTION_POLICY.md",
+      "purpose": "例外政策文档 - 定义例外规则",
+      "scaffold_exists": false,
+      "workspace_exists": false,
+      "git_history_exists": false,
+      "verdict": "NOT_FOUND"
+    },
+    {
+      "name": "entry_discovery_data",
+      "expected_path": "unknown",
+      "purpose": "入口发现数据 - 244发现/14注册/7不一致",
+      "scaffold_exists": false,
+      "workspace_exists": false,
+      "git_history_exists": false,
+      "data_source": "NOT_FOUND",
+      "verdict": "NOT_FOUND"
+    }
+  ],
+  "related_but_different_artifacts": [
+    {
+      "name": "Entry Point Consolidation",
+      "commit": "30e36d2",
+      "path": "multiple files",
+      "purpose": "Memory-LancedDB 入口点合并",
+      "related_to_task": false,
+      "note": "这是内存系统入口点合并，非治理入口发现"
+    },
+    {
+      "name": "Single Resume Entrypoint",
+      "commit": "241e599",
+      "path": "tools/subtask-orchestrate, tools/callback-worker",
+      "purpose": "统一主编排到单一 resume 入口点",
+      "related_to_task": false,
+      "note": "这是编排入口统一，非入口治理系统"
+    },
+    {
+      "name": "tool-gates.yml",
+      "path": ".github/workflows/tool-gates.yml",
+      "purpose": "CI/CD 工具 gate",
+      "related_to_task": false,
+      "note": "这是 CI 层面 gate，非运行时入口硬门禁"
+    },
+    {
+      "name": "memory-hardening.yml",
+      "path": ".github/workflows/memory-hardening.yml",
+      "purpose": "CI/CD 内存硬化",
+      "related_to_task": false,
+      "note": "这是 CI 层面检查，非运行时入口治理"
+    }
+  ],
+  "audit_summary": {
+    "total_expected": 7,
+    "found_in_scaffold": 0,
+    "found_in_workspace": 0,
+    "found_in_git_history": 0,
+    "not_found": 7,
+    "verdict": "C",
+    "verdict_description": "真实产物不存在，之前属于口头完成"
+  },
+  "search_commands_executed": [
+    "find . -name '*registry*' -type f",
+    "find . -name '*reconcile*' -type f",
+    "find . -name '*governance*' -type f",
+    "find . -name 'governance_exceptions.yaml'",
+    "find . -name 'GOVERNANCE_EXCEPTION_POLICY.md'",
+    "ls -la contracts/",
+    "ls -la artifacts/ | grep governance",
+    "git log --oneline --all | grep -i 'entry|governance|门禁|registry'",
+    "grep -r '244|232.*入口|14.*已注册|入口发现' --include='*.md' --include='*.json' --include='*.yaml'"
+  ]
+}

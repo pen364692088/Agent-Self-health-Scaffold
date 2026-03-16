@@ -1,0 +1,168 @@
+# Policy Entry Registry - 入口注册表
+# Version: 1.0.0
+# Created: 2026-03-16
+# Purpose: 定义所有主链入口及其治理状态
+
+---
+schema_version: "1.0"
+registry_version: "1.0.0"
+last_updated: "2026-03-16T21:30:00Z"
+
+# 入口分类定义
+entry_classes:
+  P0:
+    description: "主链强相关入口 - 能触发任务执行、影响任务决策、影响恢复/retry/resume、影响Gate/放行"
+    must_register: true
+    requires_governance: true
+  P1:
+    description: "潜在主链旁路入口 - callback/resume/recovery/bridge/router等可间接影响主链"
+    must_register: true
+    requires_governance: true
+  P2:
+    description: "辅助治理/运维/诊断入口 - 不直接推进主链业务，但影响治理观测与安全性"
+    must_register: false
+    requires_governance: false
+  P3:
+    description: "测试/示例/废弃/误报入口 - 不影响主链"
+    must_register: false
+    requires_governance: false
+
+# 入口注册表
+entries:
+  # P0 - 主链强相关入口
+  - entry_id: "entry-001"
+    entry_path: "tools/subtask-orchestrate"
+    entry_type: "cli"
+    class: "P0"
+    owner: "orchestration"
+    description: "子任务编排主入口 - 创建、恢复、状态查询"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: false
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+  - entry_id: "entry-002"
+    entry_path: "tools/callback-worker"
+    entry_type: "daemon"
+    class: "P0"
+    owner: "orchestration"
+    description: "回调处理 worker - 处理子代理完成回调"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: false
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+  - entry_id: "entry-003"
+    entry_path: "tools/auto-resume-orchestrator"
+    entry_type: "cli"
+    class: "P0"
+    owner: "recovery"
+    description: "自动恢复编排器 - 中断后自动恢复任务"
+    policy_bind_connected: true
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+  - entry_id: "entry-004"
+    entry_path: "tools/callback-handler"
+    entry_type: "cli"
+    class: "P1"
+    owner: "orchestration"
+    description: "回调处理入口 - 处理外部回调"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: false
+    boundary_checked: true
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+  - entry_id: "entry-005"
+    entry_path: "tools/callback-handler-auto"
+    entry_type: "cli"
+    class: "P1"
+    owner: "orchestration"
+    description: "自动回调处理 - 自动推进回调链"
+    policy_bind_connected: true
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+  - entry_id: "entry-006"
+    entry_path: "tools/agent-self-heal"
+    entry_type: "cli"
+    class: "P0"
+    owner: "recovery"
+    description: "自愈入口 - 自动检测并修复异常"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: true
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+  # P2 - 辅助治理入口
+  - entry_id: "entry-007"
+    entry_path: "tools/policy-daily-check"
+    entry_type: "cli"
+    class: "P2"
+    owner: "governance"
+    description: "策略日常检查 - 监控策略执行情况"
+    policy_bind_connected: false
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+  - entry_id: "entry-008"
+    entry_path: "tools/policy-doctor"
+    entry_type: "cli"
+    class: "P2"
+    owner: "governance"
+    description: "策略诊断工具 - 分析策略问题"
+    policy_bind_connected: false
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:30:00Z"
+
+# 统计
+statistics:
+  total_entries: 8
+  by_class:
+    P0: 4
+    P1: 2
+    P2: 2
+    P3: 0
+  governance_coverage:
+    policy_bind_connected: 6
+    guard_connected: 4
+    hard_judge_connected: 1
+    boundary_checked: 4
+    preflight_covered: 4
+    ci_covered: 0

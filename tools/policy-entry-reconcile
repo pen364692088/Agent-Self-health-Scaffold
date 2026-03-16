@@ -1,0 +1,219 @@
+#!/usr/bin/env python3
+"""
+Policy Entry Reconcile - 入口对账工具
+
+用途：
+- 扫描 tools/ 目录中的可执行文件
+- 与 registry 对账
+- 发现未注册入口和 registry/实现不一致项
+
+版本: 1.0.0
+创建: 2026-03-16
+"""
+
+import json
+import os
+import stat
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Any
+
+# 项目根目录
+ROOT = Path(__file__).resolve().parents[1]
+REGISTRY_PATH = ROOT / "contracts" / "policy_entry_registry.yaml"
+TOOLS_DIR = ROOT / "tools"
+
+
+def load_registry() -> Dict[str, Any]:
+    """加载入口注册表"""
+    import yaml
+
+    if not REGISTRY_PATH.exists():
+        return {"entries": [], "schema_version": "1.0"}
+
+    with open(REGISTRY_PATH, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def scan_tools_directory() -> List[Dict[str, Any]]:
+    """扫描 tools/ 目录，发现可执行入口"""
+    candidates = []
+
+    if not TOOLS_DIR.exists():
+        return candidates
+
+    for item in TOOLS_DIR.iterdir():
+        if item.is_file():
+            # 检查是否可执行
+            is_executable = os.access(item, os.X_OK)
+            # 检查是否是脚本（shebang 或 .py 扩展名）
+            is_script = item.suffix in [".py", ".sh"] or has_shebang(item)
+
+            if is_executable or is_script:
+                candidates.append({
+                    "path": f"tools/{item.name}",
+                    "name": item.name,
+                    "is_executable": is_executable,
+                    "is_script": is_script,
+                    "size": item.stat().st_size,
+                })
+
+    return candidates
+
+
+def has_shebang(file_path: Path) -> bool:
+    """检查文件是否有 shebang"""
+    try:
+        with open(file_path, "rb") as f:
+            first_line = f.readline(100)
+            return first_line.startswith(b"#!")
+    except:
+        return False
+
+
+def classify_entry(name: str) -> str:
+    """根据名称猜测入口分类"""
+    name_lower = name.lower()
+
+    # P0 - 主链强相关
+    p0_keywords = ["orchestrate", "resume", "callback-worker", "self-heal", "recover"]
+    if any(kw in name_lower for kw in p0_keywords):
+        return "P0"
+
+    # P1 - 潜在主链旁路
+    p1_keywords = ["callback", "handler", "bridge", "router", "worker"]
+    if any(kw in name_lower for kw in p1_keywords):
+        return "P1"
+
+    # P2 - 辅助治理
+    p2_keywords = ["check", "doctor", "audit", "monitor", "policy", "probe", "report", "summary"]
+    if any(kw in name_lower for kw in p2_keywords):
+        return "P2"
+
+    # P3 - 默认分类
+    return "P3"
+
+
+def reconcile(registry: Dict[str, Any], candidates: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """对账：比较 registry 和发现结果"""
+    registered_paths = {entry["entry_path"] for entry in registry.get("entries", [])}
+    candidate_paths = {c["path"] for c in candidates}
+
+    # 未注册入口
+    unregistered = [c for c in candidates if c["path"] not in registered_paths]
+
+    # 为每个未注册入口添加分类猜测
+    for entry in unregistered:
+        entry["suspected_class"] = classify_entry(entry["name"])
+        entry["needs_review"] = entry["suspected_class"] in ["P0", "P1"]
+
+    # registry 中存在但实际不存在的入口
+    missing_in_fs = [
+        entry for entry in registry.get("entries", [])
+        if entry["entry_path"] not in candidate_paths
+    ]
+
+    # 不一致项检查
+    inconsistencies = []
+
+    for entry in registry.get("entries", []):
+        path = ROOT / entry["entry_path"]
+        issues = []
+
+        if not path.exists():
+            issues.append("path_not_exists")
+        elif not os.access(path, os.X_OK):
+            issues.append("not_executable")
+
+        if issues:
+            inconsistencies.append({
+                "entry_id": entry.get("entry_id"),
+                "path": entry["entry_path"],
+                "issues": issues,
+            })
+
+    return {
+        "scan_timestamp": datetime.now(timezone.utc).isoformat(),
+        "registry_path": str(REGISTRY_PATH.relative_to(ROOT)),
+        "statistics": {
+            "total_candidates": len(candidates),
+            "registered_entries": len(registered_paths),
+            "unregistered_entries": len(unregistered),
+            "missing_in_fs": len(missing_in_fs),
+            "inconsistencies": len(inconsistencies),
+        },
+        "unregistered": unregistered,
+        "missing_in_fs": [
+            {"entry_id": e.get("entry_id"), "path": e["entry_path"]}
+            for e in missing_in_fs
+        ],
+        "inconsistencies": inconsistencies,
+    }
+
+
+def main():
+    """主函数"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Policy Entry Reconcile - 入口对账工具")
+    parser.add_argument("--format", choices=["json", "text"], default="json", help="输出格式")
+    parser.add_argument("--only-unregistered", action="store_true", help="仅显示未注册入口")
+    parser.add_argument("--only-p0-p1", action="store_true", help="仅显示 P0/P1 类入口")
+
+    args = parser.parse_args()
+
+    # 加载 registry
+    registry = load_registry()
+
+    # 扫描 tools 目录
+    candidates = scan_tools_directory()
+
+    # 对账
+    result = reconcile(registry, candidates)
+
+    # 过滤输出
+    if args.only_unregistered:
+        result = {
+            "scan_timestamp": result["scan_timestamp"],
+            "unregistered": result["unregistered"],
+            "statistics": {"unregistered_count": len(result["unregistered"])},
+        }
+
+    if args.only_p0_p1:
+        p0_p1 = [e for e in result.get("unregistered", []) if e.get("suspected_class") in ["P0", "P1"]]
+        result["unregistered"] = p0_p1
+        result["statistics"]["p0_p1_count"] = len(p0_p1)
+
+    # 输出
+    if args.format == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"=== 入口对账结果 ===")
+        print(f"扫描时间: {result['scan_timestamp']}")
+        print(f"\n统计:")
+        for k, v in result["statistics"].items():
+            print(f"  {k}: {v}")
+
+        if result.get("unregistered"):
+            print(f"\n未注册入口 ({len(result['unregistered'])} 个):")
+            for entry in result["unregistered"]:
+                print(f"  - {entry['path']} (疑似: {entry.get('suspected_class', 'unknown')})")
+
+        if result.get("inconsistencies"):
+            print(f"\n不一致项 ({len(result['inconsistencies'])} 个):")
+            for inc in result["inconsistencies"]:
+                print(f"  - {inc['path']}: {', '.join(inc['issues'])}")
+
+    # 返回码
+    unregistered_count = len(result.get("unregistered", []))
+    inconsistencies_count = len(result.get("inconsistencies", []))
+
+    if unregistered_count > 0 or inconsistencies_count > 0:
+        sys.exit(1)  # 有问题，返回非零
+    else:
+        sys.exit(0)  # 完全对齐
+
+
+if __name__ == "__main__":
+    main()

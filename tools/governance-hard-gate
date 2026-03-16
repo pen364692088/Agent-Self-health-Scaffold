@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""
+Governance Hard Gate - 治理硬门禁
+
+用途：
+- 检查入口是否在 registry 中注册
+- 检查入口是否满足治理要求
+- 对不合规入口返回非零退出码（阻断接入主链）
+
+版本: 1.0.0
+创建: 2026-03-16
+"""
+
+import json
+import sys
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+
+# 项目根目录
+ROOT = Path(__file__).resolve().parents[1]
+REGISTRY_PATH = ROOT / "contracts" / "policy_entry_registry.yaml"
+
+
+def load_registry() -> Dict[str, Any]:
+    """加载入口注册表"""
+    import yaml
+
+    if not REGISTRY_PATH.exists():
+        return {"entries": []}
+
+    with open(REGISTRY_PATH, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def find_entry(registry: Dict[str, Any], entry_path: str) -> Optional[Dict[str, Any]]:
+    """在 registry 中查找入口"""
+    for entry in registry.get("entries", []):
+        if entry.get("entry_path") == entry_path:
+            return entry
+    return None
+
+
+def check_governance(entry: Dict[str, Any]) -> List[str]:
+    """检查入口的治理接入状态"""
+    issues = []
+
+    entry_class = entry.get("class", "P3")
+
+    # P0/P1 必须满足治理要求
+    if entry_class in ["P0", "P1"]:
+        if not entry.get("policy_bind_connected"):
+            issues.append("policy_bind_not_connected")
+        if not entry.get("guard_connected"):
+            issues.append("guard_not_connected")
+        if not entry.get("boundary_checked"):
+            issues.append("boundary_not_checked")
+
+    # P0 还需要 hard_judge
+    if entry_class == "P0":
+        if not entry.get("hard_judge_connected"):
+            issues.append("hard_judge_not_connected")
+
+    return issues
+
+
+def check_entry(entry_path: str, require_governance: bool = True) -> Dict[str, Any]:
+    """检查单个入口"""
+    registry = load_registry()
+
+    result = {
+        "entry_path": entry_path,
+        "registered": False,
+        "entry_id": None,
+        "entry_class": None,
+        "governance_issues": [],
+        "block": False,
+        "reason": None,
+    }
+
+    # 检查是否注册
+    entry = find_entry(registry, entry_path)
+
+    if not entry:
+        result["block"] = True
+        result["reason"] = "not_registered"
+        return result
+
+    result["registered"] = True
+    result["entry_id"] = entry.get("entry_id")
+    result["entry_class"] = entry.get("class")
+
+    # 检查治理接入
+    if require_governance:
+        issues = check_governance(entry)
+        result["governance_issues"] = issues
+
+        if issues:
+            result["block"] = True
+            result["reason"] = "governance_incomplete"
+
+    # 检查状态
+    if entry.get("status") == "deprecated":
+        result["block"] = True
+        result["reason"] = "entry_deprecated"
+
+    return result
+
+
+def main():
+    """主函数"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Governance Hard Gate - 治理硬门禁")
+    parser.add_argument("entry_path", nargs="?", help="要检查的入口路径（如 tools/subtask-orchestrate）")
+    parser.add_argument("--all", action="store_true", help="检查 registry 中所有入口")
+    parser.add_argument("--json", action="store_true", help="JSON 格式输出")
+    parser.add_argument("--require-governance", action="store_true", default=True, help="要求治理接入（默认开启）")
+    parser.add_argument("--skip-governance", action="store_true", help="跳过治理检查，仅检查注册状态")
+
+    args = parser.parse_args()
+
+    require_governance = not args.skip_governance
+
+    results = []
+
+    if args.all:
+        # 检查所有注册入口
+        registry = load_registry()
+        for entry in registry.get("entries", []):
+            result = check_entry(entry["entry_path"], require_governance)
+            results.append(result)
+
+    elif args.entry_path:
+        # 检查单个入口
+        result = check_entry(args.entry_path, require_governance)
+        results.append(result)
+
+    else:
+        parser.print_help()
+        sys.exit(2)
+
+    # 输出
+    if args.json:
+        print(json.dumps(results, indent=2, ensure_ascii=False))
+    else:
+        for r in results:
+            status = "✅ PASS" if not r["block"] else "❌ BLOCK"
+            print(f"{status} | {r['entry_path']}")
+            if r["block"]:
+                print(f"    Reason: {r['reason']}")
+                if r["governance_issues"]:
+                    print(f"    Governance Issues: {', '.join(r['governance_issues'])}")
+
+    # 返回码
+    blocked = any(r["block"] for r in results)
+    sys.exit(1 if blocked else 0)
+
+
+if __name__ == "__main__":
+    main()
