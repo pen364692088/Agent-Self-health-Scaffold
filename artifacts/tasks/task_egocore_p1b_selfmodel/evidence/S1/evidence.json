@@ -1,0 +1,18 @@
+{
+  "step_id": "S1",
+  "title": "创建 Self-Model Schema",
+  "completed_at": "2026-03-16T04:00:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/contracts/self_model.schema.json",
+      "type": "schema",
+      "lines": 380,
+      "description": "Self-Model Schema"
+    }
+  ],
+  "schema_fields": {
+    "required_fields": 13,
+    "core_fields": ["capabilities", "limitations", "active_goals", "standing_commitments", "tool_authority_boundary", "dependency_map", "confidence_by_domain", "known_unknowns"],
+    "excluded_fields": ["memory", "appraisal", "emotion", "internal_state", "long_term_summary"]
+  }
+}
