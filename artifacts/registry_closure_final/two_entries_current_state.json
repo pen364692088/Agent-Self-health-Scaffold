@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-03-16T22:15:00Z",
+  "phase": "A",
+  "description": "两入口缺口核实",
+  "entries": [
+    {
+      "entry_id": "entry-020",
+      "entry_path": "tools/spawn-with-callback",
+      "current_classification": "P1",
+      "current_registry_status": "pending_fix",
+      "policy_bind_connected": false,
+      "guard_connected": false,
+      "hard_judge_connected": false,
+      "boundary_checked": false,
+      "preflight_covered": false,
+      "ci_covered": false,
+      "actual_gap": [
+        "policy_bind_not_connected - 未接入策略绑定",
+        "guard_not_connected - 未接入 guard 保护",
+        "boundary_not_checked - 未检查边界"
+      ],
+      "why_register_after_fix": "P1 调试入口，缺少治理接入",
+      "tool_purpose": "调试用底层 spawn，创建带回调的子任务",
+      "tool_layer": "debug",
+      "tool_warning": "不推荐直接使用，请用 subtask-orchestrate",
+      "risk_assessment": "中风险 - 可直接触发子代理执行",
+      "recommended_fix": {
+        "policy_bind_connected": true,
+        "guard_connected": true,
+        "hard_judge_connected": false,
+        "boundary_checked": true,
+        "preflight_covered": false,
+        "ci_covered": false
+      },
+      "fix_reason": "P1 入口需要 policy_bind + guard + boundary，不需要 hard_judge"
+    },
+    {
+      "entry_id": "entry-021",
+      "entry_path": "tools/memory-scope-router",
+      "current_classification": "P1",
+      "current_registry_status": "pending_fix",
+      "policy_bind_connected": false,
+      "guard_connected": false,
+      "hard_judge_connected": false,
+      "boundary_checked": false,
+      "preflight_covered": false,
+      "ci_covered": false,
+      "actual_gap": [
+        "policy_bind_not_connected - 未接入策略绑定",
+        "guard_not_connected - 未接入 guard 保护",
+        "boundary_not_checked - 未检查边界"
+      ],
+      "why_register_after_fix": "P1 路由入口，缺少治理接入",
+      "tool_purpose": "轻量主题路由器，识别用户消息涉及的 scope",
+      "tool_layer": "auxiliary",
+      "tool_warning": null,
+      "risk_assessment": "低风险 - 只做 scope 识别，不执行写操作",
+      "recommended_fix": {
+        "policy_bind_connected": true,
+        "guard_connected": false,
+        "hard_judge_connected": false,
+        "boundary_checked": true,
+        "preflight_covered": false,
+        "ci_covered": false
+      },
+      "fix_reason": "P1 路由入口只做识别，需要 policy_bind + boundary，不需要 guard"
+    }
+  ],
+  "summary": {
+    "total_entries": 2,
+    "both_missing_hard_judge": false,
+    "both_need_policy_bind": true,
+    "both_need_boundary": true,
+    "spawn_needs_guard": true,
+    "router_guard_optional": true
+  }
+}

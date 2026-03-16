@@ -1,0 +1,1940 @@
+{
+  "scan_timestamp": "2026-03-16T21:51:05.455601+00:00",
+  "registry_path": "contracts/policy_entry_registry.yaml",
+  "statistics": {
+    "total_candidates": 234,
+    "registered_entries": 21,
+    "unregistered_entries": 213,
+    "missing_in_fs": 0,
+    "inconsistencies": 1
+  },
+  "unregistered": [
+    {
+      "path": "tools/trigger-policy",
+      "name": "trigger-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 19891,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-emit",
+      "name": "memory-emit",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9992,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/hook_smoke_test",
+      "name": "hook_smoke_test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8633,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/verify-and-close",
+      "name": "verify-and-close",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12651,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/workflow-init",
+      "name": "workflow-init",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5628,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/test-callback-acceptance",
+      "name": "test-callback-acceptance",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9778,
+      "suspected_class": "P1",
+      "needs_review": true
+    },
+    {
+      "path": "tools/handoff-create",
+      "name": "handoff-create",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4616,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/governance-hard-gate",
+      "name": "governance-hard-gate",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4648,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-retrieve",
+      "name": "memory-retrieve",
+      "is_executable": true,
+      "is_script": true,
+      "size": 19463,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-execution-degradation",
+      "name": "probe-execution-degradation",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14735,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-archive.original",
+      "name": "session-archive.original",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9016,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/context-retrieve",
+      "name": "context-retrieve",
+      "is_executable": true,
+      "is_script": true,
+      "size": 24046,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/state-lock",
+      "name": "state-lock",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5764,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/p0-soak-monitor",
+      "name": "p0-soak-monitor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11459,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-execution-policy",
+      "name": "probe-execution-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5338,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-truth-alignment",
+      "name": "probe-truth-alignment",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8765,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/route-rebind-guard-heartbeat",
+      "name": "route-rebind-guard-heartbeat",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4667,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-probe",
+      "name": "agent-probe",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3869,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/context-compress",
+      "name": "context-compress",
+      "is_executable": true,
+      "is_script": true,
+      "size": 23544,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session_reuse_lib.py",
+      "name": "session_reuse_lib.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9784,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/capsule-builder-v3.py",
+      "name": "capsule-builder-v3.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13887,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-session-persistence",
+      "name": "probe-session-persistence",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5881,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/verify-and-close-v2",
+      "name": "verify-and-close-v2",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5972,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-context-shadow",
+      "name": "probe-context-shadow",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13896,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/execution-policy-common.sh",
+      "name": "execution-policy-common.sh",
+      "is_executable": false,
+      "is_script": true,
+      "size": 1850,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/safe-message",
+      "name": "safe-message",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3450,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/capture-evidence-hot-zone",
+      "name": "capture-evidence-hot-zone",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1526,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/soak-verdict-check",
+      "name": "soak-verdict-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6316,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/subagent-srap-check",
+      "name": "subagent-srap-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3460,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-receipt-pipeline",
+      "name": "probe-receipt-pipeline",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10508,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-token-counter-cjk",
+      "name": "probe-token-counter-cjk",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10293,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/self-improving-adapter",
+      "name": "self-improving-adapter",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4311,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-generate-proposal",
+      "name": "agent-generate-proposal",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4165,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/gate-a-signer",
+      "name": "gate-a-signer",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3322,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/serial-guide",
+      "name": "serial-guide",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2745,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-recovery-summary",
+      "name": "agent-recovery-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8672,
+      "suspected_class": "P0",
+      "needs_review": true
+    },
+    {
+      "path": "tools/probe-subagent-inbox-metrics",
+      "name": "probe-subagent-inbox-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10492,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-health-summary",
+      "name": "agent-health-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1470,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-callback-delivery",
+      "name": "probe-callback-delivery",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13461,
+      "suspected_class": "P1",
+      "needs_review": true
+    },
+    {
+      "path": "tools/testbot-decision-tracker",
+      "name": "testbot-decision-tracker",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2203,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/execution-degradation-monitor",
+      "name": "execution-degradation-monitor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10464,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/execution-metrics",
+      "name": "execution-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4967,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-longrunkit-state-machine",
+      "name": "probe-longrunkit-state-machine",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10868,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-search",
+      "name": "memory-search",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2596,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/capture-wake-session-diff",
+      "name": "capture-wake-session-diff",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7012,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/web-search",
+      "name": "web-search",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1136,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-check-advance",
+      "name": "project-check-advance",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7922,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/auto-receipt",
+      "name": "auto-receipt",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2679,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/s1-validator",
+      "name": "s1-validator",
+      "is_executable": true,
+      "is_script": true,
+      "size": 17043,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/check-pending-spawns",
+      "name": "check-pending-spawns",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3259,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/verify-callback-guards",
+      "name": "verify-callback-guards",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10340,
+      "suspected_class": "P1",
+      "needs_review": true
+    },
+    {
+      "path": "tools/s1-sampler-v2",
+      "name": "s1-sampler-v2",
+      "is_executable": true,
+      "is_script": true,
+      "size": 23048,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/policy-violation-summary",
+      "name": "policy-violation-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7341,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/antfarm-run.sh",
+      "name": "antfarm-run.sh",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2374,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-bootstrap-retrieve",
+      "name": "session-bootstrap-retrieve",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10452,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-review",
+      "name": "memory-review",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5012,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/policy-effectiveness-metrics",
+      "name": "policy-effectiveness-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9620,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/context-budget-watcher",
+      "name": "context-budget-watcher",
+      "is_executable": true,
+      "is_script": true,
+      "size": 17755,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/safe-write",
+      "name": "safe-write",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3762,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/handle-subagent-complete",
+      "name": "handle-subagent-complete",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4688,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-indexer",
+      "name": "session-indexer",
+      "is_executable": true,
+      "is_script": true,
+      "size": 19498,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/web-search.sh",
+      "name": "web-search.sh",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1136,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-handoff-integrity",
+      "name": "probe-handoff-integrity",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7499,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-sweeper",
+      "name": "memory-sweeper",
+      "is_executable": true,
+      "is_script": true,
+      "size": 38773,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-callback-worker-doctor",
+      "name": "probe-callback-worker-doctor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14039,
+      "suspected_class": "P0",
+      "needs_review": true
+    },
+    {
+      "path": "tools/context-shadow-report",
+      "name": "context-shadow-report",
+      "is_executable": true,
+      "is_script": true,
+      "size": 19431,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/s1-dashboard",
+      "name": "s1-dashboard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13376,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-task-completion-protocol",
+      "name": "probe-task-completion-protocol",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13000,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/completion-bypass-audit",
+      "name": "completion-bypass-audit",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9630,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/route-rebind-guard",
+      "name": "route-rebind-guard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4734,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/policy-eval",
+      "name": "policy-eval",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5865,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/prompt-assemble",
+      "name": "prompt-assemble",
+      "is_executable": true,
+      "is_script": true,
+      "size": 29629,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/s1-sampler",
+      "name": "s1-sampler",
+      "is_executable": true,
+      "is_script": true,
+      "size": 16660,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/demo-auto-resume-restart-test",
+      "name": "demo-auto-resume-restart-test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4668,
+      "suspected_class": "P0",
+      "needs_review": true
+    },
+    {
+      "path": "tools/multi-spawn",
+      "name": "multi-spawn",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9377,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/policy-entry-reconcile",
+      "name": "policy-entry-reconcile",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6942,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/shadow_watcher",
+      "name": "shadow_watcher",
+      "is_executable": true,
+      "is_script": true,
+      "size": 15525,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/pre-reply-guard",
+      "name": "pre-reply-guard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7524,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-embedding-policy",
+      "name": "probe-embedding-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9682,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/revalidate_calibration.py",
+      "name": "revalidate_calibration.py",
+      "is_executable": false,
+      "is_script": true,
+      "size": 5437,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-gate-sweep",
+      "name": "project-gate-sweep",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3830,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/test-callback-auto",
+      "name": "test-callback-auto",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3514,
+      "suspected_class": "P1",
+      "needs_review": true
+    },
+    {
+      "path": "tools/srap-start-shadow",
+      "name": "srap-start-shadow",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2468,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-context-overflow",
+      "name": "probe-context-overflow",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12747,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/retry-policy",
+      "name": "retry-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2191,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-archive",
+      "name": "session-archive",
+      "is_executable": true,
+      "is_script": true,
+      "size": 532,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-start-recovery.bak",
+      "name": "session-start-recovery.bak",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13746,
+      "suspected_class": "P0",
+      "needs_review": true
+    },
+    {
+      "path": "tools/probe-webhook-fallback",
+      "name": "probe-webhook-fallback",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12274,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/v1_v2_replay_eval.py",
+      "name": "v1_v2_replay_eval.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13780,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-soak-metrics",
+      "name": "agent-soak-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4832,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-instance-readiness-check",
+      "name": "agent-instance-readiness-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7187,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/check_v2_baseline.py",
+      "name": "check_v2_baseline.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11846,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-state-doctor",
+      "name": "session-state-doctor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8358,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/trigger-spawn",
+      "name": "trigger-spawn",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2535,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/shadow_trace_collector.py",
+      "name": "shadow_trace_collector.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11740,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-deep-audit",
+      "name": "session-deep-audit",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8016,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/debug-hooks",
+      "name": "debug-hooks",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3980,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-subagent-orchestration",
+      "name": "probe-subagent-orchestration",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10885,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-route-probe",
+      "name": "session-route-probe",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14077,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/decision_context_extractor.py",
+      "name": "decision_context_extractor.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10560,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/safe-replace",
+      "name": "safe-replace",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5474,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-incident-report",
+      "name": "agent-incident-report",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3434,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/subagent-inbox-metrics",
+      "name": "subagent-inbox-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4008,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/subagent-conflict",
+      "name": "subagent-conflict",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7987,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/task-ledger",
+      "name": "task-ledger",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5526,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/testbot-monitor",
+      "name": "testbot-monitor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 885,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/materialize-state",
+      "name": "materialize-state",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12058,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-check-init",
+      "name": "project-check-init",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10006,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-check-run",
+      "name": "project-check-run",
+      "is_executable": true,
+      "is_script": true,
+      "size": 29429,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/mvp11-6-daily-check",
+      "name": "mvp11-6-daily-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5382,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-memory-retrieval",
+      "name": "probe-memory-retrieval",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9999,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/continuity-event-log",
+      "name": "continuity-event-log",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8542,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-risk-alerts",
+      "name": "memory-risk-alerts",
+      "is_executable": true,
+      "is_script": true,
+      "size": 29424,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/s1-daily-report",
+      "name": "s1-daily-report",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7235,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-continuity-daily-check",
+      "name": "session-continuity-daily-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6421,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-lancedb-seed",
+      "name": "memory-lancedb-seed",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7066,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/openviking-l2-smoke-test",
+      "name": "openviking-l2-smoke-test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7146,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/ci-memory-hardening",
+      "name": "ci-memory-hardening",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6596,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/retrieval-regression-runner",
+      "name": "retrieval-regression-runner",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7509,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-capability-check",
+      "name": "agent-capability-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 19655,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/tool_doctor",
+      "name": "tool_doctor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 23406,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/parse-used-memory",
+      "name": "parse-used-memory",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4880,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/gate-b-signer",
+      "name": "gate-b-signer",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1738,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/check-continuity-live-sources",
+      "name": "check-continuity-live-sources",
+      "is_executable": true,
+      "is_script": true,
+      "size": 967,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-telemetry-normalize",
+      "name": "agent-telemetry-normalize",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5915,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/run-state",
+      "name": "run-state",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11493,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-proposal-summary",
+      "name": "agent-proposal-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2932,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-forgetting-guard",
+      "name": "agent-forgetting-guard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5358,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-mailbox-integrity",
+      "name": "probe-mailbox-integrity",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14408,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-governance-test",
+      "name": "memory-governance-test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5707,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/trigger-validation-test",
+      "name": "trigger-validation-test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3186,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-proposal-boundary",
+      "name": "probe-proposal-boundary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5870,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-longrunkit-deadlock",
+      "name": "probe-longrunkit-deadlock",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11737,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-dashboard",
+      "name": "memory-dashboard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 22228,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-health-check",
+      "name": "agent-health-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6478,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/write-policy-check",
+      "name": "write-policy-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3810,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/workflow-validate",
+      "name": "workflow-validate",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6036,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/monitor-bucket-metrics",
+      "name": "monitor-bucket-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3667,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/gate-eval",
+      "name": "gate-eval",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12545,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-daily-obs",
+      "name": "memory-daily-obs",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5879,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/memory-lancedb-seed.mjs",
+      "name": "memory-lancedb-seed.mjs",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4887,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/state-write-atomic",
+      "name": "state-write-atomic",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4517,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/receipt-signer",
+      "name": "receipt-signer",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7116,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/test-callback-regression",
+      "name": "test-callback-regression",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4602,
+      "suspected_class": "P1",
+      "needs_review": true
+    },
+    {
+      "path": "tools/finalize-response",
+      "name": "finalize-response",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5071,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/serial-subagents",
+      "name": "serial-subagents",
+      "is_executable": false,
+      "is_script": true,
+      "size": 3549,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/policy-shadow-tracker",
+      "name": "policy-shadow-tracker",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7073,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-session-archive",
+      "name": "probe-session-archive",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9152,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/policy-daily-report",
+      "name": "policy-daily-report",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8299,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/workspace_detector.py",
+      "name": "workspace_detector.py",
+      "is_executable": false,
+      "is_script": true,
+      "size": 1402,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/testbot-chat",
+      "name": "testbot-chat",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4438,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/gate1-check",
+      "name": "gate1-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6047,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/subagent-inbox",
+      "name": "subagent-inbox",
+      "is_executable": true,
+      "is_script": true,
+      "size": 17620,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-summary-generation",
+      "name": "probe-summary-generation",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13025,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-daily-audit",
+      "name": "session-daily-audit",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6467,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/archive-with-distill",
+      "name": "archive-with-distill",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8030,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-telegram-notification",
+      "name": "probe-telegram-notification",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10963,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-capability-summary",
+      "name": "agent-capability-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6425,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/soak-monitor",
+      "name": "soak-monitor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4454,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/route-write-guard",
+      "name": "route-write-guard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11553,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-capability-check.original",
+      "name": "agent-capability-check.original",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8956,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/agent-health-snapshot",
+      "name": "agent-health-snapshot",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3705,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/inspect-openclaw-session-route",
+      "name": "inspect-openclaw-session-route",
+      "is_executable": true,
+      "is_script": true,
+      "size": 786,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-longrunkit-timeout-retry",
+      "name": "probe-longrunkit-timeout-retry",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11338,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/test-path-b-acceptance",
+      "name": "test-path-b-acceptance",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11717,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/final-aggregator",
+      "name": "final-aggregator",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4327,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/cc-spawn",
+      "name": "cc-spawn",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3962,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/install-execution-policy",
+      "name": "install-execution-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 17316,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/distill-content",
+      "name": "distill-content",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5407,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-check",
+      "name": "project-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12408,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/capsule-builder",
+      "name": "capsule-builder",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1375,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/output-interceptor",
+      "name": "output-interceptor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4923,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/shadow_spotcheck.py",
+      "name": "shadow_spotcheck.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9886,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/post-compaction-handoff",
+      "name": "post-compaction-handoff",
+      "is_executable": true,
+      "is_script": true,
+      "size": 16875,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-route",
+      "name": "session-route",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4404,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/gate-c-signer",
+      "name": "gate-c-signer",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1659,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/smart-stable-metrics",
+      "name": "smart-stable-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12899,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/auto-context-compact",
+      "name": "auto-context-compact",
+      "is_executable": true,
+      "is_script": true,
+      "size": 20866,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/capsule-builder-v2.py",
+      "name": "capsule-builder-v2.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 16980,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/receipt-validator",
+      "name": "receipt-validator",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9793,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/s1-validator-run",
+      "name": "s1-validator-run",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14850,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/callback-daily-summary",
+      "name": "callback-daily-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4310,
+      "suspected_class": "P1",
+      "needs_review": true
+    },
+    {
+      "path": "tools/external-spawn",
+      "name": "external-spawn",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2545,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/searx-search.sh",
+      "name": "searx-search.sh",
+      "is_executable": true,
+      "is_script": true,
+      "size": 617,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/enforce-task-completion",
+      "name": "enforce-task-completion",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3465,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/srap-daily-report",
+      "name": "srap-daily-report",
+      "is_executable": true,
+      "is_script": true,
+      "size": 531,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-daily-rollup",
+      "name": "probe-daily-rollup",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9935,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/compaction-summary",
+      "name": "compaction-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3785,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-openviking-retrieval",
+      "name": "probe-openviking-retrieval",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10300,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-execution-policy-v2",
+      "name": "probe-execution-policy-v2",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4334,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/use-link-audit",
+      "name": "use-link-audit",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11216,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/state-journal-append",
+      "name": "state-journal-append",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5862,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/monitor-shadow-sampler",
+      "name": "monitor-shadow-sampler",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3880,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/pre-reply-guard.bak",
+      "name": "pre-reply-guard.bak",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6127,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/context-budget-check",
+      "name": "context-budget-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14205,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-gate-consistency",
+      "name": "probe-gate-consistency",
+      "is_executable": true,
+      "is_script": true,
+      "size": 15640,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/policy-violations-report",
+      "name": "policy-violations-report",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5297,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-continuity-event-log",
+      "name": "probe-continuity-event-log",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14813,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-check-report",
+      "name": "project-check-report",
+      "is_executable": true,
+      "is_script": true,
+      "size": 27923,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/done-guard",
+      "name": "done-guard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9746,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/event-queue",
+      "name": "event-queue",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8326,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/repo-root-guard",
+      "name": "repo-root-guard",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12428,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/hard-block-policy",
+      "name": "hard-block-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1788,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/state-authority",
+      "name": "state-authority",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6630,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/sync-shared-memory",
+      "name": "sync-shared-memory",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5468,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/parse-continuity-events",
+      "name": "parse-continuity-events",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3678,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/probe-native-compaction",
+      "name": "probe-native-compaction",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12055,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-check-status",
+      "name": "project-check-status",
+      "is_executable": true,
+      "is_script": true,
+      "size": 16708,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/threshold_test_runner",
+      "name": "threshold_test_runner",
+      "is_executable": true,
+      "is_script": true,
+      "size": 17363,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/project-check-phase",
+      "name": "project-check-phase",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14081,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/check-response-path-coverage",
+      "name": "check-response-path-coverage",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4651,
+      "suspected_class": "P2",
+      "needs_review": false
+    },
+    {
+      "path": "tools/session-query",
+      "name": "session-query",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11376,
+      "suspected_class": "P3",
+      "needs_review": false
+    },
+    {
+      "path": "tools/kill_switch_retest",
+      "name": "kill_switch_retest",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3344,
+      "suspected_class": "P3",
+      "needs_review": false
+    }
+  ],
+  "missing_in_fs": [],
+  "inconsistencies": [
+    {
+      "entry_id": "entry-015",
+      "path": "tools/resume_readiness_calibration.py",
+      "issues": [
+        "not_executable"
+      ]
+    }
+  ]
+}

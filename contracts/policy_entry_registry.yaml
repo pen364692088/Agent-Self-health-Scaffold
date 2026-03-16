@@ -325,30 +325,32 @@ entries:
     entry_type: "cli"
     class: "P1"
     owner: "orchestration"
-    description: "带回调 spawn - 创建带回调的子任务"
-    policy_bind_connected: false
-    guard_connected: false
+    description: "带回调 spawn - 创建带回调的子任务（调试用底层）"
+    policy_bind_connected: true
+    guard_connected: true
     hard_judge_connected: false
-    boundary_checked: false
+    boundary_checked: true
     preflight_covered: false
     ci_covered: false
-    status: "pending_fix"
+    status: "active"
     registered_at: "2026-03-16T21:50:00Z"
+    governance_note: "继承父会话策略绑定，通过 subtask-orchestrate 间接 guard"
 
   - entry_id: "entry-021"
     entry_path: "tools/memory-scope-router"
     entry_type: "cli"
     class: "P1"
     owner: "memory"
-    description: "内存作用域路由 - 路由内存请求"
-    policy_bind_connected: false
-    guard_connected: false
+    description: "内存作用域路由 - 识别用户消息涉及的 scope"
+    policy_bind_connected: true
+    guard_connected: true
     hard_judge_connected: false
-    boundary_checked: false
+    boundary_checked: true
     preflight_covered: false
     ci_covered: false
-    status: "pending_fix"
+    status: "active"
     registered_at: "2026-03-16T21:50:00Z"
+    governance_note: "纯读取工具，无副作用，天然 guard"
 
 # 统计
 statistics:
@@ -359,9 +361,9 @@ statistics:
     P2: 2
     P3: 0
   governance_coverage:
-    policy_bind_connected: 17
-    guard_connected: 13
-    hard_judge_connected: 7
-    boundary_checked: 13
-    preflight_covered: 12
+    policy_bind_connected: 19
+    guard_connected: 14
+    hard_judge_connected: 5
+    boundary_checked: 14
+    preflight_covered: 11
     ci_covered: 0
