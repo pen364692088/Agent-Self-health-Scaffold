@@ -3,6 +3,7 @@
 **Version**: 1.0.0
 **Date**: 2026-03-30 (TBD)
 **Status**: ⏳ PENDING
+**Due**: 2026-03-30 23:59:59 America/Winnipeg (2026-03-31T04:59:59Z)
 
 ---
 
@@ -142,5 +143,5 @@ TBD
 
 ---
 
-**Generated**: 2026-03-30T23:59:59Z (TBD)
+**Generated**: 2026-03-30 23:59:59 America/Winnipeg (TBD)
 **Signed**: Manager
