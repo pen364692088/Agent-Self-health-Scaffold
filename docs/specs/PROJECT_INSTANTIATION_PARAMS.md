@@ -67,8 +67,8 @@ canonical_repo_root: "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmoti
 git_remote: "git@github.com:pen364692088/OpenEmotion.git"
 
 session_start_entry:
-  type: "openclaw_workspace"  # 主要通过 workspace 访问
-  path: "/home/moonlight/.openclaw/workspace/tools/session-start-recovery"
+  type: "daemon_service"  # 独立 daemon 服务
+  path: "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/main.py"
   
 wrong_repo_policy: "block"
 
@@ -76,15 +76,17 @@ forbidden_alternatives:
   - path: "/home/moonlight/.openclaw/workspace"
     reason: "OpenClaw 默认 workspace，不是 OpenEmotion 项目仓库"
 
-integration_mode: "A - OpenClaw Workspace 模式"
-status: "🔜 待集成"
+integration_mode: "C - 轻量 repo anchor + 高风险动作前置校验"
+status: "✅ 验证通过，维持现状"
+verification: "docs/specs/OPENEMOTION_REPO_GUARD_VERIFICATION.md"
 
 # 特殊说明
 notes: |
-  OpenEmotion 更偏主体核心系统
-  当前主要通过 OpenClaw workspace 访问
-  已在 workspace 的 canonical_repos.yaml 中定义
-  但 session-start 的 repo guard 可能需要细化判断逻辑
+  OpenEmotion 是主体内核，不是独立应用
+  主要通过 EgoCore bridge 或 systemd service 访问
+  systemd 配置已强制 WorkingDirectory
+  EgoCore 配置已指定正确 repo_path
+  不需要完整的 session-start guard
 ```
 
 ---
