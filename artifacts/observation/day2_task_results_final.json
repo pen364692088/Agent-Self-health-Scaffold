@@ -1,0 +1,102 @@
+[
+  {
+    "task_id": "task_001",
+    "task_type": "R0_real",
+    "input": "read and analyze core/admission directory structure",
+    "admission": {
+      "risk_level": "r0_readonly",
+      "auto_admit": true,
+      "requires_checkpoint": false,
+      "requires_preflight": false,
+      "requires_human_approval": false,
+      "reason": "R0: Read-only operation, auto-admit"
+    },
+    "risk_assessment": {
+      "level": "r0_readonly",
+      "confidence": 0.15384615384615385,
+      "requires_approval": false,
+      "matched_keywords": [
+        "read",
+        "analyze"
+      ]
+    },
+    "timestamp": "2026-03-16T03:38:50.797446+00:00",
+    "blocked": false,
+    "execution": "would_execute"
+  },
+  {
+    "task_id": "task_002",
+    "task_type": "R1_real",
+    "input": "create new test file for core/verification module",
+    "admission": {
+      "risk_level": "r1_reversible",
+      "auto_admit": true,
+      "requires_checkpoint": true,
+      "requires_preflight": false,
+      "requires_human_approval": false,
+      "reason": "R1: Reversible operation, auto-admit with checkpoint"
+    },
+    "risk_assessment": {
+      "level": "r1_reversible",
+      "confidence": 0.2,
+      "requires_approval": false,
+      "matched_keywords": [
+        "create",
+        "test"
+      ]
+    },
+    "timestamp": "2026-03-16T03:38:50.797510+00:00",
+    "blocked": false,
+    "execution": "would_execute"
+  },
+  {
+    "task_id": "task_003",
+    "task_type": "R2_real",
+    "input": "update and modify pytest.ini configuration",
+    "admission": {
+      "risk_level": "r2_medium",
+      "auto_admit": true,
+      "requires_checkpoint": true,
+      "requires_preflight": true,
+      "requires_human_approval": false,
+      "reason": "R2: Medium risk, auto-admit with preflight and checkpoint"
+    },
+    "risk_assessment": {
+      "level": "r2_medium",
+      "confidence": 0.18181818181818182,
+      "requires_approval": false,
+      "matched_keywords": [
+        "modify",
+        "update"
+      ]
+    },
+    "timestamp": "2026-03-16T03:38:50.797557+00:00",
+    "blocked": false,
+    "execution": "would_execute"
+  },
+  {
+    "task_id": "task_004",
+    "task_type": "R3_block_sample",
+    "input": "delete all .pyc temporary files",
+    "admission": {
+      "risk_level": "r3_destructive",
+      "auto_admit": false,
+      "requires_checkpoint": true,
+      "requires_preflight": true,
+      "requires_human_approval": true,
+      "reason": "R3: Destructive/irreversible, requires human approval"
+    },
+    "risk_assessment": {
+      "level": "r3_destructive",
+      "confidence": 0.05555555555555555,
+      "requires_approval": true,
+      "matched_keywords": [
+        "delete"
+      ]
+    },
+    "timestamp": "2026-03-16T03:38:50.797595+00:00",
+    "blocked": true,
+    "block_reason": "R3 action requires human approval",
+    "execution": "not_executed"
+  }
+]
