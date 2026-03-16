@@ -72,6 +72,12 @@
 
 ## Observation Method
 
+### Frequency
+
+- **Default**: 1 window per day
+- **Minimum**: 1 window per 2 days (if sample too small)
+- **Requirement**: Complete observation window, not fragmented reports
+
 ### Daily Check
 
 ```bash
@@ -79,17 +85,22 @@
 python scripts/bridge_g35_daily_check.py --date YYYY-MM-DD
 ```
 
-### Weekly Trend
-
-```bash
-# Run weekly trend analysis
-python scripts/bridge_g35_weekly_trend.py --week YYYY-WW
-```
-
 ### Observation Log
 
 All observations logged to:
 - `artifacts/memory/bridge_g35_observations/YYYY-MM-DD.json`
+
+### Report Requirements
+
+Each observation report MUST include:
+1. **window_start / window_end**: Complete observation window
+2. **sample_count**: Total requests/sessions
+3. **task_type_distribution**: Breakdown by task type
+4. **All metrics with value + numerator + denominator**: e.g., `42% (8/19)`
+5. **warning_triggered / critical_triggered**: Threshold violations
+6. **anomalies**: Any anomalies observed
+7. **status**: healthy | warning | critical-review-required
+8. **summary**: Human-readable conclusion
 
 ---
 
@@ -106,37 +117,58 @@ All observations logged to:
 
 ### Data Points
 
-Each observation record MUST include these 4 required fields:
+Each observation record MUST use this standardized format:
 
-1. **sample_count**: Number of requests/sessions in observation
-2. **task_type_distribution**: Breakdown by coding/decision/question
-3. **window_start**: Start timestamp of observation window
-4. **window_end**: End timestamp of observation window
-
-Example record:
 ```json
 {
-  "date": "2026-03-16",
-  "session_id": "session_xxx",
+  "window_start": "2026-03-16T00:00:00-05:00",
+  "window_end": "2026-03-16T23:59:59-05:00",
   "sample_count": 5,
   "task_type_distribution": {
     "coding": 3,
     "decision": 1,
     "question": 1
   },
-  "window_start": "2026-03-16T00:00:00-05:00",
-  "window_end": "2026-03-16T23:59:59-05:00",
-  "request_count": 5,
-  "allowed_count": 5,
-  "denied_count": 0,
-  "suggestion_count": 12,
-  "adoption_count": 8,
-  "helpful_count": 7,
-  "noise_count": 1,
-  "error_count": 0,
-  "fail_open_count": 0
+  "metrics": {
+    "adoption_rate": {"value": 0.40, "num": 2, "den": 5},
+    "quality_improvement_rate": {"value": 0.20, "num": 1, "den": 5},
+    "noise_rate": {"value": 0.00, "num": 0, "den": 5},
+    "prompt_bloat_rate": {"value": 0.10, "num": 1, "den": 10},
+    "rollback_after_recall": {"value": 0.00, "num": 0, "den": 2},
+    "demote_after_recall": {"value": 0.00, "num": 0, "den": 2},
+    "main_chain_success_rate": {"value": 1.00, "baseline_delta": 0.00},
+    "fail_open_stability": {"value": 1.00, "num": 5, "den": 5}
+  },
+  "threshold_result": {
+    "warning_triggered": [],
+    "critical_triggered": []
+  },
+  "anomalies": [],
+  "status": "healthy",
+  "summary": "No warning or critical thresholds triggered in this window."
 }
 ```
+
+### Required Fields
+
+Every observation record MUST include:
+
+1. **window_start / window_end**: Observation window timestamps
+2. **sample_count**: Total number of requests/sessions
+3. **task_type_distribution**: Breakdown by coding/decision/question
+4. **All metrics with value + numerator + denominator**: Not just percentages
+5. **warning_triggered / critical_triggered**: Lists of triggered thresholds
+6. **anomalies**: Any anomalies observed
+7. **status**: healthy | warning | critical-review-required
+8. **summary**: Human-readable conclusion
+
+### Status Values
+
+| Status | Meaning |
+|--------|---------|
+| healthy | No thresholds triggered |
+| warning | Warning threshold(s) triggered |
+| critical-review-required | Critical threshold(s) triggered |
 
 ---
 
@@ -222,6 +254,48 @@ Critical issues:
 
 若 fail_open_stability < 100%，立即视为阻塞项，暂停扩大计划。
 ```
+
+---
+
+## Escalation Protocol
+
+### Warning Threshold Triggered
+
+| Step | Action |
+|------|--------|
+| 1 | Continue observation, do NOT expand scope |
+| 2 | Record anomaly in trends document |
+| 3 | Confirm recovery in next window |
+
+### Critical Threshold Triggered (Single Window)
+
+| Step | Action |
+|------|--------|
+| 1 | Immediately halt expansion plan |
+| 2 | Manual review required |
+| 3 | Do NOT expand scope |
+| 4 | Record root cause |
+| 5 | Fix boundary/quality issues only |
+| 6 | Do NOT add new features |
+
+### Critical Threshold Triggered (Consecutive Windows)
+
+```text
+若任一 Critical 指标连续 2 个观测窗口触发：
+1. 自动冻结扩大计划
+2. 转入异常复盘
+3. 只允许修边界/质量问题
+4. 不允许借机加功能
+```
+
+### fail_open_stability < 100%
+
+| Step | Action |
+|------|--------|
+| 1 | Immediately treat as blocking issue |
+| 2 | Do NOT wait for second window |
+| 3 | Halt expansion plan |
+| 4 | Manual review required |
 
 ---
 
