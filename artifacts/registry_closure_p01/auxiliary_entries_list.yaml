@@ -1,0 +1,93 @@
+# 辅助入口清单 (P2 类非主链入口)
+
+**生成时间**: 2026-03-16T22:10:00Z
+**版本**: 1.0
+
+---
+schema_version: "1.0"
+generated_at: "2026-03-16T22:10:00Z"
+description: "P2 类辅助治理/运维/诊断入口清单，非主链入口但需记录"
+
+# 辅助入口清单
+auxiliary_entries:
+  # === 策略检查类 ===
+  - entry_id: "aux-001"
+    path: "tools/policy-daily-check"
+    classification: "P2"
+    entry_type: "cli"
+    owner: "governance"
+    description: "策略日常检查 - 监控策略执行情况"
+    purpose: "日常策略健康监控"
+    is_active: true
+    can_be_ignored_in_future_scan: true
+    
+  - entry_id: "aux-002"
+    path: "tools/policy-doctor"
+    classification: "P2"
+    entry_type: "cli"
+    owner: "governance"
+    description: "策略诊断工具 - 分析策略问题"
+    purpose: "策略问题诊断"
+    is_active: true
+    can_be_ignored_in_future_scan: true
+
+  # === 探测监控类 ===
+  - entry_id: "aux-003"
+    path: "tools/probe-callback-delivery"
+    classification: "P2"
+    entry_type: "cli"
+    owner: "diagnostics"
+    description: "回调投递探测 - 探测回调投递状态"
+    purpose: "回调投递状态监控"
+    is_active: true
+    can_be_ignored_in_future_scan: true
+    
+  - entry_id: "aux-004"
+    path: "tools/probe-callback-worker-doctor"
+    classification: "P2"
+    entry_type: "cli"
+    owner: "diagnostics"
+    description: "callback-worker 诊断探测"
+    purpose: "callback-worker 问题诊断"
+    is_active: true
+    can_be_ignored_in_future_scan: true
+    
+  - entry_id: "aux-005"
+    path: "tools/verify-callback-guards"
+    classification: "P2"
+    entry_type: "cli"
+    owner: "diagnostics"
+    description: "回调 guard 验证"
+    purpose: "验证回调 guard 状态"
+    is_active: true
+    can_be_ignored_in_future_scan: true
+    
+  - entry_id: "aux-006"
+    path: "tools/agent-recovery-summary"
+    classification: "P2"
+    entry_type: "cli"
+    owner: "recovery"
+    description: "恢复汇总报告生成"
+    purpose: "恢复状态汇总报告"
+    is_active: true
+    can_be_ignored_in_future_scan: true
+    
+  - entry_id: "aux-007"
+    path: "tools/callback-daily-summary"
+    classification: "P2"
+    entry_type: "cli"
+    owner: "orchestration"
+    description: "回调日汇总"
+    purpose: "回调处理日汇总报告"
+    is_active: true
+    can_be_ignored_in_future_scan: true
+
+# 统计
+statistics:
+  total_auxiliary_entries: 7
+  by_owner:
+    governance: 2
+    diagnostics: 3
+    recovery: 1
+    orchestration: 1
+  all_can_be_ignored_in_future_scan: true

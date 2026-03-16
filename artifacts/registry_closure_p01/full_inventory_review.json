@@ -1,0 +1,2274 @@
+{
+  "generated_at": "2026-03-16T21:28:54.144452+00:00",
+  "statistics": {
+    "total": 226,
+    "by_class": {
+      "P0": 12,
+      "P1": 11,
+      "P2": 86,
+      "P3": 117
+    }
+  },
+  "entries": [
+    {
+      "candidate_id": "candidate-tools-trigger-policy",
+      "path": "tools/trigger-policy",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-emit",
+      "path": "tools/memory-emit",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-hook_smoke_test",
+      "path": "tools/hook_smoke_test",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-verify-and-close",
+      "path": "tools/verify-and-close",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-workflow-init",
+      "path": "tools/workflow-init",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-test-callback-acceptance",
+      "path": "tools/test-callback-acceptance",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-handoff-create",
+      "path": "tools/handoff-create",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-governance-hard-gate",
+      "path": "tools/governance-hard-gate",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-retrieve",
+      "path": "tools/memory-retrieve",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-execution-degradation",
+      "path": "tools/probe-execution-degradation",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-archive.original",
+      "path": "tools/session-archive.original",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-context-retrieve",
+      "path": "tools/context-retrieve",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-state-lock",
+      "path": "tools/state-lock",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-p0-soak-monitor",
+      "path": "tools/p0-soak-monitor",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-execution-policy",
+      "path": "tools/probe-execution-policy",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-truth-alignment",
+      "path": "tools/probe-truth-alignment",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-route-rebind-guard-heartbeat",
+      "path": "tools/route-rebind-guard-heartbeat",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-probe",
+      "path": "tools/agent-probe",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-context-compress",
+      "path": "tools/context-compress",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-start-recovery",
+      "path": "tools/session-start-recovery",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-session_reuse_lib.py",
+      "path": "tools/session_reuse_lib.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-capsule-builder-v3.py",
+      "path": "tools/capsule-builder-v3.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-session-persistence",
+      "path": "tools/probe-session-persistence",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-verify-and-close-v2",
+      "path": "tools/verify-and-close-v2",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-context-shadow",
+      "path": "tools/probe-context-shadow",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-execution-policy-common.sh",
+      "path": "tools/execution-policy-common.sh",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-resume_readiness_calibration.py",
+      "path": "tools/resume_readiness_calibration.py",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-safe-message",
+      "path": "tools/safe-message",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-capture-evidence-hot-zone",
+      "path": "tools/capture-evidence-hot-zone",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-soak-verdict-check",
+      "path": "tools/soak-verdict-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-subagent-srap-check",
+      "path": "tools/subagent-srap-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-receipt-pipeline",
+      "path": "tools/probe-receipt-pipeline",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-token-counter-cjk",
+      "path": "tools/probe-token-counter-cjk",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-self-improving-adapter",
+      "path": "tools/self-improving-adapter",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-generate-proposal",
+      "path": "tools/agent-generate-proposal",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-gate-a-signer",
+      "path": "tools/gate-a-signer",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-serial-guide",
+      "path": "tools/serial-guide",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-recovery-summary",
+      "path": "tools/agent-recovery-summary",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-probe-subagent-inbox-metrics",
+      "path": "tools/probe-subagent-inbox-metrics",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-health-summary",
+      "path": "tools/agent-health-summary",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-callback-delivery",
+      "path": "tools/probe-callback-delivery",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-testbot-decision-tracker",
+      "path": "tools/testbot-decision-tracker",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-execution-degradation-monitor",
+      "path": "tools/execution-degradation-monitor",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-execution-metrics",
+      "path": "tools/execution-metrics",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-longrunkit-state-machine",
+      "path": "tools/probe-longrunkit-state-machine",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-search",
+      "path": "tools/memory-search",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-capture-wake-session-diff",
+      "path": "tools/capture-wake-session-diff",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-web-search",
+      "path": "tools/web-search",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-check-advance",
+      "path": "tools/project-check-advance",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-subagent-callback-hook",
+      "path": "tools/subagent-callback-hook",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-auto-receipt",
+      "path": "tools/auto-receipt",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-s1-validator",
+      "path": "tools/s1-validator",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-check-pending-spawns",
+      "path": "tools/check-pending-spawns",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-verify-callback-guards",
+      "path": "tools/verify-callback-guards",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-s1-sampler-v2",
+      "path": "tools/s1-sampler-v2",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-policy-violation-summary",
+      "path": "tools/policy-violation-summary",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-antfarm-run.sh",
+      "path": "tools/antfarm-run.sh",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-bootstrap-retrieve",
+      "path": "tools/session-bootstrap-retrieve",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-review",
+      "path": "tools/memory-review",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-policy-effectiveness-metrics",
+      "path": "tools/policy-effectiveness-metrics",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-context-budget-watcher",
+      "path": "tools/context-budget-watcher",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-subagent-completion-handler",
+      "path": "tools/subagent-completion-handler",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-safe-write",
+      "path": "tools/safe-write",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-handle-subagent-complete",
+      "path": "tools/handle-subagent-complete",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-indexer",
+      "path": "tools/session-indexer",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-web-search.sh",
+      "path": "tools/web-search.sh",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-handoff-integrity",
+      "path": "tools/probe-handoff-integrity",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-sweeper",
+      "path": "tools/memory-sweeper",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-callback-worker-doctor",
+      "path": "tools/probe-callback-worker-doctor",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-context-shadow-report",
+      "path": "tools/context-shadow-report",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-s1-dashboard",
+      "path": "tools/s1-dashboard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-task-completion-protocol",
+      "path": "tools/probe-task-completion-protocol",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-completion-bypass-audit",
+      "path": "tools/completion-bypass-audit",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-route-rebind-guard",
+      "path": "tools/route-rebind-guard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-policy-eval",
+      "path": "tools/policy-eval",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-prompt-assemble",
+      "path": "tools/prompt-assemble",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-s1-sampler",
+      "path": "tools/s1-sampler",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-demo-auto-resume-restart-test",
+      "path": "tools/demo-auto-resume-restart-test",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-multi-spawn",
+      "path": "tools/multi-spawn",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-policy-entry-reconcile",
+      "path": "tools/policy-entry-reconcile",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-shadow_watcher",
+      "path": "tools/shadow_watcher",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-pre-reply-guard",
+      "path": "tools/pre-reply-guard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-embedding-policy",
+      "path": "tools/probe-embedding-policy",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-revalidate_calibration.py",
+      "path": "tools/revalidate_calibration.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-gate-sweep",
+      "path": "tools/project-gate-sweep",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-test-callback-auto",
+      "path": "tools/test-callback-auto",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-srap-start-shadow",
+      "path": "tools/srap-start-shadow",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-context-overflow",
+      "path": "tools/probe-context-overflow",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-retry-policy",
+      "path": "tools/retry-policy",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-archive",
+      "path": "tools/session-archive",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-start-recovery.bak",
+      "path": "tools/session-start-recovery.bak",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-gate-self-health-check",
+      "path": "tools/gate-self-health-check",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-probe-webhook-fallback",
+      "path": "tools/probe-webhook-fallback",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-v1_v2_replay_eval.py",
+      "path": "tools/v1_v2_replay_eval.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-soak-metrics",
+      "path": "tools/agent-soak-metrics",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-instance-readiness-check",
+      "path": "tools/agent-instance-readiness-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-check_v2_baseline.py",
+      "path": "tools/check_v2_baseline.py",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-state-doctor",
+      "path": "tools/session-state-doctor",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-trigger-spawn",
+      "path": "tools/trigger-spawn",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-shadow_trace_collector.py",
+      "path": "tools/shadow_trace_collector.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-deep-audit",
+      "path": "tools/session-deep-audit",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-debug-hooks",
+      "path": "tools/debug-hooks",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-subagent-orchestration",
+      "path": "tools/probe-subagent-orchestration",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-route-probe",
+      "path": "tools/session-route-probe",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-decision_context_extractor.py",
+      "path": "tools/decision_context_extractor.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-safe-replace",
+      "path": "tools/safe-replace",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-incident-report",
+      "path": "tools/agent-incident-report",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-subagent-inbox-metrics",
+      "path": "tools/subagent-inbox-metrics",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-subagent-conflict",
+      "path": "tools/subagent-conflict",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-task-ledger",
+      "path": "tools/task-ledger",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-testbot-monitor",
+      "path": "tools/testbot-monitor",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-materialize-state",
+      "path": "tools/materialize-state",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-check-init",
+      "path": "tools/project-check-init",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-check-run",
+      "path": "tools/project-check-run",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-scope-router",
+      "path": "tools/memory-scope-router",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-mvp11-6-daily-check",
+      "path": "tools/mvp11-6-daily-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-memory-retrieval",
+      "path": "tools/probe-memory-retrieval",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-continuity-event-log",
+      "path": "tools/continuity-event-log",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-risk-alerts",
+      "path": "tools/memory-risk-alerts",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-s1-daily-report",
+      "path": "tools/s1-daily-report",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-continuity-daily-check",
+      "path": "tools/session-continuity-daily-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-lancedb-seed",
+      "path": "tools/memory-lancedb-seed",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-openviking-l2-smoke-test",
+      "path": "tools/openviking-l2-smoke-test",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-ci-memory-hardening",
+      "path": "tools/ci-memory-hardening",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-retrieval-regression-runner",
+      "path": "tools/retrieval-regression-runner",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-capability-check",
+      "path": "tools/agent-capability-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-tool_doctor",
+      "path": "tools/tool_doctor",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-parse-used-memory",
+      "path": "tools/parse-used-memory",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-self-health-scheduler",
+      "path": "tools/agent-self-health-scheduler",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-gate-b-signer",
+      "path": "tools/gate-b-signer",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-check-continuity-live-sources",
+      "path": "tools/check-continuity-live-sources",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-telemetry-normalize",
+      "path": "tools/agent-telemetry-normalize",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-run-state",
+      "path": "tools/run-state",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-proposal-summary",
+      "path": "tools/agent-proposal-summary",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-forgetting-guard",
+      "path": "tools/agent-forgetting-guard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-mailbox-integrity",
+      "path": "tools/probe-mailbox-integrity",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-governance-test",
+      "path": "tools/memory-governance-test",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-trigger-validation-test",
+      "path": "tools/trigger-validation-test",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-proposal-boundary",
+      "path": "tools/probe-proposal-boundary",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-longrunkit-deadlock",
+      "path": "tools/probe-longrunkit-deadlock",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-dashboard",
+      "path": "tools/memory-dashboard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-health-check",
+      "path": "tools/agent-health-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-write-policy-check",
+      "path": "tools/write-policy-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-workflow-validate",
+      "path": "tools/workflow-validate",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-monitor-bucket-metrics",
+      "path": "tools/monitor-bucket-metrics",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-gate-eval",
+      "path": "tools/gate-eval",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-daily-obs",
+      "path": "tools/memory-daily-obs",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-memory-lancedb-seed.mjs",
+      "path": "tools/memory-lancedb-seed.mjs",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-state-write-atomic",
+      "path": "tools/state-write-atomic",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-receipt-signer",
+      "path": "tools/receipt-signer",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-test-callback-regression",
+      "path": "tools/test-callback-regression",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-finalize-response",
+      "path": "tools/finalize-response",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-serial-subagents",
+      "path": "tools/serial-subagents",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-policy-shadow-tracker",
+      "path": "tools/policy-shadow-tracker",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-session-archive",
+      "path": "tools/probe-session-archive",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-policy-daily-report",
+      "path": "tools/policy-daily-report",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-workspace_detector.py",
+      "path": "tools/workspace_detector.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-testbot-chat",
+      "path": "tools/testbot-chat",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-gate1-check",
+      "path": "tools/gate1-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-subagent-inbox",
+      "path": "tools/subagent-inbox",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-summary-generation",
+      "path": "tools/probe-summary-generation",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-daily-audit",
+      "path": "tools/session-daily-audit",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-archive-with-distill",
+      "path": "tools/archive-with-distill",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-telegram-notification",
+      "path": "tools/probe-telegram-notification",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-capability-summary",
+      "path": "tools/agent-capability-summary",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-soak-monitor",
+      "path": "tools/soak-monitor",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-route-write-guard",
+      "path": "tools/route-write-guard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-spawn-with-callback",
+      "path": "tools/spawn-with-callback",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-agent-capability-check.original",
+      "path": "tools/agent-capability-check.original",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-health-snapshot",
+      "path": "tools/agent-health-snapshot",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-inspect-openclaw-session-route",
+      "path": "tools/inspect-openclaw-session-route",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-longrunkit-timeout-retry",
+      "path": "tools/probe-longrunkit-timeout-retry",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-test-path-b-acceptance",
+      "path": "tools/test-path-b-acceptance",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-final-aggregator",
+      "path": "tools/final-aggregator",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-cc-spawn",
+      "path": "tools/cc-spawn",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-install-execution-policy",
+      "path": "tools/install-execution-policy",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-callback-worker-doctor",
+      "path": "tools/callback-worker-doctor",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-callback-handler-auto-advance",
+      "path": "tools/callback-handler-auto-advance",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-distill-content",
+      "path": "tools/distill-content",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-check",
+      "path": "tools/project-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-capsule-builder",
+      "path": "tools/capsule-builder",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-output-interceptor",
+      "path": "tools/output-interceptor",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-shadow_spotcheck.py",
+      "path": "tools/shadow_spotcheck.py",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-post-compaction-handoff",
+      "path": "tools/post-compaction-handoff",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-route",
+      "path": "tools/session-route",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-gate-c-signer",
+      "path": "tools/gate-c-signer",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-smart-stable-metrics",
+      "path": "tools/smart-stable-metrics",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-auto-context-compact",
+      "path": "tools/auto-context-compact",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-capsule-builder-v2.py",
+      "path": "tools/capsule-builder-v2.py",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-receipt-validator",
+      "path": "tools/receipt-validator",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-s1-validator-run",
+      "path": "tools/s1-validator-run",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-callback-daily-summary",
+      "path": "tools/callback-daily-summary",
+      "classification": "P1",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P1",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-external-spawn",
+      "path": "tools/external-spawn",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-searx-search.sh",
+      "path": "tools/searx-search.sh",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-enforce-task-completion",
+      "path": "tools/enforce-task-completion",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-srap-daily-report",
+      "path": "tools/srap-daily-report",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-daily-rollup",
+      "path": "tools/probe-daily-rollup",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-compaction-summary",
+      "path": "tools/compaction-summary",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-recovery-check",
+      "path": "tools/session-recovery-check",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-probe-openviking-retrieval",
+      "path": "tools/probe-openviking-retrieval",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-execution-policy-v2",
+      "path": "tools/probe-execution-policy-v2",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-resume_readiness_evaluator_v2.py",
+      "path": "tools/resume_readiness_evaluator_v2.py",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-use-link-audit",
+      "path": "tools/use-link-audit",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-state-journal-append",
+      "path": "tools/state-journal-append",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-monitor-shadow-sampler",
+      "path": "tools/monitor-shadow-sampler",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-agent-recovery-verify",
+      "path": "tools/agent-recovery-verify",
+      "classification": "P0",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P0",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": false
+    },
+    {
+      "candidate_id": "candidate-tools-pre-reply-guard.bak",
+      "path": "tools/pre-reply-guard.bak",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-context-budget-check",
+      "path": "tools/context-budget-check",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-gate-consistency",
+      "path": "tools/probe-gate-consistency",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-policy-violations-report",
+      "path": "tools/policy-violations-report",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-continuity-event-log",
+      "path": "tools/probe-continuity-event-log",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-check-report",
+      "path": "tools/project-check-report",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-done-guard",
+      "path": "tools/done-guard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-event-queue",
+      "path": "tools/event-queue",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-repo-root-guard",
+      "path": "tools/repo-root-guard",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-hard-block-policy",
+      "path": "tools/hard-block-policy",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-state-authority",
+      "path": "tools/state-authority",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-sync-shared-memory",
+      "path": "tools/sync-shared-memory",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-parse-continuity-events",
+      "path": "tools/parse-continuity-events",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-probe-native-compaction",
+      "path": "tools/probe-native-compaction",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-check-status",
+      "path": "tools/project-check-status",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-threshold_test_runner",
+      "path": "tools/threshold_test_runner",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-project-check-phase",
+      "path": "tools/project-check-phase",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-check-response-path-coverage",
+      "path": "tools/check-response-path-coverage",
+      "classification": "P2",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P2",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-session-query",
+      "path": "tools/session-query",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    },
+    {
+      "candidate_id": "candidate-tools-kill_switch_retest",
+      "path": "tools/kill_switch_retest",
+      "classification": "P3",
+      "reason": "\u81ea\u52a8\u5206\u7c7b\u4e3a P3",
+      "owner_guess": "unknown",
+      "current_registry_status": "unregistered",
+      "review_decision": "pending",
+      "can_be_ignored_in_future_scan": true
+    }
+  ]
+}

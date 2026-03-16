@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-03-16T21:38:17.709214+00:00",
+  "statistics": {
+    "total_discovered_candidates": 234,
+    "registered_mainline_entries": 21,
+    "unregistered_entries": 213,
+    "excluded_entries": 10,
+    "inconsistent_entries": 1,
+    "unresolved_mainline_entries": 0
+  },
+  "conclusion": "PASS",
+  "next_actions": []
+}

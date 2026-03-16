@@ -1,0 +1,125 @@
+# Registry 排除清单
+
+**生成时间**: 2026-03-16T21:55:00Z
+**版本**: 1.0
+
+---
+schema_version: "1.0"
+generated_at: "2026-03-16T21:55:00Z"
+
+# 排除入口清单
+excluded_entries:
+  # === P0 类排除 ===
+  
+  - candidate_id: "candidate-tools-agent-recovery-summary"
+    path: "tools/agent-recovery-summary"
+    classification: "P0"
+    original_classification: "P0"
+    reclassified_as: "P2"
+    exclusion_type: "non-mainline"
+    reason: "汇总报告生成工具，不触发执行，重新分类为 P2 辅助入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-probe-callback-worker-doctor"
+    path: "tools/probe-callback-worker-doctor"
+    classification: "P0"
+    original_classification: "P0"
+    reclassified_as: "P2"
+    exclusion_type: "non-mainline"
+    reason: "诊断探测工具，重新分类为 P2 辅助入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-demo-auto-resume-restart-test"
+    path: "tools/demo-auto-resume-restart-test"
+    classification: "P0"
+    exclusion_type: "dead-or-false-positive"
+    reason: "演示/测试脚本，非生产入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-session-start-recovery.bak"
+    path: "tools/session-start-recovery.bak"
+    classification: "P0"
+    exclusion_type: "dead-or-false-positive"
+    reason: "备份文件，已废弃"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+
+  # === P1 类排除 ===
+  
+  - candidate_id: "candidate-tools-callback-daily-summary"
+    path: "tools/callback-daily-summary"
+    classification: "P1"
+    original_classification: "P1"
+    reclassified_as: "P2"
+    exclusion_type: "non-mainline"
+    reason: "汇总报告，非执行入口，重新分类为 P2"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-test-callback-acceptance"
+    path: "tools/test-callback-acceptance"
+    classification: "P1"
+    exclusion_type: "dead-or-false-positive"
+    reason: "测试脚本，非生产入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-test-callback-auto"
+    path: "tools/test-callback-auto"
+    classification: "P1"
+    exclusion_type: "dead-or-false-positive"
+    reason: "测试脚本，非生产入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-test-callback-regression"
+    path: "tools/test-callback-regression"
+    classification: "P1"
+    exclusion_type: "dead-or-false-positive"
+    reason: "回归测试脚本，非生产入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-probe-callback-delivery"
+    path: "tools/probe-callback-delivery"
+    classification: "P1"
+    original_classification: "P1"
+    reclassified_as: "P2"
+    exclusion_type: "non-mainline"
+    reason: "探测工具，重新分类为 P2 辅助入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+    
+  - candidate_id: "candidate-tools-verify-callback-guards"
+    path: "tools/verify-callback-guards"
+    classification: "P1"
+    original_classification: "P1"
+    reclassified_as: "P2"
+    exclusion_type: "non-mainline"
+    reason: "验证工具，重新分类为 P2 辅助入口"
+    reviewed_by: "Manager"
+    review_date: "2026-03-16"
+    can_be_ignored_in_future_scan: true
+
+# 统计
+statistics:
+  total_excluded: 10
+  by_exclusion_type:
+    non-mainline: 6
+    dead-or-false-positive: 4
+  by_original_class:
+    P0: 4
+    P1: 6
+  reclassified_to_p2: 6
