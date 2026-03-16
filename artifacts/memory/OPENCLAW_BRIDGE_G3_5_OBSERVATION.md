@@ -174,12 +174,40 @@ Every observation record MUST include:
 
 ### Status Values
 
-| Status | Meaning |
-|--------|---------|
-| insufficient_evidence | sample_count = 0 or all metrics not_evaluable |
-| healthy | No thresholds triggered (with valid samples) |
-| warning | Warning threshold(s) triggered |
-| critical-review-required | Critical threshold(s) triggered |
+| Status | Meaning | Sample Threshold |
+|--------|---------|------------------|
+| insufficient_evidence | sample_count = 0 | = 0 |
+| provisional | 0 < sample_count < 5 (too few samples) | 1-4 |
+| healthy | No thresholds triggered (with sufficient samples) | ≥ 5 |
+| warning | Warning threshold(s) triggered | ≥ 5 |
+| critical-review-required | Critical threshold(s) triggered | ≥ 5 |
+
+### Minimum Sample Threshold Rule
+
+```text
+MIN_SAMPLE_THRESHOLD = 5
+
+当 sample_count < 5 时，窗口状态最多只能为 provisional，
+不得直接判为 healthy / warning / critical。
+
+小样本窗口最容易出现 "100% 命中" "0% 噪音" 这种假好看，
+必须有足够样本才能得出可靠结论。
+```
+
+### Sample Threshold Decision Tree
+
+```
+sample_count = 0
+    └─► insufficient_evidence
+
+0 < sample_count < 5
+    └─► provisional (不论指标看起来多好)
+
+sample_count >= 5
+    ├─► critical triggered → critical-review-required
+    ├─► warning triggered → warning
+    └─► no triggers → healthy
+```
 
 ### Critical Rule: Not Evaluable Metrics
 
