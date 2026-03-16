@@ -33,44 +33,41 @@ def create_observation_dir():
 
 
 def generate_metrics_snapshot(date: str) -> dict:
-    """Generate metrics snapshot for the date."""
+    """Generate metrics snapshot for the date with standardized format."""
     timestamp = datetime.now(timezone.utc).isoformat()
     
-    # Placeholder metrics - would be collected from actual bridge
-    # All observation records MUST include these 4 required fields:
-    # 1. sample_count
-    # 2. task_type_distribution
-    # 3. window_start
-    # 4. window_end
+    # Standardized observation record format
+    # All metrics MUST include value + numerator + denominator
     metrics = {
-        "date": date,
-        "timestamp": timestamp,
-        "sample_count": 0,  # REQUIRED: Number of requests/sessions
-        "task_type_distribution": {  # REQUIRED: Breakdown by task type
+        "window_start": f"{date}T00:00:00-05:00",
+        "window_end": f"{date}T23:59:59-05:00",
+        "sample_count": 0,
+        "task_type_distribution": {
             "coding": 0,
             "decision": 0,
             "question": 0,
         },
-        "window_start": f"{date}T00:00:00-05:00",  # REQUIRED: Start of observation window
-        "window_end": f"{date}T23:59:59-05:00",  # REQUIRED: End of observation window
         "metrics": {
-            "adoption_rate": "TBD",
-            "quality_improvement_rate": "TBD",
-            "noise_rate": "TBD",
-            "prompt_bloat_rate": "TBD",
-            "rollback_after_recall": 0,
-            "demote_after_recall": 0,
-            "main_chain_success_rate": "TBD",
-            "fail_open_stability": 1.0,
+            "adoption_rate": {"value": 0.0, "num": 0, "den": 0},
+            "quality_improvement_rate": {"value": 0.0, "num": 0, "den": 0},
+            "noise_rate": {"value": 0.0, "num": 0, "den": 0},
+            "prompt_bloat_rate": {"value": 0.0, "num": 0, "den": 0},
+            "rollback_after_recall": {"value": 0.0, "num": 0, "den": 0},
+            "demote_after_recall": {"value": 0.0, "num": 0, "den": 0},
+            "main_chain_success_rate": {"value": 1.0, "baseline_delta": 0.0},
+            "fail_open_stability": {"value": 1.0, "num": 0, "den": 0},
         },
-        "counts": {
-            "total_requests": 0,
-            "total_suggestions": 0,
-            "total_adoptions": 0,
-            "total_errors": 0,
+        "threshold_result": {
+            "warning_triggered": [],
+            "critical_triggered": [],
         },
         "anomalies": [],
-        "alerts": [],
+        "status": "healthy",
+        "summary": "No observation data collected yet. Awaiting first window.",
+        "_metadata": {
+            "date": date,
+            "timestamp": timestamp,
+        },
     }
     
     return metrics
@@ -87,73 +84,164 @@ def save_metrics(metrics: dict, obs_dir: Path) -> Path:
     return filepath
 
 
-def check_alerts(metrics: dict) -> list:
-    """Check if any metrics exceed alert thresholds."""
-    alerts = []
+def check_alerts(metrics: dict) -> tuple[list, list]:
+    """Check if any metrics exceed alert thresholds.
     
-    thresholds = {
-        "adoption_rate": (0.4, "below"),
-        "quality_improvement_rate": (0.1, "below"),
-        "noise_rate": (0.15, "above"),
-        "prompt_bloat_rate": (0.25, "above"),
-        "rollback_after_recall": (0.05, "above"),
-        "demote_after_recall": (0.10, "above"),
-        "fail_open_stability": (1.0, "below"),
+    Returns:
+        tuple of (warning_triggered, critical_triggered)
+    """
+    warning_triggered = []
+    critical_triggered = []
+    
+    # Warning thresholds
+    warning_thresholds = {
+        "adoption_rate": 0.4,  # < 40%
+        "quality_improvement_rate": 0.1,  # < 10%
+        "noise_rate": 0.15,  # > 15%
+        "prompt_bloat_rate": 0.25,  # > 25%
     }
     
-    for metric, (threshold, direction) in thresholds.items():
-        value = metrics["metrics"].get(metric, "TBD")
-        
-        if value == "TBD":
-            continue
-        
-        if direction == "below" and value < threshold:
-            alerts.append({
-                "metric": metric,
-                "value": value,
-                "threshold": threshold,
-                "severity": "warning" if metric in ["adoption_rate", "quality_improvement_rate"] else "critical",
-            })
-        elif direction == "above" and value > threshold:
-            alerts.append({
-                "metric": metric,
-                "value": value,
-                "threshold": threshold,
-                "severity": "warning" if metric in ["noise_rate", "prompt_bloat_rate"] else "critical",
-            })
+    # Critical thresholds
+    critical_thresholds = {
+        "rollback_after_recall": 0.05,  # > 5%
+        "demote_after_recall": 0.10,  # > 10%
+        "fail_open_stability": 1.0,  # < 100%
+    }
     
-    return alerts
+    metrics_data = metrics.get("metrics", {})
+    
+    # Check warning thresholds
+    for metric, threshold in warning_thresholds.items():
+        value_obj = metrics_data.get(metric, {"value": 0})
+        value = value_obj.get("value", 0) if isinstance(value_obj, dict) else value_obj
+        
+        if metric in ["adoption_rate", "quality_improvement_rate"]:
+            if value < threshold:
+                warning_triggered.append({
+                    "metric": metric,
+                    "value": value,
+                    "threshold": threshold,
+                    "direction": "below",
+                })
+        else:  # noise_rate, prompt_bloat_rate
+            if value > threshold:
+                warning_triggered.append({
+                    "metric": metric,
+                    "value": value,
+                    "threshold": threshold,
+                    "direction": "above",
+                })
+    
+    # Check critical thresholds
+    for metric, threshold in critical_thresholds.items():
+        value_obj = metrics_data.get(metric, {"value": 0})
+        value = value_obj.get("value", 0) if isinstance(value_obj, dict) else value_obj
+        
+        if metric == "fail_open_stability":
+            if value < threshold:
+                critical_triggered.append({
+                    "metric": metric,
+                    "value": value,
+                    "threshold": threshold,
+                    "direction": "below",
+                })
+        else:  # rollback_after_recall, demote_after_recall
+            if value > threshold:
+                critical_triggered.append({
+                    "metric": metric,
+                    "value": value,
+                    "threshold": threshold,
+                    "direction": "above",
+                })
+    
+    # Check main_chain_success_rate
+    mcsr_obj = metrics_data.get("main_chain_success_rate", {"value": 1.0, "baseline_delta": 0.0})
+    baseline_delta = mcsr_obj.get("baseline_delta", 0) if isinstance(mcsr_obj, dict) else 0
+    
+    if baseline_delta < 0:
+        critical_triggered.append({
+            "metric": "main_chain_success_rate",
+            "value": mcsr_obj.get("value", 1.0),
+            "threshold": "no decrease",
+            "direction": "decreased",
+            "delta": baseline_delta,
+        })
+    
+    return warning_triggered, critical_triggered
 
 
-def format_report(metrics: dict, alerts: list) -> str:
+def determine_status(warning_triggered: list, critical_triggered: list) -> str:
+    """Determine observation window status."""
+    if critical_triggered:
+        return "critical-review-required"
+    elif warning_triggered:
+        return "warning"
+    else:
+        return "healthy"
+
+
+def generate_summary(status: str, warning_triggered: list, critical_triggered: list) -> str:
+    """Generate human-readable summary."""
+    if status == "healthy":
+        return "No warning or critical thresholds triggered in this window."
+    elif status == "warning":
+        metrics = [a["metric"] for a in warning_triggered]
+        return f"Warning threshold(s) triggered: {', '.join(metrics)}. Continue observation."
+    else:
+        metrics = [a["metric"] for a in critical_triggered]
+        return f"CRITICAL: Threshold(s) triggered: {', '.join(metrics)}. Immediate review required."
+
+
+def format_report(metrics: dict, warning_triggered: list, critical_triggered: list) -> str:
     """Format report message."""
-    date = metrics["date"]
+    date = metrics.get("_metadata", {}).get("date", "unknown")
+    status = metrics.get("status", "unknown")
+    summary = metrics.get("summary", "")
     
     lines = [
         f"📊 Bridge G3.5 Observation Report - {date}",
         "",
-        "Metrics Snapshot:",
-        f"• Adoption Rate: {metrics['metrics']['adoption_rate']} (target: ≥40%)",
-        f"• Quality Improvement: {metrics['metrics']['quality_improvement_rate']} (target: ≥10%)",
-        f"• Noise Rate: {metrics['metrics']['noise_rate']} (target: ≤15%)",
-        f"• Prompt Bloat: {metrics['metrics']['prompt_bloat_rate']} (target: ≤25%)",
-        f"• Fail-Open Stability: {metrics['metrics']['fail_open_stability']} (target: 100%)",
+        f"Status: {status.upper()}",
         "",
-        f"Total Requests: {metrics['counts']['total_requests']}",
-        f"Total Suggestions: {metrics['counts']['total_suggestions']}",
-        f"Total Adoptions: {metrics['counts']['total_adoptions']}",
-        "",
+        "Metrics:",
     ]
     
-    if alerts:
-        lines.append("⚠️ Alerts:")
-        for alert in alerts:
-            lines.append(f"  • {alert['metric']}: {alert['value']} (threshold: {alert['threshold']})")
+    # Add each metric with numerator/denominator
+    for metric_name, metric_data in metrics.get("metrics", {}).items():
+        if isinstance(metric_data, dict):
+            value = metric_data.get("value", 0)
+            num = metric_data.get("num", "N/A")
+            den = metric_data.get("den", "N/A")
+            
+            if num != "N/A" and den != "N/A":
+                lines.append(f"  • {metric_name}: {value:.2%} ({num}/{den})")
+            elif "baseline_delta" in metric_data:
+                lines.append(f"  • {metric_name}: {value:.2%} (delta: {metric_data['baseline_delta']:+.2%})")
+            else:
+                lines.append(f"  • {metric_name}: {value:.2%}")
+    
+    lines.extend([
+        "",
+        f"Sample Count: {metrics.get('sample_count', 0)}",
+        "",
+    ])
+    
+    if warning_triggered:
+        lines.append("⚠️ Warning Triggered:")
+        for alert in warning_triggered:
+            lines.append(f"  • {alert['metric']}: {alert['value']:.2%} (threshold: {alert['threshold']:.2%})")
+        lines.append("")
+    
+    if critical_triggered:
+        lines.append("🔴 Critical Triggered:")
+        for alert in critical_triggered:
+            lines.append(f"  • {alert['metric']}: {alert.get('value', 'N/A')} (threshold: {alert['threshold']})")
         lines.append("")
     
     lines.extend([
-        "Status: 🔒 FROZEN (Observation Mode)",
-        "Period: 2026-03-16 ~ 2026-03-30",
+        f"Summary: {summary}",
+        "",
+        "Period: 2026-03-16 ~ 2026-03-30 America/Winnipeg",
     ])
     
     return "\n".join(lines)
@@ -169,15 +257,24 @@ def main():
     metrics = generate_metrics_snapshot(args.date)
     
     # Check alerts
-    alerts = check_alerts(metrics)
-    metrics["alerts"] = alerts
+    warning_triggered, critical_triggered = check_alerts(metrics)
+    metrics["threshold_result"]["warning_triggered"] = warning_triggered
+    metrics["threshold_result"]["critical_triggered"] = critical_triggered
+    
+    # Determine status
+    status = determine_status(warning_triggered, critical_triggered)
+    metrics["status"] = status
+    
+    # Generate summary
+    summary = generate_summary(status, warning_triggered, critical_triggered)
+    metrics["summary"] = summary
     
     # Save metrics
     filepath = save_metrics(metrics, obs_dir)
     print(f"Metrics saved to: {filepath}")
     
     # Format report
-    report = format_report(metrics, alerts)
+    report = format_report(metrics, warning_triggered, critical_triggered)
     print(report)
     
     # Send report if requested
