@@ -1,0 +1,532 @@
+{
+  "scan_timestamp": "2026-03-16T21:57:23.448053+00:00",
+  "statistics": {
+    "total_candidates": 235,
+    "registered_entries": 21,
+    "new_candidates": 1,
+    "unregistered_entries": 214,
+    "p0_p1_unregistered": 13,
+    "drifted_entries": 0
+  },
+  "new_candidates": [
+    {
+      "path": "tools/policy-entry-incremental-scan",
+      "name": "policy-entry-incremental-scan",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7657,
+      "mtime": "2026-03-16T21:57:15.575815+00:00",
+      "suspected_class": "P2",
+      "needs_review": false
+    }
+  ],
+  "unregistered": [
+    {
+      "path": "tools/trigger-policy",
+      "name": "trigger-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 19891,
+      "mtime": "2026-03-15T02:41:03.842630+00:00"
+    },
+    {
+      "path": "tools/memory-emit",
+      "name": "memory-emit",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9992,
+      "mtime": "2026-03-15T02:41:03.838688+00:00"
+    },
+    {
+      "path": "tools/hook_smoke_test",
+      "name": "hook_smoke_test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8633,
+      "mtime": "2026-03-15T02:41:03.838571+00:00"
+    },
+    {
+      "path": "tools/verify-and-close",
+      "name": "verify-and-close",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12651,
+      "mtime": "2026-03-15T02:41:03.842734+00:00"
+    },
+    {
+      "path": "tools/workflow-init",
+      "name": "workflow-init",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5628,
+      "mtime": "2026-03-15T02:41:03.842838+00:00"
+    },
+    {
+      "path": "tools/test-callback-acceptance",
+      "name": "test-callback-acceptance",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9778,
+      "mtime": "2026-03-15T02:41:03.842441+00:00"
+    },
+    {
+      "path": "tools/handoff-create",
+      "name": "handoff-create",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4616,
+      "mtime": "2026-03-15T02:41:03.838534+00:00"
+    },
+    {
+      "path": "tools/governance-hard-gate",
+      "name": "governance-hard-gate",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4648,
+      "mtime": "2026-03-16T21:34:22.779990+00:00"
+    },
+    {
+      "path": "tools/memory-retrieve",
+      "name": "memory-retrieve",
+      "is_executable": true,
+      "is_script": true,
+      "size": 19463,
+      "mtime": "2026-03-15T02:41:03.838773+00:00"
+    },
+    {
+      "path": "tools/probe-execution-degradation",
+      "name": "probe-execution-degradation",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14735,
+      "mtime": "2026-03-15T02:41:03.839539+00:00"
+    },
+    {
+      "path": "tools/session-archive.original",
+      "name": "session-archive.original",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9016,
+      "mtime": "2026-03-15T02:41:03.841627+00:00"
+    },
+    {
+      "path": "tools/context-retrieve",
+      "name": "context-retrieve",
+      "is_executable": true,
+      "is_script": true,
+      "size": 24046,
+      "mtime": "2026-03-15T02:41:03.838096+00:00"
+    },
+    {
+      "path": "tools/state-lock",
+      "name": "state-lock",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5764,
+      "mtime": "2026-03-15T02:41:03.842185+00:00"
+    },
+    {
+      "path": "tools/p0-soak-monitor",
+      "name": "p0-soak-monitor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 11459,
+      "mtime": "2026-03-15T02:41:03.839039+00:00"
+    },
+    {
+      "path": "tools/probe-execution-policy",
+      "name": "probe-execution-policy",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5338,
+      "mtime": "2026-03-15T02:41:03.839564+00:00"
+    },
+    {
+      "path": "tools/probe-truth-alignment",
+      "name": "probe-truth-alignment",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8765,
+      "mtime": "2026-03-15T02:41:03.840045+00:00"
+    },
+    {
+      "path": "tools/route-rebind-guard-heartbeat",
+      "name": "route-rebind-guard-heartbeat",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4667,
+      "mtime": "2026-03-15T02:41:03.840530+00:00"
+    },
+    {
+      "path": "tools/agent-probe",
+      "name": "agent-probe",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3869,
+      "mtime": "2026-03-15T02:41:03.843110+00:00"
+    },
+    {
+      "path": "tools/context-compress",
+      "name": "context-compress",
+      "is_executable": true,
+      "is_script": true,
+      "size": 23544,
+      "mtime": "2026-03-15T02:41:03.838075+00:00"
+    },
+    {
+      "path": "tools/session_reuse_lib.py",
+      "name": "session_reuse_lib.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9784,
+      "mtime": "2026-03-15T02:41:03.841925+00:00"
+    },
+    {
+      "path": "tools/capsule-builder-v3.py",
+      "name": "capsule-builder-v3.py",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13887,
+      "mtime": "2026-03-15T02:41:03.837895+00:00"
+    },
+    {
+      "path": "tools/probe-session-persistence",
+      "name": "probe-session-persistence",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5881,
+      "mtime": "2026-03-15T02:41:03.839885+00:00"
+    },
+    {
+      "path": "tools/verify-and-close-v2",
+      "name": "verify-and-close-v2",
+      "is_executable": true,
+      "is_script": true,
+      "size": 5972,
+      "mtime": "2026-03-15T02:41:03.842756+00:00"
+    },
+    {
+      "path": "tools/probe-context-shadow",
+      "name": "probe-context-shadow",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13896,
+      "mtime": "2026-03-15T02:41:03.839440+00:00"
+    },
+    {
+      "path": "tools/execution-policy-common.sh",
+      "name": "execution-policy-common.sh",
+      "is_executable": false,
+      "is_script": true,
+      "size": 1850,
+      "mtime": "2026-03-15T02:41:03.838346+00:00"
+    },
+    {
+      "path": "tools/safe-message",
+      "name": "safe-message",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3450,
+      "mtime": "2026-03-15T02:41:03.840730+00:00"
+    },
+    {
+      "path": "tools/capture-evidence-hot-zone",
+      "name": "capture-evidence-hot-zone",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1526,
+      "mtime": "2026-03-15T02:41:03.837915+00:00"
+    },
+    {
+      "path": "tools/soak-verdict-check",
+      "name": "soak-verdict-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 6316,
+      "mtime": "2026-03-15T02:41:03.842062+00:00"
+    },
+    {
+      "path": "tools/subagent-srap-check",
+      "name": "subagent-srap-check",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3460,
+      "mtime": "2026-03-15T02:41:03.842329+00:00"
+    },
+    {
+      "path": "tools/probe-receipt-pipeline",
+      "name": "probe-receipt-pipeline",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10508,
+      "mtime": "2026-03-15T02:41:03.839842+00:00"
+    },
+    {
+      "path": "tools/probe-token-counter-cjk",
+      "name": "probe-token-counter-cjk",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10293,
+      "mtime": "2026-03-15T02:41:03.840023+00:00"
+    },
+    {
+      "path": "tools/self-improving-adapter",
+      "name": "self-improving-adapter",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4311,
+      "mtime": "2026-03-15T02:41:03.840809+00:00"
+    },
+    {
+      "path": "tools/agent-generate-proposal",
+      "name": "agent-generate-proposal",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4165,
+      "mtime": "2026-03-15T02:41:03.843036+00:00"
+    },
+    {
+      "path": "tools/gate-a-signer",
+      "name": "gate-a-signer",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3322,
+      "mtime": "2026-03-15T02:41:03.838424+00:00"
+    },
+    {
+      "path": "tools/serial-guide",
+      "name": "serial-guide",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2745,
+      "mtime": "2026-03-15T02:41:03.840830+00:00"
+    },
+    {
+      "path": "tools/agent-recovery-summary",
+      "name": "agent-recovery-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8672,
+      "mtime": "2026-03-15T02:41:03.843149+00:00"
+    },
+    {
+      "path": "tools/probe-subagent-inbox-metrics",
+      "name": "probe-subagent-inbox-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10492,
+      "mtime": "2026-03-15T02:41:03.839906+00:00"
+    },
+    {
+      "path": "tools/agent-health-summary",
+      "name": "agent-health-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1470,
+      "mtime": "2026-03-15T02:41:03.837545+00:00"
+    },
+    {
+      "path": "tools/probe-callback-delivery",
+      "name": "probe-callback-delivery",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13461,
+      "mtime": "2026-03-15T02:41:03.839361+00:00"
+    },
+    {
+      "path": "tools/testbot-decision-tracker",
+      "name": "testbot-decision-tracker",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2203,
+      "mtime": "2026-03-15T02:41:03.842542+00:00"
+    },
+    {
+      "path": "tools/execution-degradation-monitor",
+      "name": "execution-degradation-monitor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10464,
+      "mtime": "2026-03-15T02:41:03.838307+00:00"
+    },
+    {
+      "path": "tools/execution-metrics",
+      "name": "execution-metrics",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4967,
+      "mtime": "2026-03-15T02:41:03.838327+00:00"
+    },
+    {
+      "path": "tools/probe-longrunkit-state-machine",
+      "name": "probe-longrunkit-state-machine",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10868,
+      "mtime": "2026-03-15T02:41:03.839680+00:00"
+    },
+    {
+      "path": "tools/memory-search",
+      "name": "memory-search",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2596,
+      "mtime": "2026-03-15T02:41:03.838870+00:00"
+    },
+    {
+      "path": "tools/capture-wake-session-diff",
+      "name": "capture-wake-session-diff",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7012,
+      "mtime": "2026-03-15T02:41:03.837930+00:00"
+    },
+    {
+      "path": "tools/web-search",
+      "name": "web-search",
+      "is_executable": true,
+      "is_script": true,
+      "size": 1136,
+      "mtime": "2026-03-15T02:41:03.842804+00:00"
+    },
+    {
+      "path": "tools/project-check-advance",
+      "name": "project-check-advance",
+      "is_executable": true,
+      "is_script": true,
+      "size": 7922,
+      "mtime": "2026-03-15T02:41:03.840118+00:00"
+    },
+    {
+      "path": "tools/auto-receipt",
+      "name": "auto-receipt",
+      "is_executable": true,
+      "is_script": true,
+      "size": 2679,
+      "mtime": "2026-03-15T02:41:03.837721+00:00"
+    },
+    {
+      "path": "tools/s1-validator",
+      "name": "s1-validator",
+      "is_executable": true,
+      "is_script": true,
+      "size": 17043,
+      "mtime": "2026-03-15T02:41:03.840684+00:00"
+    },
+    {
+      "path": "tools/check-pending-spawns",
+      "name": "check-pending-spawns",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3259,
+      "mtime": "2026-03-15T02:41:03.837965+00:00"
+    }
+  ],
+  "p0_p1_unregistered": [
+    {
+      "path": "tools/hook_smoke_test",
+      "name": "hook_smoke_test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8633,
+      "mtime": "2026-03-15T02:41:03.838571+00:00"
+    },
+    {
+      "path": "tools/test-callback-acceptance",
+      "name": "test-callback-acceptance",
+      "is_executable": true,
+      "is_script": true,
+      "size": 9778,
+      "mtime": "2026-03-15T02:41:03.842441+00:00"
+    },
+    {
+      "path": "tools/agent-recovery-summary",
+      "name": "agent-recovery-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 8672,
+      "mtime": "2026-03-15T02:41:03.843149+00:00"
+    },
+    {
+      "path": "tools/probe-callback-delivery",
+      "name": "probe-callback-delivery",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13461,
+      "mtime": "2026-03-15T02:41:03.839361+00:00"
+    },
+    {
+      "path": "tools/verify-callback-guards",
+      "name": "verify-callback-guards",
+      "is_executable": true,
+      "is_script": true,
+      "size": 10340,
+      "mtime": "2026-03-15T02:41:03.842777+00:00"
+    },
+    {
+      "path": "tools/probe-callback-worker-doctor",
+      "name": "probe-callback-worker-doctor",
+      "is_executable": true,
+      "is_script": true,
+      "size": 14039,
+      "mtime": "2026-03-15T02:41:03.839389+00:00"
+    },
+    {
+      "path": "tools/demo-auto-resume-restart-test",
+      "name": "demo-auto-resume-restart-test",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4668,
+      "mtime": "2026-03-15T02:41:03.838198+00:00"
+    },
+    {
+      "path": "tools/test-callback-auto",
+      "name": "test-callback-auto",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3514,
+      "mtime": "2026-03-15T02:41:03.842462+00:00"
+    },
+    {
+      "path": "tools/session-start-recovery.bak",
+      "name": "session-start-recovery.bak",
+      "is_executable": true,
+      "is_script": true,
+      "size": 13746,
+      "mtime": "2026-03-15T02:41:03.841871+00:00"
+    },
+    {
+      "path": "tools/probe-webhook-fallback",
+      "name": "probe-webhook-fallback",
+      "is_executable": true,
+      "is_script": true,
+      "size": 12274,
+      "mtime": "2026-03-15T02:41:03.840068+00:00"
+    },
+    {
+      "path": "tools/debug-hooks",
+      "name": "debug-hooks",
+      "is_executable": true,
+      "is_script": true,
+      "size": 3980,
+      "mtime": "2026-03-15T02:41:03.838158+00:00"
+    },
+    {
+      "path": "tools/test-callback-regression",
+      "name": "test-callback-regression",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4602,
+      "mtime": "2026-03-15T02:41:03.842481+00:00"
+    },
+    {
+      "path": "tools/callback-daily-summary",
+      "name": "callback-daily-summary",
+      "is_executable": true,
+      "is_script": true,
+      "size": 4310,
+      "mtime": "2026-03-15T02:41:03.837756+00:00"
+    }
+  ],
+  "drifted": []
+}

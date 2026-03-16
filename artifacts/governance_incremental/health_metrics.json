@@ -1,0 +1,50 @@
+{
+  "generated_at": "2026-03-16T23:25:00Z",
+  "metrics": {
+    "registered_mainline_entries": 21,
+    "registered_auxiliary_entries": 7,
+    "new_candidate_entries": 1,
+    "unresolved_p0_entries": 0,
+    "unresolved_p1_entries": 0,
+    "register_after_fix_entries": 0,
+    "registry_drift_count": 1,
+    "bind_regression_count": 0,
+    "guard_regression_count": 0,
+    "expired_exception_count": 0
+  },
+  "targets": {
+    "unresolved_p0_entries": 0,
+    "unresolved_p1_entries": 0,
+    "register_after_fix_entries": 0,
+    "bind_regression_count": 0,
+    "guard_regression_count": 0
+  },
+  "status": {
+    "unresolved_p0_entries": "PASS",
+    "unresolved_p1_entries": "PASS",
+    "register_after_fix_entries": "PASS",
+    "bind_regression_count": "PASS",
+    "guard_regression_count": "PASS"
+  },
+  "overall_health": "GOOD",
+  "health_score": 95,
+  "issues": [
+    {
+      "level": "LEVEL_1",
+      "type": "registry_drift",
+      "entry": "tools/resume_readiness_calibration.py",
+      "description": "not_executable"
+    },
+    {
+      "level": "LEVEL_2",
+      "type": "missing_governance",
+      "count": 7,
+      "description": "P0 entries missing hard_judge"
+    }
+  ],
+  "recommendations": [
+    "补齐 7 个 P0 入口的 hard_judge 接入",
+    "设定例外注册表到期时间",
+    "持续每日增量扫描"
+  ]
+}

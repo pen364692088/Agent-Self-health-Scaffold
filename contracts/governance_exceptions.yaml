@@ -1,0 +1,97 @@
+# Governance Exceptions Registry
+
+**Schema Version**: 1.0
+**Last Updated**: 2026-03-16T23:30:00Z
+
+---
+schema_version: "1.0"
+last_updated: "2026-03-16T23:30:00Z"
+
+# 例外注册表
+exceptions:
+  # === P0 入口治理缺口例外 ===
+  
+  - exception_id: "EXC-001"
+    entry_id: "entry-003"
+    entry_path: "tools/auto-resume-orchestrator"
+    exception_type: "missing_governance"
+    reason: "P0 入口缺少 guard/boundary/hard_judge，待补齐"
+    owner: "recovery"
+    created_at: "2026-03-16T23:30:00Z"
+    expires_at: "2026-03-23T23:59:59Z"
+    compensation: "通过 subtask-orchestrate 间接获得部分保护"
+    status: "active"
+    
+  - exception_id: "EXC-002"
+    entry_id: "entry-012"
+    entry_path: "tools/session-recovery-check"
+    exception_type: "missing_hard_judge"
+    reason: "P0 入口缺少 hard_judge"
+    owner: "session"
+    created_at: "2026-03-16T23:30:00Z"
+    expires_at: "2026-03-23T23:59:59Z"
+    compensation: "只读检查操作，风险较低"
+    status: "active"
+    
+  - exception_id: "EXC-003"
+    entry_id: "entry-013"
+    entry_path: "tools/agent-recovery-verify"
+    exception_type: "missing_hard_judge"
+    reason: "P0 入口缺少 hard_judge"
+    owner: "recovery"
+    created_at: "2026-03-16T23:30:00Z"
+    expires_at: "2026-03-23T23:59:59Z"
+    compensation: "只读验证操作，风险较低"
+    status: "active"
+    
+  - exception_id: "EXC-004"
+    entry_id: "entry-015"
+    entry_path: "tools/resume_readiness_calibration.py"
+    exception_type: "not_executable"
+    reason: "Python 脚本无执行权限，但可通过 python 运行"
+    owner: "recovery"
+    created_at: "2026-03-16T23:30:00Z"
+    expires_at: "2026-04-16T23:59:59Z"
+    compensation: "通过 python script.py 运行，不影响功能"
+    status: "active"
+    
+  - exception_id: "EXC-005"
+    entry_id: "entry-015"
+    entry_path: "tools/resume_readiness_calibration.py"
+    exception_type: "missing_governance"
+    reason: "P0 入口缺少 guard/boundary/hard_judge"
+    owner: "recovery"
+    created_at: "2026-03-16T23:30:00Z"
+    expires_at: "2026-03-23T23:59:59Z"
+    compensation: "通过 policy_bind 接入策略"
+    status: "active"
+    
+  - exception_id: "EXC-006"
+    entry_id: "entry-016"
+    entry_path: "tools/resume_readiness_evaluator_v2.py"
+    exception_type: "missing_governance"
+    reason: "P0 入口缺少 guard/boundary/hard_judge"
+    owner: "recovery"
+    created_at: "2026-03-16T23:30:00Z"
+    expires_at: "2026-03-23T23:59:59Z"
+    compensation: "通过 policy_bind 接入策略"
+    status: "active"
+
+# 统计
+statistics:
+  total_exceptions: 6
+  by_status:
+    active: 6
+    expired: 0
+    resolved: 0
+  by_type:
+    missing_governance: 4
+    missing_hard_judge: 2
+    not_executable: 1
+
+# 审计日志
+audit_log:
+  - action: "created"
+    timestamp: "2026-03-16T23:30:00Z"
+    actor: "Manager"
+    description: "初始例外注册表创建"

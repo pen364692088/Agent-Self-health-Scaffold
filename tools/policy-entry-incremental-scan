@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+"""
+Policy Entry Incremental Scan - 增量入口扫描
+
+用途：
+- 对比当前扫描结果与上一次基线
+- 发现新增入口、变更入口、漂移入口
+- 输出增量发现报告
+
+版本: 1.0.0
+创建: 2026-03-16
+"""
+
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Any, Set
+
+ROOT = Path(__file__).resolve().parents[1]
+REGISTRY_PATH = ROOT / "contracts" / "policy_entry_registry.yaml"
+BASELINE_PATH = ROOT / "artifacts" / "governance_phase0" / "initial_reconcile_results.json"
+TOOLS_DIR = ROOT / "tools"
+
+
+def load_registry() -> Dict[str, Any]:
+    """加载入口注册表"""
+    import yaml
+
+    if not REGISTRY_PATH.exists():
+        return {"entries": []}
+
+    with open(REGISTRY_PATH, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def load_baseline() -> Dict[str, Any]:
+    """加载上一次基线"""
+    if not BASELINE_PATH.exists():
+        return None
+
+    with open(BASELINE_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def scan_current() -> List[Dict[str, Any]]:
+    """扫描当前入口"""
+    candidates = []
+
+    if not TOOLS_DIR.exists():
+        return candidates
+
+    for item in TOOLS_DIR.iterdir():
+        if item.is_file():
+            is_executable = os.access(item, os.X_OK)
+            is_script = item.suffix in [".py", ".sh"] or has_shebang(item)
+
+            if is_executable or is_script:
+                candidates.append({
+                    "path": f"tools/{item.name}",
+                    "name": item.name,
+                    "is_executable": is_executable,
+                    "is_script": is_script,
+                    "size": item.stat().st_size,
+                    "mtime": datetime.fromtimestamp(item.stat().st_mtime, tz=timezone.utc).isoformat(),
+                })
+
+    return candidates
+
+
+def has_shebang(file_path: Path) -> bool:
+    """检查文件是否有 shebang"""
+    try:
+        with open(file_path, "rb") as f:
+            first_line = f.readline(100)
+            return first_line.startswith(b"#!")
+    except:
+        return False
+
+
+def classify_entry(name: str) -> str:
+    """根据名称猜测入口分类"""
+    name_lower = name.lower()
+
+    # P0 - 主链强相关
+    p0_keywords = ["orchestrate", "resume", "callback-worker", "self-heal", "recover", "scheduler"]
+    if any(kw in name_lower for kw in p0_keywords):
+        return "P0"
+
+    # P1 - 潜在主链旁路
+    p1_keywords = ["callback", "handler", "bridge", "router", "worker", "hook"]
+    if any(kw in name_lower for kw in p1_keywords):
+        return "P1"
+
+    # P2 - 辅助治理
+    p2_keywords = ["check", "doctor", "audit", "monitor", "policy", "probe", "report", "summary"]
+    if any(kw in name_lower for kw in p2_keywords):
+        return "P2"
+
+    # P3 - 默认分类
+    return "P3"
+
+
+def incremental_scan(registry: Dict[str, Any], baseline: Dict[str, Any], current: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """增量扫描：对比基线和当前状态"""
+    
+    # 当前入口路径集合
+    current_paths = {c["path"] for c in current}
+    
+    # 注册入口路径集合
+    registered_paths = {entry["entry_path"] for entry in registry.get("entries", [])}
+    
+    # 基线入口路径集合
+    baseline_paths = set()
+    if baseline and "unregistered" in baseline:
+        baseline_paths = {e["path"] for e in baseline["unregistered"]}
+        baseline_paths |= registered_paths  # 加上已注册的
+    
+    # 新增候选入口
+    new_candidates = [c for c in current if c["path"] not in baseline_paths]
+    for c in new_candidates:
+        c["suspected_class"] = classify_entry(c["name"])
+        c["needs_review"] = c["suspected_class"] in ["P0", "P1"]
+    
+    # 未注册入口（当前存在但未注册）
+    unregistered = [c for c in current if c["path"] not in registered_paths]
+    
+    # 可能的漂移入口（文件大小变化）
+    drifted = []
+    if baseline and "unregistered" in baseline:
+        baseline_by_path = {e["path"]: e for e in baseline["unregistered"]}
+        for c in current:
+            if c["path"] in baseline_by_path:
+                old = baseline_by_path[c["path"]]
+                if old.get("size") != c.get("size"):
+                    drifted.append({
+                        "path": c["path"],
+                        "old_size": old.get("size"),
+                        "new_size": c.get("size"),
+                        "drift_type": "size_changed"
+                    })
+    
+    # P0/P1 未注册入口
+    p0_p1_unregistered = [c for c in unregistered if classify_entry(c["name"]) in ["P0", "P1"]]
+    
+    return {
+        "scan_timestamp": datetime.now(timezone.utc).isoformat(),
+        "statistics": {
+            "total_candidates": len(current),
+            "registered_entries": len(registered_paths),
+            "new_candidates": len(new_candidates),
+            "unregistered_entries": len(unregistered),
+            "p0_p1_unregistered": len(p0_p1_unregistered),
+            "drifted_entries": len(drifted),
+        },
+        "new_candidates": new_candidates,
+        "unregistered": unregistered[:50],  # 限制输出
+        "p0_p1_unregistered": p0_p1_unregistered,
+        "drifted": drifted,
+    }
+
+
+def main():
+    """主函数"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Policy Entry Incremental Scan - 增量入口扫描")
+    parser.add_argument("--format", choices=["json", "text"], default="json", help="输出格式")
+    parser.add_argument("--baseline", help="基线文件路径（可选）")
+    parser.add_argument("--only-new", action="store_true", help="仅显示新增入口")
+    parser.add_argument("--only-p0-p1", action="store_true", help="仅显示 P0/P1 未注册入口")
+
+    args = parser.parse_args()
+
+    # 加载数据
+    registry = load_registry()
+    baseline = load_baseline()
+    current = scan_current()
+
+    # 增量扫描
+    result = incremental_scan(registry, baseline, current)
+
+    # 过滤输出
+    if args.only_new:
+        result = {
+            "scan_timestamp": result["scan_timestamp"],
+            "new_candidates": result["new_candidates"],
+            "statistics": {"new_candidates_count": len(result["new_candidates"])},
+        }
+
+    if args.only_p0_p1:
+        result = {
+            "scan_timestamp": result["scan_timestamp"],
+            "p0_p1_unregistered": result["p0_p1_unregistered"],
+            "statistics": {"p0_p1_unregistered_count": len(result["p0_p1_unregistered"])},
+        }
+
+    # 输出
+    if args.format == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"=== 增量入口扫描结果 ===")
+        print(f"扫描时间: {result['scan_timestamp']}")
+        print(f"\n统计:")
+        for k, v in result["statistics"].items():
+            print(f"  {k}: {v}")
+
+        if result.get("new_candidates"):
+            print(f"\n新增入口 ({len(result['new_candidates'])} 个):")
+            for entry in result["new_candidates"][:20]:
+                print(f"  - {entry['path']} (疑似: {entry.get('suspected_class', 'unknown')})")
+
+        if result.get("p0_p1_unregistered"):
+            print(f"\n未注册 P0/P1 ({len(result['p0_p1_unregistered'])} 个):")
+            for entry in result["p0_p1_unregistered"]:
+                print(f"  - {entry['path']}")
+
+    # 返回码
+    p0_p1_count = len(result.get("p0_p1_unregistered", []))
+    new_count = len(result.get("new_candidates", []))
+
+    if p0_p1_count > 0 or new_count > 0:
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
