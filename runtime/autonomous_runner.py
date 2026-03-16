@@ -62,6 +62,20 @@ class LoopType(str, Enum):
     HEARTBEAT = "heartbeat"
 
 
+
+def _normalize_steps(state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    统一处理 steps 格式，支持列表和字典两种格式。
+    """
+    steps = state.get("steps", [])
+    if isinstance(steps, dict):
+        return list(steps.values())
+    elif isinstance(steps, list):
+        return steps
+    else:
+        return []
+
+
 @dataclass
 class LoopStatus:
     """循环状态"""
@@ -537,9 +551,9 @@ class AutonomousRunner:
                     task_id=state["task_id"],
                     status=state["status"],
                     current_step=state.get("current_step"),
-                    has_pending_steps=any(s["status"] == "pending" for s in state.get("steps", [])),
-                    has_running_steps=any(s["status"] == "running" for s in state.get("steps", [])),
-                    has_failed_steps=any(s["status"] in ("failed_retryable", "failed_blocked") for s in state.get("steps", [])),
+                    has_pending_steps=any(s["status"] == "pending" for s in _normalize_steps(state)),
+                    has_running_steps=any(s["status"] == "running" for s in _normalize_steps(state)),
+                    has_failed_steps=any(s["status"] in ("failed_retryable", "failed_blocked") for s in _normalize_steps(state)),
                     stuck_detected=False,
                     last_updated=state.get("updated_at")
                 )
@@ -610,7 +624,7 @@ class AutonomousRunner:
             
             # 找到下一个待执行步骤
             next_step = None
-            for step in state.get("steps", []):
+            for step in _normalize_steps(state):
                 if step["status"] == "pending":
                     # 检查依赖
                     if self._check_dependencies_met(state, step["step_id"]):
@@ -658,7 +672,7 @@ class AutonomousRunner:
             dependencies = plan_graph.get("dependencies", {}).get(step_id, [])
             
             for dep_id in dependencies:
-                dep_step = next((s for s in state.get("steps", []) if s["step_id"] == dep_id), None)
+                dep_step = next((s for s in _normalize_steps(state) if s["step_id"] == dep_id), None)
                 if not dep_step or dep_step["status"] != "success":
                     return False
             
@@ -769,7 +783,7 @@ class AutonomousRunner:
             
             retried = False
             
-            for step in state.get("steps", []):
+            for step in _normalize_steps(state):
                 if step["status"] == "failed_retryable":
                     step_id = step["step_id"]
                     attempts = step.get("attempts", 0)
@@ -1100,7 +1114,7 @@ class AutonomousRunner:
             
             now = datetime.utcnow().isoformat() + "Z"
             
-            for step in state.get("steps", []):
+            for step in _normalize_steps(state):
                 if step["step_id"] == step_id:
                     step["status"] = status
                     step["updated_at"] = now
@@ -1119,13 +1133,13 @@ class AutonomousRunner:
             state["updated_at"] = now
             
             # 检查是否所有步骤都完成
-            all_success = all(s["status"] == "success" for s in state.get("steps", []))
+            all_success = all(s["status"] == "success" for s in _normalize_steps(state))
             if all_success:
                 state["status"] = "completed"
                 state["current_step"] = None
             else:
                 # 更新当前步骤
-                for step in state.get("steps", []):
+                for step in _normalize_steps(state):
                     if step["status"] == "pending":
                         state["current_step"] = step["step_id"]
                         break

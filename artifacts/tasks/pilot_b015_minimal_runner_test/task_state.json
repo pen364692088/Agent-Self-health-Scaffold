@@ -1,0 +1,33 @@
+{
+  "task_id": "pilot_b015_minimal_runner_test",
+  "task_name": "B0-1.5 Runner \u6700\u5c0f\u63a8\u8fdb\u6d4b\u8bd5",
+  "description": "\u9a8c\u8bc1 autonomous_runner \u80fd\u5bf9\u771f\u5b9e\u4efb\u52a1\u5b8c\u6210\u63a8\u8fdb",
+  "status": "running",
+  "created_at": "2026-03-16T23:49:09.563629Z",
+  "updated_at": "2026-03-16T23:51:53.831065Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u521d\u59cb\u5316\u6d4b\u8bd5",
+      "status": "success",
+      "depends_on": [],
+      "execution_type": "manual",
+      "description": "\u9a8c\u8bc1 runner \u80fd\u8bc6\u522b\u5e76\u5904\u7406\u8fd9\u4e2a\u6b65\u9aa4",
+      "updated_at": "2026-03-16T23:51:53.831065Z",
+      "started_at": "2026-03-16T23:51:18.054092Z",
+      "completed_at": "2026-03-16T23:51:53.831065Z",
+      "error": "'ExecutionResult' object has no attribute 'error'"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u5b8c\u6210\u6d4b\u8bd5",
+      "status": "pending",
+      "depends_on": [
+        "S01"
+      ],
+      "execution_type": "manual",
+      "description": "\u9a8c\u8bc1\u4f9d\u8d56\u5904\u7406"
+    }
+  },
+  "current_step": "S02"
+}
