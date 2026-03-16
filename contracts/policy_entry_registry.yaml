@@ -5,8 +5,8 @@
 
 ---
 schema_version: "1.0"
-registry_version: "1.0.0"
-last_updated: "2026-03-16T21:30:00Z"
+registry_version: "1.1.0"
+last_updated: "2026-03-16T21:50:00Z"
 
 # 入口分类定义
 entry_classes:
@@ -151,18 +151,217 @@ entries:
     status: "active"
     registered_at: "2026-03-16T21:30:00Z"
 
+  # === Phase D 新增入口 (2026-03-16T21:50:00Z) ===
+  
+  # P0 - 主链强相关入口（新增）
+  - entry_id: "entry-009"
+    entry_path: "tools/session-start-recovery"
+    entry_type: "cli"
+    class: "P0"
+    owner: "session"
+    description: "会话启动恢复入口 - 新会话状态恢复"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: true
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-010"
+    entry_path: "tools/agent-self-health-scheduler"
+    entry_type: "daemon"
+    class: "P0"
+    owner: "recovery"
+    description: "自愈调度器 - 自动检测并触发自愈"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: true
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-011"
+    entry_path: "tools/callback-worker-doctor"
+    entry_type: "cli"
+    class: "P0"
+    owner: "diagnostics"
+    description: "callback-worker 诊断入口 - 检测回调处理问题"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: true
+    boundary_checked: true
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-012"
+    entry_path: "tools/session-recovery-check"
+    entry_type: "cli"
+    class: "P0"
+    owner: "session"
+    description: "会话恢复检查 - 验证恢复状态"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: false
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-013"
+    entry_path: "tools/agent-recovery-verify"
+    entry_type: "cli"
+    class: "P0"
+    owner: "recovery"
+    description: "恢复验证入口 - 验证恢复结果"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: false
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-014"
+    entry_path: "tools/gate-self-health-check"
+    entry_type: "cli"
+    class: "P0"
+    owner: "governance"
+    description: "Gate 自检入口 - 检查治理状态"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: true
+    boundary_checked: true
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-015"
+    entry_path: "tools/resume_readiness_calibration.py"
+    entry_type: "script"
+    class: "P0"
+    owner: "recovery"
+    description: "恢复就绪校准 - 校准恢复就绪状态"
+    policy_bind_connected: true
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-016"
+    entry_path: "tools/resume_readiness_evaluator_v2.py"
+    entry_type: "script"
+    class: "P0"
+    owner: "recovery"
+    description: "恢复就绪评估 v2 - 评估恢复就绪度"
+    policy_bind_connected: true
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: true
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  # P1 - 潜在主链旁路入口（新增）
+  - entry_id: "entry-017"
+    entry_path: "tools/subagent-completion-handler"
+    entry_type: "cli"
+    class: "P1"
+    owner: "orchestration"
+    description: "子代理完成处理 - 处理子代理完成回调"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: false
+    boundary_checked: true
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-018"
+    entry_path: "tools/subagent-callback-hook"
+    entry_type: "cli"
+    class: "P1"
+    owner: "orchestration"
+    description: "子代理回调钩子 - 处理回调钩子逻辑"
+    policy_bind_connected: true
+    guard_connected: true
+    hard_judge_connected: false
+    boundary_checked: true
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-019"
+    entry_path: "tools/callback-handler-auto-advance"
+    entry_type: "cli"
+    class: "P1"
+    owner: "orchestration"
+    description: "回调自动推进 - 自动推进回调链"
+    policy_bind_connected: true
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: false
+    ci_covered: false
+    status: "active"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-020"
+    entry_path: "tools/spawn-with-callback"
+    entry_type: "cli"
+    class: "P1"
+    owner: "orchestration"
+    description: "带回调 spawn - 创建带回调的子任务"
+    policy_bind_connected: false
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: false
+    ci_covered: false
+    status: "pending_fix"
+    registered_at: "2026-03-16T21:50:00Z"
+
+  - entry_id: "entry-021"
+    entry_path: "tools/memory-scope-router"
+    entry_type: "cli"
+    class: "P1"
+    owner: "memory"
+    description: "内存作用域路由 - 路由内存请求"
+    policy_bind_connected: false
+    guard_connected: false
+    hard_judge_connected: false
+    boundary_checked: false
+    preflight_covered: false
+    ci_covered: false
+    status: "pending_fix"
+    registered_at: "2026-03-16T21:50:00Z"
+
 # 统计
 statistics:
-  total_entries: 8
+  total_entries: 21
   by_class:
-    P0: 4
-    P1: 2
+    P0: 12
+    P1: 7
     P2: 2
     P3: 0
   governance_coverage:
-    policy_bind_connected: 6
-    guard_connected: 4
-    hard_judge_connected: 1
-    boundary_checked: 4
-    preflight_covered: 4
+    policy_bind_connected: 17
+    guard_connected: 13
+    hard_judge_connected: 7
+    boundary_checked: 13
+    preflight_covered: 12
     ci_covered: 0
