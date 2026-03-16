@@ -1,0 +1,1 @@
+/home/moonlight/.openclaw/shared/systems/SYSTEM_MAP.md

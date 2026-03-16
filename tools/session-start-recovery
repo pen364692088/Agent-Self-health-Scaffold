@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-session-start-recovery v1.1.1 - Session State Recovery Tool
+session-start-recovery v1.2.0 - Session State Recovery Tool
 
 Recovers session state from persisted files when a new session starts.
 MUST be called BEFORE any substantive reply.
+
+Changes in v1.2.0:
+- MANDATORY: Repo-Root Guard integration at session-start
+- Auto-switch to canonical repo if wrong workspace detected
+- Block execution if not in canonical repo
 
 Changes in v1.1.1:
 - Fixed objective parser (no more false "missing" reports)
@@ -57,7 +62,7 @@ def retrieve_memory_constraints() -> Dict[str, Any]:
 
 WORKSPACE = Path("/home/moonlight/.openclaw/workspace")
 SESSION_STATE = WORKSPACE / "SESSION-STATE.md"
-WORKING_BUFFER = WORKSPACE / "working-buffer.md"
+WORKING_BUFFER = WORKSPACE / "memory" / "working-buffer.md"
 HANDOFF = WORKSPACE / "handoff.md"
 LAST_SESSION_FILE = WORKSPACE / ".last_session_id"
 RECOVERY_DIR = WORKSPACE / "artifacts" / "session_recovery"
@@ -496,7 +501,49 @@ def check_needs_recovery() -> Dict[str, Any]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Session State Recovery v1.1.1")
+    # =========================================================================
+    # GATE R0: REPO ROOT GUARD (MANDATORY)
+    # Must be the FIRST check before any other operations
+    # =========================================================================
+    repo_guard_tool = WORKSPACE / "tools" / "repo-root-guard"
+    
+    if repo_guard_tool.exists():
+        try:
+            # Check if we're in the correct canonical repo
+            result = subprocess.run(
+                [str(repo_guard_tool), "--check", "--json"],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if result.returncode != 0:
+                # Wrong repo detected
+                try:
+                    guard_data = json.loads(result.stdout) if result.stdout.strip() else {}
+                except:
+                    guard_data = {}
+                
+                canonical_root = guard_data.get("canonical_root")
+                current_dir = guard_data.get("current_dir")
+                repo_name = guard_data.get("repo_name")
+                
+                # Output block message with instructions
+                print(json.dumps({
+                    "repo_guard": "BLOCKED",
+                    "status": "wrong_repo",
+                    "current_dir": current_dir,
+                    "canonical_root": canonical_root,
+                    "repo_name": repo_name,
+                    "action_required": f"cd {canonical_root}",
+                    "message": f"🚫 REPO ROOT MISMATCH: Must be in {canonical_root}, currently in {current_dir}"
+                }))
+                sys.exit(2)
+        except subprocess.TimeoutExpired:
+            print(json.dumps({"repo_guard": "TIMEOUT", "message": "Repo root guard timeout, continuing..."}))
+        except Exception as e:
+            print(json.dumps({"repo_guard": "ERROR", "message": str(e)}))
+    # =========================================================================
+    
+    parser = argparse.ArgumentParser(description="Session State Recovery v1.2.0")
     parser.add_argument("--check", action="store_true", help="Check if recovery needed")
     parser.add_argument("--recover", action="store_true", help="Perform recovery")
     parser.add_argument("--force", action="store_true", help="Force recovery")

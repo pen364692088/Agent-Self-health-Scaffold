@@ -1,0 +1,344 @@
+#!/usr/bin/env python3
+"""
+Repo Root Guard v1.0
+
+Purpose:
+  Validate and enforce canonical repo root before any task execution.
+  MUST be called at session-start BEFORE any substantive work.
+
+Usage:
+  repo-root-guard --check
+  repo-root-guard --validate --task-context "Scaffold"
+  repo-root-guard --switch --repo Agent-Self-health-Scaffold
+  repo-root-guard --json
+
+Exit Codes:
+  0 - Current repo is canonical
+  1 - Wrong repo, but can auto-switch
+  2 - Wrong repo, blocked (no auto-switch allowed)
+  3 - Error/ambiguous
+
+Enforcement: MANDATORY for all sessions
+"""
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import Optional, Dict, Any, List
+from dataclasses import dataclass
+from enum import Enum
+import yaml
+
+
+class RepoStatus(Enum):
+    CANONICAL = "canonical"
+    WRONG_REPO = "wrong_repo"
+    BLOCKED = "blocked"
+    AMBIGUOUS = "ambiguous"
+    ERROR = "error"
+
+
+@dataclass
+class ValidationResult:
+    status: RepoStatus
+    current_dir: str
+    canonical_root: Optional[str]
+    repo_name: Optional[str]
+    can_auto_switch: bool
+    message: str
+    blocked_operations: List[str]
+    
+    def to_dict(self) -> dict:
+        return {
+            "status": self.status.value,
+            "current_dir": self.current_dir,
+            "canonical_root": self.canonical_root,
+            "repo_name": self.repo_name,
+            "can_auto_switch": self.can_auto_switch,
+            "message": self.message,
+            "blocked_operations": self.blocked_operations
+        }
+
+
+class CanonicalRepoRegistry:
+    """Load and resolve canonical repo definitions"""
+    
+    def __init__(self, registry_path: Optional[str] = None):
+        if registry_path is None:
+            workspace = os.environ.get("OPENCLAW_WORKSPACE", 
+                                       os.path.expanduser("~/.openclaw/workspace"))
+            registry_path = os.path.join(workspace, "config/canonical_repos.yaml")
+        
+        self.registry_path = registry_path
+        self.registry = self._load_registry()
+    
+    def _load_registry(self) -> dict:
+        """Load registry from YAML file"""
+        if not os.path.exists(self.registry_path):
+            return {"canonical_repos": {}, "resolution_rules": {}}
+        
+        with open(self.registry_path, 'r') as f:
+            return yaml.safe_load(f) or {"canonical_repos": {}, "resolution_rules": {}}
+    
+    def get_repo(self, repo_name: str) -> Optional[dict]:
+        """Get canonical repo definition"""
+        return self.registry.get("canonical_repos", {}).get(repo_name)
+    
+    def resolve_by_task_context(self, task_context: str) -> Optional[str]:
+        """Resolve canonical repo name from task context"""
+        rules = self.registry.get("resolution_rules", {})
+        mappings = rules.get("task_to_repo_mapping", [])
+        
+        task_lower = task_context.lower()
+        
+        for mapping in mappings:
+            keywords = mapping.get("keywords", [])
+            for keyword in keywords:
+                if keyword.lower() in task_lower:
+                    return mapping.get("repo")
+        
+        return None
+    
+    def resolve_by_markers(self, current_dir: str) -> Optional[str]:
+        """Resolve repo by checking for markers in current directory"""
+        for repo_name, repo_def in self.registry.get("canonical_repos", {}).items():
+            markers = repo_def.get("markers", [])
+            canonical_root = repo_def.get("canonical_root")
+            
+            if canonical_root and current_dir.startswith(canonical_root):
+                return repo_name
+            
+            # Check markers
+            for marker in markers:
+                marker_path = os.path.join(current_dir, marker)
+                if os.path.exists(marker_path):
+                    # Found marker, but need to verify it's the canonical repo
+                    pass
+        
+        return None
+    
+    def get_all_canonical_roots(self) -> Dict[str, str]:
+        """Get all canonical roots"""
+        roots = {}
+        for repo_name, repo_def in self.registry.get("canonical_repos", {}).items():
+            root = repo_def.get("canonical_root")
+            if root:
+                roots[repo_name] = root
+        return roots
+
+
+class RepoRootGuard:
+    """
+    Repo Root Guard
+    
+    Validates and enforces canonical repo root before task execution.
+    """
+    
+    def __init__(self, registry_path: Optional[str] = None):
+        self.registry = CanonicalRepoRegistry(registry_path)
+    
+    def check(self) -> ValidationResult:
+        """Check if current directory is a canonical repo"""
+        current_dir = os.getcwd()
+        
+        # Get all canonical roots
+        canonical_roots = self.registry.get_all_canonical_roots()
+        
+        for repo_name, canonical_root in canonical_roots.items():
+            if current_dir == canonical_root or current_dir.startswith(canonical_root + "/"):
+                return ValidationResult(
+                    status=RepoStatus.CANONICAL,
+                    current_dir=current_dir,
+                    canonical_root=canonical_root,
+                    repo_name=repo_name,
+                    can_auto_switch=False,
+                    message=f"✅ Current directory is canonical repo: {repo_name}",
+                    blocked_operations=[]
+                )
+        
+        # Not in any canonical repo
+        # Check if we're in a forbidden alternative
+        registry_data = self.registry.registry  # Get the dict
+        for repo_name, repo_def in registry_data.get("canonical_repos", {}).items():
+            forbidden = repo_def.get("forbidden_alternatives", [])
+            canonical_root = repo_def.get("canonical_root")
+            
+            for fb in forbidden:
+                fb_path = fb.get("path", "")
+                if current_dir == fb_path or current_dir.startswith(fb_path + "/"):
+                    enforcement = repo_def.get("enforcement", {})
+                    return ValidationResult(
+                        status=RepoStatus.WRONG_REPO if enforcement.get("block_if_wrong_repo") else RepoStatus.BLOCKED,
+                        current_dir=current_dir,
+                        canonical_root=canonical_root,
+                        repo_name=repo_name,
+                        can_auto_switch=enforcement.get("auto_switch_allowed", False),
+                        message=self._format_block_message(repo_name, canonical_root, current_dir, fb.get("reason", "")),
+                        blocked_operations=["task_execution", "mutation", "git_commit", "git_push"]
+                    )
+        
+        # Unknown location
+        return ValidationResult(
+            status=RepoStatus.AMBIGUOUS,
+            current_dir=current_dir,
+            canonical_root=None,
+            repo_name=None,
+            can_auto_switch=False,
+            message=f"⚠️ Current directory is not in any known canonical repo: {current_dir}",
+            blocked_operations=[]
+        )
+    
+    def validate(self, task_context: Optional[str] = None) -> ValidationResult:
+        """Validate repo for a specific task context"""
+        result = self.check()
+        
+        if result.status == RepoStatus.CANONICAL:
+            return result
+        
+        # Try to resolve repo from task context
+        if task_context:
+            repo_name = self.registry.resolve_by_task_context(task_context)
+            if repo_name:
+                repo_def = self.registry.get_repo(repo_name)
+                if repo_def:
+                    canonical_root = repo_def.get("canonical_root")
+                    enforcement = repo_def.get("enforcement", {})
+                    
+                    return ValidationResult(
+                        status=RepoStatus.WRONG_REPO,
+                        current_dir=os.getcwd(),
+                        canonical_root=canonical_root,
+                        repo_name=repo_name,
+                        can_auto_switch=enforcement.get("auto_switch_allowed", False),
+                        message=self._format_block_message(repo_name, canonical_root, os.getcwd(), ""),
+                        blocked_operations=["task_execution", "mutation", "git_commit"]
+                    )
+        
+        return result
+    
+    def switch(self, repo_name: Optional[str] = None) -> bool:
+        """Switch to canonical repo root"""
+        if repo_name:
+            repo_def = self.registry.get_repo(repo_name)
+        else:
+            # Try to infer from current check result
+            result = self.check()
+            if result.repo_name:
+                repo_name = result.repo_name
+                repo_def = self.registry.get_repo(repo_name)
+            else:
+                return False
+        
+        if not repo_def:
+            return False
+        
+        canonical_root = repo_def.get("canonical_root")
+        if not canonical_root or not os.path.isdir(canonical_root):
+            return False
+        
+        # Perform switch
+        os.chdir(canonical_root)
+        
+        # Log the switch
+        self._log_switch(repo_name, canonical_root)
+        
+        return True
+    
+    def _format_block_message(self, repo_name: str, canonical_root: str, current_dir: str, reason: str) -> str:
+        """Format blocking message"""
+        return f"""🚫 REPO ROOT MISMATCH
+
+Expected Canonical Root: {canonical_root}
+Current Directory: {current_dir}
+Repo: {repo_name}
+{f"Reason: {reason}" if reason else ""}
+
+You are NOT in the correct repository for this task.
+
+Action Required:
+1. Switch to canonical root: cd {canonical_root}
+2. Or use: repo-root-guard --switch --repo {repo_name}
+
+Until resolved:
+- Task execution BLOCKED
+- Mutation operations BLOCKED
+- Git operations BLOCKED
+"""
+    
+    def _log_switch(self, repo_name: str, canonical_root: str):
+        """Log repo switch event"""
+        workspace = os.environ.get("OPENCLAW_WORKSPACE",
+                                   os.path.expanduser("~/.openclaw/workspace"))
+        log_path = os.path.join(workspace, "artifacts/repo_switches.jsonl")
+        
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        
+        event = {
+            "timestamp": datetime.now().isoformat(),
+            "event": "repo_switch",
+            "repo_name": repo_name,
+            "canonical_root": canonical_root,
+            "from_dir": os.getcwd()
+        }
+        
+        with open(log_path, 'a') as f:
+            f.write(json.dumps(event) + "\n")
+
+
+# =============================================================================
+# CLI Interface
+# =============================================================================
+
+def main():
+    """CLI interface for repo-root-guard"""
+    parser = argparse.ArgumentParser(description="Repo Root Guard v1.0")
+    parser.add_argument("--check", action="store_true", help="Check current repo status")
+    parser.add_argument("--validate", action="store_true", help="Validate for task context")
+    parser.add_argument("--task-context", help="Task context for validation")
+    parser.add_argument("--switch", action="store_true", help="Switch to canonical repo")
+    parser.add_argument("--repo", help="Target repo name")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument("--registry", help="Custom registry path")
+    
+    args = parser.parse_args()
+    
+    guard = RepoRootGuard(args.registry)
+    
+    if args.switch:
+        success = guard.switch(args.repo)
+        if args.json:
+            print(json.dumps({"switched": success, "new_dir": os.getcwd()}))
+        else:
+            if success:
+                print(f"✅ Switched to canonical repo: {os.getcwd()}")
+            else:
+                print(f"❌ Failed to switch repo")
+        return 0 if success else 3
+    
+    if args.validate:
+        result = guard.validate(args.task_context)
+    else:
+        result = guard.check()
+    
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(result.message)
+    
+    # Exit codes
+    if result.status == RepoStatus.CANONICAL:
+        return 0
+    elif result.status == RepoStatus.WRONG_REPO and result.can_auto_switch:
+        return 1
+    elif result.status == RepoStatus.WRONG_REPO or result.status == RepoStatus.BLOCKED:
+        return 2
+    else:
+        return 3
+
+
+if __name__ == "__main__":
+    sys.exit(main())

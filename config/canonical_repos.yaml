@@ -1,0 +1,162 @@
+# Canonical Repos Registry
+# Version: v1.0
+# Purpose: Define canonical repo roots for each project
+# Enforcement: MANDATORY - session-start must validate against this registry
+
+metadata:
+  version: "1.0"
+  created: "2026-03-16"
+  status: ACTIVE
+  enforcement: MANDATORY
+
+# =============================================================================
+# CANONICAL REPO DEFINITIONS
+# =============================================================================
+
+canonical_repos:
+  # ---------------------------------------------------------------------------
+  # Agent-Self-health-Scaffold (Primary)
+  # ---------------------------------------------------------------------------
+  Agent-Self-health-Scaffold:
+    description: |
+      Agent Self-Health Scaffold 项目唯一合法仓库根目录
+      用于 session continuity, mutation guard, 所有 Scaffold 相关任务
+      
+    canonical_root: "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold"
+    
+    identifiers:
+      git_remote: "git@github.com:pen364692088/Agent-Self-health-Scaffold.git"
+      repo_name: "Agent-Self-health-Scaffold"
+      
+    markers:
+      - "SESSION-STATE.md"
+      - "docs/memory/CANONICAL_OBJECT_REGISTRY.yaml"
+      - "runtime/memory_preflight.py"
+      
+    forbidden_alternatives:
+      - path: "/home/moonlight/.openclaw/workspace"
+        reason: "workspace 是 OpenClaw 默认工作区，不是 Scaffold 项目仓库"
+        
+      - pattern: "/home/moonlight/.openclaw/workspace/**"
+        reason: "workspace 子目录也不是 Scaffold 项目仓库"
+    
+    enforcement:
+      block_if_wrong_repo: true
+      auto_switch_allowed: true
+      requires_confirmation: false
+
+  # ---------------------------------------------------------------------------
+  # OpenEmotion
+  # ---------------------------------------------------------------------------
+  OpenEmotion:
+    description: |
+      OpenEmotion 项目唯一合法仓库根目录
+      
+    canonical_root: "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion"
+    
+    identifiers:
+      git_remote: "git@github.com:pen364692088/OpenEmotion.git"
+      repo_name: "OpenEmotion"
+      
+    markers:
+      - "OpenEmotion_MVP5/"
+      - "emotiond"
+      
+    enforcement:
+      block_if_wrong_repo: true
+      auto_switch_allowed: true
+      requires_confirmation: false
+
+# =============================================================================
+# OPENCLAW WORKSPACE
+# =============================================================================
+
+openclaw_workspace:
+  description: |
+    OpenClaw 默认工作区
+    用于 session state 管理、工具开发、skill 管理
+    
+  canonical_root: "/home/moonlight/.openclaw/workspace"
+  
+  identifiers:
+    git_remote: "git@github.com:pen364692088/Agent-Self-health-Scaffold.git"
+    
+  note: |
+    workspace 是 Scaffold 的一个 worktree 或副本
+    对于 Scaffold 项目任务，必须使用 canonical repo root
+    对于 OpenClaw 系统任务，可以在 workspace 中执行
+
+# =============================================================================
+# RESOLUTION RULES
+# =============================================================================
+
+resolution_rules:
+  # 如何确定当前任务应该使用哪个 repo
+  task_to_repo_mapping:
+    - keywords: ["Scaffold", "mutation-guard", "memory-preflight", "session-continuity"]
+      repo: "Agent-Self-health-Scaffold"
+      
+    - keywords: ["OpenEmotion", "emotion", "affect", "MVP"]
+      repo: "OpenEmotion"
+      
+    - keywords: ["openclaw-tool", "skill-", "clawhub"]
+      repo: "openclaw-workspace"
+  
+  # 从 session state 提取项目上下文
+  session_state_fields:
+    - "branch"
+    - "objective"
+    - "next_step"
+    - "blocker"
+
+# =============================================================================
+# VALIDATION GATES
+# =============================================================================
+
+validation_gates:
+  R1_current_repo_check:
+    description: "Check if current working directory is a valid repo"
+    
+  R2_canonical_resolve:
+    description: "Resolve canonical repo for current task context"
+    
+  R3_root_match:
+    description: "Verify current directory matches canonical root"
+    
+  R4_block_or_switch:
+    description: "Block execution or auto-switch to canonical root"
+
+# =============================================================================
+# BLOCKING BEHAVIOR
+# =============================================================================
+
+blocking:
+  when_wrong_repo:
+    message: |
+      🚫 REPO ROOT MISMATCH
+      
+      Expected Canonical Root: {canonical_root}
+      Current Directory: {current_dir}
+      
+      You are NOT in the correct repository for this task.
+      
+      Action Required:
+      1. Switch to canonical root: cd {canonical_root}
+      2. Or use auto-switch: repo-root-guard --switch
+      
+      Until resolved:
+      - Task execution BLOCKED
+      - Mutation operations BLOCKED
+      - Git operations BLOCKED
+      
+    blocked_operations:
+      - "task_execution"
+      - "mutation"
+      - "git_commit"
+      - "git_push"
+      - "file_write_to_canonical_targets"
+      
+  auto_switch:
+    enabled: true
+    log_event: true
+    notify_user: true
