@@ -244,5 +244,5 @@ G3.5 Observation Complete
 
 ---
 
-**Last Updated**: 2026-03-16T01:50:00Z
-**Next Milestone**: G3.5 Observation Complete (2026-03-30)
+**Last Updated**: 2026-03-16T02:05:00Z
+**Next Milestone**: G3.5 Observation Complete (2026-03-30 23:59:59 America/Winnipeg)

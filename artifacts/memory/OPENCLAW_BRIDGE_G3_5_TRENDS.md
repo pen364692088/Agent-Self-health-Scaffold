@@ -239,6 +239,7 @@ Recommendation: TBD based on full data
 
 ---
 
-**Last Updated**: 2026-03-16T01:55:00Z
+**Last Updated**: 2026-03-16T02:05:00Z
 **Status**: 🔒 FROZEN (Observation Mode)
+**Observation End**: 2026-03-30 23:59:59 America/Winnipeg (2026-03-31T04:59:59Z)
 **Next Update**: 2026-03-17 (Daily)

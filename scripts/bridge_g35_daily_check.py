@@ -37,9 +37,22 @@ def generate_metrics_snapshot(date: str) -> dict:
     timestamp = datetime.now(timezone.utc).isoformat()
     
     # Placeholder metrics - would be collected from actual bridge
+    # All observation records MUST include these 4 required fields:
+    # 1. sample_count
+    # 2. task_type_distribution
+    # 3. window_start
+    # 4. window_end
     metrics = {
         "date": date,
         "timestamp": timestamp,
+        "sample_count": 0,  # REQUIRED: Number of requests/sessions
+        "task_type_distribution": {  # REQUIRED: Breakdown by task type
+            "coding": 0,
+            "decision": 0,
+            "question": 0,
+        },
+        "window_start": f"{date}T00:00:00-05:00",  # REQUIRED: Start of observation window
+        "window_end": f"{date}T23:59:59-05:00",  # REQUIRED: End of observation window
         "metrics": {
             "adoption_rate": "TBD",
             "quality_improvement_rate": "TBD",
@@ -55,15 +68,6 @@ def generate_metrics_snapshot(date: str) -> dict:
             "total_suggestions": 0,
             "total_adoptions": 0,
             "total_errors": 0,
-        },
-        "task_type_distribution": {
-            "coding": 0,
-            "decision": 0,
-            "question": 0,
-        },
-        "sample_info": {
-            "sample_size": 0,
-            "time_window": date,
         },
         "anomalies": [],
         "alerts": [],
