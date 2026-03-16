@@ -25,6 +25,7 @@ Status: MANDATORY_ENFORCEMENT
 import json
 import yaml
 import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass
@@ -72,13 +73,38 @@ class CanonicalRegistry:
     
     def __init__(self, registry_path: Optional[str] = None):
         if registry_path is None:
-            workspace = os.environ.get("OPENCLAW_WORKSPACE", 
-                                       os.path.expanduser("~/.openclaw/workspace"))
-            registry_path = os.path.join(workspace, 
-                                        "docs/memory/CANONICAL_OBJECT_REGISTRY.yaml")
+            # Try to find registry in current git repo first
+            repo_root = self._get_git_root()
+            if repo_root:
+                repo_registry = os.path.join(repo_root, 
+                                            "docs/memory/CANONICAL_OBJECT_REGISTRY.yaml")
+                if os.path.exists(repo_registry):
+                    registry_path = repo_registry
+            
+            # Fall back to OPENCLAW_WORKSPACE
+            if registry_path is None:
+                workspace = os.environ.get("OPENCLAW_WORKSPACE", 
+                                          os.path.expanduser("~/.openclaw/workspace"))
+                registry_path = os.path.join(workspace, 
+                                            "docs/memory/CANONICAL_OBJECT_REGISTRY.yaml")
         
         self.registry_path = registry_path
         self.registry = self._load_registry()
+    
+    def _get_git_root(self) -> Optional[str]:
+        """Get current git repository root"""
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception:
+            pass
+        return None
     
     def _load_registry(self) -> dict:
         """Load registry from YAML file"""

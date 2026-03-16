@@ -1,0 +1,146 @@
+# PROGRAM_STATE_UNIFIED.yaml
+# Agent-Self-health-Scaffold 项目统一进度账
+# Single source of truth for project state
+
+metadata:
+  version: "1.0"
+  created: "2026-03-16"
+  last_updated: "2026-03-16"
+  status: ACTIVE
+
+# =============================================================================
+# Mutation Guard 修复状态
+# =============================================================================
+
+mutation_guard:
+  status: completed_and_pushed
+  repo_name: Agent-Self-health-Scaffold
+  repo_root: /home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold
+  remote: git@github.com:pen364692088/Agent-Self-health-Scaffold.git
+  commit: 164aa7e
+
+  problem_fixed:
+    - memory_constraints_not_bound_to_mutation_decision_point
+    - canonical_target_not_forced_before_write
+    - duplicate_truth_source_creation_risk
+    - new_session_repo_target_drift_risk
+
+  core_guards:
+    canonical_target_resolution: enforced
+    update_only_policy_blocks_create: true
+    ambiguity_policy: block
+    mutation_evidence_chain: enabled
+
+  gates:
+    contract: pass
+    e2e: pass
+    preflight: pass
+
+  verification:
+    tests_passed: 26
+    tests_total: 26
+    verification_report: artifacts/verification/MUTATION_GUARD_VERIFICATION_REPORT.md
+
+  rollout_state:
+    pushed_to_remote: true
+    mainline_state: integrated
+    observation_state: short_smoke_observation
+
+  operator_note: >
+    本次修复已在正确仓库完成并推送。
+    后续凡涉及 Agent-Self-health-Scaffold 的 mutation / test / rebase / push，
+    必须先执行 repo-root preflight，禁止默认落到 ~/.openclaw/workspace。
+
+# =============================================================================
+# Repo Root Preflight 状态
+# =============================================================================
+
+repo_root_preflight:
+  status: implemented
+  canonical_repo_root: /home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold
+  enforcement: mandatory
+  
+  trigger_actions:
+    - file_read_write
+    - test_execution
+    - git_rebase
+    - git_merge
+    - git_cherry_pick
+    - git_push
+    - state_update
+
+  block_condition: repo_root_mismatch
+  block_message: "🚫 BLOCKED: Wrong workspace. Expected: {expected}, Actual: {actual}"
+
+# =============================================================================
+# 项目关键信息
+# =============================================================================
+
+project:
+  name: Agent-Self-health-Scaffold
+  type: Self-health monitoring and recovery system
+  
+  canonical_paths:
+    unified_state: docs/PROGRAM_STATE_UNIFIED.yaml
+    handoff: docs/memory/MUTATION_GUARD_HANDOFF_ONEPAGE.md
+    registry: docs/memory/CANONICAL_OBJECT_REGISTRY.yaml
+    
+  forbidden_actions:
+    - create_duplicate_unified_state
+    - use_wrong_workspace_as_project_root
+    - skip_repo_root_preflight
+
+# =============================================================================
+# 观察窗状态
+# =============================================================================
+
+observation_window:
+  name: Self-Health v2 观察窗
+  baseline_tag: self-health-v2-obs-day0
+  start_date: "2026-03-12"
+  
+  daily_tasks:
+    - run_metrics
+    - check_four_redlines
+    - record_samples
+
+  core_questions:
+    - 人工继续
+    - 重复泄漏
+    - ledger分叉
+    - 恢复后停滞
+    - 恢复风暴
+
+# =============================================================================
+# 会话连续性
+# =============================================================================
+
+session_continuity:
+  recovery_tools:
+    - tools/session-start-recovery
+    - tools/session-start-task-reclaimer
+    
+  state_files:
+    - SESSION-STATE.md
+    - working-buffer.md
+    - handoff.md
+    
+  rules:
+    - 新会话启动必须先恢复状态
+    - 不依赖聊天历史作为真相源
+    - 关键变化必须持久化到状态文件
+
+# =============================================================================
+# 更新历史
+# =============================================================================
+
+history:
+  - date: "2026-03-16"
+    action: "Mutation Guard 修复完成并推送"
+    commit: "164aa7e"
+    details: "记忆约束绑定到写操作最小决策点"
+    
+  - date: "2026-03-16"
+    action: "创建统一进度账"
+    commit: "pending"
+    details: "首次创建 canonical 统一进度账文件"

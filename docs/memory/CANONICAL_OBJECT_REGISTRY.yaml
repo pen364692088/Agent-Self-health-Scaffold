@@ -37,6 +37,11 @@ canonical_objects:
         path: "SESSION-STATE.md"
         write_policy: "update_only"
         description: "OpenClaw workspace session state"
+        
+      - repo: "Agent-Self-health-Scaffold"
+        path: "docs/PROGRAM_STATE_UNIFIED.yaml"
+        write_policy: "update_only"
+        description: "Agent-Self-health-Scaffold project unified state"
     
     forbidden_actions:
       - "create_duplicate_state_file"
