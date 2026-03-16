@@ -1,0 +1,68 @@
+{
+  "task_id": "task_egocore_p1a_identity",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-16T02:28:44.852471Z",
+  "updated_at": "2026-03-16T02:39:42.201621Z",
+  "contract": {
+    "objective": "P1-A: Identity Invariants v1 - \u5b9a\u4e49\u5e76\u56fa\u5316\u7cfb\u7edf\u7ea7\u8eab\u4efd\u4e0d\u53d8\u91cf\u7ea6\u675f",
+    "repository": "/home/moonlight/Project/Github/MyProject/EgoCore",
+    "branch": "main",
+    "acceptance_criteria": [
+      "identity invariants schema \u5b8c\u6574",
+      "\u53ef\u53d8/\u4e0d\u53ef\u53d8\u8fb9\u754c\u660e\u786e",
+      "\u53d8\u66f4\u89c4\u5219\u660e\u786e",
+      "identity_guard \u53ef\u52a0\u8f7d\u3001\u6821\u9a8c\u3001\u62e6\u622a\u975e\u6cd5\u6539\u5199",
+      "\u6838\u5fc3\u8eab\u4efd\u5b57\u6bb5\u4e0d\u53ef\u88ab\u975e\u6cd5\u6539\u5199",
+      "\u5408\u6cd5\u53ef\u53d8\u5b57\u6bb5\u53ef\u6309\u89c4\u5219\u53d8\u66f4\u5e76\u4ea7\u751f\u5ba1\u8ba1",
+      "\u4e0d\u7834\u574f\u73b0\u6709\u4e3b\u94fe\u7a33\u5b9a\u6027"
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "S1",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:29:43.473014Z",
+      "completed_at": "2026-03-16T02:30:43.880906Z",
+      "error": null
+    },
+    {
+      "step_id": "S2",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:31:40.142490Z",
+      "completed_at": "2026-03-16T02:32:03.295640Z",
+      "error": null
+    },
+    {
+      "step_id": "S3",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:33:14.270603Z",
+      "completed_at": "2026-03-16T02:36:53.796164Z",
+      "error": null
+    },
+    {
+      "step_id": "S4",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:37:39.239992Z",
+      "completed_at": "2026-03-16T02:38:29.397522Z",
+      "error": null
+    },
+    {
+      "step_id": "S5",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:38:58.476082Z",
+      "completed_at": "2026-03-16T02:39:42.201536Z",
+      "error": null
+    }
+  ],
+  "current_step": null,
+  "blocked_on": null,
+  "artifacts_dir": "artifacts/tasks/task_egocore_p1a_identity",
+  "ledger_path": "artifacts/tasks/task_egocore_p1a_identity/ledger.jsonl",
+  "metadata": {}
+}

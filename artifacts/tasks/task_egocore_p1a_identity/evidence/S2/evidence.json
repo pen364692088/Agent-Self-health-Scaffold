@@ -1,0 +1,20 @@
+{
+  "step_id": "S2",
+  "title": "创建 Identity Invariants Contract 文档",
+  "completed_at": "2026-03-16T02:55:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/docs/IDENTITY_INVARIANTS_CONTRACT.md",
+      "type": "documentation",
+      "lines": 200,
+      "description": "Identity Invariants 契约文档"
+    }
+  ],
+  "content_defined": {
+    "immutable_fields": ["identity_handle", "core_role", "owner_relationship"],
+    "mutable_fields": ["temporary_state", "active_focus"],
+    "change_triggers": 5,
+    "forbidden_zones": 5,
+    "audit_requirements": true
+  }
+}
