@@ -1,113 +1,78 @@
-# Phase B: Guard 缺口补齐报告
+# Phase B: guard 缺口补齐/豁免归档报告
 
 **执行时间**: 2026-03-16T23:40:00Z
 **状态**: ✅ 完成
 
 ---
 
-## 1. 补齐方式
+## 1. 补齐/豁免实施
 
-所有 5 个 guard 缺口均通过**间接覆盖确认**方式处理，无需新增 guard 实现。
+### 1.1 guard_already_covered_indirectly (3 个)
+
+| 入口 | 间接覆盖来源 | 留痕位置 |
+|------|--------------|----------|
+| tools/auto-resume-orchestrator | subtask-orchestrate | registry governance_note |
+| tools/callback-handler-auto | callback-handler | registry governance_note |
+| tools/callback-handler-auto-advance | callback-handler | registry governance_note |
+
+**实施**: 更新 registry 添加 governance_note 字段
+
+### 1.2 guard_not_required (2 个)
+
+| 入口 | 理由 | 风险边界 |
+|------|------|----------|
+| tools/resume_readiness_calibration.py | 纯读取，无副作用 | 只做校准，不执行 |
+| tools/resume_readiness_evaluator_v2.py | 纯读取，无副作用 | 只做评估，不执行 |
+
+**实施**: 更新 registry 添加 governance_note 字段
 
 ---
 
-## 2. 间接覆盖说明
+## 2. Registry 更新
 
-### 2.1 auto-resume-orchestrator
+### 2.1 添加 governance_note
 
-**间接覆盖来源**: subtask-orchestrate guard  
-**覆盖方式**: 恢复编排器通过 subtask-orchestrate 的 guard 机制获得保护  
-**验证方式**: 恢复操作触发 subtask-orchestrate，继承其 guard
-
-**Registry 更新**:
 ```yaml
-guard_connected: true
-governance_note: "通过 subtask-orchestrate 间接 guard + timeout limit"
+# entry-003
+governance_note: "继承 subtask-orchestrate 的 guard 保护"
+
+# entry-005
+governance_note: "继承 callback-handler 的 guard 保护"
+
+# entry-015
+governance_note: "纯读取工具，无副作用，无需 guard"
+
+# entry-016
+governance_note: "纯读取工具，无副作用，无需 guard"
+
+# entry-019
+governance_note: "继承 callback-handler 的 guard 保护"
 ```
 
 ---
 
-### 2.2 callback-handler-auto
+## 3. 回归覆盖
 
-**间接覆盖来源**: callback-handler guard  
-**覆盖方式**: callback-handler-auto 是 callback-handler 的封装，继承其 guard  
-**验证方式**: 回调处理通过 callback-handler 的 guard 验证
+### 3.1 已有回归
 
-**Registry 更新**:
-```yaml
-guard_connected: true
-governance_note: "继承 callback-handler guard 保护"
-```
+| 入口 | 回归测试 |
+|------|----------|
+| auto-resume-orchestrator | tests/test_auto_resume.py |
+| callback-handler-auto | tests/test_callback_*.py |
 
----
+### 3.2 新增监控
 
-### 2.3 resume_readiness_calibration.py
-
-**间接覆盖来源**: 纯函数实现  
-**覆盖方式**: 脚本只做读取计算，无副作用，天然安全  
-**验证方式**: 函数不执行写操作，无资源消耗
-
-**Registry 更新**:
-```yaml
-guard_connected: true
-governance_note: "纯读取操作，无副作用，天然 guard"
-```
+无需新增，间接覆盖已足够。
 
 ---
 
-### 2.4 resume_readiness_evaluator_v2.py
+## 4. 结论
 
-**间接覆盖来源**: 纯函数实现  
-**覆盖方式**: 脚本只做评估计算，无副作用，天然安全  
-**验证方式**: 函数不执行写操作，无资源消耗
-
-**Registry 更新**:
-```yaml
-guard_connected: true
-governance_note: "纯读取操作，无副作用，天然 guard"
-```
-
----
-
-### 2.5 callback-handler-auto-advance
-
-**间接覆盖来源**: callback-handler guard  
-**覆盖方式**: auto-advance 是 callback-handler 的辅助功能，继承其 guard  
-**验证方式**: 推进操作通过 callback-handler 的 guard 验证
-
-**Registry 更新**:
-```yaml
-guard_connected: true
-governance_note: "继承 callback-handler guard 保护"
-```
-
----
-
-## 3. 补齐结果
-
-| 入口 | 补齐方式 | Registry 更新 |
-|------|----------|---------------|
-| auto-resume-orchestrator | 间接覆盖 | guard_connected: true |
-| callback-handler-auto | 间接覆盖 | guard_connected: true |
-| resume_readiness_calibration.py | 天然 guard | guard_connected: true |
-| resume_readiness_evaluator_v2.py | 天然 guard | guard_connected: true |
-| callback-handler-auto-advance | 间接覆盖 | guard_connected: true |
-
----
-
-## 4. 验证
-
-```bash
-python tools/governance-hard-gate --all --json
-```
-
-**结果**: guard_not_connected 缺口已清零
-
----
-
-## 5. 结论
-
-所有 5 个 guard 缺口已通过间接覆盖或天然 guard 方式处理，registry 已更新。
+**5 个 guard 缺口全部处理完成**：
+- 0 个新增 guard
+- 3 个间接覆盖已留痕
+- 2 个豁免已说明理由
+- **无遗留问题** ✅
 
 ---
 

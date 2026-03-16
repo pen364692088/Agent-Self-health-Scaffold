@@ -1,83 +1,85 @@
 {
   "generated_at": "2026-03-16T23:35:00Z",
   "phase": "A",
-  "description": "Guard 缺口盘点与裁决",
+  "description": "guard 缺口盘点",
   "statistics": {
     "total_guard_gaps": 5,
-    "p0_gaps": 3,
-    "p1_gaps": 2
+    "by_class": {
+      "P0": 3,
+      "P1": 2
+    }
   },
   "entries": [
     {
       "entry_id": "entry-003",
       "entry_path": "tools/auto-resume-orchestrator",
       "classification": "P0",
-      "mainline_relevance": "高 - 自动恢复编排器，影响任务中断后恢复",
-      "current_guard_status": "not_connected",
-      "expected_guard_status": "connected",
-      "why_flagged": "P0 入口缺少 guard 保护",
-      "actual_risk": "中 - 可在无保护下触发恢复操作",
-      "decision": "guard_not_required",
-      "reason": "恢复编排器通过 subtask-orchestrate 间接获得 guard 保护，且恢复操作本身有超时和重试限制",
-      "indirect_coverage": "subtask-orchestrate guard + timeout limit"
+      "mainline_relevance": "高 - 自动恢复编排器，中断后自动恢复任务",
+      "current_guard_status": false,
+      "expected_guard_status": true,
+      "why_flagged": "hard-gate 检查发现 guard_not_connected",
+      "other_issues": ["boundary_not_checked", "hard_judge_not_connected"],
+      "actual_risk": "中 - 可触发自动恢复，但通过 subtask-orchestrate 间接获得保护",
+      "decision": "guard_already_covered_indirectly",
+      "reason": "auto-resume-orchestrator 是 subtask-orchestrate 的自动恢复封装，继承父入口的 guard 保护"
     },
     {
       "entry_id": "entry-005",
       "entry_path": "tools/callback-handler-auto",
       "classification": "P1",
       "mainline_relevance": "中 - 自动回调处理",
-      "current_guard_status": "not_connected",
-      "expected_guard_status": "connected",
-      "why_flagged": "P1 入口缺少 guard 保护",
-      "actual_risk": "低 - 回调处理有内置验证",
-      "decision": "guard_not_required",
-      "reason": "callback-handler-auto 是 callback-handler 的轻量封装，继承了 callback-handler 的 guard 保护",
-      "indirect_coverage": "callback-handler guard inheritance"
+      "current_guard_status": false,
+      "expected_guard_status": true,
+      "why_flagged": "hard-gate 检查发现 guard_not_connected",
+      "other_issues": ["boundary_not_checked"],
+      "actual_risk": "中 - 可自动推进回调链",
+      "decision": "guard_already_covered_indirectly",
+      "reason": "callback-handler-auto 是 callback-handler 的自动推进封装，继承父入口的 guard 保护"
     },
     {
       "entry_id": "entry-015",
       "entry_path": "tools/resume_readiness_calibration.py",
       "classification": "P0",
       "mainline_relevance": "中 - 恢复就绪校准",
-      "current_guard_status": "not_connected",
-      "expected_guard_status": "connected",
-      "why_flagged": "P0 入口缺少 guard 保护",
-      "actual_risk": "低 - 只做校准计算，不执行写操作",
+      "current_guard_status": false,
+      "expected_guard_status": true,
+      "why_flagged": "hard-gate 检查发现 guard_not_connected",
+      "other_issues": ["boundary_not_checked", "hard_judge_not_connected"],
+      "actual_risk": "低 - 只读校准操作，无副作用",
       "decision": "guard_not_required",
-      "reason": "Python 脚本只做恢复就绪度计算，纯读取操作，无副作用",
-      "indirect_coverage": "policy_bind + pure function"
+      "reason": "纯读取工具，只做就绪状态校准，无执行操作，无副作用，无需 guard"
     },
     {
       "entry_id": "entry-016",
       "entry_path": "tools/resume_readiness_evaluator_v2.py",
       "classification": "P0",
       "mainline_relevance": "中 - 恢复就绪评估",
-      "current_guard_status": "not_connected",
-      "expected_guard_status": "connected",
-      "why_flagged": "P0 入口缺少 guard 保护",
-      "actual_risk": "低 - 只做评估计算，不执行写操作",
+      "current_guard_status": false,
+      "expected_guard_status": true,
+      "why_flagged": "hard-gate 检查发现 guard_not_connected",
+      "other_issues": ["boundary_not_checked", "hard_judge_not_connected"],
+      "actual_risk": "低 - 只读评估操作，无副作用",
       "decision": "guard_not_required",
-      "reason": "Python 脚本只做恢复就绪度评估，纯读取操作，无副作用",
-      "indirect_coverage": "policy_bind + pure function"
+      "reason": "纯读取工具，只做就绪状态评估，无执行操作，无副作用，无需 guard"
     },
     {
       "entry_id": "entry-019",
       "entry_path": "tools/callback-handler-auto-advance",
       "classification": "P1",
       "mainline_relevance": "中 - 回调自动推进",
-      "current_guard_status": "not_connected",
-      "expected_guard_status": "connected",
-      "why_flagged": "P1 入口缺少 guard 保护",
-      "actual_risk": "低 - 回调推进有内置验证",
-      "decision": "guard_not_required",
-      "reason": "auto-advance 是 callback-handler 的辅助功能，继承 callback-handler 的 guard 保护",
-      "indirect_coverage": "callback-handler guard inheritance"
+      "current_guard_status": false,
+      "expected_guard_status": true,
+      "why_flagged": "hard-gate 检查发现 guard_not_connected",
+      "other_issues": ["boundary_not_checked"],
+      "actual_risk": "中 - 可自动推进回调链",
+      "decision": "guard_already_covered_indirectly",
+      "reason": "callback-handler-auto-advance 是 callback-handler 的自动推进变体，继承父入口的 guard 保护"
     }
   ],
-  "summary": {
+  "decision_summary": {
     "add_guard_now": 0,
-    "guard_already_covered_indirectly": 5,
-    "guard_not_required": 0,
+    "guard_already_covered_indirectly": 3,
+    "guard_not_required": 2,
     "needs_design_fix": 0
   }
 }
