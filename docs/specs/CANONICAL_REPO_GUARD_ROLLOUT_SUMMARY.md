@@ -3,20 +3,28 @@
 ## 推广时间
 2026-03-16
 
-## 推广顺序
-```
-Scaffold 规范抽象完成 → EgoCore 集成验证 → OpenEmotion 验证
-```
+## 最终结论
+
+**Scaffold、EgoCore、OpenEmotion 已分别按各自最合适的模式完成 canonical repo protection；跨项目推广任务闭环完成。**
 
 ---
 
 ## 最终状态
 
-| 项目 | 集成模式 | 状态 | 验证报告 |
-|------|----------|------|----------|
-| **Agent-Self-health-Scaffold** | A - workspace session-start guard | ✅ 已完成 | artifacts/verification/CRITICAL_COLD_START_VERIFICATION_7.md |
-| **EgoCore** | B - 独立应用入口 guard | ✅ 已完成 | docs/EGOCORE_REPO_GUARD_VERIFICATION.md |
-| **OpenEmotion** | C - 轻量 repo anchor | ✅ 验证通过 | docs/specs/OPENEMOTION_REPO_GUARD_VERIFICATION.md |
+| 项目 | 模式 | 状态 | 精确表述 |
+|------|------|------|----------|
+| **Agent-Self-health-Scaffold** | A | ✅ 已落地 | Canonical Repo Guard 已集成 |
+| **EgoCore** | B | ✅ 已落地 | Canonical Repo Guard 已集成 |
+| **OpenEmotion** | C | ✅ 已验证通过 | Canonical Repo Anchor 已验证通过 |
+
+**重要**：OpenEmotion 当前是"轻量锚定验证通过"，不是和 Scaffold/EgoCore 同强度的入口 guard 集成。这是因为它的启动模型不同，不需要完整 Gate R0。
+
+---
+
+## 推广顺序
+```
+Scaffold 规范抽象完成 → EgoCore 集成验证 → OpenEmotion 验证
+```
 
 ---
 
@@ -198,15 +206,56 @@ EgoCore:
 
 ---
 
-## 结论
+## 系统级红线
 
-**Canonical Repo Guard 跨项目推广任务：✅ 完成**
+**每个项目都必须有且只有一种与其启动模型匹配的 canonical repo protection 方案；禁止把别的项目的 guard 实现机械照搬。**
 
-- Scaffold：模式 A，已完成
-- EgoCore：模式 B，已完成
-- OpenEmotion：模式 C，验证通过
+这条红线把"规范"从路径问题，提升到了**架构适配原则**。
 
-**建议后续**：
-1. 监控 Scaffold 和 EgoCore 的短观察阶段
-2. 可选：在 OpenEmotion 高风险脚本前添加 repo-root 检查
-3. 可选：将这套模式推广到其他项目
+---
+
+## 冻结状态
+
+**状态：已冻结**
+
+- ✅ 不再继续扩写
+- ✅ 只保留规范文档和回归测试
+- ✅ OpenEmotion 的 systemd / bridge 路径一致性检查已验证
+
+---
+
+## 后续运维建议
+
+### OpenEmotion 配置漂移监控
+
+模式 C 的风险点不在入口 guard，而在**配置漂移**。
+
+**需要监控的配置**：
+
+```yaml
+# systemd WorkingDirectory
+/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/deploy/systemd/user/emotiond.service
+  WorkingDirectory: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+# EgoCore bridge repo_path
+/home/moonlight/Project/Github/MyProject/EgoCore/config/openemotion.yaml
+  repo_path: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+# Canonical Repo Registry
+/home/moonlight/.openclaw/workspace/config/canonical_repos.yaml
+  OpenEmotion.canonical_root: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+```
+
+**建议**：创建定期检查脚本，验证以上三个配置的路径是否一致。
+
+---
+
+## 最终结论
+
+**Canonical Repo Guard 跨项目推广任务：✅ 闭环完成**
+
+- Scaffold：Canonical Repo Guard 已集成
+- EgoCore：Canonical Repo Guard 已集成
+- OpenEmotion：Canonical Repo Anchor 已验证通过
+
+**Scaffold、EgoCore、OpenEmotion 已分别按各自最合适的模式完成 canonical repo protection；跨项目推广任务闭环完成。**
