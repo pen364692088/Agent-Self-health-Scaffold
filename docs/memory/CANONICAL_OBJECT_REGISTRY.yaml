@@ -1,0 +1,305 @@
+# Canonical Object Registry
+# Version: v1.0
+# Date: 2026-03-16
+# Purpose: Machine-executable registry for single source of truth objects
+
+metadata:
+  version: "1.0"
+  created: "2026-03-16"
+  status: ACTIVE
+  enforcement: MANDATORY
+
+# =============================================================================
+# CANONICAL OBJECTS
+# =============================================================================
+
+canonical_objects:
+  # ---------------------------------------------------------------------------
+  # Unified Program State
+  # ---------------------------------------------------------------------------
+  unified_program_state:
+    description: |
+      唯一统一进度账/统一程序状态对象
+      Single source of truth for program progress and state tracking
+      
+    allowed_targets:
+      - repo: "OpenEmotion"
+        path: "docs/PROGRAM_STATE_UNIFIED.yaml"
+        write_policy: "update_only"
+        description: "OpenEmotion project unified state"
+        
+      - repo: "EgoCore"
+        path: "PROGRAM_STATE_UNIFIED.yaml"
+        write_policy: "update_only"
+        description: "EgoCore project unified state"
+        
+      - repo: "openclaw-workspace"
+        path: "SESSION-STATE.md"
+        write_policy: "update_only"
+        description: "OpenClaw workspace session state"
+    
+    forbidden_actions:
+      - "create_duplicate_state_file"
+      - "create_alternative_unified_state_file"
+      - "delete_without_approval"
+      - "rename_canonical_file"
+    
+    ambiguity_policy: "block"
+    
+    error_messages:
+      duplicate_detected: |
+        🚫 BLOCKED: Detected existing unified state file.
+        Canonical target: {resolved_path}
+        Action: Use UPDATE on existing file, do NOT create new.
+        
+      ambiguous_target: |
+        🚫 BLOCKED: Cannot resolve unique canonical target.
+        Candidates: {candidates}
+        Action: Specify explicit target or resolve conflict in registry.
+
+  # ---------------------------------------------------------------------------
+  # Unified Progress Ledger
+  # ---------------------------------------------------------------------------
+  unified_progress_ledger:
+    description: |
+      统一进度账本
+      Unified ledger for tracking task progress across sessions
+      
+    allowed_targets:
+      - repo: "openclaw-workspace"
+        path: "artifacts/progress_ledger.json"
+        write_policy: "update_only"
+        description: "OpenClaw unified progress ledger"
+    
+    forbidden_actions:
+      - "create_duplicate_ledger"
+      - "create_alternative_progress_file"
+      - "delete_ledger_entries"
+    
+    ambiguity_policy: "block"
+
+  # ---------------------------------------------------------------------------
+  # Session State
+  # ---------------------------------------------------------------------------
+  session_state:
+    description: |
+      会话状态文件
+      Current session state and context
+      
+    allowed_targets:
+      - repo: "openclaw-workspace"
+        path: "SESSION-STATE.md"
+        write_policy: "update_only"
+        description: "Primary session state file"
+        
+      - repo: "openclaw-workspace"
+        path: "working-buffer.md"
+        write_policy: "update_only"
+        description: "Working buffer for current focus"
+    
+    forbidden_actions:
+      - "create_alternative_session_state"
+      - "create_session_state_v2"
+      - "delete_session_state"
+    
+    ambiguity_policy: "block"
+
+  # ---------------------------------------------------------------------------
+  # Handoff Document
+  # ---------------------------------------------------------------------------
+  handoff_document:
+    description: |
+      会话交接文档
+      Session handoff and continuity document
+      
+    allowed_targets:
+      - repo: "openclaw-workspace"
+        path: "handoff.md"
+        write_policy: "create_update"
+        description: "Primary handoff document"
+        
+      - repo: "openclaw-workspace"
+        path: "session-archives/"
+        pattern: "*.md"
+        write_policy: "create_update"
+        description: "Archived session summaries"
+    
+    forbidden_actions:
+      - "delete_handoff_without_archive"
+      - "create_duplicate_handoff"
+    
+    ambiguity_policy: "block"
+
+  # ---------------------------------------------------------------------------
+  # Canonical Index
+  # ---------------------------------------------------------------------------
+  canonical_index:
+    description: |
+      唯一索引文件
+      Single source of truth for indexing
+      
+    allowed_targets:
+      - repo: "openclaw-workspace"
+        path: "artifacts/session_index.json"
+        write_policy: "update_only"
+        description: "Session index for retrieval"
+    
+    forbidden_actions:
+      - "create_alternative_index"
+      - "delete_index"
+      - "fragment_index"
+    
+    ambiguity_policy: "block"
+
+  # ---------------------------------------------------------------------------
+  # Memory Distillation
+  # ---------------------------------------------------------------------------
+  memory_distillation:
+    description: |
+      记忆蒸馏文件
+      Distilled memory for long-term retention
+      
+    allowed_targets:
+      - repo: "openclaw-workspace"
+        path: "artifacts/distilled/memory_distilled.md"
+        write_policy: "update_only"
+        description: "Distilled long-term memory"
+    
+    forbidden_actions:
+      - "create_alternative_distillation"
+      - "delete_distillation"
+    
+    ambiguity_policy: "block"
+
+# =============================================================================
+# WRITE POLICIES
+# =============================================================================
+
+write_policies:
+  update_only:
+    description: "Only update existing file, no create or delete"
+    allowed_actions:
+      - "modify"
+      - "append"
+    forbidden_actions:
+      - "create"
+      - "delete"
+      
+  create_update:
+    description: "Create if not exists, update if exists"
+    allowed_actions:
+      - "create"
+      - "modify"
+      - "append"
+    forbidden_actions:
+      - "delete"
+      
+  append_only:
+    description: "Only append data, no modify or delete"
+    allowed_actions:
+      - "append"
+    forbidden_actions:
+      - "create"
+      - "modify"
+      - "delete"
+
+# =============================================================================
+# AMBIGUITY POLICIES
+# =============================================================================
+
+ambiguity_policies:
+  block:
+    description: "Block operation when ambiguity detected"
+    behavior: |
+      1. Do NOT proceed
+      2. Output detailed error message
+      3. Require explicit resolution
+    use_for: "canonical objects"
+    
+  escalate:
+    description: "Prompt user for confirmation"
+    behavior: |
+      1. Present options to user
+      2. Wait for explicit choice
+      3. Proceed based on user decision
+    use_for: "non-critical decisions"
+    
+  fallback:
+    description: "Use predefined fallback path"
+    behavior: |
+      1. Check for fallback definition
+      2. Use fallback if defined
+      3. Block if no fallback
+    use_for: "recovery scenarios"
+
+# =============================================================================
+# ENFORCEMENT RULES
+# =============================================================================
+
+enforcement:
+  preflight_required:
+    - "all_mutation_operations"
+    
+  gate_sequence:
+    - "M1_object_resolve"
+    - "M2_canonical_resolve"
+    - "M3_policy_check"
+    - "M4_evidence_echo"
+    - "M5_execute_or_block"
+  
+  bypass_allowed: false
+  
+  evidence_required:
+    - "task_id"
+    - "object_name"
+    - "resolved_target"
+    - "write_policy"
+    - "decision"
+    - "reason"
+    - "consulted_sources"
+
+# =============================================================================
+# ERROR MESSAGES
+# =============================================================================
+
+error_messages:
+  general_block: |
+    🚫 MUTATION BLOCKED
+    
+    Object: {object_name}
+    Reason: {reason}
+    Action Attempted: {action}
+    Canonical Target: {resolved_path}
+    Policy: {write_policy}
+    
+    Suggestion: Use UPDATE on existing canonical target.
+    
+  registry_not_found: |
+    ⚠️ WARNING: Canonical object registry not found.
+    Falling back to conservative mode.
+    Action: Verify registry exists at docs/memory/CANONICAL_OBJECT_REGISTRY.yaml
+    
+  target_ambiguous: |
+    🚫 BLOCKED: Cannot resolve unique canonical target.
+    
+    Object: {object_name}
+    Candidates: {candidates}
+    
+    Action: Resolve conflict in registry or specify explicit target.
+
+# =============================================================================
+# REGISTRY HEALTH
+# =============================================================================
+
+health_check:
+  required_fields:
+    - "description"
+    - "allowed_targets"
+    - "forbidden_actions"
+    - "ambiguity_policy"
+    
+  validation:
+    - "each object has at least one target"
+    - "write_policy is valid enum"
+    - "ambiguity_policy is valid enum"
+    - "no duplicate object names"
