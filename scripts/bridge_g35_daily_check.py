@@ -43,6 +43,7 @@ def generate_metrics_snapshot(date: str) -> dict:
     # All metrics MUST include value + numerator + denominator
     # When sample_count = 0, status = "insufficient_evidence"
     metrics = {
+        "date": date,
         "window_start": f"{date}T00:00:00-05:00",
         "window_end": f"{date}T23:59:59-05:00",
         "sample_count": 0,

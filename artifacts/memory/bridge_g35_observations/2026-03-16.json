@@ -1,0 +1,73 @@
+{
+  "date": "2026-03-16",
+  "window_start": "2026-03-16T00:00:00-05:00",
+  "window_end": "2026-03-16T23:59:59-05:00",
+  "sample_count": 0,
+  "task_type_distribution": {
+    "coding": 0,
+    "decision": 0,
+    "question": 0
+  },
+  "metrics": {
+    "adoption_rate": {
+      "value": null,
+      "num": 0,
+      "den": 0
+    },
+    "quality_improvement_rate": {
+      "value": null,
+      "num": 0,
+      "den": 0
+    },
+    "noise_rate": {
+      "value": null,
+      "num": 0,
+      "den": 0
+    },
+    "prompt_bloat_rate": {
+      "value": null,
+      "num": 0,
+      "den": 0
+    },
+    "rollback_after_recall": {
+      "value": null,
+      "num": 0,
+      "den": 0
+    },
+    "demote_after_recall": {
+      "value": null,
+      "num": 0,
+      "den": 0
+    },
+    "main_chain_success_rate": {
+      "value": null,
+      "baseline_delta": null
+    },
+    "fail_open_stability": {
+      "value": null,
+      "num": 0,
+      "den": 0
+    }
+  },
+  "threshold_result": {
+    "warning_triggered": [],
+    "critical_triggered": [],
+    "not_evaluable": [
+      "adoption_rate",
+      "quality_improvement_rate",
+      "noise_rate",
+      "prompt_bloat_rate",
+      "rollback_after_recall",
+      "demote_after_recall",
+      "main_chain_success_rate",
+      "fail_open_stability"
+    ]
+  },
+  "anomalies": [],
+  "status": "insufficient_evidence",
+  "summary": "Observation period active. No eligible samples collected in this window (sample_count=0).",
+  "_metadata": {
+    "date": "2026-03-16",
+    "timestamp": "2026-03-16T03:12:46.017578+00:00"
+  }
+}
