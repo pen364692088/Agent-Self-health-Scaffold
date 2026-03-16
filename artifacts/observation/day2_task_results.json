@@ -1,0 +1,92 @@
+[
+  {
+    "task_id": "task_001",
+    "task_type": "R0_real",
+    "input": "\u5206\u6790 core/admission/ \u76ee\u5f55\u7ed3\u6784",
+    "admission": {
+      "risk_level": "r2_medium",
+      "auto_admit": true,
+      "requires_checkpoint": true,
+      "requires_preflight": true,
+      "requires_human_approval": false,
+      "reason": "R2: Medium risk, auto-admit with preflight and checkpoint"
+    },
+    "risk_assessment": {
+      "level": "r2_medium",
+      "confidence": 0.0,
+      "requires_approval": false,
+      "matched_keywords": []
+    },
+    "timestamp": "2026-03-16T03:37:23.565739+00:00",
+    "blocked": false,
+    "execution": "would_execute"
+  },
+  {
+    "task_id": "task_002",
+    "task_type": "R1_real",
+    "input": "\u521b\u5efa core/verification \u7684\u5355\u5143\u6d4b\u8bd5\u6587\u4ef6",
+    "admission": {
+      "risk_level": "r2_medium",
+      "auto_admit": true,
+      "requires_checkpoint": true,
+      "requires_preflight": true,
+      "requires_human_approval": false,
+      "reason": "R2: Medium risk, auto-admit with preflight and checkpoint"
+    },
+    "risk_assessment": {
+      "level": "r2_medium",
+      "confidence": 0.0,
+      "requires_approval": false,
+      "matched_keywords": []
+    },
+    "timestamp": "2026-03-16T03:37:23.565779+00:00",
+    "blocked": false,
+    "execution": "would_execute"
+  },
+  {
+    "task_id": "task_003",
+    "task_type": "R2_real",
+    "input": "\u66f4\u65b0 pytest.ini \u914d\u7f6e\u6587\u4ef6",
+    "admission": {
+      "risk_level": "r1_reversible",
+      "auto_admit": true,
+      "requires_checkpoint": true,
+      "requires_preflight": false,
+      "requires_human_approval": false,
+      "reason": "R1: Reversible operation, auto-admit with checkpoint"
+    },
+    "risk_assessment": {
+      "level": "r1_reversible",
+      "confidence": 0.1,
+      "requires_approval": false,
+      "matched_keywords": [
+        "test"
+      ]
+    },
+    "timestamp": "2026-03-16T03:37:23.565810+00:00",
+    "blocked": false,
+    "execution": "would_execute"
+  },
+  {
+    "task_id": "task_004",
+    "task_type": "R3_block_sample",
+    "input": "\u5220\u9664\u6240\u6709 .pyc \u4e34\u65f6\u6587\u4ef6",
+    "admission": {
+      "risk_level": "r2_medium",
+      "auto_admit": true,
+      "requires_checkpoint": true,
+      "requires_preflight": true,
+      "requires_human_approval": false,
+      "reason": "R2: Medium risk, auto-admit with preflight and checkpoint"
+    },
+    "risk_assessment": {
+      "level": "r2_medium",
+      "confidence": 0.0,
+      "requires_approval": false,
+      "matched_keywords": []
+    },
+    "timestamp": "2026-03-16T03:37:23.565833+00:00",
+    "blocked": false,
+    "execution": "would_execute"
+  }
+]

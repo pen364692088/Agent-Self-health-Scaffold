@@ -1,0 +1,49 @@
+{
+  "task_id": "task_boundary_remediation",
+  "steps": [
+    {
+      "step_id": "S1",
+      "title": "\u76d8\u70b9\u4e0e\u5f52\u7c7b",
+      "goal": "\u76d8\u70b9\u4e24\u4e2a\u4ed3\u5e93\u7684\u529f\u80fd\u5f52\u5c5e"
+    },
+    {
+      "step_id": "S2",
+      "title": "\u5efa\u7acb OpenEmotion \u6b63\u5f0f\u672c\u4f53\u6a21\u5757",
+      "goal": "\u521b\u5efa identity/self_model/summary \u6a21\u5757"
+    },
+    {
+      "step_id": "S3",
+      "title": "EgoCore \u6539\u4e3a\u8bfb\u53d6 OpenEmotion \u4ea7\u7269",
+      "goal": "\u4fee\u6539\u4e3a host-side loader"
+    },
+    {
+      "step_id": "S4",
+      "title": "Shim \u767b\u8bb0\u4e0e\u9650\u671f",
+      "goal": "\u5efa\u7acb SHIM_REGISTER.md"
+    },
+    {
+      "step_id": "S5",
+      "title": "\u5220\u9664\u6216\u964d\u7ea7\u8fdd\u89c4\u5b9e\u73b0",
+      "goal": "\u8fc1\u51fa\u672c\u4f53\u903b\u8f91"
+    },
+    {
+      "step_id": "S6",
+      "title": "\u56de\u5f52\u9a8c\u8bc1",
+      "goal": "\u9a8c\u8bc1\u4e3b\u94fe\u5b8c\u6574\u6027"
+    },
+    {
+      "step_id": "S7",
+      "title": "Gate A/B/C \u9a8c\u8bc1",
+      "goal": "\u8fb9\u754c\u9a8c\u6536"
+    }
+  ],
+  "dependencies": {
+    "S1": [],
+    "S2": [],
+    "S3": [],
+    "S4": [],
+    "S5": [],
+    "S6": [],
+    "S7": []
+  }
+}

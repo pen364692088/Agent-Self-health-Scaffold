@@ -1,0 +1,82 @@
+{
+  "task_id": "task_boundary_remediation",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-16T03:49:51.653716Z",
+  "updated_at": "2026-03-16T03:57:43.452429Z",
+  "contract": {
+    "objective": "\u8fb9\u754c\u6574\u6539\u4e0e\u4ed3\u5e93\u8fc1\u79fb - \u628a\u4e3b\u4f53\u672c\u4f53\u4ece EgoCore \u8fc1\u56de OpenEmotion",
+    "repository": "/home/moonlight/Project/Github/MyProject/EgoCore",
+    "branch": "main",
+    "acceptance_criteria": [
+      "OpenEmotion \u6210\u4e3a identity/self-model/summary \u7684\u552f\u4e00\u6b63\u5f0f\u6743\u5a01\u6e90",
+      "EgoCore \u4e0d\u518d\u62e5\u6709\u4e3b\u4f53\u672c\u4f53\u903b\u8f91\u7684\u6700\u7ec8\u89e3\u91ca\u6743",
+      "\u6240\u6709\u8fc7\u6e21\u5b9e\u73b0\u5df2\u767b\u8bb0\u5e76\u5e26\u5220\u9664\u8ba1\u5212",
+      "Self Restore \u4ecd\u53ef\u7a33\u5b9a\u8fd0\u884c",
+      "replay/audit/trace \u5b8c\u6574\u4e0d\u4e22"
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "S1",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T03:50:25.111746Z",
+      "completed_at": "2026-03-16T03:52:22.559768Z",
+      "error": null
+    },
+    {
+      "step_id": "S2",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T03:52:22.560342Z",
+      "completed_at": "2026-03-16T03:57:43.449940Z",
+      "error": null
+    },
+    {
+      "step_id": "S3",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-16T03:57:43.450462Z",
+      "error": null
+    },
+    {
+      "step_id": "S4",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-16T03:57:43.451136Z",
+      "error": null
+    },
+    {
+      "step_id": "S5",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-16T03:57:43.451468Z",
+      "error": null
+    },
+    {
+      "step_id": "S6",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-16T03:57:43.452039Z",
+      "error": null
+    },
+    {
+      "step_id": "S7",
+      "status": "success",
+      "attempts": 1,
+      "started_at": null,
+      "completed_at": "2026-03-16T03:57:43.452346Z",
+      "error": null
+    }
+  ],
+  "current_step": null,
+  "blocked_on": null,
+  "artifacts_dir": "artifacts/tasks/task_boundary_remediation",
+  "ledger_path": "artifacts/tasks/task_boundary_remediation/ledger.jsonl",
+  "metadata": {}
+}
