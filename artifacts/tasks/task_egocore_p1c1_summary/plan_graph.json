@@ -1,0 +1,58 @@
+{
+  "task_id": "task_egocore_p1c1_summary",
+  "steps": [
+    {
+      "step_id": "S1",
+      "title": "\u521b\u5efa Long-Term Self Summary Schema",
+      "goal": "\u5b9a\u4e49 summary \u7684\u7ed3\u6784\u5316 schema",
+      "depends_on": []
+    },
+    {
+      "step_id": "S2",
+      "title": "\u521b\u5efa Summary Contract \u6587\u6863",
+      "goal": "\u660e\u786e\u8fb9\u754c\u4e0e\u804c\u8d23",
+      "depends_on": [
+        "S1"
+      ]
+    },
+    {
+      "step_id": "S3",
+      "title": "\u5b9e\u73b0 Summary Generator",
+      "goal": "\u751f\u6210\u4e0e\u5237\u65b0\u903b\u8f91",
+      "depends_on": [
+        "S2"
+      ]
+    },
+    {
+      "step_id": "S4",
+      "title": "\u521b\u5efa Snapshot \u548c Audit",
+      "goal": "\u8f93\u51fa snapshot \u4e0e\u5ba1\u8ba1 artifact",
+      "depends_on": [
+        "S3"
+      ]
+    },
+    {
+      "step_id": "S5",
+      "title": "Gate A/B/C \u9a8c\u8bc1",
+      "goal": "\u786e\u4fdd P1-C1 \u5168\u90e8 Gate \u901a\u8fc7",
+      "depends_on": [
+        "S4"
+      ]
+    }
+  ],
+  "dependencies": {
+    "S1": [],
+    "S2": [
+      "S1"
+    ],
+    "S3": [
+      "S2"
+    ],
+    "S4": [
+      "S3"
+    ],
+    "S5": [
+      "S4"
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "task_id": "task_egocore_p1c1_summary",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-16T03:07:25.962937Z",
+  "updated_at": "2026-03-16T03:15:07.530401Z",
+  "contract": {
+    "objective": "P1-C1: Long-Term Self Summary v1 - \u5b9a\u4e49\u957f\u671f\u81ea\u6211\u6458\u8981\uff0c\u7528\u4e8e\u8de8\u5929\u6062\u590d",
+    "repository": "/home/moonlight/Project/Github/MyProject/EgoCore",
+    "branch": "main",
+    "acceptance_criteria": [
+      "long_term_self_summary.schema.json \u5b8c\u6574",
+      "summary \u4e0e identity invariants \u4e0d\u51b2\u7a81",
+      "summary \u662f\u4e3b\u4f53\u538b\u7f29\u8868\u793a\uff0c\u4e0d\u662f\u5386\u53f2\u6d41\u6c34\u8d26",
+      "summary \u53ef\u7528\u4e8e\u8de8\u5929\u6062\u590d",
+      "summary \u4e0d\u5305\u542b memory/appraisal/reflection \u672c\u4f53",
+      "\u53d8\u66f4\u53ef\u8ffd\u8e2a\u3001\u53ef\u5ba1\u8ba1",
+      "\u4e0d\u7834\u574f\u73b0\u6709\u4e3b\u94fe\u7a33\u5b9a\u6027"
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "S1",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T03:08:31.528404Z",
+      "completed_at": "2026-03-16T03:09:11.353023Z",
+      "error": null
+    },
+    {
+      "step_id": "S2",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T03:10:20.373258Z",
+      "completed_at": "2026-03-16T03:10:20.518512Z",
+      "error": null
+    },
+    {
+      "step_id": "S3",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T03:11:27.707254Z",
+      "completed_at": "2026-03-16T03:12:51.468031Z",
+      "error": null
+    },
+    {
+      "step_id": "S4",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T03:13:50.060898Z",
+      "completed_at": "2026-03-16T03:13:50.231454Z",
+      "error": null
+    },
+    {
+      "step_id": "S5",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T03:14:22.203742Z",
+      "completed_at": "2026-03-16T03:15:07.530301Z",
+      "error": null
+    }
+  ],
+  "current_step": null,
+  "blocked_on": null,
+  "artifacts_dir": "artifacts/tasks/task_egocore_p1c1_summary",
+  "ledger_path": "artifacts/tasks/task_egocore_p1c1_summary/ledger.jsonl",
+  "metadata": {}
+}

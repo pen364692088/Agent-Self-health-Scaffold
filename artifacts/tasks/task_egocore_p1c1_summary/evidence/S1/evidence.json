@@ -1,0 +1,18 @@
+{
+  "step_id": "S1",
+  "title": "创建 Long-Term Self Summary Schema",
+  "completed_at": "2026-03-16T04:35:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/contracts/long_term_self_summary.schema.json",
+      "type": "schema",
+      "lines": 350,
+      "description": "Long-Term Self Summary Schema"
+    }
+  ],
+  "schema_fields": {
+    "required_fields": 15,
+    "core_sections": ["identity_summary", "current_phase_summary", "capability_summary", "constraint_summary", "active_commitments_summary", "recent_key_events_summary", "stable_conclusions", "open_questions"],
+    "excluded_fields": ["memory", "appraisal", "emotion", "reflection", "event_memory", "narrative_memory"]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "step_id": "S2",
+  "title": "创建 Summary Contract 文档",
+  "completed_at": "2026-03-16T04:40:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/docs/LONG_TERM_SELF_SUMMARY_CONTRACT.md",
+      "type": "documentation",
+      "lines": 300,
+      "description": "Long-Term Self Summary 契约文档"
+    }
+  ],
+  "content_defined": {
+    "core_sections": 9,
+    "three_layer_architecture": true,
+    "boundary_rules": true,
+    "forbidden_items_listed": true,
+    "consistency_check_rules": true
+  }
+}
