@@ -217,4 +217,122 @@ Critical issues:
 ---
 
 **Created**: 2026-03-16T01:45:00Z
-**Last Updated**: 2026-03-16T01:45:00Z
+**Last Updated**: 2026-03-16T01:55:00Z
+**Status**: 🔒 FROZEN (Observation Mode)
+
+---
+
+## ⚠️ FREEZE NOTICE
+
+**观察期已冻结，至 2026-03-30 结束。**
+
+在此期间：
+- ❌ 禁止新增功能
+- ❌ 禁止扩大范围
+- ❌ 禁止调整边界
+- ✅ 仅允许修复阻塞 bug
+
+---
+
+## Freeze Rules
+
+1. **禁止新增功能**
+2. **禁止扩大到多入口/多 agent**
+3. **禁止调整 candidate / approved 边界**
+4. **禁止放宽 recall 任务类型**
+5. **禁止 full-on**
+6. **仅允许修复阻塞主链或破坏观测有效性的 bug**
+
+---
+
+## Alert Thresholds
+
+| Metric | Threshold | Severity |
+|--------|-----------|----------|
+| adoption_rate | < 40% | ⚠️ Warning |
+| quality_improvement_rate | < 10% | ⚠️ Warning |
+| noise_rate | > 15% | ⚠️ Warning |
+| prompt_bloat_rate | > 25% | ⚠️ Warning |
+| rollback_after_recall | > 5% | 🔴 Critical |
+| demote_after_recall | > 10% | 🔴 Critical |
+| main_chain_success_rate | Decrease | 🔴 Critical |
+| fail_open_stability | < 100% | 🔴 Critical |
+
+### Alert Response Protocol
+
+When alert triggered:
+1. **Do NOT expand scope**
+2. **Record anomaly** in trends document
+3. **Fix boundary/quality issues only**
+4. **Do NOT add new features**
+
+---
+
+## Observation Execution
+
+### Schedule
+
+- **Frequency**: Every 1-2 days
+- **Method**: Cron task → Send report to user
+- **Location**: Telegram (user: 8420019401)
+
+### Data Recording
+
+Each observation record MUST include:
+1. `adoption_rate`
+2. `quality_improvement_rate`
+3. `noise_rate`
+4. `prompt_bloat_rate`
+5. `rollback_after_recall`
+6. `demote_after_recall`
+7. `main_chain_success_rate`
+8. `fail_open_stability`
+
+### Required Attachments
+
+Each record MUST include:
+1. **Sample Size**: Number of requests/sessions
+2. **Time Window**: Date range
+3. **Task Type Distribution**: coding/decision/question counts
+4. **Anomaly Notes**: Any anomalies observed
+
+---
+
+## Final Deliverable
+
+**Due**: 2026-03-30
+**Location**: `artifacts/memory/OPENCLAW_BRIDGE_G3_5_FINAL_REVIEW.md`
+
+### Required Content
+
+1. **Sample Size**: Total observations collected
+2. **Metrics Status**: Each metric vs target
+3. **Primary Benefits**: What worked well
+4. **Primary Risks**: What didn't work
+5. **Expansion Recommendation**: Yes/No
+6. **Expansion Scope**: If yes, to what
+7. **Blocking Issues**: If no, what blocks expansion
+
+---
+
+## Cron Task Configuration
+
+```bash
+# Schedule: Every 2 days at 09:00 CDT
+0 9 */2 * * /home/moonlight/.openclaw/workspace/scripts/bridge_g35_report.sh
+```
+
+### Report Script
+
+```bash
+#!/bin/bash
+# scripts/bridge_g35_report.sh
+# Sends G3.5 observation report to user
+
+cd /home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold
+python scripts/bridge_g35_daily_check.py --date $(date +%Y-%m-%d) --send-report
+```
+
+---
+
+**Observation End**: 2026-03-30T23:59:59Z
