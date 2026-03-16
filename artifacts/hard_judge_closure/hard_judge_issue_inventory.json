@@ -1,0 +1,121 @@
+{
+  "generated_at": "2026-03-17T00:00:00Z",
+  "phase": "A",
+  "description": "7 项 hard_judge 问题清单与现状核实",
+  "statistics": {
+    "total_issues": 7,
+    "by_class": {
+      "P0": 7,
+      "P1": 0
+    },
+    "by_status": {
+      "accepted_with_deadline": 5,
+      "reclassify_with_reason": 2
+    }
+  },
+  "issues": [
+    {
+      "issue_id": "HJ-001",
+      "entry_id": "entry-001",
+      "entry_path": "tools/subtask-orchestrate",
+      "current_classification": "P0",
+      "current_status": "accepted_with_deadline",
+      "exception_id": "EXC-HJ-001",
+      "deadline": "2026-03-23T23:59:59Z",
+      "owner": "orchestration",
+      "why_flagged_as_hard_judge_issue": "P0 主链编排入口，缺少硬判决机制",
+      "mainline_relevance": "极高 - 子任务编排主入口，触发所有子任务执行",
+      "actual_risk": "高 - 可触发任意子任务执行，无硬判决保护",
+      "recommended_action": "add_hard_judge_now"
+    },
+    {
+      "issue_id": "HJ-002",
+      "entry_id": "entry-002",
+      "entry_path": "tools/callback-worker",
+      "current_classification": "P0",
+      "current_status": "accepted_with_deadline",
+      "exception_id": "EXC-HJ-002",
+      "deadline": "2026-03-23T23:59:59Z",
+      "owner": "orchestration",
+      "why_flagged_as_hard_judge_issue": "P0 回调处理 worker，缺少硬判决机制",
+      "mainline_relevance": "极高 - 处理所有子代理完成回调",
+      "actual_risk": "高 - 可影响回调处理结果，无硬判决保护",
+      "recommended_action": "add_hard_judge_now"
+    },
+    {
+      "issue_id": "HJ-003",
+      "entry_id": "entry-003",
+      "entry_path": "tools/auto-resume-orchestrator",
+      "current_classification": "P0",
+      "current_status": "accepted_with_deadline",
+      "exception_id": "EXC-001",
+      "deadline": "2026-03-23T23:59:59Z",
+      "owner": "recovery",
+      "why_flagged_as_hard_judge_issue": "P0 自动恢复编排器，缺少硬判决机制",
+      "mainline_relevance": "高 - 自动恢复任务执行",
+      "actual_risk": "中 - 继承 subtask-orchestrate 保护，但独立入口无 hard_judge",
+      "recommended_action": "formal_reclassify_no_hard_judge"
+    },
+    {
+      "issue_id": "HJ-004",
+      "entry_id": "entry-012",
+      "entry_path": "tools/session-recovery-check",
+      "current_classification": "P0",
+      "current_status": "accepted_with_deadline",
+      "exception_id": "EXC-002",
+      "deadline": "2026-03-23T23:59:59Z",
+      "owner": "session",
+      "why_flagged_as_hard_judge_issue": "P0 会话恢复检查，缺少硬判决机制",
+      "mainline_relevance": "中 - 只读检查操作",
+      "actual_risk": "低 - 只做状态检查，无执行操作",
+      "recommended_action": "formal_reclassify_no_hard_judge"
+    },
+    {
+      "issue_id": "HJ-005",
+      "entry_id": "entry-013",
+      "entry_path": "tools/agent-recovery-verify",
+      "current_classification": "P0",
+      "current_status": "accepted_with_deadline",
+      "exception_id": "EXC-003",
+      "deadline": "2026-03-23T23:59:59Z",
+      "owner": "recovery",
+      "why_flagged_as_hard_judge_issue": "P0 恢复验证入口，缺少硬判决机制",
+      "mainline_relevance": "中 - 只读验证操作",
+      "actual_risk": "低 - 只做状态验证，无执行操作",
+      "recommended_action": "formal_reclassify_no_hard_judge"
+    },
+    {
+      "issue_id": "HJ-006",
+      "entry_id": "entry-015",
+      "entry_path": "tools/resume_readiness_calibration.py",
+      "current_classification": "P0",
+      "current_status": "reclassify_with_reason",
+      "exception_id": "EXC-005",
+      "deadline": null,
+      "owner": "recovery",
+      "why_flagged_as_hard_judge_issue": "被标记为 P0，但实际是纯读取工具",
+      "mainline_relevance": "低 - 只读校准操作",
+      "actual_risk": "极低 - 纯读取，无副作用，无执行",
+      "recommended_action": "formal_reclassify_no_hard_judge"
+    },
+    {
+      "issue_id": "HJ-007",
+      "entry_id": "entry-016",
+      "entry_path": "tools/resume_readiness_evaluator_v2.py",
+      "current_classification": "P0",
+      "current_status": "reclassify_with_reason",
+      "exception_id": "EXC-006",
+      "deadline": null,
+      "owner": "recovery",
+      "why_flagged_as_hard_judge_issue": "被标记为 P0，但实际是纯读取工具",
+      "mainline_relevance": "低 - 只读评估操作",
+      "actual_risk": "极低 - 纯读取，无副作用，无执行",
+      "recommended_action": "formal_reclassify_no_hard_judge"
+    }
+  ],
+  "recommended_action_summary": {
+    "add_hard_judge_now": 2,
+    "formal_reclassify_no_hard_judge": 5,
+    "needs_design_decision": 0
+  }
+}

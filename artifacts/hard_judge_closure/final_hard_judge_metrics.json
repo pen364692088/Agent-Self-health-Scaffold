@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-03-17T00:20:00Z",
+  "metrics": {
+    "remaining_hard_judge_issues": 0,
+    "open_deadline_exceptions": 0,
+    "reclassified_validated_count": 2,
+    "fixed_with_hard_judge_count": 0,
+    "fixed_with_equivalent_fail_path_count": 2,
+    "reclassified_no_hard_judge_count": 5
+  },
+  "closure_summary": {
+    "total_issues": 7,
+    "closed": 7,
+    "by_resolution": {
+      "fixed_with_equivalent_fail_path": 2,
+      "reclassified_no_hard_judge": 5
+    }
+  },
+  "verification": {
+    "governance_hard_gate": "PASS",
+    "registry_consistency": "PASS",
+    "exception_expiry_check": "PASS - 无 open deadline",
+    "reclassified_validation": "PASS - 2 项已验证"
+  },
+  "final_status": {
+    "hard_judge_debt": "CLEARED",
+    "operational_health": "GREEN",
+    "deadline_exceptions": "NONE"
+  }
+}
