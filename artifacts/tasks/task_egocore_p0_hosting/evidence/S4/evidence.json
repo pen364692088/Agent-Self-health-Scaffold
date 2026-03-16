@@ -1,0 +1,26 @@
+{
+  "step_id": "S4",
+  "title": "实现最小 E2E Replay Chain",
+  "completed_at": "2026-03-16T02:00:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/tools/e2e_replay_chain.py",
+      "type": "code",
+      "lines": 342,
+      "description": "E2E 重放链演示脚本"
+    },
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/artifacts/e2e_replay/chain_20260316_015924_48579310.json",
+      "type": "artifact",
+      "description": "E2E 运行生成的可审计 artifact"
+    }
+  ],
+  "validation": {
+    "chain_success": true,
+    "steps_completed": 5,
+    "replayable": true,
+    "audit_trail_complete": true,
+    "input_output_hash_chain": true
+  },
+  "dependency": "S3"
+}

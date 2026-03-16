@@ -1,0 +1,63 @@
+{
+  "task_id": "task_egocore_p0_hosting",
+  "steps": [
+    {
+      "step_id": "S1",
+      "title": "\u521b\u5efa Event Input Contract v1",
+      "goal": "\u5efa\u7acb EgoCore \u2192 OpenEmotion \u7684\u6807\u51c6\u4e8b\u4ef6\u5951\u7ea6",
+      "description": "\u521b\u5efa contracts/event_input.schema.json \u548c\u6587\u6863\uff0c\u5b9a\u4e49\u4e8b\u4ef6\u8f93\u5165\u5b57\u6bb5\u89c4\u8303",
+      "depends_on": []
+    },
+    {
+      "step_id": "S2",
+      "title": "\u521b\u5efa OpenEmotion Output Contract v1",
+      "goal": "\u5efa\u7acb OpenEmotion \u2192 EgoCore \u7684\u6807\u51c6\u8f93\u51fa\u5951\u7ea6",
+      "description": "\u521b\u5efa contracts/openemotion_output.schema.json \u548c\u6587\u6863\uff0c\u5b9a\u4e49\u8f93\u51fa\u5b57\u6bb5\u89c4\u8303",
+      "depends_on": [
+        "S1"
+      ]
+    },
+    {
+      "step_id": "S3",
+      "title": "\u521b\u5efa OpenEmotion Adapter",
+      "goal": "\u5efa\u7acb\u552f\u4e00\u6b63\u5f0f\u63a5\u7ebf\u5165\u53e3",
+      "description": "\u521b\u5efa egocore/adapters/openemotion_adapter.py\uff0c\u5b9e\u73b0 mock/real \u53cc\u901a\u9053",
+      "depends_on": [
+        "S2"
+      ]
+    },
+    {
+      "step_id": "S4",
+      "title": "\u5b9e\u73b0\u6700\u5c0f E2E Replay Chain",
+      "goal": "\u6253\u901a\u53ef\u56de\u653e\u3001\u53ef\u5ba1\u8ba1\u7684\u6700\u5c0f\u4e3b\u4f53\u95ed\u73af",
+      "description": "\u5b9e\u73b0\u7528\u6237\u6d88\u606f \u2192 \u4e8b\u4ef6\u7ed3\u6784\u5316 \u2192 OpenEmotion \u66f4\u65b0 \u2192 \u56de\u590d\u51b3\u7b56 \u2192 \u7ed3\u679c\u56de\u5199",
+      "depends_on": [
+        "S3"
+      ]
+    },
+    {
+      "step_id": "S5",
+      "title": "\u9a8c\u8bc1\u4e0e Gate \u68c0\u67e5",
+      "goal": "\u786e\u4fdd\u4e0d\u7834\u574f\u73b0\u6709\u4e3b\u94fe\uff0c\u901a\u8fc7 Gate A/B/C",
+      "description": "\u8fd0\u884c\u6d4b\u8bd5\u3001\u9a8c\u8bc1\u5951\u7ea6\u4e00\u81f4\u6027\u3001\u751f\u6210 artifact",
+      "depends_on": [
+        "S4"
+      ]
+    }
+  ],
+  "dependencies": {
+    "S1": [],
+    "S2": [
+      "S1"
+    ],
+    "S3": [
+      "S2"
+    ],
+    "S4": [
+      "S3"
+    ],
+    "S5": [
+      "S4"
+    ]
+  }
+}

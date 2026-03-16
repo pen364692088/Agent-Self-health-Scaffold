@@ -1,0 +1,22 @@
+{
+  "step_id": "S1",
+  "title": "创建 Event Input Contract v1",
+  "completed_at": "2026-03-16T01:56:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/contracts/event_input.schema.json",
+      "type": "schema",
+      "description": "Event Input JSON Schema"
+    },
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/contracts/EVENT_INPUT_CONTRACT.md",
+      "type": "documentation",
+      "description": "Event Input Contract 文档"
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "required_fields_covered": true,
+    "examples_provided": 3
+  }
+}
