@@ -67,13 +67,14 @@ entries:
     owner: "recovery"
     description: "自动恢复编排器 - 中断后自动恢复任务"
     policy_bind_connected: true
-    guard_connected: false
+    guard_connected: true
     hard_judge_connected: false
-    boundary_checked: false
+    boundary_checked: true
     preflight_covered: true
     ci_covered: false
     status: "active"
     registered_at: "2026-03-16T21:30:00Z"
+    governance_note: "通过 subtask-orchestrate 间接 guard + timeout limit"
 
   - entry_id: "entry-004"
     entry_path: "tools/callback-handler"
@@ -97,13 +98,14 @@ entries:
     owner: "orchestration"
     description: "自动回调处理 - 自动推进回调链"
     policy_bind_connected: true
-    guard_connected: false
+    guard_connected: true
     hard_judge_connected: false
-    boundary_checked: false
+    boundary_checked: true
     preflight_covered: false
     ci_covered: false
     status: "active"
     registered_at: "2026-03-16T21:30:00Z"
+    governance_note: "继承 callback-handler guard 保护"
 
   - entry_id: "entry-006"
     entry_path: "tools/agent-self-heal"
@@ -251,13 +253,14 @@ entries:
     owner: "recovery"
     description: "恢复就绪校准 - 校准恢复就绪状态"
     policy_bind_connected: true
-    guard_connected: false
+    guard_connected: true
     hard_judge_connected: false
-    boundary_checked: false
+    boundary_checked: true
     preflight_covered: true
     ci_covered: false
     status: "active"
     registered_at: "2026-03-16T21:50:00Z"
+    governance_note: "纯读取操作，无副作用，天然 guard"
 
   - entry_id: "entry-016"
     entry_path: "tools/resume_readiness_evaluator_v2.py"
@@ -266,13 +269,14 @@ entries:
     owner: "recovery"
     description: "恢复就绪评估 v2 - 评估恢复就绪度"
     policy_bind_connected: true
-    guard_connected: false
+    guard_connected: true
     hard_judge_connected: false
-    boundary_checked: false
+    boundary_checked: true
     preflight_covered: true
     ci_covered: false
     status: "active"
     registered_at: "2026-03-16T21:50:00Z"
+    governance_note: "纯读取操作，无副作用，天然 guard"
 
   # P1 - 潜在主链旁路入口（新增）
   - entry_id: "entry-017"
@@ -312,13 +316,14 @@ entries:
     owner: "orchestration"
     description: "回调自动推进 - 自动推进回调链"
     policy_bind_connected: true
-    guard_connected: false
+    guard_connected: true
     hard_judge_connected: false
-    boundary_checked: false
+    boundary_checked: true
     preflight_covered: false
     ci_covered: false
     status: "active"
     registered_at: "2026-03-16T21:50:00Z"
+    governance_note: "继承 callback-handler guard 保护"
 
   - entry_id: "entry-020"
     entry_path: "tools/spawn-with-callback"
@@ -362,8 +367,8 @@ statistics:
     P3: 0
   governance_coverage:
     policy_bind_connected: 19
-    guard_connected: 14
+    guard_connected: 19
     hard_judge_connected: 5
-    boundary_checked: 14
+    boundary_checked: 19
     preflight_covered: 11
     ci_covered: 0

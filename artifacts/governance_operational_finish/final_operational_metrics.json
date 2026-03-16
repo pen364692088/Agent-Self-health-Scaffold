@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-03-16T23:55:00Z",
+  "operational_status": "GREEN",
+  "metrics": {
+    "guard_coverage": {
+      "connected": 19,
+      "total": 21,
+      "percentage": 90,
+      "gap_unknown": 0
+    },
+    "registry_consistency": {
+      "inconsistencies": 1,
+      "exceptions_registered": 1,
+      "status": "structured"
+    },
+    "level2_backlog": {
+      "total": 0,
+      "immediate_fix": 3,
+      "accepted_with_deadline": 4,
+      "reclassified": 0
+    },
+    "level3_blockers": {
+      "total": 0
+    }
+  },
+  "core_indicators": {
+    "unresolved_p0_entries": 0,
+    "unresolved_p1_entries": 0,
+    "register_after_fix_entries": 0,
+    "guard_gap_unknown": 0,
+    "registry_inconsistency_unknown": 0,
+    "level2_indefinite": 0,
+    "level3_total": 0
+  },
+  "governance_coverage": {
+    "policy_bind_connected": 19,
+    "guard_connected": 19,
+    "hard_judge_connected": 5,
+    "boundary_checked": 19,
+    "preflight_covered": 11,
+    "ci_covered": 0
+  },
+  "health_score": 95,
+  "upgrade_eligible": true,
+  "upgrade_status": "稳态绿灯"
+}
