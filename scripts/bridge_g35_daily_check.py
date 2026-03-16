@@ -223,13 +223,24 @@ def determine_status(sample_count: int, warning_triggered: list, critical_trigge
     
     Priority:
     1. insufficient_evidence: sample_count = 0
-    2. critical-review-required: critical thresholds triggered
-    3. warning: warning thresholds triggered
-    4. healthy: no thresholds triggered
+    2. provisional: 0 < sample_count < MIN_SAMPLE_THRESHOLD
+    3. critical-review-required: critical thresholds triggered
+    4. warning: warning thresholds triggered
+    5. healthy: no thresholds triggered (with sufficient samples)
+    
+    MIN_SAMPLE_THRESHOLD = 5
+    Small samples can produce misleading "100%" or "0%" rates.
     """
-    # If no samples, status is insufficient_evidence (not healthy!)
+    MIN_SAMPLE_THRESHOLD = 5
+    
+    # If no samples, status is insufficient_evidence
     if sample_count == 0:
         return "insufficient_evidence"
+    
+    # If too few samples, status is provisional (not healthy!)
+    # Small samples can produce misleading perfect scores
+    if sample_count < MIN_SAMPLE_THRESHOLD:
+        return "provisional"
     
     if critical_triggered:
         return "critical-review-required"
@@ -243,6 +254,8 @@ def generate_summary(status: str, sample_count: int, warning_triggered: list, cr
     """Generate human-readable summary."""
     if status == "insufficient_evidence":
         return f"Observation period active. No eligible samples collected in this window (sample_count={sample_count})."
+    elif status == "provisional":
+        return f"Provisional status: sample_count={sample_count} (< 5). Too few samples for reliable metrics. Continue observation."
     elif status == "healthy":
         return "No warning or critical thresholds triggered in this window."
     elif status == "warning":
