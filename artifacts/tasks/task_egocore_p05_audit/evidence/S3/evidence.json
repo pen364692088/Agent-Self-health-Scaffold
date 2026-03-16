@@ -1,0 +1,32 @@
+{
+  "step_id": "S3",
+  "title": "Replay Regression Suite",
+  "completed_at": "2026-03-16T02:30:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/tools/replay_regression.py",
+      "type": "code",
+      "lines": 400,
+      "description": "重放回归套件"
+    },
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/tests/test_replay_regression.py",
+      "type": "test",
+      "lines": 160,
+      "description": "重放回归测试"
+    }
+  ],
+  "validation": {
+    "tests_passed": 11,
+    "tests_failed": 0,
+    "canonical_cases": 5,
+    "key_assertions": [
+      "event_payload_valid",
+      "output_payload_valid",
+      "audit_trail_complete",
+      "response_tendency_present",
+      "policy_hint_present",
+      "confidence_metadata_present"
+    ]
+  }
+}

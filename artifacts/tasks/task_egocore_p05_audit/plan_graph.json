@@ -1,0 +1,58 @@
+{
+  "task_id": "task_egocore_p05_audit",
+  "steps": [
+    {
+      "step_id": "S1",
+      "title": "Contract Versioning + Compatibility Guard",
+      "goal": "\u4e3a contract \u589e\u52a0\u7248\u672c\u6cbb\u7406\u4e0e\u517c\u5bb9\u6027\u68c0\u67e5",
+      "depends_on": []
+    },
+    {
+      "step_id": "S2",
+      "title": "Adapter Boundary Audit",
+      "goal": "\u786e\u8ba4 adapter \u53ea\u627f\u62c5\u63a5\u7ebf\u804c\u8d23\uff0c\u4e0d\u5077\u505a\u4e3b\u4f53\u5c42\u51b3\u7b56",
+      "depends_on": [
+        "S1"
+      ]
+    },
+    {
+      "step_id": "S3",
+      "title": "Replay Regression Suite",
+      "goal": "\u5c06 replay \u4ece\u6f14\u793a\u5347\u7ea7\u4e3a\u56de\u5f52\u4fdd\u62a4",
+      "depends_on": [
+        "S1"
+      ]
+    },
+    {
+      "step_id": "S4",
+      "title": "Fallback / Degrade Policy",
+      "goal": "OpenEmotion \u5f02\u5e38\u65f6 EgoCore \u5b89\u5168\u964d\u7ea7",
+      "depends_on": [
+        "S2"
+      ]
+    },
+    {
+      "step_id": "S5",
+      "title": "Gate A/B/C \u9a8c\u8bc1",
+      "goal": "\u786e\u4fdd P0.5 \u5168\u90e8 Gate \u901a\u8fc7",
+      "depends_on": [
+        "S4"
+      ]
+    }
+  ],
+  "dependencies": {
+    "S1": [],
+    "S2": [
+      "S1"
+    ],
+    "S3": [
+      "S1"
+    ],
+    "S4": [
+      "S2"
+    ],
+    "S5": [
+      "S4"
+    ]
+  }
+}

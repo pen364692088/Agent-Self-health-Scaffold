@@ -1,0 +1,66 @@
+{
+  "task_id": "task_egocore_p05_audit",
+  "version": "v1.0",
+  "status": "completed",
+  "created_at": "2026-03-16T02:12:46.752120Z",
+  "updated_at": "2026-03-16T02:24:38.156576Z",
+  "contract": {
+    "objective": "P0.5 \u5bbf\u4e3b\u5316\u6536\u53e3\u5ba1\u8ba1 - \u786e\u4fdd P0 \u63a5\u7ebf\u6210\u4e3a\u8c01\u90fd\u7ed5\u4e0d\u8fc7\u53bb\u7684\u6b63\u5f0f\u57fa\u7840\u8bbe\u65bd",
+    "repository": "/home/moonlight/Project/Github/MyProject/EgoCore",
+    "branch": "main",
+    "acceptance_criteria": [
+      "contract \u6f02\u79fb\u88ab\u963b\u65ad (versioning + compatibility guard)",
+      "adapter \u8d8a\u754c\u88ab\u963b\u65ad (boundary audit)",
+      "replay \u53ef\u4ee5\u627f\u62c5\u56de\u5f52\u4fdd\u62a4 (regression suite)",
+      "\u5f02\u5e38\u573a\u666f\u4e0b\u4e3b\u94fe\u53ef\u964d\u7ea7 (fallback policy)",
+      "Gate A/B/C \u5168\u90e8\u901a\u8fc7"
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "S1",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:13:00.002691Z",
+      "completed_at": "2026-03-16T02:16:31.673908Z",
+      "error": null
+    },
+    {
+      "step_id": "S2",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:16:46.268936Z",
+      "completed_at": "2026-03-16T02:18:53.188003Z",
+      "error": null
+    },
+    {
+      "step_id": "S3",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:19:09.569784Z",
+      "completed_at": "2026-03-16T02:21:05.144162Z",
+      "error": null
+    },
+    {
+      "step_id": "S4",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:21:46.964940Z",
+      "completed_at": "2026-03-16T02:23:06.051820Z",
+      "error": null
+    },
+    {
+      "step_id": "S5",
+      "status": "success",
+      "attempts": 2,
+      "started_at": "2026-03-16T02:23:21.284079Z",
+      "completed_at": "2026-03-16T02:24:38.156489Z",
+      "error": null
+    }
+  ],
+  "current_step": null,
+  "blocked_on": null,
+  "artifacts_dir": "artifacts/tasks/task_egocore_p05_audit",
+  "ledger_path": "artifacts/tasks/task_egocore_p05_audit/ledger.jsonl",
+  "metadata": {}
+}
