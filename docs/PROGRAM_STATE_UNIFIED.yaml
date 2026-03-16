@@ -45,6 +45,14 @@ mutation_guard:
     pushed_to_remote: true
     mainline_state: integrated
     observation_state: short_smoke_observation
+    closed_loop_verified: true
+    closed_loop_date: "2026-03-16"
+    
+  key_fixes:
+    - mutation_constraints_bound_to_decision_point
+    - repo_root_preflight_blocks_wrong_workspace
+    - canonical_state_as_single_truth_source
+    - new_session_drift_prevented
 
   operator_note: >
     本次修复已在正确仓库完成并推送。
@@ -141,6 +149,11 @@ history:
     details: "记忆约束绑定到写操作最小决策点"
     
   - date: "2026-03-16"
-    action: "创建统一进度账"
+    action: "收口完成，统一进度账回写，Repo Root Preflight 实现"
+    commit: "e1cd488"
+    details: "错误工作空间阻断，新会话仓库漂移防护"
+    
+  - date: "2026-03-16"
+    action: "正式闭环确认"
     commit: "pending"
-    details: "首次创建 canonical 统一进度账文件"
+    details: "主线级修复完成，进入短观察阶段"
