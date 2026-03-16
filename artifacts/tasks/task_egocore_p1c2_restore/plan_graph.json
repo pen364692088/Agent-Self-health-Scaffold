@@ -1,0 +1,58 @@
+{
+  "task_id": "task_egocore_p1c2_restore",
+  "steps": [
+    {
+      "step_id": "S1",
+      "title": "\u521b\u5efa Self Restore Schema \u548c Contract",
+      "goal": "\u5b9a\u4e49\u6062\u590d\u6d41\u7a0b\u7684\u7ed3\u6784\u5316\u89c4\u8303",
+      "depends_on": []
+    },
+    {
+      "step_id": "S2",
+      "title": "\u5b9e\u73b0 Self Restorer",
+      "goal": "\u52a0\u8f7d\u4e09\u5c42\u3001\u6821\u9a8c\u4e00\u81f4\u6027\u3001\u5904\u7406\u51b2\u7a81",
+      "depends_on": [
+        "S1"
+      ]
+    },
+    {
+      "step_id": "S3",
+      "title": "\u5b9e\u73b0 Restore Context Injector",
+      "goal": "\u5c06\u6062\u590d\u7ed3\u679c\u6ce8\u5165 runtime",
+      "depends_on": [
+        "S2"
+      ]
+    },
+    {
+      "step_id": "S4",
+      "title": "\u521b\u5efa Restore Audit Artifacts",
+      "goal": "\u8f93\u51fa\u5ba1\u8ba1\u8bb0\u5f55",
+      "depends_on": [
+        "S3"
+      ]
+    },
+    {
+      "step_id": "S5",
+      "title": "Gate A/B/C \u9a8c\u8bc1",
+      "goal": "\u786e\u4fdd P1-C2 \u5168\u90e8 Gate \u901a\u8fc7",
+      "depends_on": [
+        "S4"
+      ]
+    }
+  ],
+  "dependencies": {
+    "S1": [],
+    "S2": [
+      "S1"
+    ],
+    "S3": [
+      "S2"
+    ],
+    "S4": [
+      "S3"
+    ],
+    "S5": [
+      "S4"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "step_id": "S1",
+  "title": "创建 Self Restore Schema 和 Contract",
+  "completed_at": "2026-03-16T05:10:00Z",
+  "artifacts": [
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/docs/SELF_RESTORE_CONTRACT.md",
+      "type": "documentation",
+      "description": "Self Restore 契约文档"
+    },
+    {
+      "path": "/home/moonlight/Project/Github/MyProject/EgoCore/contracts/restore_audit.schema.json",
+      "type": "schema",
+      "description": "Restore Audit Schema"
+    }
+  ],
+  "content_defined": {
+    "restore_flow_defined": true,
+    "consistency_check_rules": true,
+    "conflict_handling_strategies": true,
+    "degradation_rules": true
+  }
+}
