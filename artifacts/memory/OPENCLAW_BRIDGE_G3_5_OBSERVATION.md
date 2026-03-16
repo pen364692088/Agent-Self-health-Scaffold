@@ -123,29 +123,39 @@ Each observation record MUST use this standardized format:
 {
   "window_start": "2026-03-16T00:00:00-05:00",
   "window_end": "2026-03-16T23:59:59-05:00",
-  "sample_count": 5,
+  "sample_count": 0,
   "task_type_distribution": {
-    "coding": 3,
-    "decision": 1,
-    "question": 1
+    "coding": 0,
+    "decision": 0,
+    "question": 0
   },
   "metrics": {
-    "adoption_rate": {"value": 0.40, "num": 2, "den": 5},
-    "quality_improvement_rate": {"value": 0.20, "num": 1, "den": 5},
-    "noise_rate": {"value": 0.00, "num": 0, "den": 5},
-    "prompt_bloat_rate": {"value": 0.10, "num": 1, "den": 10},
-    "rollback_after_recall": {"value": 0.00, "num": 0, "den": 2},
-    "demote_after_recall": {"value": 0.00, "num": 0, "den": 2},
-    "main_chain_success_rate": {"value": 1.00, "baseline_delta": 0.00},
-    "fail_open_stability": {"value": 1.00, "num": 5, "den": 5}
+    "adoption_rate": {"value": null, "num": 0, "den": 0},
+    "quality_improvement_rate": {"value": null, "num": 0, "den": 0},
+    "noise_rate": {"value": null, "num": 0, "den": 0},
+    "prompt_bloat_rate": {"value": null, "num": 0, "den": 0},
+    "rollback_after_recall": {"value": null, "num": 0, "den": 0},
+    "demote_after_recall": {"value": null, "num": 0, "den": 0},
+    "main_chain_success_rate": {"value": null, "baseline_delta": null},
+    "fail_open_stability": {"value": null, "num": 0, "den": 0}
   },
   "threshold_result": {
     "warning_triggered": [],
-    "critical_triggered": []
+    "critical_triggered": [],
+    "not_evaluable": [
+      "adoption_rate",
+      "quality_improvement_rate",
+      "noise_rate",
+      "prompt_bloat_rate",
+      "rollback_after_recall",
+      "demote_after_recall",
+      "main_chain_success_rate",
+      "fail_open_stability"
+    ]
   },
   "anomalies": [],
-  "status": "healthy",
-  "summary": "No warning or critical thresholds triggered in this window."
+  "status": "insufficient_evidence",
+  "summary": "Observation period started. No eligible samples collected in this window yet."
 }
 ```
 
@@ -157,18 +167,28 @@ Every observation record MUST include:
 2. **sample_count**: Total number of requests/sessions
 3. **task_type_distribution**: Breakdown by coding/decision/question
 4. **All metrics with value + numerator + denominator**: Not just percentages
-5. **warning_triggered / critical_triggered**: Lists of triggered thresholds
+5. **warning_triggered / critical_triggered / not_evaluable**: Threshold analysis
 6. **anomalies**: Any anomalies observed
-7. **status**: healthy | warning | critical-review-required
+7. **status**: insufficient_evidence | healthy | warning | critical-review-required
 8. **summary**: Human-readable conclusion
 
 ### Status Values
 
 | Status | Meaning |
 |--------|---------|
-| healthy | No thresholds triggered |
+| insufficient_evidence | sample_count = 0 or all metrics not_evaluable |
+| healthy | No thresholds triggered (with valid samples) |
 | warning | Warning threshold(s) triggered |
 | critical-review-required | Critical threshold(s) triggered |
+
+### Critical Rule: Not Evaluable Metrics
+
+```text
+当 sample_count = 0 或某指标 den = 0 时，该指标状态为 not_evaluable，
+不得计入 healthy / warning / critical 判定。
+
+这样不会因为空窗口把趋势判断搞偏，也不会把"无数据"误记成"好数据"。
+```
 
 ---
 
