@@ -48,13 +48,15 @@ forbidden_alternatives:
     reason: "Scaffold 项目仓库，不是 EgoCore"
 
 integration_mode: "B - 独立 Repo 模式"
-status: "🔜 待集成"
+status: "✅ 已完成"
+verification: "docs/EGOCORE_REPO_GUARD_VERIFICATION.md"
+commit: "306ef24"
 
 # 特殊说明
 notes: |
   EgoCore 是独立 Telegram Agent Runtime
   通过 python app/main.py 启动
-  需要在应用入口处集成 repo guard
+  Gate R0 已集成在应用入口处
 ```
 
 ### OpenEmotion
