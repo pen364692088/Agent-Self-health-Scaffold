@@ -1,0 +1,41 @@
+# 统一进度账 - Session-Start Canonical Repo Guard
+
+## 状态
+**completed_and_pushed**
+
+## 目的
+防止 /new 新会话 repo 漂移，确保所有操作在唯一合法 repo root 中执行
+
+## 组件
+- `config/canonical_repos.yaml` - 定义唯一合法 repo root
+- `tools/repo-root-guard` - Repo root 验证工具
+- `tools/session-start-recovery` (Gate R0 integrated) - 会话启动入口层集成
+
+## 行为
+```yaml
+canonical_repo_only: true
+wrong_repo_action: block
+block_exit_code: 2
+```
+
+## 验证
+```yaml
+critical_cold_start_sample_7: pass
+```
+
+## 结果
+```yaml
+session_start_repo_drift_protection: enabled
+execution_only_in_canonical_repo: true
+```
+
+## Commits
+- `ed8867e` - fix(session-start): Gate R0 - Repo Root Guard integration
+- `77aab57` - docs: 关键冷启动样本 #7 验证通过
+
+## 时间线
+- 2026-03-16: 短观察阶段 PASS，主线级闭环完成
+
+## 下一步
+- 🔜 提炼规范供 EgoCore / OpenEmotion 复用
+- 🔜 回归测试覆盖

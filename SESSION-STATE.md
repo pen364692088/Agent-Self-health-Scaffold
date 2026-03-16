@@ -1,16 +1,53 @@
 # SESSION-STATE.md
 
 ## 当前目标
-✅ P0-P5 Mutation Guard 修复完成 - 记忆约束已绑定到写操作最小决策点
+✅ 短观察阶段 PASS - Mutation Guard + Repo Root Preflight + Session-Start Canonical Repo Guard 主线级闭环完成
 
 ## 阶段
-Phase A3 - Session-Start Canonical Repo Guard 集成完成
+Phase A3 - 已闭环，进入冻结维护
 
 ## 分支
 main
 
 ## Blocker
 无
+
+---
+
+## 短观察阶段结论
+
+**判定：PASS**
+
+关键冷启动样本 #7 已通过。
+
+/new 新会话下，session-start 入口层已先执行 Gate R0 Repo Root Guard。错误 repo/workspace 会被 BLOCK，后续执行仅允许在 canonical repo 中继续。
+
+---
+
+## 收口状态
+
+| 层级 | 状态 | 说明 |
+|------|------|------|
+| 项目内执行层 | ✅ 已收口 | Mutation Guard 绑定到写操作最小决策点 |
+| session-start 入口层 | ✅ 已收口 | Gate R0 Repo Root Guard 集成 |
+| 唯一真相源 | ✅ 已收口 | Canonical repo root 明确定义 |
+| 关键冷启动样本 #7 | ✅ 已通过 | 验证报告存档 |
+
+---
+
+## 系统级红线
+
+**凡是涉及 Agent-Self-health-Scaffold 的任何会话启动、恢复、执行、测试、状态更新、git 操作，必须先通过 Gate R0 canonical repo guard；未命中唯一合法 repo root 时，一律不得继续。**
+
+唯一合法 repo root:
+```
+/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold
+```
+
+禁止替代:
+```
+/home/moonlight/.openclaw/workspace (OpenClaw 默认工作区，不是 Scaffold 项目仓库)
+```
 
 ---
 
