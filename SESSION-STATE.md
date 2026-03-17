@@ -1,7 +1,7 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**推进 v3 自治系统闭环验证与运行 - B0-3 完成**
+**推进 v3 自治系统闭环验证与运行 - B0-4 完成**
 
 ## 阶段
 **Phase B0 - 业务推进期（治理维护模式）**
@@ -14,8 +14,10 @@
 | B0-1.5 最小可运行链修复 | ✅ 完成 | 修复 steps 兼容、slot_registry stub、task_dossier 兼容层 |
 | B0-2 最小闭环验证 | ✅ 完成 | S01 → S02 连续推进，minimal_executor 临时验证 |
 | B0-3 真实执行器集成 | ✅ 完成 | StepExecutor + resume_execute_bridge，真实 shell 任务执行成功 |
+| B0-4 恢复能力验证 | ✅ 完成 | pilot_b04_recovery_test 通过，S01→S02→S03 顺序执行成功 |
 
-### 治理状态定义
+### 当前状态口径
+**最小真实自治执行链已打通，恢复能力已验证。**
 - 入口治理体系：**稳定治理状态** ✅
 - 历史入口治理：已完成收口
 - 增量入口治理：已建立
@@ -148,9 +150,11 @@ main
 
 ## 下一步
 
-1. **集成**：将 mutation gate 接入现有写操作流程
-2. **监控**：观察 evidence logs 是否有异常 block
-3. **扩展**：根据需要添加更多 canonical objects
+1. **阶段决策**：B0 完成后，用户决策下一阶段方向
+   - Phase 1: 多 worker 支持
+   - Phase 2: 跨仓库任务依赖
+   - Phase 3: subagent orchestration 集成
+2. **提交证据**：当前有未提交的任务证据文件
 
 ---
 
@@ -164,7 +168,7 @@ main
 ---
 
 ## 更新时间
-2026-03-16T16:00:00-05:00
+2026-03-16T19:25:00-05:00
 
 ---
 
@@ -184,7 +188,7 @@ main
 
 3. **session-start-recovery v1.2.0** - 集成 repo-root-guard
    - Gate R0: Repo Root Guard (MANDATORY)
-   - 如果 wrong repo，返回 block 消息
+   - 如果 wrong repo，返回 block 指令
    - Agent 必须切换到 canonical repo 后继续
 
 ### 验证要求
@@ -195,4 +199,3 @@ main
 3. 第一次 Scaffold 相关任务
 4. 先验证 repo root
 5. 实际执行仅发生在 `/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold`
-
