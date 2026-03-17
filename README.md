@@ -13,25 +13,27 @@ This project focuses on five primary execution-chain goals:
 5. durable parent/child subtask orchestration
 
 ## Current phase
-**Phase K: IN PROGRESS** | K1 候选盘点完成，等待 bot token
+**Phase K: ✅ CLOSED** | Agent Pilot 晋级标准化完成
 
-### Status Summary
-- **5 Agents** running stable with `default_enabled` (业务层):
-  - implementer (执行型)
-  - planner (规划型)
-  - verifier (验证型)
-  - scribe (记录型)
-  - merger (合并型，中风险)
-- **6 Candidates** pending pilot enablement:
-  - 低风险: default, healthcheck
-  - 中风险: acp-codex, codex, mvp7-coder
-  - 高风险: cc-godmode
-- **Auto-degradation chain** verified and closed-loop
+### 最终决策 (正式状态词典)
 
-### Phase K-T (Telegram Inventory)
-- 7 Telegram agents 盘点完成
-- default_enabled: manager, yuno, testbot, ceo
-- manual_enable_only: audit, coder, skadi
+| 状态 | 数量 | Agents |
+|------|------|--------|
+| continue_default_enabled | 3 | main, audit, coder |
+| manual_enable_only | 6 | default, healthcheck, acp-codex, codex, mvp7-coder, cc-godmode |
+| manual_enable_only (需补全) | 4 | implementer, planner, verifier, test |
+
+### 状态词典定义
+
+| 状态 | 定义 |
+|------|------|
+| continue_default_enabled | 已配置、已验证、可用 |
+| manual_enable_only | 有目录但未配置、需手动注册 |
+
+### 关键文档
+- `docs/phase-k/FINAL_REPORT.md` - 最终报告
+- `docs/phase-k/DECISION_MAPPING.md` - 决策词典映射
+- `docs/phase-k/AGENT_CARDS.md` - Agent 卡片与再评估条件
 
 ### Phase History
 | Phase | Status | Summary |
@@ -39,12 +41,7 @@ This project focuses on five primary execution-chain goals:
 | Phase I | ✅ CLOSED | 2 new agents enabled (scribe, merger) |
 | Phase J | ✅ CLOSED | 5-Agent stability + auto-degradation verified |
 | Phase K-T | ✅ CLOSED | Telegram agent inventory & classification |
-| Phase K | ⏳ IN PROGRESS | 6 candidates identified, Batch 1 pending |
-
-## Key Files
-- `config/enablement_state.yaml` - Agent enablement configuration
-- `SESSION-STATE.md` - Current session state and progress
-- `docs/PHASE_K_FINAL_REPORT.md` - Phase K closure report
+| Phase K | ✅ CLOSED | Agent pilot enablement & classification (13 agents) |
 
 ## Key Rule
 Task truth is primary; transcript is derived.
