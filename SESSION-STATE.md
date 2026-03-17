@@ -1,67 +1,67 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**Phase I - 受控扩容与规模化接入**
+**Phase J - 5-Agent 稳定运行与自动降级收口**
 
 ## 阶段
-**Phase I - ✅ CLOSED**
+**Phase J - ✅ CLOSED**
 
 ### 当前进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| I1 扩容对象选择 | ✅ 完成 | scribe + merger |
-| I2 标准化接入 | ✅ 完成 | 5/5 验证通过 |
-| I3 pilot_enabled 灰度 | ✅ 完成 | 5 循环观察 |
-| I4 晋级决策 | ✅ 完成 | 2 Agent 晋级 |
-| I5 最终报告 | ✅ 完成 | Phase I CLOSED |
+| J1 5 Agent 稳定运行观察 | ✅ 完成 | 50 次循环，所有指标正常 |
+| J2 自动降级链演练 | ✅ 完成 | 4/4 演练通过，含 merger |
+| J3 阈值复核 | ✅ 完成 | 所有阈值保持不变 |
+| J4 最终决策 | ✅ 完成 | 5 Agent 继续 default_enabled |
 
-### Phase I 完成摘要
+### Phase J 完成摘要
 
 **已完成**：
-1. ✅ 扩容对象选择
-   - scribe: 记录型，低风险
-   - merger: 合并型，中风险
+1. ✅ 5 Agent 稳定运行观察
+   - 50 次观察循环
+   - 所有 Agent 指标 100%
+   - 无稳定性退化
 
-2. ✅ 标准化接入
-   - Profile 生成: ✅
-   - Memory 模板生成: ✅
-   - Onboarding 验证: 5/5 通过
+2. ✅ 自动降级链演练
+   - warning_repeated (scribe): 通过
+   - critical_once (merger): 通过
+   - critical_repeated (merger): 通过
+   - rollback/recover (merger): 通过
 
-3. ✅ pilot_enabled 灰度运行
-   - 观察 5 个循环
-   - 指标收集完成
+3. ✅ 阈值复核
+   - 所有阈值保持不变
+   - 适合 5-Agent 规模
 
-4. ✅ 晋级决策
-   - scribe → default_enabled
-   - merger → default_enabled
+4. ✅ 最终决策
+   - 5 Agent 全部继续 default_enabled
+   - 允许进入下一阶段扩容
 
 **Gate 验证**:
-- Gate I-A: Candidate Selection ✅
-- Gate I-B: Standardized Onboarding ✅
-- Gate I-C: Pilot Observation ✅
-- Gate I-D: Enablement Decision ✅
-- Gate I-E: Expansion Closure ✅
+- Gate J-A: Operational Stability ✅
+- Gate J-B: Auto-Degradation Drill ✅
+- Gate J-C: Threshold Review ✅
+- Gate J-D: Final Closure ✅
 
 **当前 default_enabled Agent**:
-1. implementer (执行型)
-2. planner (规划型)
-3. verifier (验证型)
-4. scribe (记录型) - 新增
-5. merger (合并型) - 新增
+1. implementer (执行型) ✅
+2. planner (规划型) ✅
+3. verifier (验证型) ✅
+4. scribe (记录型) ✅
+5. merger (合并型，中风险) ✅
 
 **关键文件**：
-- docs/PHASE_I_CANDIDATE_SELECTION.md
-- docs/PHASE_I_ONBOARDING_REPORT.md
-- docs/PHASE_I_PILOT_OBSERVATION_REPORT.md
-- docs/PHASE_I_ENABLEMENT_DECISION.md
-- docs/PHASE_I_FINAL_REPORT.md
+- docs/PHASE_J_OPERATIONAL_STABILITY_REPORT.md
+- docs/PHASE_J_DEGRADATION_DRILL_REPORT.md
+- docs/PHASE_J_THRESHOLD_REVIEW.md
+- docs/PHASE_J_ENABLEMENT_DECISION.md
+- docs/PHASE_J_FINAL_REPORT.md
 
 **能力交付**：
-- 验证了标准化接入流程
-- 验证了灰度扩容机制
-- 验证了治理动作覆盖
-- 未破坏现有 Agent 稳定性
+- 验证了 5-Agent 规模下默认接管稳定
+- 验证了自动降级链在更大规模下可靠
+- 验证了 merger 中风险 Agent 无额外波动
+- 验证了阈值在规模增加后仍合理
 
 ## 分支
 main
@@ -72,4 +72,4 @@ main
 ---
 
 ## 更新时间
-2026-03-17T04:45:00Z
+2026-03-17T05:12:00Z

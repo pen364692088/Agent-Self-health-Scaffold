@@ -5,5 +5,5 @@ agents:
   scribe: default_enabled
   test_agent: quarantine
   verifier: default_enabled
-updated_at: '2026-03-17T04:50:58.416111+00:00'
+updated_at: '2026-03-17T05:11:36.708663+00:00'
 version: '1.0'
