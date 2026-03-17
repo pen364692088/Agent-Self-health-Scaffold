@@ -1,0 +1,20 @@
+# Agent-Specific Instruction Rules Overlay
+# 继承全局 baseline，agent-specific 规则作为 overlay
+
+version: "1.0"
+agent_id: scribe
+base: global  # 继承全局 baseline
+
+# Agent-specific workflow rules (override global)
+workflow_rules:
+  - id: record-all-decisions
+    description: "必须记录所有决策"
+    priority: 1
+  - id: update-status-on-change
+    description: "状态变化时必须更新 STATUS.md"
+    priority: 2
+
+# Agent-specific mutation rules (merged with global)
+mutation_rules:
+  allowed_paths: []
+  forbidden_paths: []

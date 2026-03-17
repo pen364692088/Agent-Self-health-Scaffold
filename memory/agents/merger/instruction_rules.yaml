@@ -1,0 +1,20 @@
+# Agent-Specific Instruction Rules Overlay
+# 继承全局 baseline，agent-specific 规则作为 overlay
+
+version: "1.0"
+agent_id: merger
+base: global  # 继承全局 baseline
+
+# Agent-specific workflow rules (override global)
+workflow_rules:
+  - id: verify-all-tests-pass
+    description: "合并前必须验证所有测试通过"
+    priority: 1
+  - id: resolve-conflicts-carefully
+    description: "必须仔细解决冲突"
+    priority: 2
+
+# Agent-specific mutation rules (merged with global)
+mutation_rules:
+  allowed_paths: []
+  forbidden_paths: []

@@ -1,0 +1,16 @@
+{
+  "receipt_id": "merger_20260317_044953",
+  "agent_id": "merger",
+  "timestamp": "2026-03-17T04:49:53.169205+00:00",
+  "chain_status": "warning",
+  "stages_completed": [
+    "session_bootstrap",
+    "instruction_rules",
+    "runtime_preflight",
+    "memory_writeback",
+    "health_check"
+  ],
+  "errors": [],
+  "warnings": [],
+  "health_action": "continue_with_monitoring"
+}

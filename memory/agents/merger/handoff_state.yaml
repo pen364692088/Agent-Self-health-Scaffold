@@ -1,0 +1,6 @@
+agent_id: merger
+objective: 等待任务分配
+phase: idle
+next_actions: []
+blockers: []
+timestamp: 2026-03-17T04:46:55.734908+00:00

@@ -1,55 +1,67 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**Phase H-E - 运行观察与治理演练收口**
+**Phase I - 受控扩容与规模化接入**
 
 ## 阶段
-**Phase H - ✅ CLOSED**
+**Phase I - ✅ CLOSED**
 
 ### 当前进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| H-E1 运行观察 | ✅ 完成 | 3 Agent × 5 循环 = 15 次观察 |
-| H-E2 治理演练 | ✅ 完成 | 4/4 演练通过 |
-| H-E3 最终报告 | ✅ 完成 | Phase H 正式 CLOSED |
+| I1 扩容对象选择 | ✅ 完成 | scribe + merger |
+| I2 标准化接入 | ✅ 完成 | 5/5 验证通过 |
+| I3 pilot_enabled 灰度 | ✅ 完成 | 5 循环观察 |
+| I4 晋级决策 | ✅ 完成 | 2 Agent 晋级 |
+| I5 最终报告 | ✅ 完成 | Phase I CLOSED |
 
-### Phase H-E 完成摘要
+### Phase I 完成摘要
 
 **已完成**：
-1. ✅ 运行观察
-   - implementer: 所有指标正常
-   - planner: 所有指标正常
-   - verifier: 所有指标正常
-   - 默认主链稳定执行
-   - evidence/receipt 持续生成
+1. ✅ 扩容对象选择
+   - scribe: 记录型，低风险
+   - merger: 合并型，中风险
 
-2. ✅ 治理演练
-   - warning_repeated: 状态升级正确 ✅
-   - critical_once: 阻断恢复正确 ✅
-   - critical_repeated: 隔离切换正确 ✅
-   - rollback/recover: 状态机完整 ✅
+2. ✅ 标准化接入
+   - Profile 生成: ✅
+   - Memory 模板生成: ✅
+   - Onboarding 验证: 5/5 通过
 
-3. ✅ 最终决策
-   - Phase H 正式 CLOSED
-   - 3 个 Agent 继续维持 default_enabled
-   - 无需调整阈值
-   - 允许进入下一阶段扩容
+3. ✅ pilot_enabled 灰度运行
+   - 观察 5 个循环
+   - 指标收集完成
+
+4. ✅ 晋级决策
+   - scribe → default_enabled
+   - merger → default_enabled
 
 **Gate 验证**:
-- Gate H-E-A: Operational Observation ✅
-- Gate H-E-B: Governance Drill ✅
-- Gate H-E-C: Final Closure Decision ✅
+- Gate I-A: Candidate Selection ✅
+- Gate I-B: Standardized Onboarding ✅
+- Gate I-C: Pilot Observation ✅
+- Gate I-D: Enablement Decision ✅
+- Gate I-E: Expansion Closure ✅
+
+**当前 default_enabled Agent**:
+1. implementer (执行型)
+2. planner (规划型)
+3. verifier (验证型)
+4. scribe (记录型) - 新增
+5. merger (合并型) - 新增
 
 **关键文件**：
-- docs/PHASE_H_OPERATIONAL_OBSERVATION_REPORT.md
-- docs/PHASE_H_GOVERNANCE_DRILL_REPORT.md
-- docs/PHASE_H_FINAL_CLOSURE_REPORT.md
+- docs/PHASE_I_CANDIDATE_SELECTION.md
+- docs/PHASE_I_ONBOARDING_REPORT.md
+- docs/PHASE_I_PILOT_OBSERVATION_REPORT.md
+- docs/PHASE_I_ENABLEMENT_DECISION.md
+- docs/PHASE_I_FINAL_REPORT.md
 
 **能力交付**：
-- 从"机制已实现"收口为"运营已验收"
-- 治理框架经过真实观察和演练验证
-- 所有 Agent 有明确启用状态和证据支持
+- 验证了标准化接入流程
+- 验证了灰度扩容机制
+- 验证了治理动作覆盖
+- 未破坏现有 Agent 稳定性
 
 ## 分支
 main
@@ -60,4 +72,4 @@ main
 ---
 
 ## 更新时间
-2026-03-17T04:35:00Z
+2026-03-17T04:45:00Z

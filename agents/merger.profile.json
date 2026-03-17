@@ -1,0 +1,55 @@
+{
+  "agent_id": "merger",
+  "name": "Merger",
+  "role": "merger",
+  "description": "合并 Agent，负责集成多个 Agent 的工作",
+  "capabilities": [
+    {
+      "name": "branch_management",
+      "level": "expert"
+    },
+    {
+      "name": "conflict_resolution",
+      "level": "advanced"
+    },
+    {
+      "name": "release_management",
+      "level": "advanced"
+    }
+  ],
+  "memory_config": {
+    "memory_root": "memory/agents/merger",
+    "instruction_rules_file": "instruction_rules.yaml",
+    "handoff_file": "handoff_state.yaml",
+    "execution_state_file": "execution_state.yaml",
+    "long_term_memory_dir": "long_term"
+  },
+  "runtime_config": {
+    "max_retries": 3,
+    "timeout_seconds": 300,
+    "enable_mutation_guard": true,
+    "enable_canonical_guard": true,
+    "allowed_mutation_paths": [
+      "docs/CHANGELOG.md",
+      "docs/STATUS.md"
+    ]
+  },
+  "inputs": [
+    "completed_work",
+    "test_results",
+    "feature_branches"
+  ],
+  "outputs": [
+    "merged_code",
+    "release_notes",
+    "completion_report"
+  ],
+  "working_rules": {
+    "must_do": [],
+    "must_not_do": []
+  },
+  "status": "inactive",
+  "pilot": true,
+  "created_at": "2026-03-17T04:46:02.489553+00:00",
+  "updated_at": "2026-03-17T04:46:02.489564+00:00"
+}
