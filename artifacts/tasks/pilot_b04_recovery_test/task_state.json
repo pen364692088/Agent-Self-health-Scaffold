@@ -1,0 +1,48 @@
+{
+  "task_id": "pilot_b04_recovery_test",
+  "task_name": "B0-4 \u6062\u590d\u80fd\u529b\u9a8c\u8bc1 v2",
+  "description": "\u9a8c\u8bc1 Runner \u6062\u590d\u80fd\u529b\uff1a\u7cbe\u786e\u63a7\u5236\u4e2d\u65ad\u70b9",
+  "status": "completed",
+  "created_at": "2026-03-17T00:23:28.293132Z",
+  "updated_at": "2026-03-17T00:23:57.881313Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u6b65\u9aa41-\u521b\u5efa\u6807\u8bb0A",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "command": "echo 'S01-$(date +%s)' > artifacts/tasks/pilot_b04_recovery_test/output/marker_a.txt && sleep 0.5",
+      "updated_at": "2026-03-17T00:23:56.379413Z",
+      "started_at": "2026-03-17T00:23:55.871292Z",
+      "completed_at": "2026-03-17T00:23:56.379413Z"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u6b65\u9aa42-\u521b\u5efa\u6807\u8bb0B",
+      "status": "success",
+      "depends_on": [
+        "S01"
+      ],
+      "step_type": "execute_shell",
+      "command": "echo 'S02-$(date +%s)' > artifacts/tasks/pilot_b04_recovery_test/output/marker_b.txt && sleep 0.5",
+      "updated_at": "2026-03-17T00:23:57.436046Z",
+      "started_at": "2026-03-17T00:23:56.931743Z",
+      "completed_at": "2026-03-17T00:23:57.436046Z"
+    },
+    "S03": {
+      "step_id": "S03",
+      "step_name": "\u6b65\u9aa43-\u521b\u5efa\u6807\u8bb0C",
+      "status": "success",
+      "depends_on": [
+        "S02"
+      ],
+      "step_type": "execute_shell",
+      "command": "echo 'S03-$(date +%s)' > artifacts/tasks/pilot_b04_recovery_test/output/marker_c.txt",
+      "updated_at": "2026-03-17T00:23:57.881313Z",
+      "started_at": "2026-03-17T00:23:57.877255Z",
+      "completed_at": "2026-03-17T00:23:57.881313Z"
+    }
+  },
+  "current_step": null
+}

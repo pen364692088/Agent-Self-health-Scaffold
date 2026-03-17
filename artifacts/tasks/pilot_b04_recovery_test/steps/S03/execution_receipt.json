@@ -1,0 +1,21 @@
+{
+  "step_id": "S03",
+  "execution_type": "execute_shell",
+  "status": "success",
+  "started_at": "2026-03-17T00:23:57.878925Z",
+  "completed_at": "2026-03-17T00:23:57.880716Z",
+  "duration_ms": 2,
+  "command": "echo 'S03-$(date +%s)' > artifacts/tasks/pilot_b04_recovery_test/output/marker_c.txt",
+  "exit_code": 0,
+  "stdout_path": "artifacts/tasks/pilot_b04_recovery_test/evidence/S03/stdout.txt",
+  "stderr_path": "artifacts/tasks/pilot_b04_recovery_test/evidence/S03/stderr.txt",
+  "changed_files": [],
+  "generated_files": [],
+  "outputs": {},
+  "retryable": false,
+  "environment": {
+    "cwd": null,
+    "hostname": "moonlight-VMware-Virtual-Platform"
+  },
+  "checksum": "5c08236403fbcfdfb1950dba674c9a09eed14bf9ab5e8a4f86736418b9b4b941"
+}
