@@ -1,0 +1,133 @@
+{
+  "timestamp": "2026-03-17T20:09:51.150453+00:00",
+  "observation_window": "short (5 cycles)",
+  "agents": {
+    "implementer": {
+      "summary": {
+        "agent_id": "verifier",
+        "window_type": "short",
+        "window_size": 5,
+        "cold_start_success_rate": "100.0%",
+        "memory_restore_success_rate": "100.0%",
+        "writeback_success_rate": "100.0%",
+        "warning_rate": "100.0%",
+        "critical_rate": "0.0%",
+        "block_accuracy": "100.0%",
+        "recovery_success_rate": "100.0%",
+        "total_executions": 5
+      },
+      "cycles": [
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "implementer_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "implementer_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "implementer_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "implementer_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "implementer_20260317_200950"
+        }
+      ]
+    },
+    "planner": {
+      "summary": {
+        "agent_id": "verifier",
+        "window_type": "short",
+        "window_size": 5,
+        "cold_start_success_rate": "100.0%",
+        "memory_restore_success_rate": "100.0%",
+        "writeback_success_rate": "100.0%",
+        "warning_rate": "100.0%",
+        "critical_rate": "0.0%",
+        "block_accuracy": "100.0%",
+        "recovery_success_rate": "100.0%",
+        "total_executions": 5
+      },
+      "cycles": [
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "planner_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "planner_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "planner_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "planner_20260317_200950"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "planner_20260317_200950"
+        }
+      ]
+    },
+    "verifier": {
+      "summary": {
+        "agent_id": "verifier",
+        "window_type": "short",
+        "window_size": 5,
+        "cold_start_success_rate": "100.0%",
+        "memory_restore_success_rate": "100.0%",
+        "writeback_success_rate": "100.0%",
+        "warning_rate": "100.0%",
+        "critical_rate": "0.0%",
+        "block_accuracy": "100.0%",
+        "recovery_success_rate": "100.0%",
+        "total_executions": 5
+      },
+      "cycles": [
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "verifier_20260317_200951"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "verifier_20260317_200951"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "verifier_20260317_200951"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "verifier_20260317_200951"
+        },
+        {
+          "chain_status": "warning",
+          "health_status": "warning",
+          "receipt_id": "verifier_20260317_200951"
+        }
+      ]
+    }
+  },
+  "overall_healthy": true
+}

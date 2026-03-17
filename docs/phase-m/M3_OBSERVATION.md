@@ -59,3 +59,33 @@
 
 ---
 **M3 状态**: ⏳ 观察期 Day 0，2/3 调用完成
+
+---
+
+## 每日汇报机制
+
+### 定时器
+- **服务**: `phase-m-daily.service`
+- **定时器**: `phase-m-daily.timer`
+- **执行时间**: 每天 09:00 CDT
+- **下次执行**: 2026-03-18 09:00:00 CDT
+
+### 报告位置
+- `docs/phase-m/daily-reports/dayN_YYYY-MM-DD.md`
+
+### 手动执行
+```bash
+./tools/phase-m-daily-check.sh
+```
+
+### 管理命令
+```bash
+# 查看状态
+systemctl --user status phase-m-daily.timer
+
+# 手动触发
+systemctl --user start phase-m-daily.service
+
+# 查看日志
+journalctl --user -u phase-m-daily.service
+```
