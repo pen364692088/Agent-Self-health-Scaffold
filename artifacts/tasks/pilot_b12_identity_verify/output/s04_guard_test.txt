@@ -1,0 +1,4 @@
+Guard created
+ABSOLUTELY_IMMUTABLE: {'identity_handle'}
+is_field_mutable(identity_handle): False
+is_field_mutable(core_name): False

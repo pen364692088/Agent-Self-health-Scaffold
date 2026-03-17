@@ -1,0 +1,21 @@
+{
+  "step_id": "S04",
+  "execution_type": "execute_shell",
+  "status": "success",
+  "started_at": "2026-03-17T00:50:50.851845Z",
+  "completed_at": "2026-03-17T00:50:50.888121Z",
+  "duration_ms": 36,
+  "command": "cd /home/moonlight/Project/Github/MyProject/EgoCore && PYTHONPATH=/home/moonlight/Project/Github/MyProject/EgoCore python3 -c \"from egocore.runtime.identity_guard import IdentityGuard; g = IdentityGuard(); print('Guard created'); print('ABSOLUTELY_IMMUTABLE:', g.ABSOLUTELY_IMMUTABLE); print('is_field_mutable(identity_handle):', g.is_field_mutable('identity_handle')); print('is_field_mutable(core_name):', g.is_field_mutable('core_name'))\" > /home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/artifacts/tasks/pilot_b12_identity_verify/output/s04_guard_test.txt 2>&1",
+  "exit_code": 0,
+  "stdout_path": "artifacts/tasks/pilot_b12_identity_verify/evidence/S04/stdout.txt",
+  "stderr_path": "artifacts/tasks/pilot_b12_identity_verify/evidence/S04/stderr.txt",
+  "changed_files": [],
+  "generated_files": [],
+  "outputs": {},
+  "retryable": false,
+  "environment": {
+    "cwd": null,
+    "hostname": "moonlight-VMware-Virtual-Platform"
+  },
+  "checksum": "b56854b1bc0bd404dd9802b8e5930fd197331e9a3ab844598454e3fd7f27e9a3"
+}
