@@ -1,13 +1,13 @@
 # Phase M 最终报告
 
 **日期**: 2026-03-17
-**状态**: ⏳ IN PROGRESS
+**状态**: ❌ BLOCKED
 
 ---
 
 ## 执行摘要
 
-Phase M 正在进行中，目标是让 default 和 healthcheck 进入受控 pilot。
+Phase M 尝试让 default 和 healthcheck 进入受控 pilot，配置变更成功但调用验证失败。
 
 ---
 
@@ -17,40 +17,37 @@ Phase M 正在进行中，目标是让 default 和 healthcheck 进入受控 pilo
 |------|------|------|
 | M0 | 范围冻结 | ✅ |
 | M1 | pilot 候选确认 | ✅ |
-| M2 | pilot 启用与接入锁定 | ⏳ 等待用户确认 |
-| M3 | 单 Agent 运行观察 | ⏳ 待观察期 |
-| M4 | 治理演练 | ⏳ 待观察期后 |
-| M5 | 晋级决策 | ⏳ 待全部条件满足 |
+| M2 | pilot 启用与接入锁定 | ❌ BLOCKED |
+| M3 | 单 Agent 运行观察 | ⏸️ 暂停 |
+| M4 | 治理演练 | ⏸️ 暂停 |
+| M5 | 晋级决策 | ⏸️ 暂停 |
 
 ---
 
-## Batch M1 候选
+## M2 阻塞详情
 
-| Agent | 风险等级 | 状态 | 推荐进入 pilot |
-|-------|----------|------|----------------|
-| default | 低 | 目录完整 | ✅ |
-| healthcheck | 低 | 目录完整 | ✅ |
+### 配置变更 ✅
+- 备份: ✅
+- 增量合并: ✅
+- `acp.allowedAgents`: `[]` → `["default", "healthcheck"]`
+
+### 调用验证 ❌
+
+| 尝试 | 结果 | 错误 |
+|------|------|------|
+| runtime="acp" | ❌ | ACP runtime backend 未配置 |
+| runtime="subagent" | ❌ | agentId not allowed (allowed: coder, audit) |
+
+### 阻塞原因
+1. **ACP Runtime 未安装**: 需要安装 `acpx` runtime plugin
+2. **sessions_spawn allowed 限制**: default, healthcheck 不在 allowed 列表
+3. **配置来源不明**: agents_list 配置机制需要进一步研究
 
 ---
 
-## 配置变更需求
+## 真实调用证据
 
-### 需要用户确认
-编辑 `~/.openclaw/config.json`:
-
-```json
-{
-  "acp": {
-    "allowedAgents": ["default", "healthcheck"]
-  }
-}
-```
-
-### 变更后验证
-```bash
-sessions_spawn runtime="acp" agentId="default" task="echo test"
-sessions_spawn runtime="acp" agentId="healthcheck" task="echo test"
-```
+**无有效调用证据**。根据任务要求，不得宣称 Phase M 有效推进。
 
 ---
 
@@ -62,20 +59,15 @@ sessions_spawn runtime="acp" agentId="healthcheck" task="echo test"
 | 不新增正式状态词典 | ✅ |
 | 不要求 Telegram token | ✅ |
 | 不把"可调用"表述为"已稳定" | ✅ |
-| Batch M1: default + healthcheck | ✅ |
-| Batch M2: acp-codex, codex, mvp7-coder (不在本 Phase) | ✅ |
-| Batch M3: cc-godmode (不在本 Phase) | ✅ |
+| 未拿到真实调用证据，不宣称有效推进 | ✅ |
 
 ---
 
-## 下一步行动
+## 建议
 
-1. **用户确认**: 是否执行配置变更
-2. **配置变更**: 添加到 acp.allowedAgents
-3. **验证调用**: 确认调用路径有效
-4. **观察期**: 开始 7 天观察期
-5. **治理演练**: 观察期后执行
-6. **晋级决策**: 条件满足后决策
+**保持 manual_enable_only 状态**，等待后续能力建设：
+1. ACP Runtime 安装和配置
+2. 或研究 sessions_spawn allowed 配置机制
 
 ---
 
@@ -86,11 +78,11 @@ sessions_spawn runtime="acp" agentId="healthcheck" task="echo test"
 | 任务单 | docs/phase-m/TASK.md |
 | M0 范围冻结 | docs/phase-m/M0_SCOPE.md |
 | M1 候选确认 | docs/phase-m/M1_CANDIDATE_CONFIRM.md |
-| M2 pilot 启用 | docs/phase-m/M2_PILOT_ENABLE.md |
-| M3 运行观察 | docs/phase-m/M3_OBSERVATION.md |
-| M4 治理演练 | docs/phase-m/M4_GOVERNANCE.md |
-| M5 晋级决策 | docs/phase-m/M5_DECISION.md |
+| M2 pilot 启用 | docs/phase-m/M2_PILOT_ENABLE.md (BLOCKED) |
+| M3 运行观察 | docs/phase-m/M3_OBSERVATION.md (暂停) |
+| M4 治理演练 | docs/phase-m/M4_GOVERNANCE.md (暂停) |
+| M5 晋级决策 | docs/phase-m/M5_DECISION.md (暂停) |
 
 ---
 
-**结论**: Phase M 已完成 M0-M1，等待用户确认配置变更后继续。
+**结论**: Phase M 因调用验证失败而阻塞。default 和 healthcheck 保持 manual_enable_only 状态。
