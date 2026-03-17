@@ -1,61 +1,63 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**Phase C - Agent Profiles + 私有记忆空间实例化 + 单 Agent 端到端接通**
+**Phase D - 多 Agent 小规模扩展 + 观察验证**
 
 ## 阶段
-**Phase C - ✅ 完成**
+**Phase D - ✅ 完成**
 
 ### 当前进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| C1 Agent Profile Schema | ✅ 完成 | 定义 agent_profile.v1.schema.json |
-| C2 Agent Profile 管理模块 | ✅ 完成 | 创建 core/agent_profile.py |
-| C3 Pilot Agent 实例化 | ✅ 完成 | implementer.profile.json 创建 |
-| C4 私有记忆空间 | ✅ 完成 | memory/agents/implementer/ 创建 |
-| C5 E2E 链路验证 | ✅ 完成 | 17/17 测试通过 |
-| C6 冷启动样本 | ✅ 完成 | 无人工干预，完整 7 阶段流程 |
+| D1 选择新增 Agent | ✅ 完成 | planner (规划型) + verifier (验证型) |
+| D2 planner 实例化 | ✅ 完成 | profile + 私有 memory + rules |
+| D3 verifier 实例化 | ✅ 完成 | profile + 私有 memory + rules |
+| D4 多 Agent E2E 验证 | ✅ 完成 | 31/31 测试通过 |
+| D5 多 Agent 冷启动 | ✅ 完成 | 3/3 Agent 通过 |
+| D6 隔离性验证 | ✅ 完成 | 记忆/状态/规则完全隔离 |
+| D7 短观察验证 | ✅ 完成 | 冷启动/规则/写回/无 block 稳定 |
 
-### Phase C 完成摘要
+### Phase D 完成摘要
 
 **已完成**：
-1. ✅ Agent Profile Schema 定义 (schemas/agent_profile.v1.schema.json)
-2. ✅ Agent Profile 管理模块 (core/agent_profile.py)
-3. ✅ Pilot Agent 实例化 (agents/implementer.profile.json)
-4. ✅ 私有记忆空间创建：
-   - memory/agents/implementer/
+1. ✅ 新增 2 个代表性 Agent：
+   - planner（规划型）- 分解任务、制定计划
+   - verifier（验证型）- 测试审计、质量保证
+2. ✅ 每个 Agent 完整实例化：
+   - Agent Profile
+   - 私有记忆空间
    - instruction_rules.yaml
    - handoff_state.yaml
    - execution_state.yaml
    - long_term/
-5. ✅ E2E 链路验证通过：
-   - Agent Profile Load
-   - Memory Space Setup
-   - Session Bootstrap
-   - Instruction Rules Resolve
-   - Runtime Preflight
-   - Mutation Guard
-   - State Writeback
-6. ✅ 冷启动样本成功（无人工干预）
-
-**关键文件**：
-- schemas/agent_profile.v1.schema.json
-- core/agent_profile.py
-- agents/implementer.profile.json
-- memory/agents/implementer/*
-- tools/agent_profile_e2e_test.py
-- tools/implementer_cold_start.py
+3. ✅ 完整链路接通：
+   - memory_runtime: Session Bootstrap, Rules Resolve, State Writeback
+   - execution_runtime: Preflight, Mutation Guard
+4. ✅ E2E 验证：31/31 测试通过
+5. ✅ 冷启动样本：3/3 Agent 无人工干预成功
+6. ✅ 隔离性验证：
+   - 每个 Agent 有独立记忆根目录
+   - 规则文件独立
+   - 状态文件独立
+   - 写入隔离，无串写串用
 
 **验证结果**：
-- E2E 测试：17/17 通过
-- 冷启动：7/7 阶段成功
+- E2E 测试：31/31 通过
+- 冷启动：3/3 成功
+- 隔离性：完全通过
 - Preflight：全部通过
 - Mutation Guard：正常工作
 
+**Agent 类型覆盖**：
+- implementer: 执行型
+- planner: 规划型
+- verifier: 验证型
+
 **下一步决策**：
-- health_runtime 暂缓（等真实 Agent 接通后再做）
-- 其他 Agent 批量实例化待定（观察 pilot 运行情况后决定）
+- 至少 3 个 Agent 稳定通过 ✅ 已达成
+- 可考虑下一阶段扩展或观察
+- health_runtime 仍暂缓
 
 ## 分支
 main
@@ -66,4 +68,4 @@ main
 ---
 
 ## 更新时间
-2026-03-17T03:05:00Z
+2026-03-17T03:15:00Z

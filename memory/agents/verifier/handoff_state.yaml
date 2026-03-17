@@ -1,0 +1,6 @@
+agent_id: verifier
+objective: 等待验证任务分配
+phase: idle
+next_actions: []
+blockers: []
+timestamp: 2026-03-17T03:10:00Z

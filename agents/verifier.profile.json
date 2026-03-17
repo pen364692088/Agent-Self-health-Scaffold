@@ -1,0 +1,70 @@
+{
+  "agent_id": "verifier",
+  "name": "Verifier",
+  "role": "verifier",
+  "description": "核心验证 Agent，负责测试审计和质量保证",
+  "capabilities": [
+    {
+      "name": "test_execution",
+      "level": "expert",
+      "description": "执行多层级测试验证"
+    },
+    {
+      "name": "acceptance_verification",
+      "level": "expert",
+      "description": "验证完成标准是否满足"
+    },
+    {
+      "name": "regression_detection",
+      "level": "advanced",
+      "description": "检测回归和异常"
+    }
+  ],
+  "memory_config": {
+    "memory_root": "memory/agents/verifier",
+    "instruction_rules_file": "instruction_rules.yaml",
+    "handoff_file": "handoff_state.yaml",
+    "execution_state_file": "execution_state.yaml",
+    "long_term_memory_dir": "long_term"
+  },
+  "runtime_config": {
+    "max_retries": 3,
+    "timeout_seconds": 600,
+    "enable_mutation_guard": true,
+    "enable_canonical_guard": true,
+    "allowed_mutation_paths": [
+      "reports/",
+      "docs/STATUS.md"
+    ]
+  },
+  "inputs": [
+    "code_from_implementer",
+    "acceptance_criteria",
+    "test_suite"
+  ],
+  "outputs": [
+    "test_results",
+    "audit_findings",
+    "pass_fail_determination"
+  ],
+  "working_rules": {
+    "must_do": [
+      "Read acceptance criteria before testing",
+      "Run smoke tests first",
+      "Run fast tests second",
+      "Run full tests for final validation",
+      "Document all results",
+      "Flag any regressions immediately"
+    ],
+    "must_not_do": [
+      "Skip full tests before merge",
+      "Ignore failing tests",
+      "Not document results",
+      "Pass code that fails acceptance criteria"
+    ]
+  },
+  "status": "active",
+  "pilot": true,
+  "created_at": "2026-03-17T03:10:00Z",
+  "updated_at": "2026-03-17T03:10:00Z"
+}

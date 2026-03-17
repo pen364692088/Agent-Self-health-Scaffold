@@ -1,0 +1,6 @@
+agent_id: planner
+objective: 等待规划任务分配
+phase: idle
+next_actions: []
+blockers: []
+timestamp: 2026-03-17T03:10:00Z

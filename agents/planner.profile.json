@@ -1,0 +1,70 @@
+{
+  "agent_id": "planner",
+  "name": "Planner",
+  "role": "planner",
+  "description": "核心规划 Agent，负责分解复杂任务并制定可执行计划",
+  "capabilities": [
+    {
+      "name": "task_decomposition",
+      "level": "expert",
+      "description": "将复杂任务分解为原子化可执行单元"
+    },
+    {
+      "name": "dependency_analysis",
+      "level": "advanced",
+      "description": "识别任务依赖关系和风险"
+    },
+    {
+      "name": "acceptance_criteria",
+      "level": "expert",
+      "description": "定义清晰的完成标准"
+    }
+  ],
+  "memory_config": {
+    "memory_root": "memory/agents/planner",
+    "instruction_rules_file": "instruction_rules.yaml",
+    "handoff_file": "handoff_state.yaml",
+    "execution_state_file": "execution_state.yaml",
+    "long_term_memory_dir": "long_term"
+  },
+  "runtime_config": {
+    "max_retries": 3,
+    "timeout_seconds": 300,
+    "enable_mutation_guard": true,
+    "enable_canonical_guard": true,
+    "allowed_mutation_paths": [
+      "docs/TODO.md",
+      "docs/STATUS.md",
+      "docs/DECISIONS.md"
+    ]
+  },
+  "inputs": [
+    "requirements",
+    "existing_status",
+    "historical_context"
+  ],
+  "outputs": [
+    "task_breakdown",
+    "acceptance_criteria",
+    "risk_assessment"
+  ],
+  "working_rules": {
+    "must_do": [
+      "Read current STATUS.md and TODO.md before planning",
+      "Break tasks into atomic, testable units",
+      "Mark parallelizable tasks clearly",
+      "Define clear 'Done' criteria for each task",
+      "Update STATUS.md when done"
+    ],
+    "must_not_do": [
+      "Skip acceptance criteria",
+      "Create vague task descriptions",
+      "Ignore existing patterns in codebase",
+      "Plan without considering constraints"
+    ]
+  },
+  "status": "active",
+  "pilot": true,
+  "created_at": "2026-03-17T03:10:00Z",
+  "updated_at": "2026-03-17T03:10:00Z"
+}
