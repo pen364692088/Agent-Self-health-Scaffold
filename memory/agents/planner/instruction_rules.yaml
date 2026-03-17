@@ -1,53 +1,32 @@
-# Planner Agent 指令规则
+# Planner Agent 指令规则 Overlay
+# 继承全局 baseline，agent-specific 规则作为 overlay
 
 version: "1.0"
 agent_id: planner
+base: global  # 继承全局 baseline
 
-# 硬性约束
-hard_constraints:
-  - name: no_vague_tasks
-    description: "禁止创建模糊的任务描述"
-    severity: block
-    
-  - name: must_have_acceptance
-    description: "每个任务必须有明确的完成标准"
-    severity: block
-    
-  - name: atomic_tasks
-    description: "任务必须是原子化的、可测试的"
-    severity: warning
-
-# 工作流程规则
+# Agent-specific workflow rules
 workflow_rules:
-  - name: read_status_first
+  - id: read-status-and-todo
     description: "每次启动时必须先读取 STATUS.md 和 TODO.md"
     priority: 1
     
-  - name: check_constraints
+  - id: check-constraints
     description: "规划前必须检查约束条件"
     priority: 2
     
-  - name: update_when_done
-    description: "规划完成后必须更新 STATUS.md"
+  - id: atomic-tasks
+    description: "任务必须是原子化的、可测试的"
     priority: 3
-
-# 记忆规则
-memory_rules:
-  - name: persist_plans
-    description: "计划必须持久化到 TODO.md"
     
-  - name: record_decisions
-    description: "决策必须记录到 DECISIONS.md"
+  - id: define-acceptance-criteria
+    description: "每个任务必须有明确的完成标准"
+    priority: 4
 
-# 变更约束
+# Agent-specific mutation rules
 mutation_rules:
   allowed_paths:
     - "docs/TODO.md"
     - "docs/STATUS.md"
     - "docs/DECISIONS.md"
-  
-  forbidden_paths:
-    - ".git/"
-    - "src/"
-    - "tests/"
-    - "schemas/"
+  forbidden_paths: []

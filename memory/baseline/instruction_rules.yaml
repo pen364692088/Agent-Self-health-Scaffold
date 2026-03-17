@@ -1,0 +1,114 @@
+# Global Baseline Instruction Rules
+# 所有 Agent 共享的基础规则，agent-specific rules 作为 overlay
+
+version: "1.0"
+scope: global
+
+# ========================================
+# 硬性边界约束 (Hard Constraints)
+# 所有 Agent 必须遵守，不可覆盖
+# ========================================
+hard_constraints:
+  - id: canonical-repo
+    description: "所有文件操作必须在 canonical repo 内"
+    severity: block
+    applies_to: ["*"]
+    
+  - id: no-duplicate-create
+    description: "禁止重复创建已存在的资源"
+    severity: block
+    applies_to: ["*"]
+    
+  - id: git-protection
+    description: "禁止修改 .git 目录"
+    severity: block
+    applies_to: ["*"]
+    protected_paths:
+      - ".git/"
+      - ".gitignore"
+    
+  - id: schema-protection
+    description: "禁止非 schema agent 修改 schema 文件"
+    severity: block
+    applies_to: ["*"]
+    protected_paths:
+      - "schemas/"
+    
+  - id: state-consistency
+    description: "状态变更必须先写后读验证"
+    severity: warning
+    applies_to: ["*"]
+
+# ========================================
+# 工作流程规则 (Workflow Rules)
+# 可被 agent-specific overlay 覆盖
+# ========================================
+workflow_rules:
+  - id: read-status-first
+    description: "每次启动时必须先读取 STATUS.md"
+    priority: 1
+    default: true
+    
+  - id: update-status-on-completion
+    description: "任务完成后必须更新 STATUS.md"
+    priority: 99
+    default: true
+    
+  - id: record-decisions
+    description: "重要决策必须记录到 DECISIONS.md"
+    priority: 50
+    default: true
+
+# ========================================
+# 记忆规则 (Memory Rules)
+# 持久化和恢复相关
+# ========================================
+memory_rules:
+  - id: persist-before-reply
+    description: "状态变更必须先持久化再回复"
+    applies_to: ["*"]
+    
+  - id: handoff-on-context-threshold
+    description: "上下文超过阈值时必须写 handoff"
+    applies_to: ["*"]
+    
+  - id: checkpoint-on-milestone
+    description: "里程碑完成时必须写检查点"
+    applies_to: ["*"]
+
+# ========================================
+# 变更约束 (Mutation Rules)
+# 默认约束，可被 agent-specific 覆盖
+# ========================================
+mutation_rules:
+  default_policy:
+    allow_create: true
+    allow_update: true
+    allow_delete: false
+  
+  global_forbidden:
+    - ".git/"
+    - "schemas/"
+    - "core/"
+  
+  global_allowed:
+    - "docs/STATUS.md"
+    - "docs/TODO.md"
+    - "logs/"
+
+# ========================================
+# 隔离规则 (Isolation Rules)
+# 多 Agent 隔离相关
+# ========================================
+isolation_rules:
+  - id: memory-isolation
+    description: "Agent 只能访问自己的私有记忆空间"
+    severity: block
+    
+  - id: no-cross-write
+    description: "禁止写入其他 Agent 的记忆空间"
+    severity: block
+    
+  - id: no-cross-read
+    description: "禁止读取其他 Agent 的私有记忆"
+    severity: warning

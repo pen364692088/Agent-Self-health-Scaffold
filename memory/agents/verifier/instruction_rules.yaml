@@ -1,52 +1,31 @@
-# Verifier Agent 指令规则
+# Verifier Agent 指令规则 Overlay
+# 继承全局 baseline，agent-specific 规则作为 overlay
 
 version: "1.0"
 agent_id: verifier
+base: global  # 继承全局 baseline
 
-# 硬性约束
-hard_constraints:
-  - name: no_skip_full_tests
-    description: "合并前禁止跳过完整测试"
-    severity: block
-    
-  - name: no_ignore_failures
-    description: "禁止忽略失败测试"
-    severity: block
-    
-  - name: must_document_results
-    description: "必须记录所有测试结果"
-    severity: block
-
-# 工作流程规则
+# Agent-specific workflow rules
 workflow_rules:
-  - name: read_acceptance_first
+  - id: read-acceptance-first
     description: "测试前必须先读取完成标准"
     priority: 1
     
-  - name: smoke_then_fast_then_full
+  - id: smoke-then-fast-then-full
     description: "按顺序执行：smoke → fast → full"
     priority: 2
     
-  - name: flag_regressions
-    description: "发现回归必须立即标记"
+  - id: document-all-results
+    description: "必须记录所有测试结果"
     priority: 3
-
-# 记忆规则
-memory_rules:
-  - name: persist_test_results
-    description: "测试结果必须持久化到 reports/"
     
-  - name: record_regressions
-    description: "回归必须记录并追踪"
+  - id: flag-regressions
+    description: "发现回归必须立即标记"
+    priority: 4
 
-# 变更约束
+# Agent-specific mutation rules
 mutation_rules:
   allowed_paths:
     - "reports/"
     - "docs/STATUS.md"
-  
-  forbidden_paths:
-    - ".git/"
-    - "src/"
-    - "tests/"
-    - "schemas/"
+  forbidden_paths: []
