@@ -1,40 +1,53 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**Phase K: CLOSED (无候选对象)**
+**Phase K: IN PROGRESS - K1 候选盘点完成**
 
 ## 阶段
-**Phase K - ✅ CLOSED**
+**Phase K - K1 ✅ 完成**
 
 ### 当前进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| K0 真源固化 | ✅ 完成 | README 已修复，真源对齐 |
-| K1 候选盘点 | ✅ 完成 | 候选池为空 |
-| Phase K 收口 | ✅ 完成 | 无执行对象 |
+| K0 真源固化 | ✅ 完成 | README、SESSION-STATE、config 对齐 |
+| K1 候选盘点 | ✅ 完成 | 6 个候选 Agent 已识别 |
+| K2 分批 pilot | ⏳ 待执行 | - |
+| K3 运行观察 | ⏳ 待执行 | - |
+| K4 治理验证 | ⏳ 待执行 | - |
+| K5 晋级决策 | ⏳ 待执行 | - |
 
-### Phase K 结论
+### 候选池
 
-**盘点结果**:
-- default_enabled: 5 Agent (稳定)
-- quarantine: 1 Agent (test_agent，测试专用)
-- 候选池: 0 Agent
-
-**结论**: 当前仓库已完成所有 Agent 启用流程，不存在"其他现有但尚未启用"的 Agent。
+| 风险等级 | 候选 Agent | 批次 |
+|----------|------------|------|
+| 低 | default, healthcheck | Batch 1 |
+| 中 | acp-codex, codex, mvp7-coder | Batch 2 |
+| 高 | cc-godmode | Batch 3 |
 
 ### 当前 Agent 状态
 
-| Agent | 角色 | 风险 | 状态 |
-|-------|------|------|------|
-| implementer | 执行型 | 低 | default_enabled ✅ |
-| planner | 规划型 | 低 | default_enabled ✅ |
-| verifier | 验证型 | 低 | default_enabled ✅ |
-| scribe | 记录型 | 低 | default_enabled ✅ |
-| merger | 合并型 | 中 | default_enabled ✅ |
-| test_agent | 测试 | N/A | quarantine |
+**业务层 (仓库)**:
+| Agent | 状态 |
+|-------|------|
+| implementer | default_enabled ✅ |
+| planner | default_enabled ✅ |
+| verifier | default_enabled ✅ |
+| scribe | default_enabled ✅ |
+| merger | default_enabled ✅ |
+| test_agent | quarantine |
 
-**总计**: 5 Agent default_enabled, 1 Agent quarantine
+**平台层 (Telegram accounts)**:
+| Agent | 状态 |
+|-------|------|
+| audit | enabled ✅ |
+| coder | enabled ✅ |
+| manager | enabled ✅ |
+| yuno | enabled ✅ |
+| testbot | enabled ✅ |
+| skadi | enabled ✅ |
+| ceo | enabled ✅ |
+| default | disabled (候选) |
 
 ## 分支
 main
@@ -42,12 +55,12 @@ main
 ## Blocker
 无
 
-## 后续路径
-1. 新建 Agent → 按 Phase K 流程启用
-2. 从其他仓库迁移 Agent
-3. 其他系统改进任务
+## 下一步
+1. Gate K-B 验证
+2. 创建 Batch 1 plan (default + healthcheck)
+3. 执行 K2 pilot 启用
 
 ---
 
 ## 更新时间
-2026-03-17T06:20:00Z
+2026-03-17T12:55:00Z

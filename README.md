@@ -13,7 +13,7 @@ This project focuses on five primary execution-chain goals:
 5. durable parent/child subtask orchestration
 
 ## Current phase
-**Phase K: CLOSED** | All existing agents enabled
+**Phase K: IN PROGRESS** | K1 候选盘点完成，6 个候选 Agent 待启用
 
 ### Status Summary
 - **5 Agents** running stable with `default_enabled`:
@@ -22,15 +22,20 @@ This project focuses on five primary execution-chain goals:
   - verifier (验证型)
   - scribe (记录型)
   - merger (合并型，中风险)
+- **7 Agents** enabled on Telegram platform:
+  - audit, coder, manager, yuno, testbot, skadi, ceo
+- **6 Candidates** pending pilot enablement:
+  - 低风险: default, healthcheck
+  - 中风险: acp-codex, codex, mvp7-coder
+  - 高风险: cc-godmode
 - **Auto-degradation chain** verified and closed-loop
-- **Candidate pool**: Empty (no more agents to enable)
 
 ### Phase History
 | Phase | Status | Summary |
 |-------|--------|---------|
 | Phase I | ✅ CLOSED | 2 new agents enabled (scribe, merger) |
 | Phase J | ✅ CLOSED | 5-Agent stability + auto-degradation verified |
-| Phase K | ✅ CLOSED | No candidates found, expansion complete |
+| Phase K | ⏳ IN PROGRESS | 6 candidates identified, Batch 1 pending |
 
 ## Key Files
 - `config/enablement_state.yaml` - Agent enablement configuration
