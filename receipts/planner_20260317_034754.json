@@ -1,0 +1,17 @@
+{
+  "receipt_id": "planner_20260317_034754",
+  "agent_id": "planner",
+  "timestamp": "2026-03-17T03:47:54.014412+00:00",
+  "chain_status": "warning",
+  "stages_completed": [
+    "session_bootstrap",
+    "instruction_rules",
+    "runtime_preflight",
+    "task_runtime",
+    "memory_writeback",
+    "health_check"
+  ],
+  "errors": [],
+  "warnings": [],
+  "health_action": "continue_with_monitoring"
+}

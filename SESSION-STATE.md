@@ -1,77 +1,61 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**Phase F - health_runtime 最小闭环版**
+**Phase G - 运行时落地与默认接管**
 
 ## 阶段
-**Phase F - ✅ 完成**
+**Phase G - ✅ 完成**
 
 ### 当前进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| F1 health_runtime 模块建立 | ✅ 完成 | health_runtime/ 目录结构 |
-| F2 四类健康检查实现 | ✅ 完成 | memory/execution/drift/integrity |
-| F3 结构化健康报告 | ✅ 完成 | HealthReport + JSON 输出 |
-| F4 多 Agent 健康检测验证 | ✅ 完成 | 3/3 Agent 检测通过 |
-| F5 健康问题识别验证 | ✅ 完成 | 4/4 检测测试通过 |
-| F6 健康状态分级 | ✅ 完成 | healthy/warning/critical |
+| G1 默认运行主链收口 | ✅ 完成 | default_runtime_chain.py |
+| G2 健康状态治理动作矩阵 | ✅ 完成 | health_action_matrix.py |
+| G3 生命周期触发点 | ✅ 完成 | lifecycle_hooks.py |
+| G4 默认接管验证 | ✅ 完成 | 3 Agent × 4 场景 = 12/12 通过 |
 
-### Phase F 完成摘要
+### Phase G 完成摘要
 
 **已完成**：
-1. ✅ 建立 health_runtime 最小模块
-   - health_checker.py: 核心检查器
-   - checks/: 四类检查模块
+1. ✅ 默认运行主链收口
+   - Agent Start → Session Bootstrap → Instruction Rules → Preflight → Task → Writeback → Health → Receipt
+   - 不是"可选能力"，而是"默认运行路径"
+   
+2. ✅ 健康状态治理动作矩阵
+   - healthy: continue_with_evidence
+   - warning: continue_with_monitoring
+   - critical: block_and_recover
+   - 状态分级与治理动作一致
 
-2. ✅ 实现四类健康检查：
-   - **memory_health**: 记忆是否加载、规则是否解析、文件是否存在
-   - **execution_health**: 写回是否成功、执行状态是否正常、运行时是否可用
-   - **drift_health**: repo drift、state drift、context drift
-   - **integrity_health**: evidence 缺失、文件完整性、隔离有效性
+3. ✅ 统一生命周期触发点
+   - after_startup: 记忆恢复、规则加载、guard 验证
+   - before_task: preflight、mutation guard、rules check
+   - after_task: writeback、health、receipt
+   - periodic_check: 巡检发现异常
 
-3. ✅ 结构化健康报告输出
-   - HealthReport 类
-   - JSON 格式输出
-   - 保存到 reports/
-
-4. ✅ 3 个 Agent 健康检测验证
-   - planner: warning (uncommitted changes)
-   - verifier: warning (uncommitted changes)
-   - implementer: warning (uncommitted changes)
-
-5. ✅ 健康问题识别验证
-   - 记忆未加载 ✅
-   - 规则未解析 ✅
-   - repo drift ✅
-   - evidence 缺失 ✅
-
-6. ✅ 健康状态分级
-   - healthy: 无问题
-   - warning: 存在问题但可运行
-   - critical: 严重问题需处理
+4. ✅ 默认接管验证
+   - 场景 A (冷启动): 3/3 通过
+   - 场景 B (任务执行): 3/3 通过
+   - 场景 C (Warning): 3/3 通过
+   - 场景 D (Critical): 3/3 通过
 
 **验证结果**：
-- 多 Agent 检测: 3/3 通过
-- 检测测试: 4/4 通过
-- 状态分级: 正常工作
+- 总计: 12/12 场景通过
+- 所有 Agent 都被默认主链接管
+- Warning 正确处理（允许继续、记录风险）
+- Critical 正确处理（阻断、创建干预请求）
 
 **关键文件**：
-- health_runtime/__init__.py
-- health_runtime/health_checker.py
-- health_runtime/checks/memory_health.py
-- health_runtime/checks/execution_health.py
-- health_runtime/checks/drift_health.py
-- health_runtime/checks/integrity_health.py
-- tools/health_check.py
-- tools/multi_agent_health_check.py
-- tools/test_health_detection.py
+- runtime/default_runtime_chain.py
+- runtime/health_action_matrix.py
+- runtime/lifecycle_hooks.py
+- tools/default_takeover_verification.py
 
 **能力交付**：
-- 最小健康监控能力
-- 四类健康检查
-- 结构化报告输出
-- 问题识别能力
+- 默认运行主链成为所有 Agent 的必经路径
+- 健康状态不再是报告，而是可执行的治理动作
+- 触发点统一，不再依赖调用者自由发挥
 
 ## 分支
 main
@@ -82,4 +66,4 @@ main
 ---
 
 ## 更新时间
-2026-03-17T03:35:00Z
+2026-03-17T03:48:00Z

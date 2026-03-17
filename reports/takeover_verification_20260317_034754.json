@@ -1,0 +1,158 @@
+{
+  "timestamp": "2026-03-17T03:47:53.911037+00:00",
+  "agents": {
+    "planner": {
+      "scenario_a": {
+        "scenario": "cold_start",
+        "agent_id": "planner",
+        "passed": true,
+        "steps": {
+          "session_bootstrap": true,
+          "instruction_rules": true,
+          "preflight": true,
+          "health_check": true,
+          "receipt": true
+        }
+      },
+      "scenario_b": {
+        "scenario": "task_execution",
+        "agent_id": "planner",
+        "passed": true,
+        "steps": {
+          "preflight": true,
+          "task_runtime": true,
+          "writeback": true,
+          "health_report": true,
+          "receipt": true
+        }
+      },
+      "scenario_c": {
+        "scenario": "warning_handling",
+        "agent_id": "planner",
+        "passed": true,
+        "checks": {
+          "allow_continue": true,
+          "has_action": true,
+          "has_recommendations": true,
+          "action_executed": true,
+          "log_created": true
+        }
+      },
+      "scenario_d": {
+        "scenario": "critical_handling",
+        "agent_id": "planner",
+        "passed": true,
+        "checks": {
+          "should_block": true,
+          "require_intervention": true,
+          "has_action": true,
+          "action_executed": true,
+          "intervention_created": true,
+          "block_method_correct": true
+        }
+      }
+    },
+    "verifier": {
+      "scenario_a": {
+        "scenario": "cold_start",
+        "agent_id": "verifier",
+        "passed": true,
+        "steps": {
+          "session_bootstrap": true,
+          "instruction_rules": true,
+          "preflight": true,
+          "health_check": true,
+          "receipt": true
+        }
+      },
+      "scenario_b": {
+        "scenario": "task_execution",
+        "agent_id": "verifier",
+        "passed": true,
+        "steps": {
+          "preflight": true,
+          "task_runtime": true,
+          "writeback": true,
+          "health_report": true,
+          "receipt": true
+        }
+      },
+      "scenario_c": {
+        "scenario": "warning_handling",
+        "agent_id": "verifier",
+        "passed": true,
+        "checks": {
+          "allow_continue": true,
+          "has_action": true,
+          "has_recommendations": true,
+          "action_executed": true,
+          "log_created": true
+        }
+      },
+      "scenario_d": {
+        "scenario": "critical_handling",
+        "agent_id": "verifier",
+        "passed": true,
+        "checks": {
+          "should_block": true,
+          "require_intervention": true,
+          "has_action": true,
+          "action_executed": true,
+          "intervention_created": true,
+          "block_method_correct": true
+        }
+      }
+    },
+    "implementer": {
+      "scenario_a": {
+        "scenario": "cold_start",
+        "agent_id": "implementer",
+        "passed": true,
+        "steps": {
+          "session_bootstrap": true,
+          "instruction_rules": true,
+          "preflight": true,
+          "health_check": true,
+          "receipt": true
+        }
+      },
+      "scenario_b": {
+        "scenario": "task_execution",
+        "agent_id": "implementer",
+        "passed": true,
+        "steps": {
+          "preflight": true,
+          "task_runtime": true,
+          "writeback": true,
+          "health_report": true,
+          "receipt": true
+        }
+      },
+      "scenario_c": {
+        "scenario": "warning_handling",
+        "agent_id": "implementer",
+        "passed": true,
+        "checks": {
+          "allow_continue": true,
+          "has_action": true,
+          "has_recommendations": true,
+          "action_executed": true,
+          "log_created": true
+        }
+      },
+      "scenario_d": {
+        "scenario": "critical_handling",
+        "agent_id": "implementer",
+        "passed": true,
+        "checks": {
+          "should_block": true,
+          "require_intervention": true,
+          "has_action": true,
+          "action_executed": true,
+          "intervention_created": true,
+          "block_method_correct": true
+        }
+      }
+    }
+  }
+}
