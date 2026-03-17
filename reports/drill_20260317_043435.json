@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-03-17T04:34:35.797505+00:00",
+  "drills": {
+    "warning_repeated": {
+      "passed": true
+    },
+    "critical_once": {
+      "passed": true
+    },
+    "critical_repeated": {
+      "passed": true
+    },
+    "rollback_recover": {
+      "passed": true
+    }
+  },
+  "summary": {
+    "passed": 4,
+    "total": 4,
+    "all_passed": true
+  }
+}

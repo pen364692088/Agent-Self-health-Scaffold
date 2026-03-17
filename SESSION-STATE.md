@@ -1,74 +1,55 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**Phase H - 运行治理、灰度扩容与回滚收口**
+**Phase H-E - 运行观察与治理演练收口**
 
 ## 阶段
-**Phase H - ✅ 完成**
+**Phase H - ✅ CLOSED**
 
 ### 当前进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| H1 默认启用分层策略 | ✅ 完成 | enablement_state.py + 文档 |
-| H2 健康状态治理策略 | ✅ 完成 | health_governance_policy.py + 文档 |
-| H3 Rollout/Rollback 机制 | ✅ 完成 | enablement_manager.py + 文档 |
-| H4 运行指标与观察窗口 | ✅ 完成 | operational_metrics.py + 文档 |
-| H5 Gate 验证 | ✅ 完成 | 4/4 Gate 通过 |
+| H-E1 运行观察 | ✅ 完成 | 3 Agent × 5 循环 = 15 次观察 |
+| H-E2 治理演练 | ✅ 完成 | 4/4 演练通过 |
+| H-E3 最终报告 | ✅ 完成 | Phase H 正式 CLOSED |
 
-### Phase H 完成摘要
+### Phase H-E 完成摘要
 
 **已完成**：
-1. ✅ 默认启用分层策略
-   - Tier 1: default_enabled (implementer, planner, verifier)
-   - Tier 2: pilot_enabled (灰度试点)
-   - Tier 3: manual_enable_only (仅手动)
-   - Tier 4: quarantine (隔离状态)
+1. ✅ 运行观察
+   - implementer: 所有指标正常
+   - planner: 所有指标正常
+   - verifier: 所有指标正常
+   - 默认主链稳定执行
+   - evidence/receipt 持续生成
 
-2. ✅ 健康状态治理策略
-   - healthy → continue_with_evidence
-   - warning_once → continue_with_monitoring
-   - warning_repeated → continue_with_escalation
-   - critical_once → block_and_recover
-   - critical_repeated → quarantine_or_manual_mode
+2. ✅ 治理演练
+   - warning_repeated: 状态升级正确 ✅
+   - critical_once: 阻断恢复正确 ✅
+   - critical_repeated: 隔离切换正确 ✅
+   - rollback/recover: 状态机完整 ✅
 
-3. ✅ Rollout/Rollback/Quarantine 机制
-   - 状态机: manual → pilot → default ↔ quarantine
-   - 所有转换都有证据链
-   - CLI 工具支持所有操作
+3. ✅ 最终决策
+   - Phase H 正式 CLOSED
+   - 3 个 Agent 继续维持 default_enabled
+   - 无需调整阈值
+   - 允许进入下一阶段扩容
 
-4. ✅ 运行指标与观察窗口
-   - cold_start_success_rate
-   - memory_restore_success_rate
-   - writeback_success_rate
-   - warning_rate / critical_rate
-   - block_accuracy / recovery_success_rate
-   - 短窗口 (20次) / 中窗口 (50次)
-
-5. ✅ Gate 验证
-   - Gate H-A: 启用分层 ✅
-   - Gate H-B: 健康治理 ✅
-   - Gate H-C: Rollout/Rollback ✅
-   - Gate H-D: 运行指标 ✅
-
-**验证结果**：
-- 启用分层: 3 Agent 明确分层
-- 健康治理: 5 种状态正确转换
-- Rollout/Rollback: Quarantine/Recover 可用
-- 运行指标: 指标收集和判断正常
+**Gate 验证**:
+- Gate H-E-A: Operational Observation ✅
+- Gate H-E-B: Governance Drill ✅
+- Gate H-E-C: Final Closure Decision ✅
 
 **关键文件**：
-- runtime/enablement_state.py
-- runtime/health_governance_policy.py
-- runtime/operational_metrics.py
-- tools/enablement_manager.py
-- docs/PHASE_H_*.md
+- docs/PHASE_H_OPERATIONAL_OBSERVATION_REPORT.md
+- docs/PHASE_H_GOVERNANCE_DRILL_REPORT.md
+- docs/PHASE_H_FINAL_CLOSURE_REPORT.md
 
 **能力交付**：
-- 从"能接管"升级为"能运营"
-- 可灰度扩容，不一次性全开
-- 可回滚隔离，不失控
-- 指标驱动决策，不靠体感
+- 从"机制已实现"收口为"运营已验收"
+- 治理框架经过真实观察和演练验证
+- 所有 Agent 有明确启用状态和证据支持
 
 ## 分支
 main
@@ -79,4 +60,4 @@ main
 ---
 
 ## 更新时间
-2026-03-17T04:15:00Z
+2026-03-17T04:35:00Z

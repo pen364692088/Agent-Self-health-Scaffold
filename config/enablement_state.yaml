@@ -1,6 +1,7 @@
 agents:
   implementer: default_enabled
   planner: default_enabled
+  test_agent: quarantine
   verifier: default_enabled
-updated_at: '2026-03-17T04:14:28.898920+00:00'
+updated_at: '2026-03-17T04:34:35.797177+00:00'
 version: '1.0'
