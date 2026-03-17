@@ -1,0 +1,47 @@
+{
+  "task_id": "pilot_b01_health_report",
+  "task_name": "B1-1 \u7cfb\u7edf\u5065\u5eb7\u62a5\u544a",
+  "description": "\u751f\u6210\u7cfb\u7edf\u5065\u5eb7\u72b6\u6001\u62a5\u544a",
+  "status": "completed",
+  "created_at": "2026-03-17T00:37:33.473712Z",
+  "updated_at": "2026-03-17T00:38:00.971192Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u68c0\u67e5 runtime \u76ee\u5f55",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "command": "ls -la runtime/*.py | wc -l > artifacts/tasks/pilot_b01_health_report/output/runtime_count.txt",
+      "updated_at": "2026-03-17T00:37:58.737480Z",
+      "started_at": "2026-03-17T00:37:58.731915Z",
+      "completed_at": "2026-03-17T00:37:58.737480Z"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u68c0\u67e5\u4efb\u52a1\u76ee\u5f55",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "command": "ls -d artifacts/tasks/*/ 2>/dev/null | wc -l > artifacts/tasks/pilot_b01_health_report/output/task_count.txt",
+      "updated_at": "2026-03-17T00:37:59.852736Z",
+      "started_at": "2026-03-17T00:37:59.848725Z",
+      "completed_at": "2026-03-17T00:37:59.852736Z"
+    },
+    "S03": {
+      "step_id": "S03",
+      "step_name": "\u751f\u6210\u62a5\u544a",
+      "status": "success",
+      "depends_on": [
+        "S01",
+        "S02"
+      ],
+      "step_type": "execute_shell",
+      "command": "echo '{\"generated_at\": \"'$(date -Iseconds)'\", \"runtime_files\": '$(cat artifacts/tasks/pilot_b01_health_report/output/runtime_count.txt)', \"tasks\": '$(cat artifacts/tasks/pilot_b01_health_report/output/task_count.txt)'}' > artifacts/tasks/pilot_b01_health_report/output/health_report.json",
+      "updated_at": "2026-03-17T00:38:00.971192Z",
+      "started_at": "2026-03-17T00:38:00.965339Z",
+      "completed_at": "2026-03-17T00:38:00.971192Z"
+    }
+  },
+  "current_step": null
+}

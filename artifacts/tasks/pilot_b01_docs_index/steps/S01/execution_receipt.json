@@ -1,0 +1,21 @@
+{
+  "step_id": "S01",
+  "execution_type": "execute_shell",
+  "status": "success",
+  "started_at": "2026-03-17T00:37:58.743587Z",
+  "completed_at": "2026-03-17T00:37:58.746507Z",
+  "duration_ms": 3,
+  "command": "find docs -name '*.md' -type f | wc -l > artifacts/tasks/pilot_b01_docs_index/output/md_count.txt",
+  "exit_code": 0,
+  "stdout_path": "artifacts/tasks/pilot_b01_docs_index/evidence/S01/stdout.txt",
+  "stderr_path": "artifacts/tasks/pilot_b01_docs_index/evidence/S01/stderr.txt",
+  "changed_files": [],
+  "generated_files": [],
+  "outputs": {},
+  "retryable": false,
+  "environment": {
+    "cwd": null,
+    "hostname": "moonlight-VMware-Virtual-Platform"
+  },
+  "checksum": "4fde2955270fffc7a9f1042f2b92b7ee8ee4b2cbafdbeea1ef056d59cb2958d7"
+}

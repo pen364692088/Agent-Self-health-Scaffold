@@ -1,0 +1,48 @@
+{
+  "task_id": "pilot_b01_docs_index",
+  "task_name": "B1-1 \u6587\u6863\u7d22\u5f15\u751f\u6210",
+  "description": "\u626b\u63cf docs \u76ee\u5f55\uff0c\u751f\u6210\u6587\u6863\u7d22\u5f15",
+  "status": "completed",
+  "created_at": "2026-03-17T00:37:33.473475Z",
+  "updated_at": "2026-03-17T00:38:00.973927Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u626b\u63cf\u6587\u6863\u76ee\u5f55",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "command": "find docs -name '*.md' -type f | wc -l > artifacts/tasks/pilot_b01_docs_index/output/md_count.txt",
+      "updated_at": "2026-03-17T00:37:58.747012Z",
+      "started_at": "2026-03-17T00:37:58.743200Z",
+      "completed_at": "2026-03-17T00:37:58.747012Z"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u751f\u6210\u7d22\u5f15\u6587\u4ef6",
+      "status": "success",
+      "depends_on": [
+        "S01"
+      ],
+      "step_type": "execute_shell",
+      "command": "echo '# Documentation Index\n\nGenerated: $(date)\n\n' > docs/INDEX.md && find docs -name '*.md' -type f | sort >> docs/INDEX.md",
+      "updated_at": "2026-03-17T00:37:59.863442Z",
+      "started_at": "2026-03-17T00:37:59.857976Z",
+      "completed_at": "2026-03-17T00:37:59.863442Z"
+    },
+    "S03": {
+      "step_id": "S03",
+      "step_name": "\u9a8c\u8bc1\u7d22\u5f15",
+      "status": "success",
+      "depends_on": [
+        "S02"
+      ],
+      "step_type": "execute_shell",
+      "command": "test -f docs/INDEX.md && echo 'Index created successfully' > artifacts/tasks/pilot_b01_docs_index/output/verify.txt",
+      "updated_at": "2026-03-17T00:38:00.973927Z",
+      "started_at": "2026-03-17T00:38:00.971844Z",
+      "completed_at": "2026-03-17T00:38:00.973927Z"
+    }
+  },
+  "current_step": null
+}

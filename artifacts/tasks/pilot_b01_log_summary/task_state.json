@@ -1,0 +1,35 @@
+{
+  "task_id": "pilot_b01_log_summary",
+  "task_name": "B1-1 \u65e5\u5fd7\u6458\u8981",
+  "description": "\u5206\u6790\u65e5\u5fd7\u76ee\u5f55\uff0c\u751f\u6210\u6458\u8981",
+  "status": "completed",
+  "created_at": "2026-03-17T00:37:33.473856Z",
+  "updated_at": "2026-03-17T00:37:59.857563Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u626b\u63cf\u65e5\u5fd7\u76ee\u5f55",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "command": "mkdir -p logs && find logs -name '*.log' -type f 2>/dev/null | wc -l > artifacts/tasks/pilot_b01_log_summary/output/log_count.txt || echo '0' > artifacts/tasks/pilot_b01_log_summary/output/log_count.txt",
+      "updated_at": "2026-03-17T00:37:58.742617Z",
+      "started_at": "2026-03-17T00:37:58.738176Z",
+      "completed_at": "2026-03-17T00:37:58.742617Z"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u751f\u6210\u6458\u8981",
+      "status": "success",
+      "depends_on": [
+        "S01"
+      ],
+      "step_type": "execute_shell",
+      "command": "echo 'Log Summary - Generated: '$(date)'\nLog files: '$(cat artifacts/tasks/pilot_b01_log_summary/output/log_count.txt) > artifacts/tasks/pilot_b01_log_summary/output/summary.txt",
+      "updated_at": "2026-03-17T00:37:59.857563Z",
+      "started_at": "2026-03-17T00:37:59.852991Z",
+      "completed_at": "2026-03-17T00:37:59.857563Z"
+    }
+  },
+  "current_step": null
+}
