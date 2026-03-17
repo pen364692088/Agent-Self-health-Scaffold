@@ -1,0 +1,277 @@
+{
+  "timestamp": "2026-03-17T03:34:47.774576+00:00",
+  "agents": {
+    "planner": {
+      "agent_id": "planner",
+      "timestamp": "2026-03-17T03:34:47.743993+00:00",
+      "overall_status": "warning",
+      "checks": {
+        "memory_health": {
+          "category": "memory_health",
+          "status": "healthy",
+          "message": "Memory healthy: all files present and loaded",
+          "details": {
+            "memory_root": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/memory/agents/planner",
+            "rules_count": 4,
+            "instruction_rules_loaded": true,
+            "instruction_rules_valid": true,
+            "handoff_loaded": true,
+            "execution_state_loaded": true,
+            "long_term_exists": true
+          },
+          "issues": []
+        },
+        "execution_health": {
+          "category": "execution_health",
+          "status": "healthy",
+          "message": "Execution healthy: state valid and writeback ok",
+          "details": {
+            "status": "ready",
+            "task_id": "planner_cold_start_001",
+            "step": "initialized",
+            "state_age_hours": 0.32352379694444444,
+            "writeback_ok": true,
+            "runtime_modules_available": true
+          },
+          "issues": []
+        },
+        "drift_health": {
+          "category": "drift_health",
+          "status": "warning",
+          "message": "Drift warning: 1 drift issues",
+          "details": {
+            "repo_drift": {
+              "has_drift": true,
+              "message": "Uncommitted changes: 3 files",
+              "severity": "warning",
+              "uncommitted_files": 3,
+              "current_branch": "main"
+            },
+            "state_drift": {
+              "has_drift": false,
+              "message": "",
+              "severity": "none"
+            },
+            "context_drift": {
+              "has_drift": false,
+              "message": "",
+              "severity": "none"
+            }
+          },
+          "issues": [
+            "Repo drift detected: Uncommitted changes: 3 files"
+          ]
+        },
+        "integrity_health": {
+          "category": "integrity_health",
+          "status": "healthy",
+          "message": "Integrity healthy: all checks passed",
+          "details": {
+            "profile_integrity": {
+              "exists": true,
+              "valid": true,
+              "error": null
+            },
+            "memory_files_integrity": {
+              "missing": [],
+              "corrupted": []
+            },
+            "isolation_ok": {
+              "isolated": true,
+              "message": ""
+            },
+            "evidence_ok": {
+              "has_evidence": true,
+              "count": 2
+            }
+          },
+          "issues": []
+        }
+      },
+      "summary": "Health Report: planner\nOverall: WARNING\n\n✅ memory_health: Memory healthy: all files present and loaded\n✅ execution_health: Execution healthy: state valid and writeback ok\n⚠️ drift_health: Drift warning: 1 drift issues\n  - Repo drift detected: Uncommitted changes: 3 files\n✅ integrity_health: Integrity healthy: all checks passed"
+    },
+    "verifier": {
+      "agent_id": "verifier",
+      "timestamp": "2026-03-17T03:34:47.759137+00:00",
+      "overall_status": "warning",
+      "checks": {
+        "memory_health": {
+          "category": "memory_health",
+          "status": "healthy",
+          "message": "Memory healthy: all files present and loaded",
+          "details": {
+            "memory_root": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/memory/agents/verifier",
+            "rules_count": 4,
+            "instruction_rules_loaded": true,
+            "instruction_rules_valid": true,
+            "handoff_loaded": true,
+            "execution_state_loaded": true,
+            "long_term_exists": true
+          },
+          "issues": []
+        },
+        "execution_health": {
+          "category": "execution_health",
+          "status": "healthy",
+          "message": "Execution healthy: state valid and writeback ok",
+          "details": {
+            "status": "ready",
+            "task_id": "verifier_cold_start_001",
+            "step": "initialized",
+            "state_age_hours": 0.3235338722222222,
+            "writeback_ok": true,
+            "runtime_modules_available": true
+          },
+          "issues": []
+        },
+        "drift_health": {
+          "category": "drift_health",
+          "status": "warning",
+          "message": "Drift warning: 1 drift issues",
+          "details": {
+            "repo_drift": {
+              "has_drift": true,
+              "message": "Uncommitted changes: 3 files",
+              "severity": "warning",
+              "uncommitted_files": 3,
+              "current_branch": "main"
+            },
+            "state_drift": {
+              "has_drift": false,
+              "message": "",
+              "severity": "none"
+            },
+            "context_drift": {
+              "has_drift": false,
+              "message": "",
+              "severity": "none"
+            }
+          },
+          "issues": [
+            "Repo drift detected: Uncommitted changes: 3 files"
+          ]
+        },
+        "integrity_health": {
+          "category": "integrity_health",
+          "status": "healthy",
+          "message": "Integrity healthy: all checks passed",
+          "details": {
+            "profile_integrity": {
+              "exists": true,
+              "valid": true,
+              "error": null
+            },
+            "memory_files_integrity": {
+              "missing": [],
+              "corrupted": []
+            },
+            "isolation_ok": {
+              "isolated": true,
+              "message": ""
+            },
+            "evidence_ok": {
+              "has_evidence": true,
+              "count": 2
+            }
+          },
+          "issues": []
+        }
+      },
+      "summary": "Health Report: verifier\nOverall: WARNING\n\n✅ memory_health: Memory healthy: all files present and loaded\n✅ execution_health: Execution healthy: state valid and writeback ok\n⚠️ drift_health: Drift warning: 1 drift issues\n  - Repo drift detected: Uncommitted changes: 3 files\n✅ integrity_health: Integrity healthy: all checks passed"
+    },
+    "implementer": {
+      "agent_id": "implementer",
+      "timestamp": "2026-03-17T03:34:47.774507+00:00",
+      "overall_status": "warning",
+      "checks": {
+        "memory_health": {
+          "category": "memory_health",
+          "status": "healthy",
+          "message": "Memory healthy: all files present and loaded",
+          "details": {
+            "memory_root": "/home/moonlight/Project/Github/MyProject/Agent-Self-health-Scaffold/memory/agents/implementer",
+            "rules_count": 3,
+            "instruction_rules_loaded": true,
+            "instruction_rules_valid": true,
+            "handoff_loaded": true,
+            "execution_state_loaded": true,
+            "long_term_exists": true
+          },
+          "issues": []
+        },
+        "execution_health": {
+          "category": "execution_health",
+          "status": "healthy",
+          "message": "Execution healthy: state valid and writeback ok",
+          "details": {
+            "status": "ready",
+            "task_id": "implementer_cold_start_001",
+            "step": "cold_start_test",
+            "state_age_hours": 0.14001099250000001,
+            "writeback_ok": true,
+            "runtime_modules_available": true
+          },
+          "issues": []
+        },
+        "drift_health": {
+          "category": "drift_health",
+          "status": "warning",
+          "message": "Drift warning: 1 drift issues",
+          "details": {
+            "repo_drift": {
+              "has_drift": true,
+              "message": "Uncommitted changes: 3 files",
+              "severity": "warning",
+              "uncommitted_files": 3,
+              "current_branch": "main"
+            },
+            "state_drift": {
+              "has_drift": false,
+              "message": "",
+              "severity": "none"
+            },
+            "context_drift": {
+              "has_drift": false,
+              "message": "",
+              "severity": "none"
+            }
+          },
+          "issues": [
+            "Repo drift detected: Uncommitted changes: 3 files"
+          ]
+        },
+        "integrity_health": {
+          "category": "integrity_health",
+          "status": "healthy",
+          "message": "Integrity healthy: all checks passed",
+          "details": {
+            "profile_integrity": {
+              "exists": true,
+              "valid": true,
+              "error": null
+            },
+            "memory_files_integrity": {
+              "missing": [],
+              "corrupted": []
+            },
+            "isolation_ok": {
+              "isolated": true,
+              "message": ""
+            },
+            "evidence_ok": {
+              "has_evidence": true,
+              "count": 2
+            }
+          },
+          "issues": []
+        }
+      },
+      "summary": "Health Report: implementer\nOverall: WARNING\n\n✅ memory_health: Memory healthy: all files present and loaded\n✅ execution_health: Execution healthy: state valid and writeback ok\n⚠️ drift_health: Drift warning: 1 drift issues\n  - Repo drift detected: Uncommitted changes: 3 files\n✅ integrity_health: Integrity healthy: all checks passed"
+    }
+  },
+  "summary": {
+    "healthy": 0,
+    "warning": 3,
+    "critical": 0
+  }
+}
