@@ -1,0 +1,21 @@
+{
+  "step_id": "S01",
+  "execution_type": "execute_shell",
+  "status": "success",
+  "started_at": "2026-03-17T00:12:59.108779Z",
+  "completed_at": "2026-03-17T00:12:59.114011Z",
+  "duration_ms": 5,
+  "command": "echo 'Hello from B0-3!' > artifacts/tasks/pilot_b03_real_shell_task/output/hello.txt && echo 'Created at:' && date >> artifacts/tasks/pilot_b03_real_shell_task/output/hello.txt",
+  "exit_code": 0,
+  "stdout_path": "artifacts/tasks/pilot_b03_real_shell_task/evidence/S01/stdout.txt",
+  "stderr_path": "artifacts/tasks/pilot_b03_real_shell_task/evidence/S01/stderr.txt",
+  "changed_files": [],
+  "generated_files": [],
+  "outputs": {},
+  "retryable": false,
+  "environment": {
+    "cwd": null,
+    "hostname": "moonlight-VMware-Virtual-Platform"
+  },
+  "checksum": "7e2d5662d6780acf47c372b1ea5590e0b9f595fe8df4f9c88dd0c834da3cd7c3"
+}

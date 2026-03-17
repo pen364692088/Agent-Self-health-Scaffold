@@ -1,0 +1,37 @@
+{
+  "task_id": "pilot_b03_real_shell_task",
+  "task_name": "B0-3 \u771f\u5b9e Shell \u4efb\u52a1\u6d4b\u8bd5",
+  "description": "\u9a8c\u8bc1 Runner \u80fd\u6267\u884c\u771f\u5b9e shell \u547d\u4ee4\u5e76\u4ea7\u751f\u526f\u4f5c\u7528",
+  "status": "completed",
+  "created_at": "2026-03-17T00:07:53.104435Z",
+  "updated_at": "2026-03-17T00:13:00.222941Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u521b\u5efa\u6587\u4ef6",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "description": "\u6267\u884c shell \u547d\u4ee4\u521b\u5efa\u6587\u4ef6",
+      "command": "echo 'Hello from B0-3!' > artifacts/tasks/pilot_b03_real_shell_task/output/hello.txt && echo 'Created at:' && date >> artifacts/tasks/pilot_b03_real_shell_task/output/hello.txt",
+      "updated_at": "2026-03-17T00:12:59.114906Z",
+      "started_at": "2026-03-17T00:08:54.450125Z",
+      "completed_at": "2026-03-17T00:12:59.114906Z"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u9a8c\u8bc1\u6587\u4ef6",
+      "status": "success",
+      "depends_on": [
+        "S01"
+      ],
+      "step_type": "execute_shell",
+      "description": "\u9a8c\u8bc1\u6587\u4ef6\u5df2\u521b\u5efa",
+      "command": "cat artifacts/tasks/pilot_b03_real_shell_task/output/hello.txt && wc -l artifacts/tasks/pilot_b03_real_shell_task/output/hello.txt",
+      "updated_at": "2026-03-17T00:13:00.222941Z",
+      "started_at": "2026-03-17T00:08:55.564975Z",
+      "completed_at": "2026-03-17T00:13:00.222941Z"
+    }
+  },
+  "current_step": null
+}
