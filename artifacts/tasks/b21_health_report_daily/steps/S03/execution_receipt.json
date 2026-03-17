@@ -1,0 +1,21 @@
+{
+  "step_id": "S03",
+  "execution_type": "execute_shell",
+  "status": "success",
+  "started_at": "2026-03-17T01:05:37.231169Z",
+  "completed_at": "2026-03-17T01:05:37.237223Z",
+  "duration_ms": 6,
+  "command": "find artifacts/tasks -name 'ledger.jsonl' -type f 2>/dev/null | wc -l > artifacts/tasks/b21_health_report_daily/output/ledger_count.txt",
+  "exit_code": 0,
+  "stdout_path": "artifacts/tasks/b21_health_report_daily/evidence/S03/stdout.txt",
+  "stderr_path": "artifacts/tasks/b21_health_report_daily/evidence/S03/stderr.txt",
+  "changed_files": [],
+  "generated_files": [],
+  "outputs": {},
+  "retryable": false,
+  "environment": {
+    "cwd": null,
+    "hostname": "moonlight-VMware-Virtual-Platform"
+  },
+  "checksum": "604841223de19f1d52828fbcadeebe10ce1589bb863c59b73c3b50798f6d0ade"
+}

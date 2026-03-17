@@ -1,0 +1,74 @@
+{
+  "task_id": "b21_health_report_daily",
+  "task_name": "B2-1 \u5468\u671f\u6027\u5065\u5eb7\u62a5\u544a",
+  "description": "\u626b\u63cf\u7cfb\u7edf\u72b6\u6001\uff0c\u751f\u6210\u5065\u5eb7\u62a5\u544a\uff0c\u8ffd\u52a0\u5386\u53f2\u8bb0\u5f55",
+  "status": "completed",
+  "created_at": "2026-03-17T01:04:38.191256Z",
+  "updated_at": "2026-03-17T01:05:39.486676Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u626b\u63cf runtime \u6267\u884c\u5668",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "command": "ls runtime/*.py 2>/dev/null | wc -l > artifacts/tasks/b21_health_report_daily/output/runtime_count.txt",
+      "updated_at": "2026-03-17T01:05:35.004513Z",
+      "started_at": "2026-03-17T01:05:14.868619Z",
+      "completed_at": "2026-03-17T01:05:35.004513Z"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u7edf\u8ba1\u4efb\u52a1\u72b6\u6001",
+      "status": "success",
+      "depends_on": [
+        "S01"
+      ],
+      "step_type": "execute_shell",
+      "command": "python3 -c \"import json; from pathlib import Path; tasks=[d for d in Path('artifacts/tasks').iterdir() if d.is_dir() and (d/'task_state.json').exists()]; states={}; [states.update({json.loads((t/'task_state.json').read_text()).get('status','unknown'): states.get(json.loads((t/'task_state.json').read_text()).get('status','unknown'),0)+1}) for t in tasks]; print(json.dumps(states))\" > artifacts/tasks/b21_health_report_daily/output/task_states.txt",
+      "updated_at": "2026-03-17T01:05:36.128489Z",
+      "started_at": "2026-03-17T01:05:15.976215Z",
+      "completed_at": "2026-03-17T01:05:36.128489Z"
+    },
+    "S03": {
+      "step_id": "S03",
+      "step_name": "\u68c0\u67e5 ledger",
+      "status": "success",
+      "depends_on": [
+        "S02"
+      ],
+      "step_type": "execute_shell",
+      "command": "find artifacts/tasks -name 'ledger.jsonl' -type f 2>/dev/null | wc -l > artifacts/tasks/b21_health_report_daily/output/ledger_count.txt",
+      "updated_at": "2026-03-17T01:05:37.238175Z",
+      "started_at": "2026-03-17T01:05:17.105256Z",
+      "completed_at": "2026-03-17T01:05:37.238175Z"
+    },
+    "S04": {
+      "step_id": "S04",
+      "step_name": "\u751f\u6210\u5065\u5eb7\u62a5\u544a",
+      "status": "success",
+      "depends_on": [
+        "S03"
+      ],
+      "step_type": "execute_shell",
+      "command": "python3 << 'PYEOF'\nimport json\nfrom pathlib import Path\nfrom datetime import datetime\n\nruntime_count = int(Path(\"artifacts/tasks/b21_health_report_daily/output/runtime_count.txt\").read_text().strip() or 0)\ntask_states_raw = Path(\"artifacts/tasks/b21_health_report_daily/output/task_states.txt\").read_text().strip()\nledger_count = int(Path(\"artifacts/tasks/b21_health_report_daily/output/ledger_count.txt\").read_text().strip() or 0)\n\ntry:\n    task_states = json.loads(task_states_raw) if task_states_raw else {}\nexcept:\n    task_states = {}\n\nreport = {\n    \"timestamp\": datetime.utcnow().isoformat() + \"Z\",\n    \"system_health\": {\n        \"runtime_files\": runtime_count,\n        \"total_tasks\": sum(task_states.values()) if task_states else 0,\n        \"task_states\": task_states,\n        \"ledger_files\": ledger_count\n    },\n    \"status\": \"healthy\" if runtime_count > 0 else \"degraded\"\n}\n\n# \u5199\u5165\u62a5\u544a\nreport_path = Path(\"artifacts/tasks/b21_health_report_daily/output/health_report.json\")\nwith open(report_path, 'w') as f:\n    json.dump(report, f, indent=2)\n\nprint(json.dumps(report, indent=2))\nPYEOF",
+      "updated_at": "2026-03-17T01:05:38.362463Z",
+      "started_at": "2026-03-17T01:05:18.215353Z",
+      "completed_at": "2026-03-17T01:05:38.362463Z"
+    },
+    "S05": {
+      "step_id": "S05",
+      "step_name": "\u8ffd\u52a0\u5386\u53f2\u8bb0\u5f55",
+      "status": "success",
+      "depends_on": [
+        "S04"
+      ],
+      "step_type": "execute_shell",
+      "command": "python3 << 'PYEOF'\nimport json\nfrom pathlib import Path\nfrom datetime import datetime\n\nreport = json.loads(Path(\"artifacts/tasks/b21_health_report_daily/output/health_report.json\").read_text())\n\n# \u8ffd\u52a0\u5230\u5386\u53f2\nhistory_path = Path(\"artifacts/b2_1/history/health_history.jsonl\")\nwith open(history_path, 'a') as f:\n    f.write(json.dumps(report) + \"\\n\")\n\n# \u7edf\u8ba1\u8fd0\u884c\u6b21\u6570\nhistory = list(history_path.read_text().strip().split(\"\\n\")) if history_path.exists() else []\nrun_count = len([l for l in history if l.strip()])\n\nprint(f\"Run #{run_count} recorded at {report['timestamp']}\")\nPYEOF",
+      "updated_at": "2026-03-17T01:05:39.486676Z",
+      "started_at": "2026-03-17T01:05:19.344679Z",
+      "completed_at": "2026-03-17T01:05:39.486676Z"
+    }
+  },
+  "current_step": null
+}
