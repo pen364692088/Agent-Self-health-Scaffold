@@ -1,0 +1,21 @@
+{
+  "step_id": "S02",
+  "execution_type": "execute_shell",
+  "status": "success",
+  "started_at": "2026-03-17T00:28:43.098559Z",
+  "completed_at": "2026-03-17T00:28:43.100035Z",
+  "duration_ms": 1,
+  "command": "echo 'S02-$(date +%s%N)' > artifacts/tasks/pilot_b04_scene3_scan_interrupt/output/scan_s2.txt",
+  "exit_code": 0,
+  "stdout_path": "artifacts/tasks/pilot_b04_scene3_scan_interrupt/evidence/S02/stdout.txt",
+  "stderr_path": "artifacts/tasks/pilot_b04_scene3_scan_interrupt/evidence/S02/stderr.txt",
+  "changed_files": [],
+  "generated_files": [],
+  "outputs": {},
+  "retryable": false,
+  "environment": {
+    "cwd": null,
+    "hostname": "moonlight-VMware-Virtual-Platform"
+  },
+  "checksum": "75ee2ef519df26d1dd8a610857367eb0a21b3d4f9610d38bc3bfaaa579bdb457"
+}

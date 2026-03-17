@@ -583,6 +583,11 @@ class AutonomousRunner:
                 scheduled = 0
                 
                 for task_id, task_summary in list(self._active_tasks.items()):
+                    # 激活 created 状态的任务
+                    if task_summary.status == "created":
+                        self._update_task_status(task_id, "running")
+                        task_summary.status = "running"
+                    
                     if task_summary.status != "running":
                         continue
                     
@@ -1089,6 +1094,37 @@ class AutonomousRunner:
         except Exception as e:
             logger.error(f"Failed to load task state: {task_id}: {e}")
             return None
+    
+    def _update_task_status(self, task_id: str, status: str) -> bool:
+        """
+        更新任务状态
+        
+        Args:
+            task_id: 任务 ID
+            status: 新状态
+            
+        Returns:
+            是否成功更新
+        """
+        state_file = Path(self.config.tasks_base_dir) / task_id / "task_state.json"
+        
+        if not state_file.exists():
+            return False
+        
+        try:
+            with open(state_file) as f:
+                state = json.load(f)
+            
+            state["status"] = status
+            state["updated_at"] = datetime.utcnow().isoformat() + "Z"
+            
+            with open(state_file, 'w') as f:
+                json.dump(state, f, indent=2)
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update task status: {task_id}: {e}")
+            return False
     
     def _update_step_status(
         self, 
