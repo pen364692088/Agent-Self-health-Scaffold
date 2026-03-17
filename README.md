@@ -13,7 +13,33 @@ This project focuses on five primary execution-chain goals:
 5. durable parent/child subtask orchestration
 
 ## Current phase
-**Phase L: ✅ CLOSED** | manual_enable_only Agents 补全与最小接入
+**Phase M: ⏳ IN PROGRESS** | selected manual_enable_only Agents 受控 pilot
+
+### Batch M1 (低风险)
+| Agent | pilot 状态 | 正式状态 |
+|-------|-----------|----------|
+| default | pilot_pending | manual_enable_only |
+| healthcheck | pilot_pending | manual_enable_only |
+
+### 配置变更需求
+等待用户确认后添加到 `acp.allowedAgents`:
+```json
+{
+  "acp": {
+    "allowedAgents": ["default", "healthcheck"]
+  }
+}
+```
+
+### 执行分期
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| M0 | 范围冻结 | ✅ |
+| M1 | pilot 候选确认 | ✅ |
+| M2 | pilot 启用 | ⏳ 等待确认 |
+| M3 | 运行观察 | ⏳ |
+| M4 | 治理演练 | ⏳ |
+| M5 | 晋级决策 | ⏳ |
 
 ### 最终状态
 
@@ -21,17 +47,6 @@ This project focuses on five primary execution-chain goals:
 |------|------|--------|
 | continue_default_enabled | 3 | main, audit, coder |
 | manual_enable_only | 6 | default, healthcheck, acp-codex, codex, mvp7-coder, cc-godmode |
-
-### manual_enable_only 接入结论
-
-| Agent | 最小接入条件 | 调用样例 |
-|-------|--------------|----------|
-| default | acp.allowedAgents | `sessions_spawn runtime="acp" agentId="default"` |
-| healthcheck | acp.allowedAgents | `sessions_spawn runtime="acp" agentId="healthcheck"` |
-| acp-codex | acp.allowedAgents | `sessions_spawn runtime="acp" agentId="acp-codex"` |
-| codex | acp.allowedAgents | `sessions_spawn runtime="acp" agentId="codex"` |
-| mvp7-coder | acp.allowedAgents | `sessions_spawn runtime="acp" agentId="mvp7-coder"` |
-| cc-godmode | acp.allowedAgents + 治理 | 强化审计，必须通过 main 发起 |
 
 ### 状态词典定义
 
@@ -41,9 +56,8 @@ This project focuses on five primary execution-chain goals:
 | manual_enable_only | 有目录但未配置、需手动注册 |
 
 ### 关键文档
-- `docs/phase-l/FINAL_REPORT.md` - Phase L 最终报告
-- `docs/phase-l/L5_FINAL_DECISION.md` - 最终分流决策
-- `docs/phase-l/L4_GOVERNANCE.md` - 治理与边界
+- `docs/phase-m/FINAL_REPORT.md` - Phase M 最终报告
+- `docs/phase-m/M2_PILOT_ENABLE.md` - pilot 启用配置
 
 ### Phase History
 | Phase | Status | Summary |
@@ -53,6 +67,7 @@ This project focuses on five primary execution-chain goals:
 | Phase K-T | ✅ CLOSED | Telegram agent inventory & classification |
 | Phase K | ✅ CLOSED | Agent pilot enablement & classification (13 agents) |
 | Phase L | ✅ CLOSED | manual_enable_only agents minimal access (6 agents) |
+| Phase M | ⏳ IN PROGRESS | Batch M1 pilot (default, healthcheck) |
 
 ## Key Rule
 Task truth is primary; transcript is derived.
