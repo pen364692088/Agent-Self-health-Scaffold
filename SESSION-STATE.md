@@ -1,33 +1,36 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**Phase K: IN PROGRESS - K1 候选盘点完成**
+**Phase K: ✅ CLOSED**
 
 ## 阶段
-**Phase K - K1 ✅ 完成**
+**Phase K - ✅ CLOSED**
 
-### 当前进度
+### 完成进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
 | K0 真源固化 | ✅ 完成 | README、SESSION-STATE、config 对齐 |
-| K1 候选盘点 | ✅ 完成 | 6 个候选 Agent 已识别 |
-| K2 分批 pilot | ⏳ 待执行 | - |
-| K3 运行观察 | ⏳ 待执行 | - |
-| K4 治理验证 | ⏳ 待执行 | - |
-| K5 晋级决策 | ⏳ 待执行 | - |
+| K1 候选盘点 | ✅ 完成 | 7 个 Telegram agent 已识别 |
+| K2 Batch 规划 | ✅ 跳过 | 已启用，无需规划 |
+| K3 运行观察 | ✅ 完成 | Sessions/活跃度指标已采集 |
+| K4 治理验证 | ✅ 完成 | 启用/禁用/隔离验证通过 |
+| K5 晋级决策 | ✅ 完成 | 4 default_enabled, 3 manual_enable_only |
 
-### 候选池
+### 最终决策
 
-| 风险等级 | 候选 Agent | 批次 |
-|----------|------------|------|
-| 低 | default, healthcheck | Batch 1 |
-| 中 | acp-codex, codex, mvp7-coder | Batch 2 |
-| 高 | cc-godmode | Batch 3 |
+| Agent | 风险 | 决策 |
+|-------|------|------|
+| manager (main) | 低 | continue_default_enabled |
+| yuno | 低 | continue_default_enabled |
+| testbot | 低 | continue_default_enabled |
+| ceo | 中 | continue_default_enabled |
+| audit | 低 | manual_enable_only |
+| coder | 中 | manual_enable_only |
+| skadi | 中 | manual_enable_only |
 
-### 当前 Agent 状态
+### 业务层 Agent (仓库)
 
-**业务层 (仓库)**:
 | Agent | 状态 |
 |-------|------|
 | implementer | default_enabled ✅ |
@@ -37,30 +40,18 @@
 | merger | default_enabled ✅ |
 | test_agent | quarantine |
 
-**平台层 (Telegram accounts)**:
-| Agent | 状态 |
-|-------|------|
-| audit | enabled ✅ |
-| coder | enabled ✅ |
-| manager | enabled ✅ |
-| yuno | enabled ✅ |
-| testbot | enabled ✅ |
-| skadi | enabled ✅ |
-| ceo | enabled ✅ |
-| default | disabled (候选) |
-
 ## 分支
 main
 
 ## Blocker
 无
 
-## 下一步
-1. Gate K-B 验证
-2. 创建 Batch 1 plan (default + healthcheck)
-3. 执行 K2 pilot 启用
+## 后续路径
+1. 新建 Agent → 按 Phase K 流程启用
+2. 监控 manual_enable_only agent 使用情况
+3. 考虑增加自动降级机制
 
 ---
 
 ## 更新时间
-2026-03-17T12:55:00Z
+2026-03-17T13:15:00Z
