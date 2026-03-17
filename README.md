@@ -13,18 +13,43 @@ This project focuses on five primary execution-chain goals:
 5. durable parent/child subtask orchestration
 
 ## Current phase
-**Phase M: ❌ BLOCKED** | Batch M1 调用验证失败
+**Phase M: ⏳ IN PROGRESS** | Batch M1 进入观察期
 
-### M2 阻塞详情
-| 尝试 | 结果 | 原因 |
+### M-P0: Pilot Ingress Repair ✅
+
+**修复内容**:
+- 添加 default, healthcheck 到 `agents.list`
+- 添加到 `main.subagents.allowAgents`
+
+**验证结果**:
+| Agent | 调用状态 | Session Key |
+|-------|----------|-------------|
+| default | ✅ accepted | `agent:default:subagent:6895357d-...` |
+| healthcheck | ✅ accepted | `agent:healthcheck:subagent:9824ac16-...` |
+
+### Batch M1 (低风险)
+
+| Agent | pilot 状态 | 正式状态 | 调用验证 |
+|-------|-----------|----------|----------|
+| default | pilot_enabled | manual_enable_only | ✅ |
+| healthcheck | pilot_enabled | manual_enable_only | ✅ |
+
+### 调用方式
+```bash
+sessions_spawn runtime="subagent" agentId="default" task="..."
+sessions_spawn runtime="subagent" agentId="healthcheck" task="..."
+```
+
+### 执行分期
+| 阶段 | 内容 | 状态 |
 |------|------|------|
-| acp.allowedAgents 配置 | ✅ | 已添加 default, healthcheck |
-| runtime="acp" 验证 | ❌ | ACP runtime 未配置 |
-| runtime="subagent" 验证 | ❌ | agentId not allowed |
-
-### 阻塞原因
-1. ACP Runtime (acpx plugin) 未安装
-2. sessions_spawn allowed 列表仅允许 coder, audit
+| M0 | 范围冻结 | ✅ |
+| M1 | pilot 候选确认 | ✅ |
+| M2 | pilot 启用 | ✅ (经 M-P0 修复) |
+| M-P0 | Pilot Ingress Repair | ✅ |
+| M3 | 运行观察 | ⏳ 开始 |
+| M4 | 治理演练 | ⏳ |
+| M5 | 晋级决策 | ⏳ |
 
 ### 最终状态
 
@@ -41,8 +66,8 @@ This project focuses on five primary execution-chain goals:
 | manual_enable_only | 有目录但未配置、需手动注册 |
 
 ### 关键文档
-- `docs/phase-m/FINAL_REPORT.md` - Phase M 阻塞报告
-- `docs/phase-m/M2_PILOT_ENABLE.md` - 调用验证失败详情
+- `docs/phase-m/FINAL_REPORT.md` - Phase M 进度报告
+- `docs/phase-m-p0/VERIFICATION_RESULT.md` - M-P0 验证结果
 
 ### Phase History
 | Phase | Status | Summary |
@@ -52,7 +77,7 @@ This project focuses on five primary execution-chain goals:
 | Phase K-T | ✅ CLOSED | Telegram agent inventory & classification |
 | Phase K | ✅ CLOSED | Agent pilot enablement & classification (13 agents) |
 | Phase L | ✅ CLOSED | manual_enable_only agents minimal access (6 agents) |
-| Phase M | ❌ BLOCKED | Batch M1 调用验证失败 |
+| Phase M | ⏳ IN PROGRESS | Batch M1 pilot (default, healthcheck) |
 
 ## Key Rule
 Task truth is primary; transcript is derived.

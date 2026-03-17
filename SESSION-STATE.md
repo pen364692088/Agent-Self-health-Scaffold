@@ -12,19 +12,24 @@
 - 风险评估通过
 - 目录结构完整
 
-### M2 pilot 启用与接入锁定 ❌ BLOCKED
-- 配置变更: ✅ acp.allowedAgents 已添加
-- 调用验证: ❌ 全部失败
-  - runtime="acp": ACP runtime 未配置
-  - runtime="subagent": agentId not allowed
+### M2 pilot 启用 (初次尝试) ❌→✅
+- 初次: ❌ BLOCKED (调用验证失败)
+- 修复: M-P0 完成
 
-### M3-M5 ⏸️ 暂停
-- 等待 M2 阻塞解决
+### M-P0 Pilot Ingress Repair ✅
+- 添加到 agents.list
+- 添加到 main.subagents.allowAgents
+- 验证调用成功
 
-## 阻塞原因
+### M3 单 Agent 运行观察 ⏳
+- default: 进入观察期
+- healthcheck: 进入观察期
 
-1. **ACP Runtime 未安装**: 需要 acpx runtime plugin
-2. **sessions_spawn allowed 限制**: 仅允许 coder, audit
+### M4 治理演练 ⏳
+- 待观察期后
+
+### M5 晋级决策 ⏳
+- 待全部条件满足
 
 ## 当前状态
 
@@ -33,18 +38,23 @@
 | continue_default_enabled | 3 | main, audit, coder |
 | manual_enable_only | 6 | default, healthcheck, acp-codex, codex, mvp7-coder, cc-godmode |
 
+## Batch M1 pilot 状态
+
+| Agent | 内部状态 | 正式状态 | 调用验证 |
+|-------|----------|----------|----------|
+| default | pilot_enabled | manual_enable_only | ✅ accepted |
+| healthcheck | pilot_enabled | manual_enable_only | ✅ accepted |
+
 ## 分支
 main
 
 ## Blocker
-调用验证失败，无法推进到观察期
+无
 
 ## 下一步
-- 选项 A: 安装 ACP Runtime
-- 选项 B: 研究 sessions_spawn allowed 配置
-- 选项 C: 保持 manual_enable_only，等待后续能力建设
+M3 观察期：记录调用次数和成功率
 
 ---
 
 ## 更新时间
-2026-03-17T19:35:00Z
+2026-03-17T19:50:00Z
