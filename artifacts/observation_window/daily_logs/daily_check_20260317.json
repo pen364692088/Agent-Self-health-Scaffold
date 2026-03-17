@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-03-17T15:49:09.165606",
+  "observation_window_id": "obs_v1_20260315",
+  "day_number": 3,
+  "metrics": {
+    "recurrence_rate_by_signature": 0,
+    "auto_remediation_success_rate": 100.0,
+    "false_fix_rate": 0.0,
+    "rollback_count": 0,
+    "prevention_hit_rate": 0.0,
+    "total_signatures": 2,
+    "recurring_signatures_24h": 0,
+    "total_success_records": 5,
+    "total_prevention_rules": 31
+  },
+  "red_line_violations": [],
+  "gate_b": {
+    "passed": true,
+    "exit_code": 0
+  },
+  "gate_c": {
+    "passed": true,
+    "exit_code": 0
+  },
+  "status": "OK"
+}
