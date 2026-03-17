@@ -34,10 +34,17 @@ class MinimalStepExecutor:
     
     不执行实际操作，只更新状态并生成证据。
     用于验证 autonomous_runner 推进链路。
+    
+    注意：这是临时链路验证器，不包含：
+    - 真实命令执行
+    - 外部 API 调用
+    - 真实文件变更
+    - 完整的错误处理和重试逻辑
     """
     
-    def __init__(self, dossier):
+    def __init__(self, dossier, slot_registry=None):
         self.dossier = dossier
+        self.slot_registry = slot_registry
         self.evidence_dir = dossier.evidence_dir
         self.steps_dir = dossier.steps_dir
     
@@ -90,6 +97,13 @@ class MinimalStepExecutor:
             "executor": "minimal_executor",
         })
         
+        # 释放 slot（如果有）
+        if self.slot_registry:
+            for slot_id, slot in self.slot_registry.slots.items():
+                if slot.task_id == self.dossier.task_id:
+                    self.slot_registry.release_slot(slot_id, slot.worker_id, "completed")
+                    break
+        
         return ExecutionResult(
             step_id=step_id,
             status="success",
@@ -98,14 +112,17 @@ class MinimalStepExecutor:
         )
 
 
-def create_executor_factory():
+def create_executor_factory(slot_registry=None):
     """
     创建执行器工厂函数
+    
+    Args:
+        slot_registry: slot 注册表（用于释放 slot）
     
     Returns:
         工厂函数
     """
     def factory(dossier):
-        return MinimalStepExecutor(dossier)
+        return MinimalStepExecutor(dossier, slot_registry)
     
     return factory
