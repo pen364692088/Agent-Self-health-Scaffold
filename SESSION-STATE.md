@@ -1,55 +1,61 @@
 # SESSION-STATE.md
 
 ## 当前目标
-**B2-3 连续真实日运行观察**
+**Phase C - Agent Profiles + 私有记忆空间实例化 + 单 Agent 端到端接通**
 
 ## 阶段
-**Phase B2 - 受控生产试运行期**
+**Phase C - ✅ 完成**
 
 ### 当前进度
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| B0 阶段 | ✅ 完成 | 现状盘点、最小链路、恢复验证 |
-| B1-1 低风险任务 | ✅ 完成 | 3 个检查型任务 |
-| B1-2 中等风险任务 | ✅ 完成 | EgoCore identity 验证 |
-| B1-3 变更型任务 | ✅ 完成 | EgoCore registry 更新 |
-| B2-1 生产试运行 | ✅ 完成 | 健康检查任务，3 次，100% 成功 |
-| B2-2 中等风险试运行 | ✅ 完成 | 策略报告生成，3 次，100% 成功 |
-| B2-3 连续日运行 | 🔄 进行中 | Day 1 ✅，整体观察中 |
+| C1 Agent Profile Schema | ✅ 完成 | 定义 agent_profile.v1.schema.json |
+| C2 Agent Profile 管理模块 | ✅ 完成 | 创建 core/agent_profile.py |
+| C3 Pilot Agent 实例化 | ✅ 完成 | implementer.profile.json 创建 |
+| C4 私有记忆空间 | ✅ 完成 | memory/agents/implementer/ 创建 |
+| C5 E2E 链路验证 | ✅ 完成 | 17/17 测试通过 |
+| C6 冷启动样本 | ✅ 完成 | 无人工干预，完整 7 阶段流程 |
 
-### 当前状态口径
+### Phase C 完成摘要
 
-**当前自治系统已通过受控生产试运行验证，具备稳定承接小流量、低风险、重复性、可验证、可人工接管真实业务任务的能力。**
+**已完成**：
+1. ✅ Agent Profile Schema 定义 (schemas/agent_profile.v1.schema.json)
+2. ✅ Agent Profile 管理模块 (core/agent_profile.py)
+3. ✅ Pilot Agent 实例化 (agents/implementer.profile.json)
+4. ✅ 私有记忆空间创建：
+   - memory/agents/implementer/
+   - instruction_rules.yaml
+   - handoff_state.yaml
+   - execution_state.yaml
+   - long_term/
+5. ✅ E2E 链路验证通过：
+   - Agent Profile Load
+   - Memory Space Setup
+   - Session Bootstrap
+   - Instruction Rules Resolve
+   - Runtime Preflight
+   - Mutation Guard
+   - State Writeback
+6. ✅ 冷启动样本成功（无人工干预）
 
-### B2-3 观察状态
+**关键文件**：
+- schemas/agent_profile.v1.schema.json
+- core/agent_profile.py
+- agents/implementer.profile.json
+- memory/agents/implementer/*
+- tools/agent_profile_e2e_test.py
+- tools/implementer_cold_start.py
 
-**日期口径**：
-- 观察口径日期：UTC+0 (2026-03-17 起算)
-- 会话记录日期：America/Winnipeg (2026-03-16)
+**验证结果**：
+- E2E 测试：17/17 通过
+- 冷启动：7/7 阶段成功
+- Preflight：全部通过
+- Mutation Guard：正常工作
 
-**进度**：
-| Day | 观察日期 | 状态 |
-|-----|----------|------|
-| Day 1 | 2026-03-17 | ✅ 完成 |
-| Day 2 | 2026-03-18 | ⏳ 待执行 |
-| Day 3 | 2026-03-19 | ⏳ 待执行 |
-
-**已验证**：
-- 健康检查链正常
-- 策略报告链正常
-- 已建立第 1 个跨日样本
-
-**尚未验证**：
-- 连续多天稳定性
-- 日期切换后仍只生成当日报告
-- 真源波动时报告仍一致
-- 中断/恢复后不会漏跑或重跑
-
-**执行原则**：
-- 优先使用 cron/定时任务作为主触发链
-- 手动"继续 B2-3"仅作为兜底
-- 若出现漏跑、重跑、重复副作用、状态与文件不同步，升级异常并评估 B0-5
+**下一步决策**：
+- health_runtime 暂缓（等真实 Agent 接通后再做）
+- 其他 Agent 批量实例化待定（观察 pilot 运行情况后决定）
 
 ## 分支
 main
@@ -60,4 +66,4 @@ main
 ---
 
 ## 更新时间
-2026-03-17T02:07:00Z
+2026-03-17T03:05:00Z

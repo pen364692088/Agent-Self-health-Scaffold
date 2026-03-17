@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "agent_profile.v1.schema.json",
+  "title": "Agent Profile v1",
+  "description": "Agent 身份、能力、记忆空间与运行时配置的定义",
+  "type": "object",
+  "required": ["agent_id", "name", "role", "created_at"],
+  "properties": {
+    "agent_id": {
+      "type": "string",
+      "description": "Agent 唯一标识",
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Agent 显示名称",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "role": {
+      "type": "string",
+      "description": "Agent 角色定义",
+      "enum": ["planner", "implementer", "verifier", "merger", "scribe", "coordinator", "specialist"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Agent 详细描述"
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "Agent 能力列表",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},
+          "level": {"type": "string", "enum": ["basic", "intermediate", "advanced", "expert"]},
+          "description": {"type": "string"}
+        }
+      },
+      "default": []
+    },
+    "memory_config": {
+      "type": "object",
+      "description": "私有记忆空间配置",
+      "properties": {
+        "memory_root": {
+          "type": "string",
+          "description": "私有记忆根目录（相对于项目根）"
+        },
+        "instruction_rules_file": {
+          "type": "string",
+          "description": "指令规则文件路径"
+        },
+        "handoff_file": {
+          "type": "string",
+          "description": "交接状态文件路径"
+        },
+        "execution_state_file": {
+          "type": "string",
+          "description": "执行状态文件路径"
+        },
+        "long_term_memory_dir": {
+          "type": "string",
+          "description": "长期记忆目录"
+        }
+      }
+    },
+    "runtime_config": {
+      "type": "object",
+      "description": "运行时配置",
+      "properties": {
+        "max_retries": {"type": "integer", "default": 3},
+        "timeout_seconds": {"type": "integer", "default": 300},
+        "enable_mutation_guard": {"type": "boolean", "default": true},
+        "enable_canonical_guard": {"type": "boolean", "default": true},
+        "allowed_mutation_paths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": []
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "description": "期望的输入类型",
+      "items": {"type": "string"},
+      "default": []
+    },
+    "outputs": {
+      "type": "array",
+      "description": "产生的输出类型",
+      "items": {"type": "string"},
+      "default": []
+    },
+    "working_rules": {
+      "type": "object",
+      "description": "工作规则",
+      "properties": {
+        "must_do": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": []
+        },
+        "must_not_do": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": []
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Agent 当前状态",
+      "enum": ["inactive", "active", "suspended", "error"],
+      "default": "inactive"
+    },
+    "pilot": {
+      "type": "boolean",
+      "description": "是否为 pilot agent（首批试点）",
+      "default": false
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

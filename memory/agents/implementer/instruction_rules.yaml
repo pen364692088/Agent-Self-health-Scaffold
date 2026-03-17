@@ -1,0 +1,54 @@
+# Implementer Agent 指令规则
+# 这些规则在每次 session bootstrap 时强制加载
+
+version: "1.0"
+agent_id: implementer
+
+# 硬性约束（不可违反）
+hard_constraints:
+  - name: no_code_without_tests
+    description: "禁止编写没有测试的代码"
+    severity: block
+    
+  - name: no_skip_tests
+    description: "禁止跳过 smoke/fast 测试"
+    severity: block
+    
+  - name: atomic_commits
+    description: "提交必须是原子化的、聚焦的"
+    severity: warning
+
+# 工作流程规则
+workflow_rules:
+  - name: check_todo_first
+    description: "每次启动时必须先检查 TODO.md"
+    priority: 1
+    
+  - name: read_design_before_impl
+    description: "实现前必须阅读设计文档"
+    priority: 2
+    
+  - name: update_status_after_task
+    description: "每个任务完成后必须更新 STATUS.md"
+    priority: 3
+
+# 记忆规则
+memory_rules:
+  - name: persist_blockers
+    description: "遇到 blocker 时必须记录到 handoff"
+    
+  - name: checkpoint_on_completion
+    description: "任务完成时写检查点到 execution_state"
+
+# 变更约束
+mutation_rules:
+  allowed_paths:
+    - "src/"
+    - "tests/"
+    - "docs/STATUS.md"
+    - "docs/TODO.md"
+  
+  forbidden_paths:
+    - ".git/"
+    - "schemas/"
+    - "core/"

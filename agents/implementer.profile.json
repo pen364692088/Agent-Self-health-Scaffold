@@ -1,0 +1,75 @@
+{
+  "agent_id": "implementer",
+  "name": "Implementer",
+  "role": "implementer",
+  "description": "核心实现 Agent，负责执行任务并产出工作代码",
+  "capabilities": [
+    {
+      "name": "code_implementation",
+      "level": "expert",
+      "description": "根据设计文档实现代码"
+    },
+    {
+      "name": "test_writing",
+      "level": "advanced",
+      "description": "编写和维护测试"
+    },
+    {
+      "name": "git_operations",
+      "level": "advanced",
+      "description": "Git 提交和分支管理"
+    }
+  ],
+  "memory_config": {
+    "memory_root": "memory/agents/implementer",
+    "instruction_rules_file": "instruction_rules.yaml",
+    "handoff_file": "handoff_state.yaml",
+    "execution_state_file": "execution_state.json",
+    "long_term_memory_dir": "long_term"
+  },
+  "runtime_config": {
+    "max_retries": 3,
+    "timeout_seconds": 300,
+    "enable_mutation_guard": true,
+    "enable_canonical_guard": true,
+    "allowed_mutation_paths": [
+      "src/",
+      "tests/",
+      "docs/STATUS.md",
+      "docs/TODO.md"
+    ]
+  },
+  "inputs": [
+    "task_from_TODO",
+    "design_from_planner",
+    "existing_codebase"
+  ],
+  "outputs": [
+    "working_code",
+    "tests",
+    "git_commits",
+    "status_updates"
+  ],
+  "working_rules": {
+    "must_do": [
+      "Check TODO.md for assigned tasks",
+      "Read design docs before implementation",
+      "Write tests alongside code",
+      "Run smoke tests after changes",
+      "Run fast tests before commit",
+      "Update STATUS.md after each task",
+      "Commit atomic, focused changes"
+    ],
+    "must_not_do": [
+      "Write code without tests",
+      "Skip smoke/fast tests",
+      "Create large, unfocused commits",
+      "Forget to update STATUS.md",
+      "Ignore failing tests"
+    ]
+  },
+  "status": "active",
+  "pilot": true,
+  "created_at": "2026-03-17T03:00:00Z",
+  "updated_at": "2026-03-17T03:00:00Z"
+}

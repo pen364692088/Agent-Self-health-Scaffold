@@ -1,13 +1,13 @@
 {
-  "runner_id": "runner_7c5b6729",
-  "timestamp": "2026-03-17T00:24:47.428785Z",
+  "runner_id": "runner_5751c6bc",
+  "timestamp": "2026-03-17T01:05:40.001116Z",
   "state": "running",
   "stats": {
-    "tasks_scanned": 0,
-    "tasks_scheduled": 0,
+    "tasks_scanned": 130,
+    "tasks_scheduled": 5,
     "tasks_retried": 0,
     "tasks_recovered": 0,
-    "steps_executed": 0,
+    "steps_executed": 5,
     "errors": 0
   }
 }
