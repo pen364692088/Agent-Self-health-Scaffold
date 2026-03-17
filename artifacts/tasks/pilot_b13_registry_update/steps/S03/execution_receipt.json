@@ -1,0 +1,21 @@
+{
+  "step_id": "S03",
+  "execution_type": "execute_shell",
+  "status": "success",
+  "started_at": "2026-03-17T00:57:40.068087Z",
+  "completed_at": "2026-03-17T00:57:40.088758Z",
+  "duration_ms": 20,
+  "command": "python3 << 'PYEOF'\nimport json\nfrom pathlib import Path\nfrom datetime import datetime\n\nregistry_path = Path(\"/home/moonlight/Project/Github/MyProject/EgoCore/contracts/registry.json\")\noutput_path = Path(\"artifacts/tasks/pilot_b13_registry_update/output\")\n\n# \u8bfb\u53d6\u5f53\u524d registry\nwith open(registry_path) as f:\n    registry = json.load(f)\n\n# \u8bb0\u5f55\u53d8\u66f4\u524d\u7684\u5951\u7ea6\u6570\u91cf\nbefore_count = len(registry.get(\"contracts\", {}))\n\n# \u6dfb\u52a0\u9a8c\u8bc1\u8bb0\u5f55\u6761\u76ee\uff08\u65b0\u589e\u5b57\u6bb5\uff0c\u4e0d\u4fee\u6539\u73b0\u6709\u5951\u7ea6\uff09\nregistry[\"validation_records\"] = {\n    \"b12_identity_verify\": {\n        \"validated_at\": datetime.utcnow().isoformat() + \"Z\",\n        \"task_id\": \"pilot_b12_identity_verify\",\n        \"result\": \"passed\",\n        \"checks\": [\n            \"schema_exists\",\n            \"guard_exists\", \n            \"import_ok\",\n            \"guard_functional\"\n        ]\n    }\n}\n\n# \u5199\u56de\nwith open(registry_path, 'w') as f:\n    json.dump(registry, f, indent=2)\n\n# \u8f93\u51fa\u53d8\u66f4\u6458\u8981\noutput_path.mkdir(parents=True, exist_ok=True)\nwith open(output_path / \"s03_change_summary.txt\", 'w') as f:\n    f.write(f\"Registry updated successfully\\n\")\n    f.write(f\"Contracts: {before_count} (unchanged)\\n\")\n    f.write(f\"Added: validation_records section\\n\")\n\nprint(\"Registry updated\")\nPYEOF",
+  "exit_code": 0,
+  "stdout_path": "artifacts/tasks/pilot_b13_registry_update/evidence/S03/stdout.txt",
+  "stderr_path": "artifacts/tasks/pilot_b13_registry_update/evidence/S03/stderr.txt",
+  "changed_files": [],
+  "generated_files": [],
+  "outputs": {},
+  "retryable": false,
+  "environment": {
+    "cwd": null,
+    "hostname": "moonlight-VMware-Virtual-Platform"
+  },
+  "checksum": "7e365595ba867215752f0aaba8d197f5ec92c7fe1e95dc983e82268dd8e12014"
+}

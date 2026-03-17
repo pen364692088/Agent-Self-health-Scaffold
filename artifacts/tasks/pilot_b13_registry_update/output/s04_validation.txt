@@ -1,0 +1,2 @@
+validation_records exists: True
+b12_identity_verify found: True

@@ -1,0 +1,18 @@
+Current contracts: 6
+{
+  "contracts": {
+    "event_input": {
+      "current_version": "1.0.0",
+      "file": "contracts/event_input.schema.json",
+      "compatible_versions": [
+        "1.0.0"
+      ],
+      "description": "EgoCore \u2192 OpenEmotion \u4e8b\u4ef6\u8f93\u5165\u5951\u7ea6"
+    },
+    "openemotion_output": {
+      "current_version": "1.0.0",
+      "file": "contracts/openemotion_output.schema.json",
+      "compatible_versions": [
+        "1.0.0"
+      ],
+      "description": "OpenEmotion \u2192 EgoCore 

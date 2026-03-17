@@ -1,0 +1,74 @@
+{
+  "task_id": "pilot_b13_registry_update",
+  "task_name": "B1-3 \u53d7\u63a7\u53d8\u66f4\uff1a\u66f4\u65b0 EgoCore Registry",
+  "description": "\u5728 EgoCore contracts/registry.json \u4e2d\u6dfb\u52a0\u9a8c\u8bc1\u8bb0\u5f55\u6761\u76ee",
+  "status": "completed",
+  "created_at": "2026-03-17T00:57:03.354511Z",
+  "updated_at": "2026-03-17T00:57:42.318540Z",
+  "steps": {
+    "S01": {
+      "step_id": "S01",
+      "step_name": "\u8bfb\u53d6\u5f53\u524d registry.json",
+      "status": "success",
+      "depends_on": [],
+      "step_type": "execute_shell",
+      "command": "cat /home/moonlight/Project/Github/MyProject/EgoCore/contracts/registry.json | python3 -c \"import sys,json; d=json.load(sys.stdin); print(f'Current contracts: {len(d.get(chr(99)+chr(111)+chr(110)+chr(116)+chr(114)+chr(97)+chr(99)+chr(116)+chr(115),{}))}'); print(json.dumps(d, indent=2)[:500])\" > artifacts/tasks/pilot_b13_registry_update/output/s01_current_state.txt",
+      "updated_at": "2026-03-17T00:57:37.857878Z",
+      "started_at": "2026-03-17T00:57:37.827363Z",
+      "completed_at": "2026-03-17T00:57:37.857878Z"
+    },
+    "S02": {
+      "step_id": "S02",
+      "step_name": "\u5907\u4efd\u539f\u59cb\u6587\u4ef6",
+      "status": "success",
+      "depends_on": [
+        "S01"
+      ],
+      "step_type": "execute_shell",
+      "command": "cp /home/moonlight/Project/Github/MyProject/EgoCore/contracts/registry.json /home/moonlight/Project/Github/MyProject/EgoCore/contracts/registry.json.bak && echo 'Backup created' > artifacts/tasks/pilot_b13_registry_update/output/s02_backup.txt",
+      "updated_at": "2026-03-17T00:57:38.965038Z",
+      "started_at": "2026-03-17T00:57:38.960151Z",
+      "completed_at": "2026-03-17T00:57:38.965038Z"
+    },
+    "S03": {
+      "step_id": "S03",
+      "step_name": "\u6267\u884c\u53d8\u66f4\uff1a\u6dfb\u52a0\u9a8c\u8bc1\u8bb0\u5f55",
+      "status": "success",
+      "depends_on": [
+        "S02"
+      ],
+      "step_type": "execute_shell",
+      "command": "python3 << 'PYEOF'\nimport json\nfrom pathlib import Path\nfrom datetime import datetime\n\nregistry_path = Path(\"/home/moonlight/Project/Github/MyProject/EgoCore/contracts/registry.json\")\noutput_path = Path(\"artifacts/tasks/pilot_b13_registry_update/output\")\n\n# \u8bfb\u53d6\u5f53\u524d registry\nwith open(registry_path) as f:\n    registry = json.load(f)\n\n# \u8bb0\u5f55\u53d8\u66f4\u524d\u7684\u5951\u7ea6\u6570\u91cf\nbefore_count = len(registry.get(\"contracts\", {}))\n\n# \u6dfb\u52a0\u9a8c\u8bc1\u8bb0\u5f55\u6761\u76ee\uff08\u65b0\u589e\u5b57\u6bb5\uff0c\u4e0d\u4fee\u6539\u73b0\u6709\u5951\u7ea6\uff09\nregistry[\"validation_records\"] = {\n    \"b12_identity_verify\": {\n        \"validated_at\": datetime.utcnow().isoformat() + \"Z\",\n        \"task_id\": \"pilot_b12_identity_verify\",\n        \"result\": \"passed\",\n        \"checks\": [\n            \"schema_exists\",\n            \"guard_exists\", \n            \"import_ok\",\n            \"guard_functional\"\n        ]\n    }\n}\n\n# \u5199\u56de\nwith open(registry_path, 'w') as f:\n    json.dump(registry, f, indent=2)\n\n# \u8f93\u51fa\u53d8\u66f4\u6458\u8981\noutput_path.mkdir(parents=True, exist_ok=True)\nwith open(output_path / \"s03_change_summary.txt\", 'w') as f:\n    f.write(f\"Registry updated successfully\\n\")\n    f.write(f\"Contracts: {before_count} (unchanged)\\n\")\n    f.write(f\"Added: validation_records section\\n\")\n\nprint(\"Registry updated\")\nPYEOF",
+      "updated_at": "2026-03-17T00:57:40.089461Z",
+      "started_at": "2026-03-17T00:57:40.067462Z",
+      "completed_at": "2026-03-17T00:57:40.089461Z"
+    },
+    "S04": {
+      "step_id": "S04",
+      "step_name": "\u9a8c\u8bc1\u53d8\u66f4\u7ed3\u679c",
+      "status": "success",
+      "depends_on": [
+        "S03"
+      ],
+      "step_type": "execute_shell",
+      "command": "python3 -c \"import json; from pathlib import Path; r=json.loads(Path('/home/moonlight/Project/Github/MyProject/EgoCore/contracts/registry.json').read_text()); vr=r.get('validation_records',{}); print(f'validation_records exists: {bool(vr)}'); print(f'b12_identity_verify found: {chr(98)+chr(49)+chr(50)+chr(95)+chr(105)+chr(100)+chr(101)+chr(110)+chr(116)+chr(105)+chr(116)+chr(121)+chr(95)+chr(118)+chr(101)+chr(114)+chr(105)+chr(102)+chr(121) in vr}')\" > artifacts/tasks/pilot_b13_registry_update/output/s04_validation.txt 2>&1",
+      "updated_at": "2026-03-17T00:57:41.212168Z",
+      "started_at": "2026-03-17T00:57:41.191808Z",
+      "completed_at": "2026-03-17T00:57:41.212168Z"
+    },
+    "S05": {
+      "step_id": "S05",
+      "step_name": "\u751f\u6210\u53d8\u66f4\u62a5\u544a",
+      "status": "success",
+      "depends_on": [
+        "S04"
+      ],
+      "step_type": "execute_shell",
+      "command": "echo '{\"task\": \"pilot_b13_registry_update\", \"type\": \"controlled_change\", \"target\": \"EgoCore/contracts/registry.json\", \"change\": \"added validation_records section\", \"status\": \"completed\", \"timestamp\": \"'$(date -Iseconds)'\"}' > artifacts/tasks/pilot_b13_registry_update/output/change_report.json",
+      "updated_at": "2026-03-17T00:57:42.318540Z",
+      "started_at": "2026-03-17T00:57:42.314784Z",
+      "completed_at": "2026-03-17T00:57:42.318540Z"
+    }
+  },
+  "current_step": null
+}
