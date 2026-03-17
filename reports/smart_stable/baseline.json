@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-03-17T02:05:18.676301+00:00",
+  "window_hours": 24,
+  "scope": {
+    "session_dir": "/home/moonlight/.openclaw/agents/main/sessions",
+    "include_cron": false,
+    "total_files_scanned": 16426,
+    "included_files": 14,
+    "excluded_cron_files": 893
+  },
+  "totals": {
+    "assistant_turns": 413,
+    "tool_call_turns": 365,
+    "tool_calls": 510,
+    "tool_calls_resolved": 510,
+    "tool_calls_success": 491,
+    "tool_calls_failed": 19,
+    "tool_results": 510,
+    "tool_results_success": 491,
+    "tool_results_failed": 19,
+    "avoidable_failure_count": 4
+  },
+  "metrics": {
+    "first_pass_success_rate": 96.27,
+    "retry_recovery_rate": 94.74,
+    "avg_turn_latency_ms": 208.93,
+    "avoidable_failure_count": 4,
+    "tool_error_rate": 3.73
+  },
+  "avoidable_breakdown": {
+    "command_not_found": 0,
+    "enoent": 3,
+    "unknown_session": 0,
+    "timeout": 1
+  }
+}
