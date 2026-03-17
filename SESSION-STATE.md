@@ -1,10 +1,47 @@
 # SESSION-STATE.md
 
 ## 当前目标
-✅ 短观察阶段 PASS - Mutation Guard + Repo Root Preflight + Session-Start Canonical Repo Guard 主线级闭环完成
+**推进 v3 自治系统闭环验证与运行 - B0-3 完成**
 
 ## 阶段
-Phase A3 - 已闭环，进入冻结维护
+**Phase B0 - 业务推进期（治理维护模式）**
+
+### 当前进度
+
+| 阶段 | 状态 | 说明 |
+|------|------|------|
+| B0-1 现状盘点 | ✅ 完成 | 证据优先盘点，发现 steps 格式 bug、slot_registry 缺失 |
+| B0-1.5 最小可运行链修复 | ✅ 完成 | 修复 steps 兼容、slot_registry stub、task_dossier 兼容层 |
+| B0-2 最小闭环验证 | ✅ 完成 | S01 → S02 连续推进，minimal_executor 临时验证 |
+| B0-3 真实执行器集成 | ✅ 完成 | StepExecutor + resume_execute_bridge，真实 shell 任务执行成功 |
+
+### 治理状态定义
+- 入口治理体系：**稳定治理状态** ✅
+- 历史入口治理：已完成收口
+- 增量入口治理：已建立
+- 运行面残留：已完成收尾
+- **当前治理债务已清零；后续治理转入增量纳管、回归守护与异常修复模式**
+
+### 工作边界
+**In Scope:**
+- 基于现有治理基线的新功能开发
+- 增量入口纳管
+- 治理回退修复
+- 回归增强
+
+**Out of Scope（默认不做）:**
+- 重做治理基础设施
+- 重做历史入口全量治理
+- 继续扩治理文档
+- 制造不闭环的临时例外
+
+### 治理触发条件
+仅在以下情况重新进入治理专项模式：
+- Level 3 漂移
+- unresolved P0/P1 > 0
+- registry/实现大面积失配
+- 新入口绕过硬门禁
+- 关键入口治理回退
 
 ## 分支
 main
