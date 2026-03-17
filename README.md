@@ -13,22 +13,30 @@ This project focuses on five primary execution-chain goals:
 5. durable parent/child subtask orchestration
 
 ## Current phase
-**Scaffold / architecture phase**
+**Phase J: CLOSED** | Phase K: Ready for controlled expansion
 
-Included in this repository now:
-- v2 architecture docs
-- recovery and repair policies
-- initial failure taxonomy
-- JSON schemas for task/run/repair/ledger
-- directory structure for core/runtime/pipelines/tests/artifacts
+### Status Summary
+- **5 Agents** running stable with `default_enabled`:
+  - implementer (执行型)
+  - planner (规划型)
+  - verifier (验证型)
+  - scribe (记录型)
+  - merger (合并型，中风险)
+- **Auto-degradation chain** verified and closed-loop
+- **Thresholds** reviewed and validated
+- **Ready** for controlled Agent pool expansion (Phase K)
 
-## P0 build order
-1. task ledger
-2. state materializer
-3. recovery orchestrator
-4. out-of-band restart executor
-5. transcript rebuilder
-6. durable job orchestrator
+### Phase History
+| Phase | Status | Summary |
+|-------|--------|---------|
+| Phase I | ✅ CLOSED | 2 new agents enabled (scribe, merger) |
+| Phase J | ✅ CLOSED | 5-Agent stability + auto-degradation verified |
+| Phase K | 🔄 Ready | Controlled expansion for remaining agents |
 
-## Key rule
+## Key Files
+- `config/enablement_state.yaml` - Agent enablement configuration
+- `SESSION-STATE.md` - Current session state and progress
+- `docs/PHASE_J_FINAL_REPORT.md` - Phase J closure report
+
+## Key Rule
 Task truth is primary; transcript is derived.
