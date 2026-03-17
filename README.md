@@ -13,7 +13,7 @@ This project focuses on five primary execution-chain goals:
 5. durable parent/child subtask orchestration
 
 ## Current phase
-**Phase J: CLOSED** | Phase K: Ready for controlled expansion
+**Phase K: CLOSED** | All existing agents enabled
 
 ### Status Summary
 - **5 Agents** running stable with `default_enabled`:
@@ -23,20 +23,19 @@ This project focuses on five primary execution-chain goals:
   - scribe (记录型)
   - merger (合并型，中风险)
 - **Auto-degradation chain** verified and closed-loop
-- **Thresholds** reviewed and validated
-- **Ready** for controlled Agent pool expansion (Phase K)
+- **Candidate pool**: Empty (no more agents to enable)
 
 ### Phase History
 | Phase | Status | Summary |
 |-------|--------|---------|
 | Phase I | ✅ CLOSED | 2 new agents enabled (scribe, merger) |
 | Phase J | ✅ CLOSED | 5-Agent stability + auto-degradation verified |
-| Phase K | 🔄 Ready | Controlled expansion for remaining agents |
+| Phase K | ✅ CLOSED | No candidates found, expansion complete |
 
 ## Key Files
 - `config/enablement_state.yaml` - Agent enablement configuration
 - `SESSION-STATE.md` - Current session state and progress
-- `docs/PHASE_J_FINAL_REPORT.md` - Phase J closure report
+- `docs/PHASE_K_FINAL_REPORT.md` - Phase K closure report
 
 ## Key Rule
 Task truth is primary; transcript is derived.
